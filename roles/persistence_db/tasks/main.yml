@@ -1,0 +1,65 @@
+---
+- name: Allow external access to mysql users
+  mysql_user:
+    name: "{{ item.user }}"
+    password: "{{ item.pass }}"
+    priv: "{{ item.db }}.*:ALL"
+    host: "{{ item.host }}"
+    append_privs: yes
+  when: item.db != None and item.db != ''
+  with_items: "{{ edxremote_database_users }}"
+
+- name: Allow external access to migrate user
+  mysql_user:
+    name: "{{ COMMON_MYSQL_MIGRATE_USER }}"
+    password: "{{ COMMON_MYSQL_MIGRATE_PASS }}"
+    host: "{{ ip_app_server }}"
+    priv: "{{ item }}.*:ALL"
+    append_privs: yes
+  when: item != None and item != ''
+  with_items: "{{ edx_databases }}"
+
+- name: Allow external access to edx-notes-api db user
+  mysql_user:
+    name: "{{ EDX_NOTES_API_MYSQL_DB_USER }}"
+    password: "{{ EDX_NOTES_API_MYSQL_DB_PASS }}"
+    host: "{{ ip_app_server }}"
+    priv: "{{ EDX_NOTES_API_MYSQL_DB_NAME }}.*:ALL"
+    append_privs: yes
+  when: EDX_NOTES_API_MYSQL_DB_USER is defined
+
+- name: Allow external access to analytics-api db user
+  mysql_user:
+    name: "api001"
+    password: "{{ ANALYTICS_API_DATABASES.default.PASSWORD }}"
+    host: "{{ ip_app_server }}"
+    priv: '{{ ANALYTICS_API_DATABASES.default.NAME }}.*:ALL/reports.*:SELECT'
+    append_privs: yes
+  when: ANALYTICS_API_SERVICE_CONFIG is defined
+
+- name: Allow external access to reports user on analytics-api db
+  mysql_user:
+    name: reports001
+    password: "{{ ANALYTICS_API_DATABASES.reports.PASSWORD }}"
+    host: "{{ ip_app_server }}"
+    priv: '{{ ANALYTICS_API_DATABASES.reports.NAME }}.*:ALL'
+    append_privs: yes
+  when: ANALYTICS_API_SERVICE_CONFIG is defined
+
+- name: Allow access to read only common mysql user from any host
+  mysql_user:
+    name: "{{ COMMON_MYSQL_READ_ONLY_USER }}"
+    password: "{{ COMMON_MYSQL_READ_ONLY_PASS }}"
+    host: "{{ ip_app_server }}"
+    priv: "*.*:ALL"
+    append_privs: yes
+
+- name: Change mysql bind address
+  template: src=mysqld.cnf.j2 dest=/etc/mysql/mysql.conf.d/mysqld.cnf
+  notify:
+   - restart mysql
+
+- name: Allow external access to memcache
+  template: src=memcached.conf.j2 dest=/etc/memcached.conf
+  notify:
+   - restart memcached

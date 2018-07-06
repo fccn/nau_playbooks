@@ -1,0 +1,9 @@
+---
+  - name: restart mysql
+    service: name=mysql state=restarted
+
+  - name: restart memcached
+    service: name=memcached state=restarted
+
+  - name: restart rabbitmq
+    service: name=rabbitmq-server state=restarted

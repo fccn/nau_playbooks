@@ -1,0 +1,34 @@
+---
+
+# Open edX instance with 3 layers:
+# - Load balancer servers
+# - Persistence servers
+# - Application servers (application group & complementary group)
+
+- name: Bootstrap instances of 16.04
+  hosts: all
+  gather_facts: no
+  become: true
+  roles:
+    - python
+
+- name: Configure db server instance
+  hosts: persistence_servers
+  become: True
+  gather_facts: True
+  roles:
+    - role: swapfile
+      SWAPFILE_SIZE: 8GB
+    - role: edxlocal
+    - role: memcache
+    - role: mongo
+    - role: rabbitmq
+      rabbitmq_ip: 0.0.0.0
+    - oraclejdk
+    - role: elasticsearch
+    - role: persistence_db  # local to this repo
+
+## TODO: add the load balancer layer
+
+## TODO: add the application group
+## TODO: add the complementary group
