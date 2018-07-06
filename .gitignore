@@ -1,0 +1,6 @@
+inventory
+*.retry
+vendor/roles
+*.log
+# ignoring solita_jenkins password generated file
+solita_jenkins
