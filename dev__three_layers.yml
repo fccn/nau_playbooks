@@ -18,17 +18,24 @@
   gather_facts: True
   roles:
     - role: swapfile
-      SWAPFILE_SIZE: 8GB
     - role: edxlocal
     - role: memcache
     - role: mongo
     - role: rabbitmq
-      rabbitmq_ip: 0.0.0.0
-    - oraclejdk
+    - role: oraclejdk
     - role: elasticsearch
-    - role: persistence_db  # local to this repo
+    - role: persistence_db
 
 ## TODO: add the load balancer layer
 
+## TODO: add the proxy group
+
 ## TODO: add the application group
+
+- name: Configure the application server group
+  hosts: persistence_servers
+  become: True
+  gather_facts: True
+  roles:
+
 ## TODO: add the complementary group
