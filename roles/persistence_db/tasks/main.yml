@@ -3,7 +3,7 @@
   mysql_user:
     name: "{{ item.user }}"
     password: "{{ item.pass }}"
-    priv: "{{ item.db }}{{ item.permissions | default(.*:ALL)}}"
+    priv: "{{ item.db }}{{ item.permissions | default('.*:ALL')}}"
     host: "{{ item.host | default(ip_app_server) }}"
     append_privs: yes
   when: item.db != None and item.db != ''

@@ -30,12 +30,29 @@
 
 ## TODO: add the proxy group
 
-## TODO: add the application group
-
 - name: Configure the application server group
-  hosts: persistence_servers
+  hosts: app_servers
   become: True
   gather_facts: True
   roles:
+    - role: swapfile
+    - role: nginx
+      nginx_sites:
+      - cms
+      - lms
+      - forum
+      - edx_notes_api
+      nginx_default_sites:
+      - lms
+    - role: edxapp
+      celery_worker: True
+    - edxapp
+    - forum
+    - role: notifier
+      NOTIFIER_DIGEST_TASK_INTERVAL: 5
+    - role: edx_notes_api
+      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'edx_notes_api' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
+    - role: postfix_queue
+      when: POSTFIX_QUEUE_EXTERNAL_SMTP_HOST is defined and POSTFIX_QUEUE_EXTERNAL_SMTP_HOST != ""
 
 # TODO: add the complementary group
