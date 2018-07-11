@@ -10,7 +10,7 @@
   gather_facts: no
   become: true
   roles:
-    - python
+    - python_minimal
 
 - name: Configure db server instance
   hosts: persistence_servers
@@ -38,4 +38,4 @@
   gather_facts: True
   roles:
 
-## TODO: add the complementary group
+# TODO: add the complementary group
