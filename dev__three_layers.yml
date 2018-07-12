@@ -18,6 +18,7 @@
   gather_facts: True
   roles:
     - role: swapfile
+    - role: data_dirs
     - role: edxlocal
     - role: memcache
     - role: mongo
