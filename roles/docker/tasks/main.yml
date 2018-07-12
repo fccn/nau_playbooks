@@ -18,14 +18,22 @@
     name: docker
     state: present
 
-- name: Adding existing user '{{ ubuntu_username }}' to group docker
+- name: adding existing user '{{ ansible_user_id }}' to group docker
   user:
-    name: '{{ ubuntu_username }}'
+    name: '{{ ansible_user_id }}'
     groups: docker
     append: yes
 
 - name: Update apt cache
   apt: update_cache=yes
 
-- name: Install Docker
+- name:    Install Docker
   apt: name=docker-ce
+
+- name: Install pip modules on target box
+  pip:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - docker-py
+

@@ -1,8 +1,9 @@
 ---
 
 docker_container_name: ""
-docker_image_name: my-nginx
+docker_image_name: ""
 image_root_dir: "/home/ubuntu/docker-image"
-base_image: nginx #haproxy:1.7
-context_file: nginx.conf #haproxy.cfg #
-context_path: /etc/nginx/nginx.conf # /usr/local/etc/haproxy/haproxy.cfg #
+base_image: ""
+context_file: ""
+context_path: ""
+

@@ -7,16 +7,22 @@ defaults
     timeout client  50000
     timeout server  50000
 
-frontend localnode
-    bind *:80
-    mode http
-    default_backend node
+{% for frontend in haproxy_frontends %}
+frontend {{ frontend.name }}
+    bind {{frontend.bind }}
+    mode {{ frontend.mode }}
+    default_backend {{frontend.backend}}
 
+{% endfor %}
 
-backend node
-    mode http
+{% for backend in haproxy_backends %}
+
+backend {{ backend.name }}
+    mode {{ backend.mode }}
     balance roundrobin
     option forwardfor
     http-request set-header X-Forwarded-Port %[dst_port]
     http-request add-header X-Forwarded-Proto https if { ssl_fc }
-    server nginx  18.222.25.8:80
+    server {{ backend.server }}
+{% endfor %}
+

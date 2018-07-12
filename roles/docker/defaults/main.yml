@@ -1,6 +1,5 @@
 ---
 
-ubuntu_username: ubuntu
 docker_prerequisites:
   - "apt-transport-https"
   - "ca-certificates"

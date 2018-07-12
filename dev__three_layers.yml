@@ -20,24 +20,14 @@
   roles:
     - role: docker
     - role: docker_container
-      context_path: /usr/local/etc/haproxy/haproxy.cfg
-      base_image: haproxy:1.7
-      context_file: haproxy.cfg
-      docker_image_name: my-haproxy
-
 
 - name: Configure nginx docker
-  hosts: proxy
+  hosts: nginx_proxy
   become: True
   gather_facts: True
   roles:
     - role: docker
     - role: docker_container
-      context_path: /etc/nginx/nginx.conf
-      base_image: nginx
-      context_file: nginx.conf
-      docker_image_name: my-nginx
-
 
 - name: Configure db server instance
   hosts: persistence_servers
