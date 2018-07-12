@@ -10,7 +10,7 @@
   gather_facts: no
   become: true
   roles:
-    - python
+    - python_minimal
 
 - name: Configure db server instance
   hosts: persistence_servers
@@ -18,17 +18,41 @@
   gather_facts: True
   roles:
     - role: swapfile
-      SWAPFILE_SIZE: 8GB
     - role: edxlocal
     - role: memcache
     - role: mongo
     - role: rabbitmq
-      rabbitmq_ip: 0.0.0.0
-    - oraclejdk
+    - role: oraclejdk
     - role: elasticsearch
-    - role: persistence_db  # local to this repo
+    - role: persistence_db
 
 ## TODO: add the load balancer layer
 
-## TODO: add the application group
-## TODO: add the complementary group
+## TODO: add the proxy group
+
+- name: Configure the application server group
+  hosts: app_servers
+  become: True
+  gather_facts: True
+  roles:
+    - role: swapfile
+    - role: nginx
+      nginx_sites:
+      - cms
+      - lms
+      - forum
+      - edx_notes_api
+      nginx_default_sites:
+      - lms
+    - role: edxapp
+      celery_worker: True
+    - edxapp
+    - forum
+    - role: notifier
+      NOTIFIER_DIGEST_TASK_INTERVAL: 5
+    - role: edx_notes_api
+      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'edx_notes_api' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
+    - role: postfix_queue
+      when: POSTFIX_QUEUE_EXTERNAL_SMTP_HOST is defined and POSTFIX_QUEUE_EXTERNAL_SMTP_HOST != ""
+
+# TODO: add the complementary group
