@@ -23,12 +23,15 @@
     owner: "{{ item.owner }}"
     group: "{{ item.group }}"
   with_items: "{{ data_dirs_directories }}"
+  ignore_errors: True
 
 
 - name: Create symlinks
   file:
     src: "{{ item.path }}"
     dest: "{{ item.original_path }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
     state: link
     force: yes
   with_items: "{{ data_dirs_directories }}"
