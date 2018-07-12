@@ -20,4 +20,3 @@ backend node
     http-request set-header X-Forwarded-Port %[dst_port]
     http-request add-header X-Forwarded-Proto https if { ssl_fc }
     server nginx  18.222.25.8:80
-

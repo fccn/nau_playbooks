@@ -6,4 +6,3 @@ docker_prerequisites:
   - "ca-certificates"
   - "software-properties-common"
   - "python-pip"
-
