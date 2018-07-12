@@ -1,0 +1,41 @@
+---
+
+- name: Create directory
+  file: 
+    path: "{{ image_root_dir }}"
+    state: directory
+
+- name: Copy Dockerfile
+  template: 
+    dest: "{{ image_root_dir }}/Dockerfile"
+    src: Dockerfile.j2
+
+- name: Copy Dockerfile context
+  template:
+    dest: "{{ image_root_dir }}/{{context_file}}"
+    src: "{{ context_file }}.j2"
+
+- name: Install pip modules on target box
+  pip:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - docker-py
+
+- name:    Build docker image
+  docker_image: 
+     name: "{{docker_image_name}}"
+     path: "{{ image_root_dir }}"
+
+
+- name: Run the container
+  docker_container:
+    name: "{{docker_container_name}}"
+    image: "{{docker_image_name}}"
+    detach: yes
+    ports: 
+      - 80:80
+    tty: yes
+
+#sudo docker run -p 8080:8080 --name my-custom-nginx-container -d custom-nginx 
+# docker run -p 80:80 -d --name my-running-haproxy my-haproxy

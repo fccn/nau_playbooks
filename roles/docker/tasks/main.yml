@@ -1,0 +1,31 @@
+---
+
+- name:    Install prerequisites
+  apt:  
+    name: "{{item}}"
+    state: present
+  with_items: "{{ docker_prerequisites }}"
+
+- name:    Add Docker GPG key
+  apt_key: url=https://download.docker.com/linux/ubuntu/gpg
+
+- name:    Add Docker APT repository
+  apt_repository:
+    repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ansible_distribution_release}} stable
+
+- name: Ensure group docker exists
+  group:
+    name: docker
+    state: present
+
+- name: adding existing user '{{ ubuntu_username }}' to group docker
+  user:
+    name: '{{ ubuntu_username }}'
+    groups: docker
+    append: yes
+
+- name: Update apt cache
+  apt:  update_cache=yes
+
+- name:    Install Docker
+  apt: name=docker-ce
