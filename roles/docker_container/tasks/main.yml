@@ -9,16 +9,20 @@
   template:
     dest: "{{ image_root_dir }}/Dockerfile"
     src: Dockerfile.j2
+  register: dockerfile
 
 - name: Copy Dockerfile context
   template:
     dest: "{{ image_root_dir }}/{{ context_file }}"
     src: "{{ context_file }}.j2"
+  register: context
 
 - name:    Build docker image
   docker_image: 
      name: "{{docker_image_name}}"
      path: "{{ image_root_dir }}"
+     force: yes
+  when: dockerfile.changed or context.changed    
 
 - name: Run the container
   docker_container:
@@ -27,4 +31,5 @@
     detach: yes
     ports: "{{ container_ports }}" 
     tty: yes
+    restart_policy: always
 
