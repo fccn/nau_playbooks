@@ -11,7 +11,14 @@ defaults
 frontend {{ frontend.name }}
     bind {{frontend.bind }}
     mode {{ frontend.mode }}
-    default_backend {{frontend.backend}}
+    default_backend {{frontend.default_backend}}
+    
+    {% for domain in frontend.domain_names %}
+
+    acl {{ domain.name }} hdr(host) -i {{ domain.host }}
+    use_backend {{ domain.backend }} if {{ domain.name }}
+
+    {% endfor %}
 
 {% endfor %}
 
