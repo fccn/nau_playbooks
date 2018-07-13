@@ -4,6 +4,7 @@ docker_container_name: ""
 docker_image_name: ""
 image_root_dir: "/home/ubuntu/docker-image"
 base_image: ""
-context_file: ""
 context_path: ""
+context_files: ""
+dockerfile_template: "Dockerfile.j2"
 

@@ -8,13 +8,14 @@
 - name: Copy Dockerfile
   template:
     dest: "{{ image_root_dir }}/Dockerfile"
-    src: Dockerfile.j2
+    src: "{{ dockerfile_template }}"
   register: dockerfile
 
 - name: Copy Dockerfile context
   template:
-    dest: "{{ image_root_dir }}/{{ context_file }}"
-    src: "{{ context_file }}.j2"
+    dest: "{{ item.dest }}"
+    src: "{{ item.src }}"
+  with_items: "{{ context_files }}"
   register: context
 
 - name:    Build docker image
@@ -32,4 +33,3 @@
     ports: "{{ container_ports }}" 
     tty: yes
     restart_policy: always
-
