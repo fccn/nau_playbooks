@@ -18,6 +18,7 @@
   gather_facts: True
   roles:
     - role: swapfile
+    - role: data_dirs
     - role: edxlocal
     - role: memcache
     - role: mongo
@@ -48,8 +49,6 @@
       celery_worker: True
     - edxapp
     - forum
-    - role: notifier
-      NOTIFIER_DIGEST_TASK_INTERVAL: 5
     - role: edx_notes_api
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'edx_notes_api' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
     - role: postfix_queue

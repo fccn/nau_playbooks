@@ -1,0 +1,37 @@
+---
+
+- name: Add data dirs users
+  user:
+    name: "{{ item.owner }}"
+    shell: /bin/false
+  with_items: "{{ data_dirs_directories }}"
+
+
+- name: Create data dirs
+  file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+  with_items: "{{ data_dirs_directories }}"
+
+
+- name: Create original data dirs
+  file:
+    path: "{{ item.original_path }}"
+    state: directory
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+  with_items: "{{ data_dirs_directories }}"
+  ignore_errors: True
+
+
+- name: Create symlinks
+  file:
+    src: "{{ item.path }}"
+    dest: "{{ item.original_path }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    state: link
+    force: yes
+  with_items: "{{ data_dirs_directories }}"
