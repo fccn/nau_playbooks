@@ -14,7 +14,7 @@
 
 
 - name: Configure load balancer docker
-  hosts: loadbalancers
+  hosts: balancer_servers
   become: True
   gather_facts: True
   roles:
@@ -22,7 +22,7 @@
     - role: docker_container
 
 - name: Configure nginx docker
-  hosts: nginx_proxy
+  hosts: statics_servers
   become: True
   gather_facts: True
   roles:
