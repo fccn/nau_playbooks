@@ -1,0 +1,35 @@
+---
+
+- name: Create directory
+  file:
+    path: "{{ image_root_dir }}"
+    state: directory
+
+- name: Copy Dockerfile
+  template:
+    dest: "{{ image_root_dir }}/Dockerfile"
+    src: "{{ dockerfile_template }}"
+  register: dockerfile
+
+- name: Copy Dockerfile context
+  template:
+    dest: "{{ item.dest }}"
+    src: "{{ item.src }}"
+  with_items: "{{ context_files }}"
+  register: context
+
+- name:    Build docker image
+  docker_image: 
+     name: "{{docker_image_name}}"
+     path: "{{ image_root_dir }}"
+     force: yes
+  when: dockerfile.changed or context.changed    
+
+- name: Run the container
+  docker_container:
+    name: "{{ docker_container_name }}"
+    image: "{{ docker_image_name }}"
+    detach: yes
+    ports: "{{ container_ports }}" 
+    tty: yes
+    restart_policy: "{{ docker_restart_policy }}"

@@ -12,6 +12,15 @@
   roles:
     - python_minimal
 
+
+- name: Configure load balancer docker
+  hosts: balancer_servers
+  become: True
+  gather_facts: True
+  roles:
+    - role: docker
+    - role: docker_container
+
 - name: Configure db server instance
   hosts: persistence_servers
   become: True

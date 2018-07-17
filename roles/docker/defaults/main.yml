@@ -1,0 +1,7 @@
+---
+
+docker_prerequisites:
+  - "apt-transport-https"
+  - "ca-certificates"
+  - "software-properties-common"
+  - "python-pip"
