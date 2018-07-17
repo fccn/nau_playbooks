@@ -7,4 +7,4 @@ base_image: ""
 context_path: ""
 context_files: ""
 dockerfile_template: "Dockerfile.j2"
-
+docker_restart_policy: always

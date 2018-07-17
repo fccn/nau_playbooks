@@ -32,4 +32,4 @@
     detach: yes
     ports: "{{ container_ports }}" 
     tty: yes
-    restart_policy: always
+    restart_policy: "{{ docker_restart_policy }}"
