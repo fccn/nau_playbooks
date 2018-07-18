@@ -21,6 +21,14 @@
     - role: docker
     - role: docker_container
 
+- name: Configure statics servers docker
+  hosts: statics_servers
+  become: True
+  gather_facts: True
+  roles:
+    - role: docker
+    - role: docker_container
+
 - name: Configure db server instance
   hosts: persistence_servers
   become: True

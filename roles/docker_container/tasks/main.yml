@@ -1,6 +1,6 @@
 ---
 
-- name: Create directory
+- name: Create root directory
   file:
     path: "{{ image_root_dir }}"
     state: directory
@@ -10,6 +10,13 @@
     dest: "{{ image_root_dir }}/Dockerfile"
     src: "{{ dockerfile_template }}"
   register: dockerfile
+
+- name: create context directories
+  file:
+    path: "{{ item }}"
+    state: directory
+  with_items: "{{ context_dirs }}"
+  when: context_dirs is defined and context_dirs != ''
 
 - name: Copy Dockerfile context
   template:
@@ -25,7 +32,7 @@
      force: yes
   when: dockerfile.changed or context.changed    
 
-- name: Run the container
+- name: Run the container with volumes
   docker_container:
     name: "{{ docker_container_name }}"
     image: "{{ docker_image_name }}"
@@ -33,3 +40,16 @@
     ports: "{{ container_ports }}" 
     tty: yes
     restart_policy: "{{ docker_restart_policy }}"
+    volumes: "{{ docker_volumes }}"
+  when: docker_volumes is defined and docker_volumes != ''
+
+- name: Run the container
+  docker_container:
+    name: "{{ docker_container_name }}"
+    image: "{{ docker_image_name }}"
+    detach: yes
+    ports: "{{ container_ports }}"
+    tty: yes
+    restart_policy: "{{ docker_restart_policy }}"
+  when: docker_volumes is not defined or docker_volumes == ''
+
