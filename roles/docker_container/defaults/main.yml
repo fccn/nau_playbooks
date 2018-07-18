@@ -6,5 +6,7 @@ image_root_dir: "/home/ubuntu/docker-image"
 base_image: ""
 context_path: ""
 context_files: ""
+context_dirs: ""
 dockerfile_template: "Dockerfile.j2"
 docker_restart_policy: always
+docker_volumes: ''
