@@ -41,7 +41,7 @@
     tty: yes
     restart_policy: "{{ docker_restart_policy }}"
     volumes: "{{ docker_volumes }}"
-  when: docker_volumes is defined and docker_volumes != ''
+  when: docker_volumes is defined and docker_volumes != '' and (docker_reload_command is undefined or dockerfile.changed)
 
 - name: Run the container
   docker_container:
@@ -51,5 +51,8 @@
     ports: "{{ container_ports }}"
     tty: yes
     restart_policy: "{{ docker_restart_policy }}"
-  when: docker_volumes is not defined or docker_volumes == ''
+  when: docker_volumes is not defined or docker_volumes == '' and (docker_reload__command is undefined or dockerfile.changed)
 
+- name: Reload container with custom command
+  shell: "{{ docker_reload_command }}"
+  when: docker_reload_command is defined and docker_reload_command != ''
