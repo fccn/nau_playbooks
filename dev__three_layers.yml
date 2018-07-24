@@ -38,7 +38,7 @@
     - role: data_dirs
     - role: edxlocal
     - role: memcache
-    - role: mongo
+    - role: mongo_3_2
     - role: rabbitmq
     - role: oraclejdk
     - role: elasticsearch
