@@ -44,10 +44,6 @@
     - role: elasticsearch
     - role: persistence_db
 
-## TODO: add the load balancer layer
-
-## TODO: add the proxy group
-
 - name: Configure the application server group
   hosts: app_servers
   become: True
@@ -59,16 +55,35 @@
       - cms
       - lms
       - forum
-      - edx_notes_api
       nginx_default_sites:
       - lms
     - role: edxapp
       celery_worker: True
     - edxapp
     - forum
-    - role: edx_notes_api
-      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'edx_notes_api' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
     - role: postfix_queue
       when: POSTFIX_QUEUE_EXTERNAL_SMTP_HOST is defined and POSTFIX_QUEUE_EXTERNAL_SMTP_HOST != ""
 
-# TODO: add the complementary group
+
+- name: Configure the complementary server group
+  hosts: complementary_servers
+  become: True
+  gather_facts: True
+  roles:
+    - role: swapfile
+    - role: nginx
+      nginx_sites:
+      - insights
+      - edx_notes_api
+    - role: discovery
+      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'discovery' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
+    - role: ecommerce
+      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'ecommerce' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
+    - role: ecomworker
+      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'ecommerce' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
+    - role: edx_notes_api
+      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'edx_notes_api' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
+    - role: flower
+      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'flower' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
+    - role: insights
+      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'insights' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
