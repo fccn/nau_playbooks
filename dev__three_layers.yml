@@ -63,7 +63,8 @@
     - forum
     - role: postfix_queue
       when: POSTFIX_QUEUE_EXTERNAL_SMTP_HOST is defined and POSTFIX_QUEUE_EXTERNAL_SMTP_HOST != ""
-
+    - role: aws
+      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'aws' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
 
 - name: Configure the complementary server group
   hosts: complementary_servers
@@ -87,3 +88,5 @@
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'flower' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
     - role: insights
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'insights' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
+    - role: aws
+      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'aws' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
