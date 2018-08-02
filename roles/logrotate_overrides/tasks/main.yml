@@ -1,4 +1,12 @@
 ---
+- name: Override the access nginx logrotate config
+  template:
+    dest: "/etc/logrotate.d/nginx-access"
+    src: "edx_logrotate_nginx_access.j2"
+    owner: root
+    group: root
+    mode: "0644"
+  register: config_templates
 
 - name: overriding s3 log sync script
   template:
