@@ -2,7 +2,7 @@
 - name: Override the access nginx logrotate config
   template:
     dest: "/etc/logrotate.d/nginx-access"
-    src: "edx_logrotate_nginx_access.j2"
+    src: "{{ logrotate_nginx_access_template }}"
     owner: root
     group: root
     mode: "0644"
@@ -11,7 +11,7 @@
 - name: overriding s3 log sync script
   template:
     dest: "{{ aws_s3_sync_script }}"
-    src: send-logs-to-s3.j2
+    src: "{{ log_sync_script_template }}"
     mode: 0755
     owner: root
     group: root

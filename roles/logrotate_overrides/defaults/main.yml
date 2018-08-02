@@ -1,3 +1,7 @@
 ---
 
 nginx_log_dir: "{{ COMMON_LOG_DIR }}/nginx"
+
+log_sync_script_template: send-logs-to-s3.j2
+logrotate_nginx_access_template: edx_logrotate_nginx_access.j2
+
