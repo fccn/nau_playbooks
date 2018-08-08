@@ -1,0 +1,16 @@
+---
+
+# Support server
+
+- name: Bootstrap instances of 16.04
+  hosts: support_server
+  gather_facts: no
+  become: true
+  roles:
+    - python_minimal
+
+- hosts: support_server
+  become: True
+  roles:
+    - geerlingguy.jenkins
+

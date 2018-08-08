@@ -1,0 +1,3 @@
+---
+- role: geerlingguy.jenkins
+  version: 3.5.0
