@@ -1,0 +1,19 @@
+## This is the default template from edx/configuration, use a custom template from your secure data repo
+
+# Put in place by ansible
+
+{{ nginx_log_dir }}/*access.log {
+  create 0640 www-data adm
+  compress
+  delaycompress
+  dateext
+  missingok
+  notifempty
+  daily
+  rotate 90
+  size 1M
+  sharedscripts
+  postrotate
+	[ ! -f /var/run/nginx.pid ] || kill -HUP `cat /var/run/nginx.pid`
+  endscript
+}
