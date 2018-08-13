@@ -1,0 +1,13 @@
+---
+
+# Tasks for the master db server
+- include: master_server.yml
+  when: >
+    (master_server is defined) 
+    and (master_server == True)
+
+# Tasks for the slave db server
+- include: slave_server.yml
+  when: >
+    (slave_server is defined) 
+    and (slave_server == True)

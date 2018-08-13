@@ -35,7 +35,7 @@
   gather_facts: True
   roles:
     - role: swapfile
-    #- role: data_dirs
+    - role: data_dirs
     - role: edxlocal
     - role: memcache
     - role: mongo_3_2
@@ -43,6 +43,24 @@
     - role: oraclejdk
     - role: elasticsearch
     - role: persistence_db
+
+    
+- name: Configure master db server
+  hosts: master_persistence_server
+  become: True
+  gather_facts: True
+  roles:
+    - role: mysql_replication
+      master_server: True
+
+- name: Configure slave db server
+  hosts: slave_persistence_servers
+  become: True
+  gather_facts: True
+  roles:
+    - role: mysql_replication
+      slave_server: True
+
 
 - name: Configure the application server group
   hosts: app_servers
