@@ -35,3 +35,9 @@
     state: link
     force: yes
   with_items: "{{ data_dirs_directories }}"
+
+- name: Check or create mysql config in apparmor
+  lineinfile:
+    path: "/etc/apparmor.d/tunables/alias"
+    line: "alias /var/lib/mysql/ -> /data/mysql/,"
+    state: present
