@@ -4,6 +4,7 @@
   user:
     name: "{{ item.owner }}"
     shell: /bin/false
+    create_home: no
   with_items: "{{ data_dirs_directories }}"
 
 
