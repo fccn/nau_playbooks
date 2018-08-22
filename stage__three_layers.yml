@@ -43,6 +43,7 @@
     - role: oraclejdk
     - role: elasticsearch
     - role: persistence_db
+    - role: es_kopf
 
     
 - name: Configure master db server
