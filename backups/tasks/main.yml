@@ -1,0 +1,56 @@
+---
+
+- name: Create backup directory
+  file: 
+    path: "{{BACKUP_LOCATION}}"
+    state: directory
+
+
+- name: Create mysql database backup
+  mysql_db:
+    login_user: root
+    login_password: "{{ backup_mysql_root_password }}"
+    state: dump
+    name: all
+    target: "{{ BACKUP_LOCATION }}/{{ BACKUP_DATE }}.mysql.sql"
+  when: backup_mysql
+
+- name: Give the server time to recover
+  pause:
+    minutes: 2
+    prompt: Pausing to give the server time to recover
+  when: backup_mysql
+
+# Mongo Backup
+- name: Create mongo database backup
+  # very important use                    --all-databases
+  shell: >
+    mongodump
+    --authenticationDatabase admin
+    -u admin -p {{ MONGO_ADMIN_PASSWORD }}
+    -o {{ BACKUP_LOCATION }}/{{ BACKUP_DATE }}.mongo
+  when:  backup_mongo
+
+#Compress files
+- name: Compress mysql backup file
+  command: "tar -czf {{ BACKUP_DATE }}_mysql.tar.gz {{ BACKUP_LOCATION}}/{{ BACKUP_DATE }}.mysql.sql --remove-files"
+  args:
+    chdir: "{{ BACKUP_LOCATION}}"
+  when:  backup_mysql
+
+- name: Compress mongo backup file
+  command: "tar -czf {{ BACKUP_DATE }}_mongo.tar.gz {{ BACKUP_LOCATION}}/{{ BACKUP_DATE }}.mongo --remove-files"
+  args:
+    chdir: "{{ BACKUP_LOCATION}}"
+  when:  backup_mongo
+
+
+# Upload backups to CEPH
+- include: ceph.yml
+  when: DBS_BACKUP_EXTERNAL_STORAGE == 'ceph'
+
+- name: Clean artifact path
+  file:
+    state: absent
+    path: "{{ artifact_path }}/"
+  when: artifact_path is defined and artifact_path != "" and DBS_BACKUP_EXTERNAL_STORAGE != ""

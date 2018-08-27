@@ -1,0 +1,21 @@
+---
+
+DBS_BACKUP_EXTERNAL_STORAGE: ""
+
+aznet_packages: 
+  - dotnet-sdk-2.0.2
+
+backup_mysql: false
+backup_mongo: false
+
+BACKUP_ROOT: "/var/nau_tmp"
+BACKUP_DATE: "{{ ansible_date_time.date }}"
+BACKUP_LOCATION: "{{BACKUP_ROOT}}/{{BACKUP_DATE}}.d"
+artifact_path: "{{BACKUP_ROOT}}"
+backup_mysql_root_password: ""
+
+#######
+# AWS #
+#######
+
+AWS_S3_DBS_BACKUP_BUCKET_NAME: "SET ME PLEASE"
