@@ -1,4 +1,8 @@
 ---
+mongo_user: mongodb
+
+elasticsearch_user: elasticsearch
+elasticsearch_group: elasticsearch
 
 data_dirs_mysql_user: mysql
 data_dirs_mysql_group: mysql
