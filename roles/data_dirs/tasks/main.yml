@@ -41,3 +41,5 @@
     path: "/etc/apparmor.d/tunables/alias"
     line: "alias /var/lib/mysql/ -> /data/mysql/,"
     state: present
+  notify:
+   - restart apparmor
