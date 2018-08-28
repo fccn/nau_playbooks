@@ -49,7 +49,6 @@
   roles:
     - role: swapfile
     - role: data_dirs
-    - role: edxlocal
     - role: mongo_3_2
     - role: oraclejdk
     - role: elasticsearch
