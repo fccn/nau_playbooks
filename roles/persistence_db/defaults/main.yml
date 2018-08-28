@@ -17,6 +17,7 @@ edx_databases:
 
 ip_app_server: "%"
 
+install_memcached: True
 edxremote_database_users:
   - {
       db: "{{ ECOMMERCE_DEFAULT_DB_NAME | default(None) }}",
