@@ -20,3 +20,6 @@ data_dirs_directories:
     original_path: /var/lib/mysql
     owner: "{{ data_dirs_mysql_user }}"
     group: "{{ data_dirs_mysql_group }}"
+  - path: /data/mysql/mysql
+    owner: "{{ data_dirs_mysql_user }}"
+    group: "{{ data_dirs_mysql_group }}"
