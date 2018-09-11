@@ -26,7 +26,7 @@ analytics_pipeline_configuration_repo_path: "{{ analytics_pipeline_configuration
 analytics_pipeline_configuration_repo: "https://github.com/edx/edx-analytics-pipeline.git"
 analytics_pipeline_configuration_repo_version: "master"
 
-analytics_pipeline_configuration_source: "hdfs://localhost:9000/data"
+analytics_pipeline_configuration_source: "hdfs://localhost:9000"
 
 analytics_pipeline_configuration_common_directories:
   - {

@@ -11,7 +11,7 @@ credentials = {{ analytics_pipeline_configuration_files_dir }}/reports_output_db
 [database-import]
 database = edxapp
 credentials = {{ analytics_pipeline_configuration_files_dir }}/edxapp_input_db.json
-destination = '{{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/warehouse/'
+destination = {{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/warehouse/
 
 [elasticsearch]
 # Point to the vagrant host's port 9201 where we assume elasticsearch is running
@@ -22,59 +22,60 @@ interval_start = 2018-08-01
 overwrite_n_days = "{{ analytics_pipeline_configuration_enrollments_overwrite_n_days }}"
 
 [enrollment-reports]
-src = '{{ analytics_pipeline_configuration_source }}/data/'
-destination = '{{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/enrollment_reports/output/'
-offsets = '{{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/enrollment_reports/offsets.tsv'
-blacklist = '{{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/enrollment_reports/course_blacklist.tsv'
-history = '{{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/enrollment_reports/enrollment_history.tsv'
+src = {{ analytics_pipeline_configuration_source }}/data/
+destination = {{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/enrollment_reports/output/
+offsets = {{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/enrollment_reports/offsets.tsv
+blacklist = {{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/enrollment_reports/course_blacklist.tsv
+history = {{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/enrollment_reports/enrollment_history.tsv
 
 [event-export]
-output_root = '{{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/event-export/output/'
+output_root = {{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/event-export/output/
 environment = simple
-config = '{{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/event_export/config.yaml
-gpg_key_dir = '{{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/event_export/gpg-keys/'
+config = {{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/event_export/config.yaml
+gpg_key_dir = {{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/event_export/gpg-keys/
 gpg_master_key = master@key.org
 required_path_text = FakeServerGroup
 
 [event-export-course]
-output_root = '{{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/event-export-by-course/output/'
+output_root = {{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/event-export-by-course/output/
 
 [event-logs]
-pattern = [\\".*?/.*\tracking.log-(?P<date>\d{8}).*\.gz\\"]
+pattern = [".*tracking.log.*"]
 expand_interval = 4 days
-source = ["{{ analytics_pipeline_configuration_source }}/access_logs/"]
+source = ["{{ analytics_pipeline_configuration_source }}/data/logs/tracking"]
 
 [financial-reports]
-shoppingcart-partners = {"DEFAULT": "nau"}
+shoppingcart-partners = {"DEFAULT": "edX"}
 
 [geolocation]
-geolocation_data = '{{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/packages/geo.dat'
+geolocation_data = {{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/packages/geo.dat
 
 [hive]
 release = apache
 version = 0.11
 database = default
-warehouse_path = '{{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/warehouse/'
+warehouse_path = {{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/warehouse/
 hive_overwrite = True
 
 engine = hadoop
-marker = '{{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/marker/'
+marker = {{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/marker/
 
 [manifest]
 threshold = 500
 input_format = org.edx.hadoop.input.ManifestTextInputFormat
-lib_jar = '{{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/packages/edx-analytics-hadoop-util.jar
-path = '{{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/manifest/'
+lib_jar = {{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/packages/edx-analytics-hadoop-util.jar
+path = {{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/manifest/
 
 [map-reduce]
 seed_value = 42
+marker = {{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/marker/
 
 [module-engagement]
 alias = roster
 number_of_shards = 5
 
 [obfuscation]
-output_root = '{{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/obfuscation/output/'
+output_root = {{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/obfuscation/output/
 explicit_event_whitelist = explicit_events.tsv
 xblock_obfuscation_config = xblock_obfuscation_config.yml
 
@@ -86,13 +87,8 @@ credentials = {{ analytics_pipeline_configuration_files_dir }}/ecomm_input_db.js
 schema = testing
 read_timeout = 5
 
-[s3]
-host = '{{ analytics_pipeline_configuration_s3_host }}'
-aws_access_key_id = '{{ analytics_pipeline_configuration_s3_aws_access_key_id }}'
-aws_secret_access_key = '{{ analytics_pipeline_configuration_s3_aws_secret_access_key }}'
-
 [user-activity]
-output_root = '{{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/activity/'
+output_root = {{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/activity/
 
 [videos]
 dropoff_threshold = 0.05

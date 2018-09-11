@@ -65,6 +65,14 @@
     creates: "{{ analytics_pipeline_configuration_venv_dir }}/bin/pip"
   become_user: "{{ analytics_pipeline_configuration_user }}"
 
+- name: pre bootstrap step
+  shell: "source {{ analytics_pipeline_configuration_venv_dir }}/bin/activate && pip install -r requirements/pip.txt"
+  args:
+    chdir: "{{ analytics_pipeline_configuration_repo_path }}"
+    executable: /bin/bash
+  become_user: "{{ analytics_pipeline_configuration_user }}"
+
+
 - name: Bootstrap of edx-analytics-pipeline configuration
   shell: "source {{ analytics_pipeline_configuration_venv_dir }}/bin/activate && make bootstrap"
   args:

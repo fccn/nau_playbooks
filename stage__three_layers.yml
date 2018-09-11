@@ -106,3 +106,18 @@
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'edx_notes_api' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
     - role: insights
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'insights' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
+
+
+- name: Configure pipeline servers
+  hosts: pipeline_servers
+  become: True
+  gather_facts: True
+  vars:
+    ANALYTICS_API_SERVICE_CONFIG: "When defined, we create the analytics-api users at the db"
+  roles:
+    - role: swapfile
+    - role: edxlocal
+    - role: analytics_api
+      when: analytics_api_server == True
+    - analytics_pipeline
+    - analytics_pipeline_configuration
