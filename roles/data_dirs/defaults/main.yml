@@ -1,4 +1,8 @@
 ---
+mongo_user: mongodb
+
+elasticsearch_user: elasticsearch
+elasticsearch_group: elasticsearch
 
 data_dirs_mysql_user: mysql
 data_dirs_mysql_group: mysql
@@ -14,5 +18,8 @@ data_dirs_directories:
     group: "{{ elasticsearch_group }}"
   - path: /data/mysql
     original_path: /var/lib/mysql
+    owner: "{{ data_dirs_mysql_user }}"
+    group: "{{ data_dirs_mysql_group }}"
+  - path: /data/mysql/mysql
     owner: "{{ data_dirs_mysql_user }}"
     group: "{{ data_dirs_mysql_group }}"

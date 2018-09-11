@@ -4,6 +4,7 @@
   user:
     name: "{{ item.owner }}"
     shell: /bin/false
+    createhome: no
   with_items: "{{ data_dirs_directories }}"
 
 
@@ -34,6 +35,7 @@
     group: "{{ item.group }}"
     state: link
     force: yes
+  when: item.original_path is defined
   with_items: "{{ data_dirs_directories }}"
 
 - name: Check or create mysql config in apparmor

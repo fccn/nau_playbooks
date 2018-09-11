@@ -1,0 +1,77 @@
+---
+
+- name: Create backup directory
+  file: 
+    path: "{{BACKUP_LOCATION}}"
+    state: directory
+
+- name: Check if current mysql backup already exists
+  stat:
+    path: "{{ BACKUP_LOCATION }}/{{ BACKUP_DATE }}_mysql.tar.gz"
+    get_checksum: false
+    get_md5: false
+  register: mysql_backup_status
+  when: backup_mysql
+
+- name: Check if current mongo backup already exists
+  stat:
+    path: "{{ BACKUP_LOCATION }}/{{ BACKUP_DATE }}_mongo.tar.gz"
+    get_checksum: false
+    get_md5: false
+  register: mongo_backup_status
+  when: backup_mongo
+
+# MySql Backup
+- name: Set mysql fact
+  set_fact: 
+    backup_mysql_root_password: "{{ COMMON_MYSQL_ROOT_PASS }}"
+  when: COMMON_MYSQL_ROOT_PASS is defined and COMMON_MYSQL_ROOT_PASS != "" and backup_mysql
+
+- name: Create mysql database backup
+  mysql_db:
+    login_user: root
+    login_password: "{{ backup_mysql_root_password }}"
+    state: dump
+    name: all
+    target: "{{ BACKUP_LOCATION }}/{{ BACKUP_DATE }}.mysql.sql"
+  when: mysql_backup_status.stat.exists == False and backup_mysql
+
+- name: Give the server time to recover
+  pause:
+    minutes: 2
+    prompt: Pausing to give the server time to recover
+  when: mysql_backup_status.stat.exists == False and backup_mysql
+
+# Mongo Backup
+- name: Create mongo database backup
+  # very important use                    --all-databases
+  shell: >
+    mongodump
+    --authenticationDatabase admin
+    -u admin -p {{ MONGO_ADMIN_PASSWORD }}
+    -o {{ BACKUP_LOCATION }}/{{ BACKUP_DATE }}.mongo
+  when: mongo_backup_status.stat.exists == False and backup_mongo
+
+#Compress files
+- name: Compress mysql backup file
+  command: "tar -czf {{ BACKUP_DATE }}_mysql.tar.gz {{ BACKUP_LOCATION}}/{{ BACKUP_DATE }}.mysql.sql --remove-files"
+  args:
+    chdir: "{{ BACKUP_LOCATION}}"
+  when: mysql_backup_status.stat.exists == False and backup_mysql
+
+- name: Compress mongo backup file
+  command: "tar -czf {{ BACKUP_DATE }}_mongo.tar.gz {{ BACKUP_LOCATION}}/{{ BACKUP_DATE }}.mongo --remove-files"
+  args:
+    chdir: "{{ BACKUP_LOCATION}}"
+  when: mongo_backup_status.stat.exists == False and backup_mongo
+
+
+# Upload backups to CEPH
+- include: ceph.yml
+  when: DBS_BACKUP_EXTERNAL_STORAGE == 'ceph'
+
+- name: Clean artifact path
+  file:
+    state: absent
+    path: "{{ artifact_path }}/"
+  when: artifact_path is defined and artifact_path != "" and DBS_BACKUP_EXTERNAL_STORAGE != ""

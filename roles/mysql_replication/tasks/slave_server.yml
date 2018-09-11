@@ -1,0 +1,80 @@
+---
+
+- name: Run manually mysql command in master server to release tables
+  pause:
+    prompt: "Please release read lock with UNLOCK TABLES"
+    echo: yes
+
+# TODO: Use synchronize to copy snapshot directly to the slave server, 
+# but SSH keys and agent must be set up.
+# - name: Copy datasnpashot to slave
+#   synchronize: 
+#     src: "/tmp/{{ REPLICATION_DUMP_FILE_NAME }}.sql"
+#     dest: "/tmp/{{ REPLICATION_DUMP_FILE_NAME }}.sql"
+#     use_ssh_args: yes
+#   delegate_to: "{{ EDXAPP_MYSQL_REPLICATION_MASTER_SERVER_IP }}"
+
+- name: Copy datasnapshot from localhost to slave
+  synchronize: 
+    src: "/tmp/{{ REPLICATION_DUMP_FILE_NAME }}.sql"
+    dest: "/tmp/{{ REPLICATION_DUMP_FILE_NAME }}.sql"
+    mode: push
+
+- name: Remove datasnapshot in master server
+  file:
+    dest: "/tmp/{{ REPLICATION_DUMP_FILE_NAME }}.sql"
+    state: absent
+  delegate_to: localhost
+
+- name: Check slave replication status.
+  mysql_replication:
+    mode: getslave
+  ignore_errors: true
+  register: slave
+
+- name: Put replication configuration file
+  template: 
+    src: replication.cnf.j2 
+    dest: /etc/mysql/mysql.conf.d/replication.cnf
+  notify:
+   - restart mysql
+  when: >
+    ((slave.Is_Slave is defined and not slave.Is_Slave) or (slave.Is_Slave is not defined and slave|failed))
+    and (EDXAPP_MYSQL_REPLICATION_USER  != '')
+    
+- name: Restore database
+  mysql_db:
+    name: all
+    state: import
+    target: "/tmp/{{ REPLICATION_DUMP_FILE_NAME }}.sql"
+  notify:
+   - restart mysql
+  when: >
+    ((slave.Is_Slave is defined and not slave.Is_Slave) or (slave.Is_Slave is not defined and slave|failed))
+    and (EDXAPP_MYSQL_REPLICATION_USER  != '')
+
+- name: Change master in slave server
+  mysql_replication:
+    mode: changemaster
+    master_host: "{{ EDXAPP_MYSQL_REPLICATION_MASTER_SERVER_IP }}"
+    master_user: "{{ EDXAPP_MYSQL_REPLICATION_USER }}"
+    master_password: "{{ EDXAPP_MYSQL_REPLICATION_PASSWORD }}"
+    master_log_file: "{{ hostvars[groups['master_persistence_server'][0]]['master']['File'] }}"
+    master_log_pos: "{{ hostvars[groups['master_persistence_server'][0]]['master']['Position'] }}"
+  when: >
+    ((slave.Is_Slave is defined and not slave.Is_Slave) or (slave.Is_Slave is not defined and slave|failed))
+    and (EDXAPP_MYSQL_REPLICATION_USER  != '')
+
+- name: Start slave server
+  mysql_replication:
+    mode: startslave
+  when: >
+    ((slave.Is_Slave is defined and not slave.Is_Slave) or (slave.Is_Slave is not defined and slave|failed))
+    and (EDXAPP_MYSQL_REPLICATION_USER  != '')
+
+- name: Restart master as slave
+  mysql_replication:
+    mode: startslave
+  delegate_to: "{{ EDXAPP_MYSQL_REPLICATION_MASTER_SERVER_IP }}"
+  when: "{{ hostvars[groups['master_persistence_server'][0]]['master_as_slave']['Is_Slave'] }} == true"
+    

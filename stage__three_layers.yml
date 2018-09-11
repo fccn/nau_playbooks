@@ -1,0 +1,123 @@
+---
+
+# Open edX instance with 3 layers:
+# - Load balancer servers
+# - Persistence servers
+# - Application servers (application group & complementary group)
+
+- name: Bootstrap instances of 16.04
+  hosts: all
+  gather_facts: no
+  become: true
+  roles:
+    - python_minimal
+
+
+- name: Configure load balancer docker
+  hosts: balancer_servers
+  become: True
+  gather_facts: True
+  roles:
+    - role: docker
+    - role: docker_container
+
+- name: Configure statics servers docker
+  hosts: statics_servers
+  become: True
+  gather_facts: True
+  roles:
+    - role: docker
+    - role: docker_container
+
+- name: Configure db server instance
+  hosts: persistence_servers
+  become: True
+  gather_facts: True
+  roles:
+    - role: swapfile
+    - role: data_dirs
+    - role: edxlocal
+    - role: memcache
+    - role: mongo_3_2
+    - role: rabbitmq
+    - role: oraclejdk
+    - role: elasticsearch
+    - role: persistence_db
+    - role: es_kopf
+
+    
+- name: Configure master db server
+  hosts: master_persistence_server
+  become: True
+  gather_facts: True
+  roles:
+    - role: mysql_replication
+      master_server: True
+
+- name: Configure slave db server
+  hosts: slave_persistence_servers
+  become: True
+  gather_facts: True
+  roles:
+    - role: mysql_replication
+      slave_server: True
+
+
+- name: Configure the application server group
+  hosts: app_servers
+  become: True
+  gather_facts: True
+  roles:
+    - role: swapfile
+    - role: nginx
+      nginx_sites:
+      - cms
+      - lms
+      - forum
+      nginx_default_sites:
+      - lms
+    - role: edxapp
+      celery_worker: True
+    - edxapp
+    - forum
+    - role: postfix_queue
+      when: POSTFIX_QUEUE_EXTERNAL_SMTP_HOST is defined and POSTFIX_QUEUE_EXTERNAL_SMTP_HOST != ""
+    - role: logrotate_overrides
+      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'aws' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
+
+
+- name: Configure the complementary server group
+  hosts: complementary_servers
+  become: True
+  gather_facts: True
+  roles:
+    - role: swapfile
+    - role: nginx
+      nginx_sites:
+      - insights
+      - edx_notes_api
+    - role: discovery
+      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'discovery' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
+    - role: ecommerce
+      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'ecommerce' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
+    - role: ecomworker
+      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'ecommerce' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
+    - role: edx_notes_api
+      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'edx_notes_api' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
+    - role: insights
+      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'insights' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
+
+
+- name: Configure pipeline servers
+  hosts: pipeline_servers
+  become: True
+  gather_facts: True
+  vars:
+    ANALYTICS_API_SERVICE_CONFIG: "When defined, we create the analytics-api users at the db"
+  roles:
+    - role: swapfile
+    - role: edxlocal
+    - role: analytics_api
+      when: analytics_api_server == True
+    - analytics_pipeline
+    - analytics_pipeline_configuration

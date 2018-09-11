@@ -1,0 +1,17 @@
+[mysqld]
+{% if ( master_server is defined ) and (master_server == True) %}
+server-id 		= 	1
+log-bin			= 	bin.log
+log-bin-index	= 	bin-log.index
+binlog_format	= 	row
+{% elif ( slave_server is defined ) and (slave_server == True) %}
+{% if ( hostvars[groups['master_persistence_server'][0]]['server_id']['msg'] > 0 ) %}
+server-id	=	{{ ( hostvars[groups['master_persistence_server'][0]]['server_id']['msg'] | int ) + 1 }}
+{% else %}
+server-id 	= 	{{ groups.slave_persistence_servers.index(inventory_hostname) + 2 }}
+{% endif %}
+log-bin	            =    bin.log
+log-bin-index       =    bin-log.index
+binlog_format       =    row
+log_slave_updates   =    1
+{% endif %}

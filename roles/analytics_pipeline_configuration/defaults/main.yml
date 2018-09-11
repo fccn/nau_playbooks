@@ -1,0 +1,67 @@
+---
+analytics_pipeline_configuration_user: ubuntu
+
+analytics_pipeline_configuration_debian_pkgs:
+  - git
+  - python-pip
+  - python-dev
+  - libmysqlclient-dev
+  - libffi-dev
+  - libssl-dev
+  - libxml2-dev
+  - libxslt1-dev
+  - libjpeg8-dev
+  - zlib1g-dev
+
+analytics_pipeline_configuration_common_pip_pkgs:
+  - virtualenv
+  - awscli
+
+analytics_pipeline_configuration_home_dir: "/nau/analytics"
+analytics_pipeline_configuration_hadoop_logs_dir: "{{ analytics_pipeline_configuration_home_dir }}/logs/tracking"
+analytics_pipeline_configuration_venv_dir: "{{ analytics_pipeline_configuration_home_dir }}/venvs/tasks"
+analytics_pipeline_configuration_files_dir: "{{ analytics_pipeline_configuration_home_dir }}/config"
+
+analytics_pipeline_configuration_repo_path: "{{ analytics_pipeline_configuration_home_dir }}/analytics-tasks"
+analytics_pipeline_configuration_repo: "https://github.com/edx/edx-analytics-pipeline.git"
+analytics_pipeline_configuration_repo_version: "master"
+
+analytics_pipeline_configuration_source: "hdfs://localhost:9000"
+
+analytics_pipeline_configuration_common_directories:
+  - {
+      path: "{{ analytics_pipeline_configuration_home_dir }}",
+      state: "directory",
+      owner: "{{ analytics_pipeline_configuration_user }}",
+      group: "{{ analytics_pipeline_configuration_user }}"
+    }
+  - {
+      path: "{{ analytics_pipeline_configuration_files_dir }}",
+      state: "directory",
+      owner: "{{ analytics_pipeline_configuration_user }}",
+      group: "{{ analytics_pipeline_configuration_user }}"
+    }
+  - {
+      path: "{{ analytics_pipeline_configuration_hadoop_logs_dir }}",
+      state: "directory",
+      owner: "hadoop",
+      group: "hadoop"
+    }
+
+analytics_pipeline_configuration_dbs:
+  input_db:
+    username: "{{ ANALYTICS_PIPELINE_INPUT_DATABASE.username | default(None) }}"
+    password: "{{ ANALYTICS_PIPELINE_INPUT_DATABASE.password | default(None) }}"
+    host: "{{ ANALYTICS_PIPELINE_INPUT_DATABASE.host | default(None) }}"
+  output_db:
+    username: "{{ ANALYTICS_PIPELINE_OUTPUT_DATABASE_USER | default(None) }}"
+    password: "{{ ANALYTICS_PIPELINE_OUTPUT_DATABASE_PASSWORD | default(None) }}"
+    host: "{{ ANALYTICS_PIPELINE_OUTPUT_DATABASE_HOST | default(None) }}"
+
+analytics_pipeline_configuration_geo_data_link: "https://s3-us-west-2.amazonaws.com/edunextpublic/resources/insights/geo.dat"
+analytics_pipeline_configuration_hadoop_conf_dir: "{{ HADOOP_COMMON_CONF_DIR | default('/edx/app/hadoop/hadoop/etc/hadoop') }}"
+
+# setting for overwrite_n_days in "enrollments" section of the overrides.cfg file
+analytics_pipeline_configuration_enrollments_overwrite_n_days: 2
+# elasticsearch host for "elasticsearch" section of the overrides.cfg file
+analytics_pipeline_configuration_elasticsearch_url: "http://127.0.0.1:9200/"
