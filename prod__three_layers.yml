@@ -65,28 +65,6 @@
     - role: persistence_db
       install_mysql: false
 
-- name: Configure the application server group
-  hosts: app_servers
-  become: True
-  gather_facts: True
-  roles:
-    - role: swapfile
-    - role: nginx
-      nginx_sites:
-      - cms
-      - lms
-      - forum
-      nginx_default_sites:
-      - lms
-    - role: edxapp
-      celery_worker: True
-    - edxapp
-    - forum
-    - role: postfix_queue
-      when: POSTFIX_QUEUE_EXTERNAL_SMTP_HOST is defined and POSTFIX_QUEUE_EXTERNAL_SMTP_HOST != ""
-    - role: logrotate_overrides
-      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'aws' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
-
 
 - name: Configure the complementary server group
   hosts: complementary_servers
@@ -106,6 +84,8 @@
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'ecommerce' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
     - role: edx_notes_api
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'edx_notes_api' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
+    - role: analytics_api
+      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'insights' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
     - role: insights
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'insights' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
 
@@ -119,8 +99,5 @@
   roles:
     - role: swapfile
     - role: edxlocal
-    - role: analytics_api
-      when: analytics_api_server == True
     - analytics_pipeline
     - analytics_pipeline_configuration
-    
