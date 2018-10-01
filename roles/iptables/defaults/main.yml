@@ -1,0 +1,20 @@
+---
+nau_firewall_state: started
+nau_firewall_enabled_at_boot: true
+
+nau_firewall_allowed_tcp_ports:
+  - "22"
+  - "25"
+  - "80"
+  - "443"
+nau_firewall_allowed_udp_ports: []
+nau_firewall_forwarded_tcp_ports: []
+nau_firewall_forwarded_udp_ports: []
+nau_firewall_additional_rules: []
+nau_firewall_ip6_additional_rules: []
+nau_firewall_log_dropped_packets: true
+
+# Set to true to ensure other firewall management software is disabled.
+nau_firewall_disable_firewalld: false
+nau_firewall_disable_ufw: false
+

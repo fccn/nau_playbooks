@@ -1,0 +1,5 @@
+---
+- name: "trigger docker restart" 
+  debug: msg="trigger docker restart"
+  notify: restart docker
+

@@ -18,6 +18,7 @@
   become: True
   gather_facts: True
   roles:
+    - role: iptables
     - role: docker
     - role: docker_container
 
