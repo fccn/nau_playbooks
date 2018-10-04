@@ -18,7 +18,7 @@ analytics_pipeline_configuration_common_pip_pkgs:
   - awscli
 
 analytics_pipeline_configuration_home_dir: "/nau/analytics"
-analytics_pipeline_configuration_hadoop_logs_dir: "{{ analytics_pipeline_configuration_home_dir }}/logs/tracking"
+analytics_pipeline_configuration_hadoop_logs_dir: "{{ analytics_pipeline_configuration_home_dir }}/tracking"
 analytics_pipeline_configuration_venv_dir: "{{ analytics_pipeline_configuration_home_dir }}/venvs/tasks"
 analytics_pipeline_configuration_files_dir: "{{ analytics_pipeline_configuration_home_dir }}/config"
 
