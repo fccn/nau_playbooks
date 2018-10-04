@@ -1,7 +1,7 @@
 ---
 dependencies: 
   - role: geerlingguy.firewall
-    version: 2.4.0
+    version: 2.3.1
     become: yes
     firewall_state: "{{ nau_firewall_state}}"
     firewall_enables_at_boot: "{{ nau_firewall_enabled_at_boot }}"
