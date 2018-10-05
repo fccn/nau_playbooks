@@ -76,6 +76,8 @@
       - forum
       nginx_default_sites:
       - lms
+    - role: nginx_default_static_site
+      when: use_nginx_default_site
     - role: edxapp
       celery_worker: True
     - edxapp
