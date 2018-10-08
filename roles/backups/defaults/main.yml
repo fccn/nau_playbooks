@@ -14,17 +14,6 @@ BACKUP_LOCATION: "{{BACKUP_ROOT}}/{{BACKUP_DATE}}.d"
 artifact_path: "{{BACKUP_ROOT}}"
 backup_mysql_root_password: ""
 
-#########
-# AZURE #
-#########
-
-AZURE_CONTAINER_NAME: "SET ME PLEASE"
-AZURE_ACCOUNT_KEY: "SET ME PLEASE"
-AZURE_ACCOUNT_NAME: "SET ME PLEASE"
-AZURE_RESOURCE_GROUP: "SET ME PLEASE"
-
-azure_command: "azcopy --source {{ item }}  --destination https://{{AZURE_ACCOUNT_NAME}}.blob.core.windows.net/{{AZURE_CONTAINER_NAME}}/{{ item | basename }} --dest-key {{AZURE_ACCOUNT_KEY}}"
-
 #######
 # AWS #
 #######

@@ -5,7 +5,7 @@
   become: True
   gather_facts: True
   roles:
-    - role: backup
+    - role: backups
       backup_mongo: True
 
 - name: Backup of Mongo data
@@ -13,5 +13,6 @@
   become: True
   gather_facts: True
   roles:
-    - role: backup
-    backup_mysql: True
+    - role: backups
+      backup_mysql: True
+

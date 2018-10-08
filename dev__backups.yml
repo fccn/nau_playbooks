@@ -1,0 +1,10 @@
+---
+
+- name: Backup of mysql data
+  hosts: persistence_servers[0]
+  become: True
+  gather_facts: True
+  roles:
+    - role: backups
+      backup_mongo: True
+      backup_mysql: True
