@@ -1,0 +1,58 @@
+---
+- name: Ensure nginx is present
+  apt: pkg=nginx state=present
+
+- name: Create root path to the template
+  file: state=directory path="{{ nginx_default_site_templates_root }}"
+
+- name: Upload the template
+  template:
+    dest: "{{ nginx_default_site_templates_root }}/index.html"
+    src: "index.html.j2"
+    owner: www-data
+    group: www-data
+    mode: "0644"
+
+# Check to see if the ssl cert/key exists before copying.
+# This extra check is done to prevent failures when
+# ansible-playbook is run locally
+- local_action:
+    module: stat
+    path: "{{ nginx_default_site_ssl_certificate }}"
+  become: False
+  register: default_site_ssl_cert
+  when: nginx_default_site_use_https
+
+- local_action:
+    module: stat
+    path: "{{ nginx_default_site_certificate_key }}"
+  become: False
+  register: default_site_ssl_key
+  when: nginx_default_site_use_https
+
+
+- name: copy ssl cert
+  copy:
+    src: "{{ nginx_default_site_ssl_certificate }}"
+    dest: "/etc/ssl/certs/"
+    owner: root
+    group: root
+    mode: 0644
+  when: default_site_ssl_cert.stat.exists and nginx_default_site_use_https
+
+- name: copy ssl key
+  copy:
+    src: "{{ nginx_default_site_certificate_key }}"
+    dest: "/etc/ssl/private/"
+    owner: root
+    group: root
+    mode: 0640
+  when: default_site_ssl_key.stat.exists and nginx_default_site_use_https
+
+- name: Update nginx default config
+  template: src=site.j2 dest=/etc/nginx/sites-enabled/default-site
+  register: nginx_site_config
+
+- name: Restart nginx
+  service: name=nginx enabled=yes state=restarted
+  when: nginx_site_config.changed

@@ -1,0 +1,13 @@
+---
+
+nginx_default_site_template_title: "Default page"
+nginx_default_site_template_body_text: "Change me"
+nginx_default_site_port: 8080
+nginx_default_site_ssl_port: 4043
+nginx_default_site_ssl_certificate: !!null
+nginx_default_site_certificate_key: !!null
+nginx_default_site_templates_root: "/var/www/nau"
+
+nginx_default_site_use_https: false
+nginx_default_custom_http_response: true
+nginx_default_site_http_response: 403

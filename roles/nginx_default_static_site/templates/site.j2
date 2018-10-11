@@ -1,0 +1,23 @@
+server {
+  listen {{ nginx_default_site_port }} default_server;
+
+  {% if nginx_default_site_use_https %}
+  listen {{ nginx_default_site_ssl_port }} default_server ssl;
+
+  ssl_certificate /etc/ssl/certs/{{ nginx_default_site_ssl_certificate | basename }};
+  ssl_certificate_key /etc/ssl/private/{{ nginx_default_site_certificate_key |basename }};
+
+  {% endif %}
+  root {{ nginx_default_site_templates_root }};
+  index index.html index.htm;
+
+  server_name _;
+
+  location / {
+
+    try_files $uri $uri/ =404;
+    {% if nginx_default_custom_http_response %}
+    return {{ nginx_default_site_http_response }};
+    {% endif %}
+  }
+}

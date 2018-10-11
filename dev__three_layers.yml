@@ -78,6 +78,8 @@
       nginx_sites:
       - insights
       - edx_notes_api
+    - role: nginx_default_static_site
+      when: use_nginx_default_site
     - role: discovery
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'discovery' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
     - role: ecommerce
