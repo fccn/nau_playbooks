@@ -9,3 +9,5 @@ nginx_default_site_certificate_key: !!null
 nginx_default_site_templates_root: "/var/www/nau"
 
 nginx_default_site_use_https: false
+nginx_default_custom_http_response: true
+nginx_default_site_http_response: 403
