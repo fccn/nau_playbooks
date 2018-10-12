@@ -1,0 +1,45 @@
+## Managed by ANSIBLE
+
+vrrp_script {{ keepalived_health.name }} {
+   script "{{ keepalived_health.script }}"
+   timeout  {{ keepalived_health.timeout }} 
+   interval {{ keepalived_health.interval }}
+}
+
+
+{% for instance in vrrp_instances %}
+
+vrrp_instance {{ instance.name }} {
+   state {{ instance.state }} # MASTER/BACKUP
+{% if instance.ipv6 %}
+   native_ipv6
+{% endif %}
+   interface {{ instance.check_if }}
+   virtual_router_id {{ instance.id }}
+   priority {{ instance.priority }}
+   advert_int 4
+
+   authentication {
+    auth_type PASS
+    auth_pass {{ instance.pass }}
+  }
+
+   # forcing unicast instead of multicast
+   unicast_peer {
+    {{ instance.peer_ip }}
+   }
+
+   track_script {
+    {{ keepalived_health.name }}
+   }
+
+   # The virtual ip address shared between the two loadbalancers
+
+   virtual_ipaddress {
+{% for vip in instance.virtual_ip %}
+    {{ vip }}
+{% endfor %}
+   }
+}
+
+{% endfor %}

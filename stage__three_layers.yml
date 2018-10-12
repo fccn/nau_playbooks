@@ -20,6 +20,7 @@
   roles:
     - role: docker
     - role: docker_container
+    - role: keepalived
 
 - name: Configure statics servers docker
   hosts: statics_servers
