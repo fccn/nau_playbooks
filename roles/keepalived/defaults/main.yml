@@ -1,0 +1,23 @@
+---
+
+keepalived_packages:
+  - "keepalived"
+
+keepalived_health:
+  name: chk_script
+  script: "service docker start"
+  interval: 2
+  timeout: 3
+
+
+vrrp_instances:
+  - name: failover_link
+    ipv6: false
+    state: MASTER
+    check_if: eth1
+    id: 51
+    priority: 200
+    pass: password
+    peer_ip: "CHANGEME"
+    virtual_ip: 
+      - "CHANGEME"
