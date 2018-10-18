@@ -1,6 +1,6 @@
 ---
 
-- name: Backup of mysql data
+- name: Backup of Mongo data
   hosts: mongo_servers[0]
   become: True
   gather_facts: True
@@ -8,7 +8,7 @@
     - role: backups
       backup_mongo: True
 
-- name: Backup of Mongo data
+- name: Backup of Mysql data
   hosts: mysql_servers[1]
   become: True
   gather_facts: True
