@@ -67,6 +67,28 @@
     - role: persistence_db
       install_mysql: false
 
+- name: Configure the app servers
+  hosts: app_servers
+  become: True
+  gather_facts: True
+  roles:
+    - role: swapfile
+    - role: nginx
+      nginx_sites:
+      - cms
+      - lms
+      - forum
+      nginx_default_sites:
+      - lms
+    - role: edxapp
+      celery_worker: True
+    - edxapp
+    - forum
+    - role: postfix_queue
+      when: POSTFIX_QUEUE_EXTERNAL_SMTP_HOST is defined and POSTFIX_QUEUE_EXTERNAL_SMTP_HOST != ""
+    - role: logrotate_overrides
+      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'aws' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
+
 
 - name: Configure the complementary server group
   hosts: complementary_servers
