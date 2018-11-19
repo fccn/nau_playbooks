@@ -1,0 +1,8 @@
+---
+- name: Set up multiple authorized keys
+  authorized_key:
+    user: root
+    manage_dir: yes
+    key: "{{ lookup('file', item) }}"
+  with_fileglob:
+    -  "{{ ssh_authorized_keys_directory }}/*.pub"
