@@ -12,6 +12,14 @@
   roles:
     - python_minimal
 
+- name: Copy SSH Authorized keys
+  hosts: all
+  become: True
+  gather_facts: True
+  roles:
+    - role: ssh_authorized_keys
+  tags: 
+    - ssh
 
 - name: Configure load balancer docker
   hosts: balancer_servers
