@@ -1,0 +1,7 @@
+---
+# Handlers for iptables-persistent
+- name: netfilter reload
+  shell: |
+    netfilter-persistent reload
+    systemctl restart docker
+  listen: "restart iptables-persistent"

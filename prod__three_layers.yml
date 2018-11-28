@@ -26,10 +26,11 @@
   become: True
   gather_facts: True
   roles:
+    - role: iptables-persistent
     - role: docker
     - role: docker_container
     - role: keepalived
-
+  tags: load-balancer
 
 - name: Configure statics servers docker
   hosts: statics_servers
