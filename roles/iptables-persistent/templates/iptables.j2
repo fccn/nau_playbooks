@@ -34,6 +34,7 @@
 -A INPUT -i eth0 -s 193.136.44.0/24 -j ACCEPT -m comment --comment "Allow all from FCCN CORP "
 -A INPUT -i eth0 -s 172.16.10.0/24,172.16.11.0/24 -j ACCEPT -m comment --comment "Allow all from FCCN VPN" 
 -A INPUT -i eth1 -s 172.21.1.91 -m state --state NEW -m tcp -p tcp --dport 22 -j ACCEPT -m comment --comment "Accept ssh connections from cnc01"
+-A INPUT -i eth1 -s 172.21.1.92 -m state --state NEW -m tcp -p tcp --dport 22 -j ACCEPT -m comment --comment "Accept ssh connections from cnc02"
 
 # Monitorization
 -A INPUT -s 193.136.7.2 -m comment --comment "Monitorization Sirens" -j ACCEPT
