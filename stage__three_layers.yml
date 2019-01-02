@@ -21,6 +21,14 @@
   tags: 
     - ssh
 
+- name: Configure hosts file
+  hosts: all
+  vars:
+    hosts_add_basic_ipv6: true
+  roles: 
+    - bertvv.hosts
+  tags: hosts
+
 - name: Configure load balancer docker
   hosts: balancer_servers
   become: True
