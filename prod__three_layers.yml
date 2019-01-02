@@ -23,6 +23,8 @@
 
 - name: Configure hosts file
   hosts: all
+  become: True
+  gather_facts: True
   vars:
     hosts_add_basic_ipv6: true
   roles: 
