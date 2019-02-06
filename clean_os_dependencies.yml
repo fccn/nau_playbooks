@@ -1,0 +1,7 @@
+---
+- name: Clean Operating System unnecessary dependencies
+  hosts: all
+  become: True
+  gather_facts: True
+  roles:
+    - clean_os_dependencies
