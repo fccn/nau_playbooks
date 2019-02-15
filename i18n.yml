@@ -1,0 +1,13 @@
+---
+
+- name: Update and publish the nau_translation project
+  hosts: app_servers
+  become: True
+  tasks:
+    - name: Run the publish script from the project directory
+      shell: /edx/var/i18n_nau/nau_translations/bin/publish_native
+      register: publish_output
+
+    - name: Print the output of publishing
+      debug:
+        var: publish_output
