@@ -25,7 +25,7 @@
 {% endif %}
 
 # Detect ICMP FLOOD attacks and drop them
--A INPUT -p icmp -j Chain-ICMP
+-A INPUT -p icmpv6 -j Chain-ICMP
 
 # Detect TCP SYN FLOOD attacks
 -A INPUT -p tcp --syn -j Chain-SYN -m comment --comment "Detect TCP SYN FLOOD attacks"
@@ -37,21 +37,6 @@
 -A INPUT -s 2001:690:a00:2029:0804::2 -m comment --comment "Monitorization Sirens" -j ACCEPT
 -A INPUT -s 2001:690:a00:2029:2010::7 -m comment --comment "Monitorization Sirens bkp" -j ACCEPT
 -A INPUT -s 2001:690:A00:F011::11 -m comment --comment "Monitorization Ananda" -j ACCEPT
-
-# Docker rules please dont edit this lines
--A FORWARD -j DOCKER-USER
--A FORWARD -j DOCKER-ISOLATION-STAGE-1
--A FORWARD -o docker0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
--A FORWARD -o docker0 -j DOCKER
--A FORWARD -i docker0 ! -o docker0 -j ACCEPT
--A FORWARD -i docker0 -o docker0 -j ACCEPT
--A DOCKER -d 172.17.0.2/32 ! -i docker0 -o docker0 -p tcp -m tcp --dport 443 -j ACCEPT
--A DOCKER -d 172.17.0.2/32 ! -i docker0 -o docker0 -p tcp -m tcp --dport 80 -j ACCEPT
--A DOCKER-ISOLATION-STAGE-1 -i docker0 ! -o docker0 -j DOCKER-ISOLATION-STAGE-2
--A DOCKER-ISOLATION-STAGE-1 -j RETURN
--A DOCKER-ISOLATION-STAGE-2 -o docker0 -j DROP
--A DOCKER-ISOLATION-STAGE-2 -j RETURN
--A DOCKER-USER -j RETURN
 
 # Rules to accept traffic from allowed networks
 {% if (hostvars[inventory_hostname]['nau_firewall_allowed_tcp_ports'] is defined and hostvars[inventory_hostname]['nau_firewall_allowed_tcp_ports']|length>0 ) %}

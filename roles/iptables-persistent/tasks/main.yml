@@ -4,20 +4,27 @@
   environment:
      DEBIAN_FRONTEND: noninteractive
   apt: pkg=iptables-persistent state=present
-
-- name: Check if Docker Service Exists
-  stat: 
-    path: /etc/init.d/docker
-  register: docker_service_exits
+  tags: 
+    - iptables-persistent
+    - iptables
+    - firewall
 
 - name: Update ip v4 rules
   template: 
     src: iptables.j2 
     dest: /etc/iptables/rules.v4
   notify: restart iptables-persistent
+  tags: 
+    - iptables-persistent
+    - iptables
+    - firewall
 
 - name: Update ip v6 rules
   template: 
     src: ip6tables.j2 
     dest: /etc/iptables/rules.v6
   notify: restart iptables-persistent
+  tags: 
+    - iptables-persistent
+    - iptables
+    - firewall
