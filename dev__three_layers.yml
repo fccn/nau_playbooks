@@ -111,3 +111,14 @@
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'flower' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
     - role: insights
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'insights' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
+
+- name: Configure the wordpress instance
+  hosts: wordpress_servers
+  become: True
+  gather_facts: True
+  roles: 
+    - role: docker
+    - role: docker_compose
+  tags:
+    - wordpress
+    - marketing

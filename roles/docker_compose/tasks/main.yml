@@ -1,0 +1,48 @@
+---
+- name: Install docker-compose
+  package: 
+    name: docker-compose
+    state: present
+
+- name: Create root directory
+  file:
+    path: "{{ image_root_dir }}"
+    state: directory
+
+- name: Copy docker-compose
+  template:
+    dest: "{{ image_root_dir }}/docker-compose.yml"
+    src: "{{ dockercompose_template }}"
+  register: dockerfile
+
+- name: create context directories
+  file:
+    path: "{{ item.path }}"
+    owner: "{{ item.owner|default(omit) }}"
+    group: "{{ item.group|default(omit) }}"
+    mode: "{{ item.mode | default(omit) }}"
+    recurse: true
+    state: directory
+  with_items: "{{ context_dirs }}"
+
+- name: Copy context files
+  template:
+    dest: "{{ item.dest }}"
+    src: "{{ item.src }}"
+  with_items: "{{ context_files }}"
+  register: context
+
+- name: Stop docker containers and remove its volumes
+  docker_service:
+    project_src: "{{ image_root_dir }}"
+    state: absent
+    remove_volumes: true
+    remove_orphans: true
+  when: dockerfile.changed or context.changed
+
+- name: Start docker containers
+  docker_service:
+    project_src: "{{ image_root_dir }}"
+    restarted: true
+    recreate: always
+  when: dockerfile.changed or context.changed
