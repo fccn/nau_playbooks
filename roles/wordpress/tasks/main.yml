@@ -1,0 +1,17 @@
+---
+- name: Make sure we can use htpasswd module
+  apt: 
+    pkg: python-passlib
+    state: installed
+  when: wordpress_nginx_auth_basic_enable
+
+- name: Write out htpasswd file
+  htpasswd:
+    name: "{{ item.name }}"
+    password: "{{ item.password }}"
+    state: "{{ item.state  }}"
+    path: "{{ wordpress_nginx_auth_basic_user_file }}"
+  with_items: "{{ wordpress_nginx_auth_basic_users }}"
+  when: wordpress_nginx_auth_basic_enable
+  tags:
+    - wordpress
