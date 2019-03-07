@@ -44,5 +44,6 @@
   docker_service:
     project_src: "{{ image_root_dir }}"
     restarted: true
+    pull: true # upgrade images prior to starting the application
     recreate: always
   when: dockerfile.changed or context.changed
