@@ -154,6 +154,7 @@
   roles: 
     - role: docker
     - role: docker_compose
+    - role: wordpress
   tags:
     - wordpress
     - marketing
