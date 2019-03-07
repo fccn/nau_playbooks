@@ -10,7 +10,7 @@
     name: "{{ item.name }}"
     password: "{{ item.password }}"
     state: "{{ item.state  }}"
-    path: "{{ wordpress_nginx_auth_basic_user_file }}"
+    path: "{{ image_root_dir }}/nginx/nginx.htpasswd"
   with_items: "{{ wordpress_nginx_auth_basic_users }}"
   when: wordpress_nginx_auth_basic_enable is defined and wordpress_nginx_auth_basic_enable
   tags:
