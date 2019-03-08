@@ -4,14 +4,24 @@
     name: s3cmd
     state: present
 
+- name: Create backup directory
+  file: 
+    path: "{{ BACKUP_LOCATION }}"
+    state: directory
+
 - name: Backup wordpress
   command: "make --directory={{ image_root_dir }} backup"
 
 - name: Move backup file
   command: "mv {{ image_root_dir }}/wordpress.tar.gz {{ BACKUP_LOCATION }}/{{ BACKUP_DATE }}_wordpress.tar.gz"
 
-- name: Put wordpress backup in S3
+- name: Put wordpress backup on ceph using s3
   command: "s3cmd put {{ BACKUP_LOCATION }}/{{ BACKUP_DATE }}_wordpress.tar.gz s3://{{ AWS_S3_DBS_BACKUP_BUCKET_NAME }}/ --no-ssl --host {{ AWS_S3_DBS_BACKUP_HOST }}  --host-bucket {{ AWS_S3_DBS_BACKUP_BUCKET_NAME }}"
   environment:
     AWS_ACCESS_KEY_ID: "{{ EDXAPP_BACKUPS_AWS_ACCESS_KEY_ID }}"
     AWS_SECRET_ACCESS_KEY: "{{ EDXAPP_BACKUPS_AWS_SECRET_ACCESS_KEY }}"
+
+- name: Clean backup directory
+  file:
+    state: absent
+    path: "{{ BACKUP_LOCATION }}/"
