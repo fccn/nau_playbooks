@@ -1,5 +1,12 @@
 ---
 
+# clean before instead of the last to make space occupied smoother. 
+- name: Clean artifact path
+  file:
+    state: absent
+    path: "{{ artifact_path }}/"
+  when: artifact_path is defined and artifact_path != "" and DBS_BACKUP_EXTERNAL_STORAGE != ""
+
 - name: Create backup directory
   file: 
     path: "{{BACKUP_LOCATION}}"
@@ -47,9 +54,3 @@
 # Upload backups to CEPH
 - include: ceph.yml
   when: DBS_BACKUP_EXTERNAL_STORAGE == 'ceph'
-
-- name: Clean artifact path
-  file:
-    state: absent
-    path: "{{ artifact_path }}/"
-  when: artifact_path is defined and artifact_path != "" and DBS_BACKUP_EXTERNAL_STORAGE != ""
