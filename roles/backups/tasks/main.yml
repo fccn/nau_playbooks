@@ -18,6 +18,7 @@
     login_password: "{{ backup_mysql_root_password }}"
     state: dump
     name: all
+    single_transaction: true
     target: "{{ BACKUP_LOCATION }}/{{ BACKUP_DATE }}.mysql.sql"
   when: backup_mysql
 
