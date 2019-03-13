@@ -4,6 +4,11 @@
     name: s3cmd
     state: present
 
+- name: Clean backup directory
+  file:
+    state: absent
+    path: "{{ BACKUP_LOCATION }}/"
+
 - name: Create backup directory
   file: 
     path: "{{ BACKUP_LOCATION }}"
@@ -20,8 +25,3 @@
   environment:
     AWS_ACCESS_KEY_ID: "{{ EDXAPP_BACKUPS_AWS_ACCESS_KEY_ID }}"
     AWS_SECRET_ACCESS_KEY: "{{ EDXAPP_BACKUPS_AWS_SECRET_ACCESS_KEY }}"
-
-- name: Clean backup directory
-  file:
-    state: absent
-    path: "{{ BACKUP_LOCATION }}/"
