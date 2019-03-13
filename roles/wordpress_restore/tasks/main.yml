@@ -1,0 +1,14 @@
+---
+- name: Install s3cmd
+  apt:
+    name: s3cmd
+    state: present
+
+- name: Get wordpress backup on ceph using s3
+  command: "s3cmd get s3://{{ AWS_S3_DBS_BACKUP_BUCKET_NAME }}/{{ BACKUP_DATE }}_wordpress.tar.gz {{ image_root_dir }}/wordpress.tar.gz --force --no-ssl --host {{ AWS_S3_DBS_BACKUP_HOST }}  --host-bucket {{ AWS_S3_DBS_BACKUP_BUCKET_NAME }}"
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ EDXAPP_BACKUPS_AWS_ACCESS_KEY_ID }}"
+    AWS_SECRET_ACCESS_KEY: "{{ EDXAPP_BACKUPS_AWS_SECRET_ACCESS_KEY }}"
+
+- name: Restore wordpress
+  command: "make --directory={{ image_root_dir }} restore-from-backup"
