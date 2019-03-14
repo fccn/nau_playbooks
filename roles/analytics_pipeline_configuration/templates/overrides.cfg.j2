@@ -40,7 +40,7 @@ required_path_text = FakeServerGroup
 output_root = {{ analytics_pipeline_configuration_source }}/edx-analytics-pipeline/event-export-by-course/output/
 
 [event-logs]
-pattern = [".*tracking.log.*"]
+pattern = [".*?/.*\\.log-(?P<date>\\d{8}).*\\.gz"]
 expand_interval = 4 days
 source = ["{{ analytics_pipeline_configuration_source }}/data/logs/tracking"]
 
