@@ -1,0 +1,14 @@
+---
+- name: Backup of wordpress master data and content
+  hosts: wordpress_master
+  become: True
+  gather_facts: True
+  roles:
+    - wordpress_backup
+
+- name: Restore wordpress slave from master backup
+  hosts: wordpress_slave
+  become: True
+  gather_facts: True
+  roles:
+    - wordpress_restore
