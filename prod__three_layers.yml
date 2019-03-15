@@ -146,3 +146,17 @@
     - role: edxlocal
     - analytics_pipeline
     - analytics_pipeline_configuration
+
+- name: Configure the wordpress instance
+  hosts: wordpress_servers
+  # deploy 1 server each time
+  serial: 1
+  become: True
+  gather_facts: True
+  roles: 
+    - role: docker
+    - role: docker_compose
+    - role: wordpress
+  tags:
+    - wordpress
+    - marketing
