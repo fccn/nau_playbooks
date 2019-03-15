@@ -16,3 +16,9 @@
     - role: backups
       backup_mysql: True
 
+- name: Backup of wordpress master data and content
+  hosts: wordpress_master
+  become: True
+  gather_facts: True
+  roles:
+    - wordpress_backup
