@@ -14,7 +14,7 @@
 
 
 - name: Configure db server instance
-  hosts: persistence_servers
+  hosts: mysql_servers
   become: True
   gather_facts: True
   roles:
