@@ -6,6 +6,14 @@
   gather_facts: False
   tasks:
 
+    - name: Create i18 directory
+      file:
+        path: "/edx/var/i18n_nau"
+        state: "directory"
+        mode: '0755'
+        owner: "edxapp"
+        group: "www-data"
+
     - name: Install read-only ssh key
       copy:
         dest: "/edx/var/i18n_nau/ssh_key"
