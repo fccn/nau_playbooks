@@ -8,5 +8,7 @@ wordpress_theme_repository_force: true
 
 wordpress_theme_directory: /nau/ops/wordpress/wp-content/themes/divi-child
 wordpress_theme_directory_owner: www-data
-wordpress_theme_directoryh_group: www-data
+wordpress_theme_directory_group: www-data
 wordpress_theme_directory_mode: u=rwX,g=rX,o=rX
+
+wordpress_restart_command: docker container restart wordpress_wordpress_1
