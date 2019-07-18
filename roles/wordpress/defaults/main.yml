@@ -1,7 +1,10 @@
 ---
+wordpress_theme_install: true
+
 wordpress_theme_repository: git@gitlab.fccn.pt:nau/nau-wordpress-theme.git
 wordpress_theme_repository_version: master
-wordpress_theme_repository_force: true # This will discart any local changes
+# This will discart any local changes
+wordpress_theme_repository_force: true
 
 wordpress_theme_directory: /nau/ops/wordpress/wp-content/themes/divi-child
 wordpress_theme_directory_owner: www-data

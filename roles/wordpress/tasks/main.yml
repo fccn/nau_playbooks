@@ -18,6 +18,14 @@
   tags:
     - wordpress
 
+- name: Install git
+  package: 
+    name: git
+    state: present
+  when: wordpress_theme_install
+  tags:
+    - wordpress
+
 - name: Install wordpress theme
   git:
     repo: "{{ wordpress_theme_repository }}"
@@ -25,6 +33,7 @@
     force: "{{ wordpress_theme_repository_force }}"
     version: "{{ wordpress_theme_repository_version }}"
     accept_hostkey: yes
+  when: wordpress_theme_install
   tags:
     - wordpress
 
@@ -36,5 +45,6 @@
     group: "{{ wordpress_theme_directory_group }}" 
     mode: "{{ wordpress_theme_directory_mode }}"
     recurse: yes
+  when: wordpress_theme_install
   tags:
     - wordpress
