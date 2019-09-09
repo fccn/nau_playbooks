@@ -4,6 +4,8 @@
     pkg: python-passlib
     state: installed
   when: wordpress_nginx_auth_basic_enable is defined and wordpress_nginx_auth_basic_enable
+  tags:
+    - wordpress
 
 - name: Write out htpasswd file
   htpasswd:
@@ -13,5 +15,37 @@
     path: "{{ image_root_dir }}/nginx/nginx.htpasswd"
   with_items: "{{ wordpress_nginx_auth_basic_users }}"
   when: wordpress_nginx_auth_basic_enable is defined and wordpress_nginx_auth_basic_enable
+  tags:
+    - wordpress
+
+- name: Install git
+  package: 
+    name: git
+    state: present
+  when: wordpress_theme_install
+  tags:
+    - wordpress
+
+- name: Install wordpress theme
+  git:
+    repo: "{{ wordpress_theme_repository }}"
+    dest: "{{ wordpress_theme_directory }}"
+    force: "{{ wordpress_theme_repository_force }}"
+    version: "{{ wordpress_theme_repository_version }}"
+    accept_hostkey: yes
+  notify: restart wordpress
+  when: wordpress_theme_install
+  tags:
+    - wordpress
+
+- name: Set permissions to wordpress theme
+  file:
+    path: "{{ wordpress_theme_directory }}"
+    state: directory
+    owner: "{{ wordpress_theme_directory_owner }}"
+    group: "{{ wordpress_theme_directory_group }}" 
+    mode: "{{ wordpress_theme_directory_mode }}"
+    recurse: yes
+  when: wordpress_theme_install
   tags:
     - wordpress
