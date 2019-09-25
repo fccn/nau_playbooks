@@ -124,7 +124,7 @@
     - wordpress
     - marketing
 
-# specific variables are configured on nau-data/envs/<env>/group_vars/idpcc_servers.yml
+# specific variables are configured on nau-data/envs/<env>/group_vars/idpproxy_servers.yml
 - name: Configure Shibboleth IdP
   hosts: idpproxy_servers
   become: True
