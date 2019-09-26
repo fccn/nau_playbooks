@@ -6,7 +6,7 @@
 # - Application servers (application group & complementary group)
 
 - name: Bootstrap instances of 16.04
-  hosts: all
+  hosts: all,!idpproxy_servers
   gather_facts: no
   become: true
   roles:
