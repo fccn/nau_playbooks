@@ -10,32 +10,39 @@
     - name: check storage space - before
       shell: df -h
       register: check_storage_space_before
+      when: ansible_distribution == 'Ubuntu'
 
     - name: print storage space
       debug:
         msg: "{{ check_storage_space_before.stdout_lines }}"
+      when: ansible_distribution == 'Ubuntu'
 
     - name: apt autoremove check 
       command: apt-get -y --dry-run autoremove
       register: apt_autoremove_output
+      when: ansible_distribution == 'Ubuntu'
 
     - name: print apt autoremove packages
       debug:
         msg: "{{ apt_autoremove_output.stdout_lines }}"
+      when: ansible_distribution == 'Ubuntu'
 
   tasks:    
     - name: autoremove unused packages
       become: yes
       command: apt-get -y autoremove
       changed_when: "'The following packages will be REMOVED' in apt_autoremove_output.stdout"
+      when: ansible_distribution == 'Ubuntu'
 
   post_tasks:
     - name: check storage space - after
       shell: df -h
       register: check_storage_space_after
+      when: ansible_distribution == 'Ubuntu'
 
     - name: print storage space
       debug:
         msg: "{{ check_storage_space_after.stdout_lines }}"
+      when: ansible_distribution == 'Ubuntu'
 
 # vim: ft=ansible :
