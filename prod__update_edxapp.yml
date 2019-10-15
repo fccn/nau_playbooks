@@ -30,13 +30,13 @@
       when: POSTFIX_QUEUE_EXTERNAL_SMTP_HOST is defined and POSTFIX_QUEUE_EXTERNAL_SMTP_HOST != ""
     - role: logrotate_overrides
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'aws' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
+    - role: nau_18n
 
 - name: Configure load balancer docker for blue nodes
   hosts: balancer_servers
   become: True
   gather_facts: True
   roles:
-    - role: docker
     - role: docker_container
       haproxy_tcp_backends: '{{ haproxy_tcp_blue_backends }}'
 
@@ -62,11 +62,11 @@
       when: POSTFIX_QUEUE_EXTERNAL_SMTP_HOST is defined and POSTFIX_QUEUE_EXTERNAL_SMTP_HOST != ""
     - role: logrotate_overrides
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'aws' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
+    - role: nau_18n
 
 - name: Configure load balancer docker for all nodes
   hosts: balancer_servers
   become: True
   gather_facts: True
   roles:
-    - role: docker
     - role: docker_container

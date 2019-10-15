@@ -4,55 +4,6 @@
   hosts: app_servers
   become: True
   gather_facts: False
-  tasks:
-
-    - name: Create i18 directory
-      file:
-        path: "/edx/var/i18n_nau"
-        state: "directory"
-        mode: '0755'
-        owner: "edxapp"
-        group: "www-data"
-
-    - name: Install read-only ssh key
-      copy:
-        dest: "/edx/var/i18n_nau/ssh_key"
-        content: "{{ THEMES_GIT_IDENTITY }}"
-        owner: "edxapp"
-        group: "www-data"
-        mode: "0600"
-      no_log: True
-
-    - name: Update the repository
-      git:
-        repo: ssh://git@gitlab.fccn.pt/nau/nau_translations.git
-        dest: /edx/var/i18n_nau/nau_translations
-        key_file: "/edx/var/i18n_nau/ssh_key"
-      register: git_pull
-      when: nau_translations_update_repo is defined and nau_translations_update_repo == 'true'
-
-    - name: Remove read-only ssh key
-      file:
-        dest: "/edx/var/i18n_nau/ssh_key"
-        state: absent
-      no_log: True
-
-    - name: Get last commit message
-      shell: git log -1
-      args:
-        chdir: /edx/var/i18n_nau/nau_translations
-      register: git_log
-      when: nau_translations_update_repo is defined and nau_translations_update_repo == 'true'
-
-    - name: Print the output of git updating and nau_translations_update_repo
-      debug:
-        var: git_log.stdout_lines
-      when: nau_translations_update_repo is defined and nau_translations_update_repo == 'true'
-
-    - name: Run the publish script from the project directory
-      shell: /edx/var/i18n_nau/nau_translations/bin/publish_native
-      register: publish_output
-
-    - name: Print the output of publishing
-      debug:
-        var: publish_output.stdout_lines
+  roles:
+    - role: nau_i18n
+      nau_translations_update_repo: true

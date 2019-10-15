@@ -1,0 +1,5 @@
+---
+
+- name: gather static assets in all themes with paver
+  command: "{{ COMMON_BIN_DIR }}/edxapp-update-assets"
+  when: nau_update_assets is defined and nau_update_assets == True
