@@ -12,6 +12,7 @@
   hosts: app_servers_blue
   become: True
   gather_facts: False
+  roles:
     - role: nau_i18n
       nau_translations_update_repo: true
 
@@ -27,6 +28,7 @@
   hosts: app_servers_green
   become: True
   gather_facts: False
+  roles:
     - role: nau_i18n
       nau_translations_update_repo: true
 
