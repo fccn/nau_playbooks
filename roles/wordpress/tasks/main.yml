@@ -32,7 +32,7 @@
     dest: "{{ wordpress_theme_directory }}"
     force: "{{ wordpress_theme_repository_force }}"
     version: "{{ wordpress_theme_repository_version }}"
-    accept_hostkey: yes
+    #accept_hostkey: yes
   notify: restart wordpress
   when: wordpress_theme_install
   tags:
