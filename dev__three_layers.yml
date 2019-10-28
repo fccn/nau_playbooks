@@ -121,8 +121,6 @@
   roles: 
     - role: docker
     - role: docker_compose
-      vars:
-        dockercompose_force_restart: "{{ wordpress_force_restart | default(false) }}"
     - role: wordpress
   tags:
     - wordpress
