@@ -38,7 +38,7 @@
     state: absent
     remove_volumes: true
     remove_orphans: true
-  when: dockerfile.changed or context.changed
+  when: (dockercompose_force_restart | default(false)) or dockerfile.changed or context.changed
 
 - name: Start docker containers
   docker_service:
@@ -46,4 +46,4 @@
     restarted: true
     pull: true # upgrade images prior to starting the application
     recreate: always
-  when: dockerfile.changed or context.changed
+  when: (dockercompose_force_restart | default(false)) or dockerfile.changed or context.changed
