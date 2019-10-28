@@ -37,10 +37,10 @@
   with_items:
     - docker-py
 
-- name: Prune containers, images, networks, volumes and cache that isn't currently in use by at least one docker container
-  docker_prune:
-    containers: yes
-    images: yes
-    networks: yes
-    volumes: yes
-    builder_cache: yes
+# - name: Prune containers, images, networks, volumes and cache that isn't currently in use by at least one docker container
+#   docker_prune:
+#     containers: yes
+#     images: yes
+#     networks: yes
+#     volumes: yes
+#     builder_cache: yes
