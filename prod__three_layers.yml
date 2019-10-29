@@ -6,7 +6,7 @@
 # - Application servers (application group & complementary group)
 
 - name: Bootstrap instances of 16.04
-  hosts: all
+  hosts: all,!idpproxy_servers
   gather_facts: no
   become: true
   roles:
@@ -160,3 +160,23 @@
   tags:
     - wordpress
     - marketing
+
+# specific variables are configured on nau-data/envs/<env>/group_vars/idpproxy_servers.yml
+- name: Configure Shibboleth IdP
+  hosts: idpproxy_servers
+  become: True
+  gather_facts: True
+  tags: 
+    - idp
+    - idpproxy
+  roles:
+    - shibboleth-3-4-4-centos7-lite/roles/check-system
+    - shibboleth-3-4-4-centos7-lite/roles/system
+    - shibboleth-3-4-4-centos7-lite/roles/httpd
+    - shibboleth-3-4-4-centos7-lite/roles/tomcat
+    - shibboleth-3-4-4-centos7-lite/roles/postgresql
+    - shibboleth-3-4-4-centos7-lite/roles/shibboleth
+    - shibboleth-3-4-4-centos7-lite/roles/shibboleth_files
+    - shibboleth-3-4-4-centos7-lite/roles/cc-cmd
+    - shibboleth-3-4-4-centos7-lite/roles/performance
+    - shibboleth-idp-config
