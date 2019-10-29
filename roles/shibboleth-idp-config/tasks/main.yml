@@ -4,16 +4,7 @@
     path: "{{ item.dest | dirname }}"
     state: directory
     recurse: yes
-  with_items: "{{ shibboleth_idp_files_to_copy + shibboleth_idp_files_to_template }}"
-
-- name: Copy additional shibboleth idp files
-  copy:
-    src: "{{ item.src }}"
-    dest: "{{ item.dest }}"
-    mode: "{{ item.mode | default('0644') }}"
-    owner: "{{ item.owner | default('root') }}"
-    group: "{{ item.group | default('root') }}"
-  with_items: "{{ shibboleth_idp_files_to_copy }}"
+  with_items: "{{ shibboleth_idp_files_to_template }}"
 
 - name: Template additional shibboleth idp files
   template:
