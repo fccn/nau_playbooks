@@ -170,6 +170,9 @@
     - idp
     - idpproxy
   roles:
+    - role: shibboleth-idp-config
+      vars: 
+        shibboleth_idp_files_to_template: "{{ shibboleth_idp_files_to_template_before }}"
     - shibboleth-3-4-4-centos7-lite/roles/check-system
     - shibboleth-3-4-4-centos7-lite/roles/system
     - shibboleth-3-4-4-centos7-lite/roles/httpd
@@ -179,4 +182,6 @@
     - shibboleth-3-4-4-centos7-lite/roles/shibboleth_files
     - shibboleth-3-4-4-centos7-lite/roles/cc-cmd
     - shibboleth-3-4-4-centos7-lite/roles/performance
-    - shibboleth-idp-config
+    - role: shibboleth-idp-config
+      vars: 
+        shibboleth_idp_files_to_template: "{{ shibboleth_idp_files_to_template_after }}"
