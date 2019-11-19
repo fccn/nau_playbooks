@@ -153,4 +153,3 @@
     - role: shibboleth-idp-config
       vars: 
         shibboleth_idp_files_to_template: "{{ shibboleth_idp_files_to_template_after }}"
-        shibboleth_idp_files_to_get: "{{ shibboleth_idp_files_to_get }}"
