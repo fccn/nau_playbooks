@@ -128,16 +128,18 @@
 
 # specific variables are configured on nau-data/envs/<env>/group_vars/idpproxy_servers.yml
 - name: Configure Shibboleth IdP
-  hosts: idpproxy_servers
+  hosts: 
+    - idpproxy_servers
+    - idpauth_servers
   become: True
   gather_facts: True
   tags: 
     - idp
-    - idpproxy
   roles:
     - role: shibboleth-idp-config
       vars: 
         shibboleth_idp_files_to_template: "{{ shibboleth_idp_files_to_template_before }}"
+        shibboleth_idp_files_to_get: "{{ [] }}"
     - shibboleth-3-4-4-centos7-lite/roles/check-system
     - shibboleth-3-4-4-centos7-lite/roles/system
     - shibboleth-3-4-4-centos7-lite/roles/httpd
@@ -150,3 +152,4 @@
     - role: shibboleth-idp-config
       vars: 
         shibboleth_idp_files_to_template: "{{ shibboleth_idp_files_to_template_after }}"
+        shibboleth_idp_files_to_get: "{{ shibboleth_idp_files_to_get }}"

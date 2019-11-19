@@ -14,3 +14,13 @@
     owner: "{{ item.owner | default('root') }}"
     group: "{{ item.group | default('root') }}"
   with_items: "{{ shibboleth_idp_files_to_template }}"
+
+- name: Get additional shibboleth idp files
+  get_url:    
+    url: "{{ item.url }}"
+    dest: "{{ item.dest }}"
+    mode: "{{ item.mode | default('0644') }}"
+    owner: "{{ item.owner | default('root') }}"
+    group: "{{ item.group | default('root') }}"
+    checksum: "{{ item.checksum | default('') }}"
+  with_items: "{{ shibboleth_idp_files_to_get }}"
