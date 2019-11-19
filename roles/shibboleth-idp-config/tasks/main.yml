@@ -1,10 +1,10 @@
 ---
-- name: Make sure destination folder exists of shibboleth idp files to copy and to template
+- name: Make sure destination folder exists of shibboleth idp files to template and to get
   file:
     path: "{{ item.dest | dirname }}"
     state: directory
     recurse: yes
-  with_items: "{{ shibboleth_idp_files_to_template }}"
+  with_items: "{{ shibboleth_idp_files_to_template + shibboleth_idp_files_to_get }}"
 
 - name: Template additional shibboleth idp files
   template:
