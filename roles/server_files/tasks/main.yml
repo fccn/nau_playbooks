@@ -1,0 +1,39 @@
+---
+- name: Make sure destination folder exists
+  file:
+    path: "{{ item.dest | dirname }}"
+    state: directory
+    recurse: yes
+  when: server_files is defined
+  with_items: "{{ ( server_files.files|default([]) ) + ( server_files.templates|default([]) ) + ( server_files.urls|default([]) ) }}"
+
+- name: Copy files
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "{{ item.mode | default('0644') }}"
+    owner: "{{ item.owner | default('root') }}"
+    group: "{{ item.group | default('root') }}"
+  when: server_files is defined and server_files.files is defined
+  with_items: "{{ server_files.files }}"
+
+- name: Template files
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "{{ item.mode | default('0644') }}"
+    owner: "{{ item.owner | default('root') }}"
+    group: "{{ item.group | default('root') }}"
+  when: server_files is defined and server_files.templates is defined
+  with_items: "{{ server_files.templates }}"
+
+- name: Download files
+  get_url:
+    url: "{{ item.url }}"
+    dest: "{{ item.dest }}"
+    mode: "{{ item.mode | default('0644') }}"
+    owner: "{{ item.owner | default('root') }}"
+    group: "{{ item.group | default('root') }}"
+    checksum: "{{ item.checksum | default('') }}"
+  when: server_files is defined and server_files.urls is defined
+  with_items: "{{ server_files.urls }}"

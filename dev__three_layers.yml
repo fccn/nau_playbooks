@@ -136,9 +136,9 @@
   tags: 
     - idp
   roles:
-    - role: shibboleth-idp-config
+    - role: server_files
       vars: 
-        shibboleth_idp_files_to_template: "{{ shibboleth_idp_files_to_template_before }}"
+        server_files: "{{ server_files_before }}"
     - shibboleth-3-4-4-centos7-lite/roles/check-system
     - shibboleth-3-4-4-centos7-lite/roles/system
     - shibboleth-3-4-4-centos7-lite/roles/httpd
@@ -149,6 +149,6 @@
     - role: shibboleth-3-4-4-centos7-lite/roles/cc-cmd
       when: install_cc_cmd is not defined or install_cc_cmd
     - shibboleth-3-4-4-centos7-lite/roles/performance
-    - role: shibboleth-idp-config
+    - role: server_files
       vars: 
-        shibboleth_idp_files_to_template: "{{ shibboleth_idp_files_to_template_after }}"
+        server_files: "{{ server_files_after }}"
