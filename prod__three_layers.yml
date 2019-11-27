@@ -6,7 +6,7 @@
 # - Application servers (application group & complementary group)
 
 - name: Bootstrap instances of 16.04
-  hosts: all,!idpproxy_servers
+  hosts: all,!idpproxy_servers,!idpauth_servers
   gather_facts: no
   become: true
   roles:
@@ -163,12 +163,13 @@
 
 # specific variables are configured on nau-data/envs/<env>/group_vars/idpproxy_servers.yml
 - name: Configure Shibboleth IdP
-  hosts: idpproxy_servers
+  hosts: 
+    - idpproxy_servers
+    - idpauth_servers
   become: True
   gather_facts: True
   tags: 
     - idp
-    - idpproxy
   roles:
     - role: server_files
       vars: 
