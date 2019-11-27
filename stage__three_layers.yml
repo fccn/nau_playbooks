@@ -181,7 +181,8 @@
     - shibboleth-3-4-4-centos7-lite/roles/postgresql
     - shibboleth-3-4-4-centos7-lite/roles/shibboleth
     - shibboleth-3-4-4-centos7-lite/roles/shibboleth_files
-    - shibboleth-3-4-4-centos7-lite/roles/cc-cmd
+    - role: shibboleth-3-4-4-centos7-lite/roles/cc-cmd
+      when: install_cc_cmd is not defined or install_cc_cmd
     - shibboleth-3-4-4-centos7-lite/roles/performance
     - role: server_files
       vars: 
