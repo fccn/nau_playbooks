@@ -6,6 +6,7 @@
     recurse: yes
   when: server_files is defined
   with_items: "{{ ( server_files.files|default([]) ) + ( server_files.templates|default([]) ) + ( server_files.urls|default([]) ) }}"
+  tags: server_files
 
 - name: Copy files
   copy:
@@ -16,6 +17,7 @@
     group: "{{ item.group | default('root') }}"
   when: server_files is defined and server_files.files is defined
   with_items: "{{ server_files.files }}"
+  tags: server_files
 
 - name: Template files
   template:
@@ -26,6 +28,7 @@
     group: "{{ item.group | default('root') }}"
   when: server_files is defined and server_files.templates is defined
   with_items: "{{ server_files.templates }}"
+  tags: server_files
 
 - name: Download files
   get_url:
@@ -37,3 +40,4 @@
     checksum: "{{ item.checksum | default('') }}"
   when: server_files is defined and server_files.urls is defined
   with_items: "{{ server_files.urls }}"
+  tags: server_files
