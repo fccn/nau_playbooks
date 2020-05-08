@@ -16,8 +16,7 @@
   register: http_verify_out
   until: http_verify_out is not failed and ( config.content in http_verify_out.content if config.content is defined else True )
   retries: "{{ config.retries | default(2) }}"
-  #delay: 30
-  delay: 1
+  delay: 30
   check_mode: no
   tags: nau_check_urls # run even the ansible is running with --check
   loop_control:
