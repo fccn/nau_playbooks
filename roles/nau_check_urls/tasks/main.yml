@@ -1,0 +1,27 @@
+---
+
+# this task shouldn't have a delegate to localhost 
+# because it should be run on inventory hostname locally so traffic didn't go out and enter on the load balancer
+- name: Check if each application is ok
+  uri:
+    headers:
+      Host: "{{ config.host }}"
+    #url: "{{ config.url if config.url is defined else ( (config.protocol | default('https')) + '://' + (config.server | default('localhost')) + (config.page | default('') ) ) }}"
+    url: "{{ (config.protocol if config.protocol is defined else 'https') + '://' + (config.server if config.server is defined else 'localhost') + ( (':' + config.port) if config.port is defined else '') + (config.page if config.page is defined else '' ) }}"
+    timeout: "{{ config.timeout | default(60) }}"
+    status_code: 
+      - "{{ config.status | default(200) }}"
+    return_content: yes
+    validate_certs: no
+  register: http_verify_out
+  until: http_verify_out is not failed and ( config.content in http_verify_out.content if config.content is defined else True )
+  retries: "{{ config.retries | default(2) }}"
+  #delay: 30
+  delay: 1
+  check_mode: no
+  tags: nau_check_urls # run even the ansible is running with --check
+  loop_control:
+    label: "Check if {{ config.name }} is ok"
+    loop_var: config
+  # loop: "{{ nau_urls_to_check }}"
+  with_items: "{{ nau_urls_to_check }}"

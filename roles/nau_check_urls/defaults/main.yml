@@ -1,0 +1,9 @@
+---
+nau_urls_to_check: []
+
+# Example like:
+# nau_urls_to_check:
+# - { name: lms nau edu, host: lms.nau.edu.pt, content: NAU, retries: 5 }
+# - { name: lms prod nau fccn, host: lms.prod.nau.fccn.pt, content: NAU, retries: 5 }
+# - { name: studio nau edu, host: studio.nau.edu.pt, content: Studio }
+# - { name: studio prod nau fccn, host: studio.prod.nau.fccn.pt, content: Studio }

@@ -32,6 +32,7 @@
     - role: logrotate_overrides
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'aws' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
     - role: nau_i18n
+    # - role: nau_check_urls
 
 - name: Configure load balancer docker for blue nodes
   hosts: balancer_servers
@@ -65,6 +66,7 @@
     - role: logrotate_overrides
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'aws' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
     - role: nau_i18n
+    # - role: nau_check_urls
 
 - name: Configure load balancer docker for all nodes
   hosts: balancer_servers
