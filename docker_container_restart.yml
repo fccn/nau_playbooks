@@ -1,0 +1,9 @@
+# Playbook that restart a docker container on a target host.
+# Created to restart load balancer when the haproxy service hangs.
+---
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Restart docker container
+      shell: docker container restart {{ docker_container_name }}
+      when: docker_container_name is defined
