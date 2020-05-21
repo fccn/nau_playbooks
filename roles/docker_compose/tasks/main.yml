@@ -17,10 +17,10 @@
 
 - name: create context directories
   file:
-    path: "{{ item.path }}"
-    owner: "{{ item.owner|default(omit) }}"
-    group: "{{ item.group|default(omit) }}"
-    mode: "{{ item.mode | default(omit) }}"
+    dest: "{{ item.dest | dirname }}"
+    owner: "{{ item.dir_owner|default(omit) }}"
+    group: "{{ item.dir_group|default(omit) }}"
+    mode: "{{ item.dir_mode | default(omit) }}"
     recurse: true
     state: directory
   with_items: "{{ context_dirs }}"

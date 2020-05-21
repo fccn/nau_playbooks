@@ -152,3 +152,14 @@
     - role: server_files
       vars: 
         server_files: "{{ server_files_after }}"
+
+- name: Configure FAM
+  hosts: fam_servers
+  become: True
+  gather_facts: True
+  tags:
+    - fam
+  roles:
+    - docker
+    - nau_course_certificate
+    - docker_compose
