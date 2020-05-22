@@ -156,6 +156,7 @@
 - name: Configure FAM
   hosts: fam_servers
   become: True
+  become_flags: "-E"
   gather_facts: True
   tags:
     - fam
