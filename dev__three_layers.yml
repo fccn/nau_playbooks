@@ -156,7 +156,7 @@
 - name: Configure FAM
   hosts: fam_servers
   become: True
-  become_flags: "-E"
+  become_flags: "-E" # Needed for jenkins deployment because ubuntu user needs to sudo and that make it lose its ssh agent forwarding env configuration.
   gather_facts: True
   tags:
     - fam
