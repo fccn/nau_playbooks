@@ -1,4 +1,0 @@
----
-nau_course_certificate_installation_folder: /opt/nau-course-certificate
-nau_course_certificate_repository: git@gitlab.fccn.pt:nau/nau-course-certificate.git
-nau_course_certificate_repository_version: HEAD

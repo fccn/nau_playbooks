@@ -3,3 +3,4 @@ image_root_dir: "/home/ubuntu/docker-image"
 dockercompose_template: "docker-compose.yml.j2"
 context_dirs: "{{ context_files }}"
 context_files: []
+git_repositories: []

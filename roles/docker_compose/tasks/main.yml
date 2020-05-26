@@ -32,13 +32,29 @@
   with_items: "{{ context_files }}"
   register: context
 
+- name: Install git
+  package: 
+    name: git
+    state: present
+  when: ( dockercompose_git_repositories | length ) > 0
+
+- name: Update git repository source code
+  git: 
+    repo: "{{ item.repo }}"
+    dest: "{{ item.dest }}"
+    force: yes
+    version: "{{ item.version | default(omit) }}"
+    accept_hostkey: yes
+  with_items: "{{ dockercompose_git_repositories }}"
+  register: dockercompose_git_repositories_out
+
 - name: Stop docker containers and remove its volumes
   docker_service:
     project_src: "{{ image_root_dir }}"
     state: absent
     remove_volumes: true
     remove_orphans: true
-  when: (dockercompose_force_restart | default(false)) or dockerfile.changed or context.changed
+  when: (dockercompose_force_restart | default(false)) or dockerfile.changed or context.changed or dockercompose_git_repositories_out.changed
 
 - name: Start docker containers
   docker_service:
@@ -46,4 +62,4 @@
     restarted: true
     pull: true # upgrade images prior to starting the application
     recreate: always
-  when: (dockercompose_force_restart | default(false)) or dockerfile.changed or context.changed
+  when: (dockercompose_force_restart | default(false)) or dockerfile.changed or context.changed or dockercompose_git_repositories_out.changed
