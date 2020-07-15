@@ -1,12 +1,12 @@
 ---
 wordpress_theme_install: true
 
-wordpress_theme_repository: https://gitlab.fccn.pt/nau/nau-wordpress-theme.git
+wordpress_theme_repository: https://gitlab.fccn.pt/nau/wp-nau-theme.git
 wordpress_theme_repository_version: master
 # This will discart any local changes
 wordpress_theme_repository_force: true
 
-wordpress_theme_directory: /nau/ops/wordpress/wp-content/themes/divi-child
+wordpress_theme_directory: /nau/ops/wordpress/wp-content/themes/wp-nau-theme
 wordpress_theme_directory_owner: www-data
 wordpress_theme_directory_group: www-data
 wordpress_theme_directory_mode: u=rwX,g=rX,o=rX
