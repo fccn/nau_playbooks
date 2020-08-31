@@ -4,10 +4,10 @@
     name: s3cmd
     state: present
 
-- name: Clean backup directory
+- name: Clean backup root directory to delete past backups
   file:
     state: absent
-    path: "{{ BACKUP_LOCATION }}/"
+    path: "{{ BACKUP_ROOT }}/"
 
 - name: Create backup directory
   file: 
