@@ -1,7 +1,7 @@
 ---
 wordpress_theme_install: true
 
-wordpress_theme_repository: https://gitlab.fccn.pt/nau/wp-nau-theme.git
+wordpress_theme_repository: git@gitlab.fccn.pt:nau/wp-nau-theme.git
 wordpress_theme_repository_version: master
 # This will discart any local changes
 wordpress_theme_repository_force: true
