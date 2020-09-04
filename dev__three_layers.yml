@@ -117,7 +117,7 @@
 - name: Configure the wordpress instance
   hosts: wordpress_servers
   become: True
-  become_flags: "-E"
+  #become_flags: "-E"
   gather_facts: True
   roles: 
     - role: docker
