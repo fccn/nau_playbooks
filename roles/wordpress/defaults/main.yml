@@ -8,7 +8,7 @@ wordpress_theme_repository_version: master
 # This will discart any local changes
 wordpress_theme_repository_force: true
 
-wordpress_theme_directory: "{{ wordpress_directory }} /wp-content/themes/wp-nau-theme"
+wordpress_theme_directory: "{{ wordpress_directory }}/wp-content/themes/wp-nau-theme"
 wordpress_theme_directory_owner: www-data
 wordpress_theme_directory_group: www-data
 wordpress_theme_directory_mode: u=rwX,g=rX,o=rX

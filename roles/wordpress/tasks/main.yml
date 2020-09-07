@@ -26,12 +26,12 @@
   tags:
     - wordpress
 
-- name: Install read-only ssh key
-  copy:
-    dest: "{{ wordpress_directory }}/ssh_key"
-    content: "{{ EDXAPP_GIT_IDENTITY }}"
-    mode: "0600"
-  no_log: True
+# - name: Install read-only ssh key
+#   copy:
+#     dest: "{{ wordpress_directory }}/ssh_key"
+#     content: "{{ EDXAPP_GIT_IDENTITY }}"
+#     mode: "0600"
+#   no_log: True
 
 - name: Install wordpress theme
   git:
@@ -40,17 +40,17 @@
     force: "{{ wordpress_theme_repository_force }}"
     version: "{{ wordpress_theme_repository_version }}"
     key_file: "{{ wordpress_directory }}/ssh_key"
-    accept_hostkey: yes
+    # accept_hostkey: yes
   notify: restart wordpress
   when: wordpress_theme_install
   tags:
     - wordpress
 
-- name: Remove read-only ssh key
-  file:
-    dest: "{{ wordpress_directory }}/ssh_key"
-    state: absent
-  no_log: True
+# - name: Remove read-only ssh key
+#   file:
+#     dest: "{{ wordpress_directory }}/ssh_key"
+#     state: absent
+#   no_log: True
 
 - name: Set permissions to wordpress theme
   file:
