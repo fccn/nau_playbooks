@@ -7,3 +7,4 @@
     - name: Restart docker container
       shell: docker container restart {{ docker_container_name }}
       when: docker_container_name is defined
+      become: true # force use sudo
