@@ -151,14 +151,24 @@
 
 - name: Configure the wordpress instance
   hosts: wordpress_servers
-  # deploy 1 server each time
   serial: 1
   become: True
+  #become_flags: "-E"
   gather_facts: True
+  vars:
+    rolling_deploy_docker: true
   roles: 
+    - role: rolling_deploy
+      vars:
+        rolling_deploy_starting: true
+      when: ( groups['wordpress_servers'] | length ) > 1
     - role: docker
     - role: docker_compose
     - role: wordpress
+    - role: rolling_deploy
+      vars:
+        rolling_deploy_starting: false
+      when: ( groups['wordpress_servers'] | length ) > 1
   tags:
     - wordpress
     - marketing

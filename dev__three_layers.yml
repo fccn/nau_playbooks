@@ -2,7 +2,7 @@
 
 # Open edX instance with 3 layers:
 # - Load balancer servers
-# - Persistence servers
+# - Persistence servers (mongo, cache and mysql groups)
 # - Application servers (application group & complementary group)
 
 - name: Bootstrap instances of 16.04
@@ -86,8 +86,8 @@
     - role: logrotate_overrides
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'aws' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
     - role: nau_i18n
+    #- role: nau_check_urls
       nau_translations_update_repo: true
-
 
 - name: Configure the complementary server group
   hosts: complementary_servers
@@ -116,13 +116,24 @@
 
 - name: Configure the wordpress instance
   hosts: wordpress_servers
+  serial: 1
   become: True
   #become_flags: "-E"
   gather_facts: True
+  vars:
+    rolling_deploy_docker: true
   roles: 
+    - role: rolling_deploy
+      vars:
+        rolling_deploy_starting: true
+      when: ( groups['wordpress_servers'] | length ) > 1
     - role: docker
     - role: docker_compose
     - role: wordpress
+    - role: rolling_deploy
+      vars:
+        rolling_deploy_starting: false
+      when: ( groups['wordpress_servers'] | length ) > 1
   tags:
     - wordpress
     - marketing
