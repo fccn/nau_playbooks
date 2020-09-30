@@ -1,8 +1,11 @@
 ---
-- name: Set up multiple authorized keys
+- name: Configure authorized ssh key for linux users
   authorized_key:
-    user: root
-    manage_dir: yes
-    key: "{{ lookup('file', item) }}"
-  with_fileglob:
-    -  "{{ ssh_authorized_keys_directory }}/*.pub"
+    user: "{{ item.user }}"
+    exclusive: "{{ item.exclusive }}"
+    key: "{{ item['keys'] | join('\n') }}"
+  loop_control:
+    label: "user: {{ item.user }}{{ ' exclusivelly' if (item.exclusive|bool) else ''}} with {{ item['keys'] | length }} keys"
+  when: item.when | default(true)
+  with_items: "{{ authorized_keys_for_user }}"
+  ignore_errors: "{{ ansible_check_mode }}"

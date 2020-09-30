@@ -1,2 +1,2 @@
 ---
-ssh_authorized_keys_directory: ssh
+authorized_keys_for_user: []
