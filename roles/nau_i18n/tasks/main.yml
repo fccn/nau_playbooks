@@ -7,6 +7,7 @@
     mode: '0755'
     owner: "{{ i18n_user }}"
     group: "{{ i18n_group }}"
+  tags: nau_i18n
 
 - name: Install read-only ssh key
   copy:
@@ -16,39 +17,45 @@
     group: "{{ i18n_group }}"
     mode: "0600"
   no_log: True
+  tags: nau_i18n
 
 - name: Update the repository
   git:
     repo: ssh://git@gitlab.fccn.pt/nau/nau_translations.git
     dest: "{{ i18n_repo_path }}"
     key_file: "{{ i18n_root_dir }}/ssh_key"
+    version: "{{ 18n_repo_version }}"
     accept_hostkey: yes
+    force: true
   register: git_pull
-  when: nau_translations_update_repo is defined and nau_translations_update_repo == True
+  tags: nau_i18n
 
 - name: Remove read-only ssh key
   file:
     dest: "{{ i18n_root_dir }}/ssh_key"
     state: absent
   no_log: True
+  tags: nau_i18n
 
 - name: Get last commit message
   shell: git log -1
   args:
     chdir: "{{ i18n_repo_path }}"
   register: git_log
-  when: nau_translations_update_repo is defined and nau_translations_update_repo == True
+  tags: nau_i18n
 
-- name: Print the output of git updating and nau_translations_update_repo
+- name: Print the output of git updating
   debug:
     var: git_log.stdout_lines
-  when: nau_translations_update_repo is defined and nau_translations_update_repo == True
+  tags: nau_i18n
 
 - name: Run the publish script from the project directory
   shell: "{{ i18n_repo_path }}/bin/publish_native"
   register: publish_output
+  tags: nau_i18n
 
 - name: Print the output of publishing
   debug:
     var: publish_output.stdout_lines
+  tags: nau_i18n
 

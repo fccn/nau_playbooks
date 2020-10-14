@@ -14,7 +14,6 @@
   gather_facts: False
   roles:
     - role: nau_i18n
-      nau_translations_update_repo: true
 
 - name: Configure load balancer docker for blue nodes
   hosts: balancer_servers
@@ -30,7 +29,6 @@
   gather_facts: False
   roles:
     - role: nau_i18n
-      nau_translations_update_repo: true
 
 - name: Configure load balancer docker for all nodes
   hosts: balancer_servers

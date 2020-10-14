@@ -4,6 +4,7 @@ i18n_user: "edxapp"
 i18n_group: "www-data"
 
 i18n_repo: ssh://git@gitlab.fccn.pt/nau/nau_translations.git
+18n_repo_version: master
 
 nau_translations_repo_name: nau_translations
 i18n_repo_path: "{{ i18n_root_dir }}/{{ nau_translations_repo_name }}"

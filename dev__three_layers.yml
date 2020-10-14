@@ -87,7 +87,6 @@
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'aws' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
     - role: nau_i18n
     #- role: nau_check_urls
-      nau_translations_update_repo: true
 
 - name: Configure the complementary server group
   hosts: complementary_servers

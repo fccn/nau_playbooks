@@ -6,4 +6,3 @@
   gather_facts: False
   roles:
     - role: nau_i18n
-      nau_translations_update_repo: true
