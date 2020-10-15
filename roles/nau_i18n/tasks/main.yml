@@ -24,7 +24,7 @@
     repo: ssh://git@gitlab.fccn.pt/nau/nau_translations.git
     dest: "{{ i18n_repo_path }}"
     key_file: "{{ i18n_root_dir }}/ssh_key"
-    version: "{{ 18n_repo_version }}"
+    version: "{{ i18n_repo_version }}"
     accept_hostkey: yes
     force: true
   register: git_pull
