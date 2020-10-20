@@ -9,11 +9,65 @@
     path: "{{ image_root_dir }}"
     state: directory
 
-- name: Copy docker-compose
-  template:
-    dest: "{{ image_root_dir }}/docker-compose.yml"
-    src: "{{ dockercompose_template }}"
-  register: dockerfile
+- name: Install git
+  package: 
+    name: git
+    state: present
+  when: dockercompose_git_repositories is defined and ( dockercompose_git_repositories | length ) > 0
+
+- name: Install read-only ssh key
+  copy:
+    dest: "{{ item.dest + 'ssh_key' }}"
+    content: "{{ item.ssh_key }}"
+    mode: "0600"
+  no_log: True
+  with_items: "{{ dockercompose_git_repositories | selectattr('ssh_key', 'defined') | list }}"
+  when: dockercompose_git_repositories is defined
+
+- name: Update git repository source code
+  git: 
+    repo: "{{ item.repo }}"
+    dest: "{{ item.dest }}"
+    force: "{{ item.force | default(omit) }}"
+    version: "{{ item.version | default(omit) }}"
+    accept_hostkey: yes
+    key_file: "{{ ( item.dest + 'ssh_key' ) if item.ssh_key else omit }}"
+  loop_control:
+    label: "{{ item.repo }}"
+  with_items: "{{ dockercompose_git_repositories }}"
+  when: dockercompose_git_repositories is defined
+  register: dockercompose_git_repositories_out
+
+- name: Remove read-only ssh key
+  file:
+    dest: "{{ item.dest + 'ssh_key' }}"
+    state: absent
+  no_log: True
+  with_items: "{{ dockercompose_git_repositories | selectattr('ssh_key', 'defined') | list }}"
+  when: dockercompose_git_repositories is defined
+
+- name: Set permissions to git destination folders
+  file:
+    path: "{{ item.dest }}"
+    state: directory
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}" 
+    mode: "{{ item.mode }}"
+    recurse: yes
+  loop_control:
+    label: "{{ item.dest }}"
+  with_items: "{{ dockercompose_git_repositories | selectattr('owner', 'defined') | list }}"
+  when: dockercompose_git_repositories is defined
+
+- name: Define fact for each git repository update
+  set_fact:
+    "{{ item.0.fact }}": "{{ item.1.after }}"
+  loop_control:
+    label: "{{ item.0.fact }}"
+  when: item.0.fact is defined
+  with_together:
+    - "{{ dockercompose_git_repositories              | default( [] ) }}"
+    - "{{ dockercompose_git_repositories_out.results  | default( [] ) }}"
 
 - name: create context directories
   file:
@@ -32,22 +86,11 @@
   with_items: "{{ context_files }}"
   register: context
 
-- name: Install git
-  package: 
-    name: git
-    state: present
-  when: dockercompose_git_repositories is defined and ( dockercompose_git_repositories | length ) > 0
-
-- name: Update git repository source code
-  git: 
-    repo: "{{ item.repo }}"
-    dest: "{{ item.dest }}"
-    force: yes
-    version: "{{ item.version | default(omit) }}"
-    accept_hostkey: yes
-  with_items: "{{ dockercompose_git_repositories }}"
-  when: dockercompose_git_repositories is defined
-  register: dockercompose_git_repositories_out
+- name: Copy docker-compose
+  template:
+    dest: "{{ image_root_dir }}/docker-compose.yml"
+    src: "{{ dockercompose_template }}"
+  register: dockerfile
 
 - name: Stop docker containers and remove its volumes
   docker_service:
