@@ -63,7 +63,7 @@
   set_fact:
     "{{ item.0.fact }}": "{{ item.1.after }}"
   loop_control:
-    label: "{{ item.0.fact }}"
+    label: "{{ item.0.dest }}"
   when: item.0.fact is defined
   with_together:
     - "{{ dockercompose_git_repositories              | default( [] ) }}"
