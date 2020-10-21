@@ -31,7 +31,7 @@
     force: "{{ item.force | default(omit) }}"
     version: "{{ item.version | default(omit) }}"
     accept_hostkey: yes
-    key_file: "{{ ( item.dest + 'ssh_key' ) if item.ssh_key else omit }}"
+    key_file: "{{ ( item.dest + 'ssh_key' ) if item.ssh_key is defined else omit }}"
   loop_control:
     label: "{{ item.repo }}"
   with_items: "{{ dockercompose_git_repositories }}"
