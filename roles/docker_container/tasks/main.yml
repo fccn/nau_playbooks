@@ -25,12 +25,12 @@
   with_items: "{{ context_files }}"
   register: context
 
-- name:    Build docker image
+- name: Build docker image
   docker_image: 
      name: "{{docker_image_name}}"
      path: "{{ image_root_dir }}"
      force: yes
-  when: dockerfile.changed or context.changed    
+  when: dockerfile.changed or context.changed or (docker_container_force | default(false))
 
 - name: Run the container with volumes
   docker_container:
@@ -41,7 +41,8 @@
     tty: yes
     restart_policy: "{{ docker_restart_policy }}"
     volumes: "{{ docker_volumes }}"
-  when: docker_volumes is defined and docker_volumes != '' and (docker_reload_command is undefined or dockerfile.changed)
+    network_mode: "{{ docker_network_mode | default(omit) }}"
+  when: docker_volumes is defined and docker_volumes != '' and (docker_reload_command is undefined or dockerfile.changed or (docker_container_force | default(false)))
 
 - name: Run the container
   docker_container:
@@ -51,7 +52,8 @@
     ports: "{{ container_ports }}"
     tty: yes
     restart_policy: "{{ docker_restart_policy }}"
-  when: docker_volumes is not defined or docker_volumes == '' and (docker_reload__command is undefined or dockerfile.changed)
+    network_mode: "{{ docker_network_mode | default(omit) }}"
+  when: docker_volumes is not defined or docker_volumes == '' and (docker_reload__command is undefined or dockerfile.changed or (docker_container_force | default(false)))
 
 - name: Reload container with custom command
   shell: "{{ docker_reload_command }}"
