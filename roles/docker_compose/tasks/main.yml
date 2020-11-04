@@ -98,6 +98,7 @@
     state: absent
     remove_volumes: true
     remove_orphans: true
+    build: true
   when: (dockercompose_force_restart | default(false)) or dockerfile.changed or context.changed or dockercompose_git_repositories_out.changed
 
 - name: Start docker containers
