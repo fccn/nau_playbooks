@@ -98,7 +98,6 @@
     state: absent
     remove_volumes: true
     remove_orphans: true
-    build: true
   when: (dockercompose_force_restart | default(false)) or dockerfile.changed or context.changed or dockercompose_git_repositories_out.changed
 
 - name: Start docker containers
@@ -106,5 +105,6 @@
     project_src: "{{ image_root_dir }}"
     restarted: true
     pull: true # upgrade images prior to starting the application
+    build: true # always build images prior to starting the application
     recreate: always
   when: (dockercompose_force_restart | default(false)) or dockerfile.changed or context.changed or dockercompose_git_repositories_out.changed
