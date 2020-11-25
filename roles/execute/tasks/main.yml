@@ -1,0 +1,12 @@
+---
+- command: "{{ command_to_execute }}"
+  register: result
+
+- name: stdout of the command executed
+  debug: msg="{{ result.stdout }}"
+  when: "{{ result.stdout | length > 0 }}"
+
+- name: stderr of the command executed
+  debug: msg="{{ result.stderr }}"
+  when: "{{ result.stderr | length > 0 }}"
+

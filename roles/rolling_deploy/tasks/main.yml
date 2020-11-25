@@ -1,14 +1,30 @@
 ---
 
-- name: Update iptables to block or open the load balancers connections
+- debug:
+    msg: "{{ rolling_deploy_msg }} parent servers iptables on rolling deploy role"
+
+- name: Change parent servers IPv4 using iptables
   iptables: 
+    ip_version: ipv4
     action: insert # rule should be inserted at the top
     chain: "{{ rolling_deploy_chain }}"
-    source: "{{ groups['balancer_servers'] | join(',') }}"
+    source: "{{ rolling_deploy_parent_servers_ipv4 | join(',') }}"
     jump: DROP
-    comment: Block load balancers connections to forward traffic to other server
+    comment: Block parent servers connections to forward traffic to other server
     state: "{{ rolling_deploy_iptables_state }}" # present or absent
+  when: rolling_deploy_parent_servers_ipv4 | length > 0
   become: yes
-  tags: 
-    #- always # to make possible a rolling deploy executing a specific tag
-    - rolling_deploy
+  tags: rolling_deploy
+
+- name: Change parent servers IPv6 using iptables
+  iptables: 
+    ip_version: ipv6
+    action: insert # rule should be inserted at the top
+    chain: "{{ rolling_deploy_chain }}"
+    source: "{{ rolling_deploy_parent_servers_ipv6 | join(',') }}"
+    jump: DROP
+    comment: Block parent servers connections to forward traffic to other server
+    state: "{{ rolling_deploy_iptables_state }}" # present or absent
+  when: rolling_deploy_parent_servers_ipv6 | length > 0
+  become: yes
+  tags: rolling_deploy
