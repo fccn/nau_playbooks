@@ -4,9 +4,9 @@
 
 - name: stdout of the command executed
   debug: msg="{{ result.stdout }}"
-  when: "{{ result.stdout | length > 0 }}"
+  when: result.changed and (result.stdout | length > 0)
 
 - name: stderr of the command executed
   debug: msg="{{ result.stderr }}"
-  when: "{{ result.stderr | length > 0 }}"
+  when: result.changed and (result.stderr | length > 0)
 
