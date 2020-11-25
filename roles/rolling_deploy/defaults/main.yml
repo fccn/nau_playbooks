@@ -1,4 +1,5 @@
 ---
+rolling_deploy_msg: "{{ 'Block' if ( rolling_deploy_starting | default('false') ) else 'Open' }}"
 rolling_deploy_iptables_state: "{{ 'present' if ( rolling_deploy_starting | default('false') ) else 'absent' }}"
 rolling_deploy_docker: false
 rolling_deploy_chain: "{{ 'FORWARD' if rolling_deploy_docker else 'INPUT' }}"
