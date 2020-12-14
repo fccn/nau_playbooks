@@ -165,6 +165,7 @@
     - role: docker
     - role: docker_compose
     - role: wordpress
+    - role: nau_check_urls
     - role: rolling_deploy
       vars:
         rolling_deploy_starting: false

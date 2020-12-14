@@ -5,9 +5,9 @@
 - name: Check if each application is ok
   uri:
     headers:
-      Host: "{{ config.host }}"
+      Host: "{{ config.host | default (config.server if config.server is defined else 'localhost') }}"
     #url: "{{ config.url if config.url is defined else ( (config.protocol | default('https')) + '://' + (config.server | default('localhost')) + (config.page | default('') ) ) }}"
-    url: "{{ (config.protocol if config.protocol is defined else 'https') + '://' + (config.server if config.server is defined else 'localhost') + ( (':' + config.port) if config.port is defined else '') + (config.page if config.page is defined else '' ) }}"
+    url: "{{ (config.protocol if config.protocol is defined else 'https') + '://' + (config.server if config.server is defined else 'localhost') + ( (':' + (config.port | string)) if config.port is defined else '') + ( ('/' + config.page) if config.page is defined else '' ) }}"
     timeout: "{{ config.timeout | default(60) }}"
     status_code: 
       - "{{ config.status | default(200) }}"
@@ -18,7 +18,7 @@
   retries: "{{ config.retries | default(2) }}"
   delay: 30
   check_mode: no
-  tags: nau_check_urls # run even the ansible is running with --check
+  tags: nau_check_urls
   loop_control:
     label: "Check if {{ config.name }} is ok"
     loop_var: config
