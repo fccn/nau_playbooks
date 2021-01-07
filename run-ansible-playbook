@@ -1,0 +1,43 @@
+#!/bin/bash -xe
+#
+# Example
+#  ./run-ansible-playbook development dev__three_layers.yml --limit wordpress_servers --check
+#
+export LC_ALL='en_US.UTF-8'
+
+BRANCH_CONFIGURATION="${BRANCH_CONFIGURATION:=open-release/juniper.master}"
+#BRANCH_NAU_PLAYBOOKS="${BRANCH_NAU_PLAYBOOKS:=master}"
+BRANCH_SECURE_DATA="${BRANCH_SECURE_DATA:=juniper}"
+
+[ -d configuration ] || git clone -b ${BRANCH_CONFIGURATION} git@gitlab.fccn.pt:nau/configuration.git configuration
+git -C configuration clean -fdx
+git -C configuration pull
+git -C configuration checkout ${BRANCH_CONFIGURATION}
+
+# [ -d nau_playbooks ] || git clone -b "${BRANCH_NAU_PLAYBOOKS}" git@gitlab.fccn.pt:nau/nau_playbooks.git nau_playbooks
+# git -C nau_playbooks clean -fdx
+# git -C nau_playbooks pull
+# git -C nau_playbooks checkout ${BRANCH_NAU_PLAYBOOKS}
+
+[ -d "nau-data" ] || git clone -b "${BRANCH_SECURE_DATA}" git@gitlab.fccn.pt:nau/secure-nau-data.git nau-data
+git -C "nau-data" clean -fdx
+git -C "nau-data" pull
+git -C "nau-data" checkout ${BRANCH_SECURE_DATA}
+
+virtualenv venv_ops --python=python3
+. venv_ops/bin/activate
+
+#pip install setuptools==3.0.0
+pip install --upgrade setuptools
+
+cd configuration ; make requirements ; cd .. # pip install -r configuration/requirements.txt
+
+ansible-galaxy install -p vendor/roles -r requirements.yml --ignore-errors
+
+NAU_ENVIRONMENT=$1
+shift
+
+HOSTS_FILE="nau-data/envs/${NAU_ENVIRONMENT}/hosts.ini"
+test -f $HOSTS_FILE || { echo "Missing hosts file $HOSTS_FILE" ; exit -1; }
+
+ansible-playbook -i nau-data/envs/${NAU_ENVIRONMENT}/hosts.ini $@
