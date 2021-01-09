@@ -1,0 +1,42 @@
+---
+
+- fail: 
+    msg: Variable web_server_monitoring_mode should have 'docker' or 'file' values.
+  when: web_server_monitoring_mode is not defined or web_server_monitoring_mode not in web_server_monitoring_mode_list
+  tags: web_server_monitoring
+
+- fail:
+    msg: Variable web_server_monitoring_docker_container_name should be defined
+  when: web_server_monitoring_mode == 'docker' and web_server_monitoring_docker_container_name is not defined
+  tags: web_server_monitoring
+
+- set_fact:
+    web_server_monitoring_script_initial: "{{ web_server_monitoring_script_initial_docker }}"
+  when: web_server_monitoring_mode == 'docker'
+  tags: web_server_monitoring
+
+- set_fact:
+    web_server_monitoring_script_initial: "{{ web_server_monitoring_script_initial_file }}"
+  when: web_server_monitoring_mode == 'file'
+  tags: web_server_monitoring
+
+- name: Create nginx monitoring folders
+  file:
+    dest: "{{ item.dest | dirname }}"
+    owner: "{{ item.dir_owner|default(omit) }}"
+    group: "{{ item.dir_group|default(omit) }}"
+    mode: "{{ item.dir_mode | default(omit) }}"
+    recurse: true
+    state: directory
+  with_items: "{{ web_server_monitoring_files }}"
+  tags: web_server_monitoring
+
+- name: Create nginx monitoring shell scripts
+  template:
+    dest: "{{ item.dest }}"
+    src: "{{ item.src }}"
+    mode: "0755"
+    owner: "{{ web_server_monitoring_owner | default(omit) }}"
+    group: "{{ web_server_monitoring_group | default(omit) }}"
+  with_items: "{{ web_server_monitoring_files }}"
+  tags: web_server_monitoring

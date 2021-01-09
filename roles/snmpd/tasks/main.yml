@@ -1,0 +1,21 @@
+---
+- name: Install snmpd
+  package:
+    name: snmpd
+    state: present
+  tags: snmpd
+
+- name: Configure snmpd
+  template: 
+    src: templates/snmpd.conf.j2 
+    dest: /etc/snmp/snmpd.conf
+    backup: yes
+  notify: restart snmpd
+  tags: snmpd
+
+- name: Start Service snmpd
+  service: 
+    name: snmpd 
+    state: started 
+    enabled: yes
+  tags: snmpd

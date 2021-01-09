@@ -1,0 +1,5 @@
+#!/bin/bash
+# {{ ansible_managed }}
+{{ web_server_monitoring_script_initial }} | \
+awk -F' ' '{print ${{ web_server_monitoring_log_request_time_position }}}' | \
+sort -n | awk '{a[NR]=$0}END{print(NR%2==1)?a[int(NR/2)+1]:(a[NR/2]+a[NR/2+1])/2}'

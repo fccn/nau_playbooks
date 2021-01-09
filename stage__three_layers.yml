@@ -163,6 +163,8 @@
     - role: docker
     - role: docker_compose
     - role: wordpress
+    - role: web_server_monitoring
+    - role: snmpd
     - role: nau_check_urls
     - role: rolling_deploy
       vars:

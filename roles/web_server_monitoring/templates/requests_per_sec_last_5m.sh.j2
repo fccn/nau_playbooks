@@ -1,0 +1,4 @@
+#!/bin/bash
+# {{ ansible_managed }}
+{{ web_server_monitoring_script_initial }} | \
+awk 'END { if (NR > 0) { print NR/300 } else { print 0 } }'
