@@ -86,6 +86,9 @@
     - role: logrotate_overrides
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'aws' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
     - role: nau_i18n
+    - role: web_server_monitoring
+    - role: snmpd
+
     #- role: nau_check_urls
 
 - name: Configure the complementary server group
