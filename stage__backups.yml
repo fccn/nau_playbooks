@@ -6,8 +6,9 @@
   gather_facts: True
   roles:
     - role: backups
-      backup_mongo: True
-      backup_mysql: True
+      vars:
+        backup_mongo: True
+        backup_mysql: True
 
 - name: Backup of wordpress data and content
   hosts: wordpress_servers[0]
