@@ -5,7 +5,7 @@
 #
 export LC_ALL='en_US.UTF-8'
 
-BRANCH_CONFIGURATION="${BRANCH_CONFIGURATION:=open-release/juniper.master}"
+BRANCH_CONFIGURATION="${BRANCH_CONFIGURATION:=nau-release/juniper}"
 #BRANCH_NAU_PLAYBOOKS="${BRANCH_NAU_PLAYBOOKS:=master}"
 BRANCH_SECURE_DATA="${BRANCH_SECURE_DATA:=juniper}"
 
@@ -28,7 +28,7 @@ virtualenv venv_ops --python=python3
 . venv_ops/bin/activate
 
 #pip install setuptools==3.0.0
-pip install --upgrade setuptools
+#pip install --upgrade setuptools
 
 cd configuration ; make requirements ; cd .. # pip install -r configuration/requirements.txt
 
