@@ -93,6 +93,7 @@
   become: True
   gather_facts: True
   roles:
+    - role: server_files
     - role: swapfile
     - role: nginx
       nginx_sites:
