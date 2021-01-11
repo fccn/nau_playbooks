@@ -19,10 +19,7 @@
 #
 # See: https://www.pitt-pladdy.com/blog/_20150108-225857_0000_Nginx_on_Cacti_via_SNMP/
 
-STATUSURL={{ web_server_monitoring_nginx_status_url }}
-
-
-curl --silent --insecure $STATUSURL \
+curl --silent --insecure {{ web_server_monitoring_nginx_status_extra | default('') }} {{ web_server_monitoring_nginx_status_url }} \
 	| sed 's/^Active connections: \([0-9]\+\) *$/\1/' \
 	| grep -v '^server accepts handled requests$' \
 	| sed 's/^ \([0-9]\+\) \([0-9]\+\) \([0-9]\+\) *$/\1\n\2\n\3/' \

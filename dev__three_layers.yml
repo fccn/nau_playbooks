@@ -75,6 +75,7 @@
       - cms
       - lms
       - forum
+      - nau_nginx_status
       nginx_default_sites:
       - lms
     - role: edxapp
@@ -101,6 +102,7 @@
       nginx_sites:
       - insights
       - edx_notes_api
+      - nau_nginx_status
     - role: nginx_default_static_site
       when: use_nginx_default_site
     - role: discovery
@@ -115,6 +117,8 @@
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'flower' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
     - role: insights
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'insights' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
+    - role: web_server_monitoring
+    - role: snmpd
 
 - name: Configure the wordpress instance
   hosts: wordpress_servers
