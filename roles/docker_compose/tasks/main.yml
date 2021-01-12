@@ -97,14 +97,14 @@
     project_src: "{{ image_root_dir }}"
     state: absent
     remove_volumes: true
-    remove_orphans: true
-  when: (dockercompose_force_restart | default(false)) or dockerfile.changed or context.changed or dockercompose_git_repositories_out.changed
+  when: dockercompose_force_remove_volumes | default(false)
 
 - name: Start docker containers
   docker_service:
     project_src: "{{ image_root_dir }}"
-    restarted: true
+    # restart all containers if anything has changed
+    restarted: "{{ (dockercompose_force_restart | default(false)) or dockerfile.changed or context.changed or dockercompose_git_repositories_out.changed }}"
     pull: true # upgrade images prior to starting the application
     build: true # always build images prior to starting the application
-    recreate: always
-  when: (dockercompose_force_restart | default(false)) or dockerfile.changed or context.changed or dockercompose_git_repositories_out.changed
+    #recreate: always
+  register: docker_compose_output
