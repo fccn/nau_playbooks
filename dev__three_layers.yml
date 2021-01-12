@@ -48,6 +48,9 @@
   roles:
     - role: docker
     - role: docker_container
+    - role: web_server_monitoring
+    - role: snmpd
+    - role: nau_check_urls
 
 - name: Configure db server instance
   hosts: persistence_servers
