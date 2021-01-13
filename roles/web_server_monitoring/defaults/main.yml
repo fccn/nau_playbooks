@@ -10,8 +10,10 @@ web_server_monitoring_files:
     dest: "{{ web_server_monitoring_scripts_folder }}/requests_per_sec_last_5m.sh"
   - src: nginx-stats.sh.j2
     dest: "{{ web_server_monitoring_scripts_folder }}/nginx-stats.sh"
-  - src: heartbeat.sh.j2
-    dest: "{{ web_server_monitoring_scripts_folder }}/heartbeat.sh"
+  - src: heartbeat-lms.sh.j2
+    dest: "{{ web_server_monitoring_scripts_folder }}/heartbeat-lms.sh"
+  - src: heartbeat-studio.sh.j2
+    dest: "{{ web_server_monitoring_scripts_folder }}/heartbeat-studio.sh"
 
 web_server_monitoring_mode_list: 
 - docker
@@ -25,4 +27,5 @@ web_server_monitoring_script_initial_file: cat {{ web_server_monitoring_log_file
 web_server_monitoring_log_filename: /var/log/nginx/access.log
 
 web_server_monitoring_nginx_status_url: http://localhost/nginx_status
-web_server_monitoring_nginx_heartbeat_url: http://localhost:8000/nginx_status
+web_server_monitoring_nginx_heartbeat_lms_url: http://localhost:8000/nginx_status
+web_server_monitoring_nginx_heartbeat_studio_url: http://localhost:8010/nginx_status
