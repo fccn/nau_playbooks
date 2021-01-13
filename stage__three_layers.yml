@@ -40,6 +40,7 @@
     - role: docker
     - role: docker_container
     - role: keepalived
+      when: vrrp_instances is defined
   tags: load-balancer
 
 - name: Configure statics servers docker
@@ -49,40 +50,49 @@
   roles:
     - role: docker
     - role: docker_container
+    - role: web_server_monitoring
+    - role: snmpd
+    - role: nau_check_urls
 
-- name: Configure db server instance
-  hosts: persistence_servers
+- name: Configure mysql server instance
+  hosts: mysql_servers
   become: True
   gather_facts: True
   roles:
     - role: swapfile
     - role: data_dirs
     - role: edxlocal
-    - role: memcache
+    - role: oraclejdk
+    - role: persistence_db
+      vars:
+        install_memcache: false
+    - role: mysql_replication
+    - role: keepalived
+      when: vrrp_instances is defined
+
+- name: Configure mongo server instance
+  hosts: mongo_servers
+  become: True
+  gather_facts: True
+  roles:
+    - role: swapfile
+    - role: data_dirs
     - role: mongo_3_2
-    - role: rabbitmq
     - role: oraclejdk
     - role: elasticsearch
-    - role: persistence_db
     - role: es_kopf
 
-    
-- name: Configure master db server
-  hosts: master_persistence_server
+- name: Configure cache server instance
+  hosts: cache_servers
   become: True
   gather_facts: True
   roles:
-    - role: mysql_replication
-      master_server: True
-
-- name: Configure slave db server
-  hosts: slave_persistence_servers
-  become: True
-  gather_facts: True
-  roles:
-    - role: mysql_replication
-      slave_server: True
-
+    - role: memcache
+    - role: rabbitmq
+    - role: oraclejdk
+    - role: persistence_db
+      vars:
+        install_mysql: false
 
 - name: Configure the application server group
   hosts: app_servers
@@ -95,6 +105,7 @@
       - cms
       - lms
       - forum
+      - nau_nginx_status
       nginx_default_sites:
       - lms
     - role: nginx_default_static_site
@@ -108,6 +119,9 @@
     - role: logrotate_overrides
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'aws' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
     - role: nau_i18n
+    - role: web_server_monitoring
+    - role: snmpd
+    - role: nau_check_urls
 
 - name: Configure the complementary server group
   hosts: complementary_servers
@@ -119,6 +133,7 @@
       nginx_sites:
       - insights
       - edx_notes_api
+      - nau_nginx_status
     - role: nginx_default_static_site
       when: use_nginx_default_site
     - role: discovery
@@ -133,7 +148,6 @@
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'insights' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
     - role: insights
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'insights' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
-
 
 - name: Configure pipeline servers
   hosts: pipeline_servers

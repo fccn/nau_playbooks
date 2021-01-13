@@ -39,6 +39,8 @@
     - role: iptables-persistent
     - role: docker
     - role: docker_container
+    - role: keepalived
+      when: vrrp_instances is defined
   tags: load-balancer
 
 - name: Configure statics servers docker
@@ -52,20 +54,45 @@
     - role: snmpd
     - role: nau_check_urls
 
-- name: Configure db server instance
-  hosts: persistence_servers
+- name: Configure mysql server instance
+  hosts: mysql_servers
   become: True
   gather_facts: True
   roles:
     - role: swapfile
     - role: data_dirs
     - role: edxlocal
-    - role: memcache
+    - role: oraclejdk
+    - role: persistence_db
+      vars:
+        install_memcache: false
+    - role: mysql_replication
+    - role: keepalived
+      when: vrrp_instances is defined
+
+- name: Configure mongo server instance
+  hosts: mongo_servers
+  become: True
+  gather_facts: True
+  roles:
+    - role: swapfile
+    - role: data_dirs
     - role: mongo_3_2
-    - role: rabbitmq
     - role: oraclejdk
     - role: elasticsearch
+    - role: es_kopf
+
+- name: Configure cache server instance
+  hosts: cache_servers
+  become: True
+  gather_facts: True
+  roles:
+    - role: memcache
+    - role: rabbitmq
+    - role: oraclejdk
     - role: persistence_db
+      vars:
+        install_mysql: false
 
 - name: Configure the application server group
   hosts: app_servers
@@ -81,6 +108,8 @@
       - nau_nginx_status
       nginx_default_sites:
       - lms
+    - role: nginx_default_static_site
+      when: use_nginx_default_site
     - role: edxapp
       celery_worker: True
     - edxapp
@@ -92,8 +121,7 @@
     - role: nau_i18n
     - role: web_server_monitoring
     - role: snmpd
-
-    #- role: nau_check_urls
+    - role: nau_check_urls
 
 - name: Configure the complementary server group
   hosts: complementary_servers
@@ -116,12 +144,22 @@
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'ecommerce' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
     - role: edx_notes_api
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'edx_notes_api' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
-    - role: flower
-      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'flower' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
+    - role: analytics_api
+      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'insights' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
     - role: insights
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'insights' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
-    - role: web_server_monitoring
-    - role: snmpd
+
+- name: Configure pipeline servers
+  hosts: pipeline_servers
+  become: True
+  gather_facts: True
+  vars:
+    ANALYTICS_API_SERVICE_CONFIG: "When defined, we create the analytics-api users at the db"
+  roles:
+    - role: swapfile
+    - role: edxlocal
+    - analytics_pipeline
+    - analytics_pipeline_configuration
 
 - name: Configure the wordpress instance
   hosts: wordpress_servers

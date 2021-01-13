@@ -40,6 +40,7 @@
     - role: docker
     - role: docker_container
     - role: keepalived
+      when: vrrp_instances is defined
   tags: load-balancer
 
 - name: Configure statics servers docker
@@ -49,6 +50,9 @@
   roles:
     - role: docker
     - role: docker_container
+    - role: web_server_monitoring
+    - role: snmpd
+    - role: nau_check_urls
 
 - name: Configure mysql server instance
   hosts: mysql_servers
@@ -60,8 +64,11 @@
     - role: edxlocal
     - role: oraclejdk
     - role: persistence_db
-      install_memcache: false
+      vars:
+        install_memcache: false
     - role: mysql_replication
+    - role: keepalived
+      when: vrrp_instances is defined
 
 - name: Configure mongo server instance
   hosts: mongo_servers
@@ -84,24 +91,25 @@
     - role: rabbitmq
     - role: oraclejdk
     - role: persistence_db
-      install_mysql: false
+      vars:
+        install_mysql: false
 
-# The app servers should be deployed using the prod__update_edxapp.yml playbook.
-#
-- name: Configure the app servers
+- name: Configure the application server group
   hosts: app_servers
   become: True
   gather_facts: True
   roles:
-    - role: server_files
     - role: swapfile
     - role: nginx
       nginx_sites:
-       - cms
-       - lms
-       - forum
+      - cms
+      - lms
+      - forum
+      - nau_nginx_status
       nginx_default_sites:
-       - lms
+      - lms
+    - role: nginx_default_static_site
+      when: use_nginx_default_site
     - role: edxapp
       celery_worker: True
     - edxapp
@@ -110,6 +118,10 @@
       when: POSTFIX_QUEUE_EXTERNAL_SMTP_HOST is defined and POSTFIX_QUEUE_EXTERNAL_SMTP_HOST != ""
     - role: logrotate_overrides
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'aws' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
+    - role: nau_i18n
+    - role: web_server_monitoring
+    - role: snmpd
+    - role: nau_check_urls
 
 - name: Configure the complementary server group
   hosts: complementary_servers
@@ -121,6 +133,7 @@
       nginx_sites:
       - insights
       - edx_notes_api
+      - nau_nginx_status
     - role: nginx_default_static_site
       when: use_nginx_default_site
     - role: discovery
@@ -135,7 +148,6 @@
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'insights' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
     - role: insights
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'insights' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
-
 
 - name: Configure pipeline servers
   hosts: pipeline_servers
