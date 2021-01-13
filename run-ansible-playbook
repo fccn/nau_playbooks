@@ -24,13 +24,14 @@ git -C "nau-data" clean -fdx
 git -C "nau-data" pull
 git -C "nau-data" checkout ${BRANCH_SECURE_DATA}
 
-virtualenv venv_ops --python=python3.8
+rm -rf venv_ops
+virtualenv venv_ops #--python=$(which python3.6)
 . venv_ops/bin/activate
 
-#pip install setuptools==3.0.0
+pip install setuptools==3.0.0
+pip install -r configuration/requirements.txt
 #pip install --upgrade setuptools
-
-cd configuration ; make requirements ; cd .. # pip install -r configuration/requirements.txt
+#cd configuration ; make requirements ; cd .. # pip install -r configuration/requirements.txt
 
 ansible-galaxy install -p vendor/roles -r requirements.yml --ignore-errors
 
