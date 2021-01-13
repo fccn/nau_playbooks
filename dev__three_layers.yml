@@ -45,14 +45,23 @@
 
 - name: Configure statics servers docker
   hosts: statics_servers
+  serial: "{{ serial_number | default(1) }}"
   become: True
   gather_facts: True
   roles:
+    - role: rolling_deploy
+      vars:
+        rolling_deploy_starting: true
+      when: ( groups['statics_servers'] | length ) > 1
     - role: docker
     - role: docker_container
     - role: web_server_monitoring
     - role: snmpd
     - role: nau_check_urls
+    - role: rolling_deploy
+      vars:
+        rolling_deploy_starting: false
+      when: ( groups['statics_servers'] | length ) > 1
 
 - name: Configure mysql server instance
   hosts: mysql_servers
@@ -96,9 +105,14 @@
 
 - name: Configure the application server group
   hosts: app_servers
+  serial: "{{ serial_number | default(1) }}"
   become: True
   gather_facts: True
   roles:
+    - role: rolling_deploy
+      vars:
+        rolling_deploy_starting: true
+      when: ( groups['app_servers'] | length ) > 1
     - role: swapfile
     - role: nginx
       nginx_sites:
@@ -122,12 +136,21 @@
     - role: web_server_monitoring
     - role: snmpd
     - role: nau_check_urls
+    - role: rolling_deploy
+      vars:
+        rolling_deploy_starting: false
+      when: ( groups['app_servers'] | length ) > 1
 
 - name: Configure the complementary server group
   hosts: complementary_servers
+  serial: "{{ serial_number | default(1) }}"
   become: True
   gather_facts: True
   roles:
+    - role: rolling_deploy
+      vars:
+        rolling_deploy_starting: true
+      when: ( groups['complementary_servers'] | length ) > 1
     - role: swapfile
     - role: nginx
       nginx_sites:
@@ -148,6 +171,13 @@
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'insights' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
     - role: insights
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'insights' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
+    - role: web_server_monitoring
+    - role: snmpd
+    - role: nau_check_urls
+    - role: rolling_deploy
+      vars:
+        rolling_deploy_starting: false
+      when: ( groups['complementary_servers'] | length ) > 1
 
 - name: Configure pipeline servers
   hosts: pipeline_servers
@@ -163,7 +193,7 @@
 
 - name: Configure the wordpress instance
   hosts: wordpress_servers
-  serial: 1
+  serial: "{{ serial_number | default(1) }}"
   become: True
   #become_flags: "-E"
   gather_facts: True
