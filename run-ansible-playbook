@@ -7,7 +7,7 @@ export LC_ALL='en_US.UTF-8'
 
 BRANCH_CONFIGURATION="${BRANCH_CONFIGURATION:=nau-release/juniper}"
 #BRANCH_NAU_PLAYBOOKS="${BRANCH_NAU_PLAYBOOKS:=master}"
-BRANCH_SECURE_DATA="${BRANCH_SECURE_DATA:=juniper}"
+BRANCH_SECURE_DATA="${BRANCH_SECURE_DATA:=master}"
 
 [ -d configuration ] || git clone -b ${BRANCH_CONFIGURATION} git@gitlab.fccn.pt:nau/configuration.git configuration
 git -C configuration clean -fdx
