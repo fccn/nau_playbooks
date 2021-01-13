@@ -9,6 +9,7 @@ BRANCH_CONFIGURATION="${BRANCH_CONFIGURATION:=nau-release/juniper}"
 #BRANCH_NAU_PLAYBOOKS="${BRANCH_NAU_PLAYBOOKS:=master}"
 BRANCH_SECURE_DATA="${BRANCH_SECURE_DATA:=master}"
 
+[ -d configuration ] || rm -f configuration
 [ -d configuration ] || git clone -b ${BRANCH_CONFIGURATION} git@gitlab.fccn.pt:nau/configuration.git configuration
 git -C configuration clean -fdx
 git -C configuration pull
@@ -19,6 +20,7 @@ git -C configuration checkout ${BRANCH_CONFIGURATION}
 # git -C nau_playbooks pull
 # git -C nau_playbooks checkout ${BRANCH_NAU_PLAYBOOKS}
 
+[ -d "nau-data" ] || rm -f nau-data
 [ -d "nau-data" ] || git clone -b "${BRANCH_SECURE_DATA}" git@gitlab.fccn.pt:nau/secure-nau-data.git nau-data
 git -C "nau-data" clean -fdx
 git -C "nau-data" pull
