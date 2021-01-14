@@ -1,10 +1,5 @@
 ---
 
-- fail: 
-    msg: Variable web_server_monitoring_mode should have 'docker' or 'file' values.
-  when: web_server_monitoring_mode is not defined or web_server_monitoring_mode not in web_server_monitoring_mode_list
-  tags: web_server_monitoring
-
 - fail:
     msg: Variable web_server_monitoring_docker_container_name should be defined
   when: web_server_monitoring_mode == 'docker' and web_server_monitoring_docker_container_name is not defined
@@ -29,6 +24,7 @@
     recurse: true
     state: directory
   with_items: "{{ web_server_monitoring_files }}"
+  when: web_server_monitoring_script_initial is defined
   tags: web_server_monitoring
 
 - name: Create nginx monitoring shell scripts
@@ -39,4 +35,5 @@
     owner: "{{ web_server_monitoring_owner | default(omit) }}"
     group: "{{ web_server_monitoring_group | default(omit) }}"
   with_items: "{{ web_server_monitoring_files }}"
+  when: web_server_monitoring_script_initial is defined
   tags: web_server_monitoring
