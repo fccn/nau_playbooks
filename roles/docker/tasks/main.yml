@@ -2,9 +2,8 @@
 
 - name: Install prerequisites
   apt:
-    name: "{{ item }}"
+    name: "{{ docker_prerequisites }}"
     state: present
-  with_items: "{{ docker_prerequisites }}"
 
 - name: Add Docker GPG key
   apt_key: url=https://download.docker.com/linux/ubuntu/gpg
@@ -30,12 +29,10 @@
 - name:    Install Docker
   apt: name=docker-ce
 
-- name: Install pip modules on target box
+- name: Install pip module docker-py
   pip:
-    name: "{{ item }}"
+    name: docker-py
     state: present
-  with_items:
-    - docker-py
 
 # - name: Prune containers, images, networks, volumes and cache that isn't currently in use by at least one docker container
 #   docker_prune:
