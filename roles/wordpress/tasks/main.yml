@@ -2,7 +2,7 @@
 - name: Make sure we can use htpasswd module
   apt: 
     pkg: python-passlib
-    state: installed
+    state: present
   when: wordpress_nginx_auth_basic_enable is defined and wordpress_nginx_auth_basic_enable
   tags:
     - wordpress
