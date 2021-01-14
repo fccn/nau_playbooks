@@ -13,6 +13,8 @@
       - "{{ config.status | default(200) }}"
     return_content: yes
     validate_certs: no
+    user: "{{ config.user | default(omit) }}"
+    password: "{{ config.password | default(omit) }}"
   register: http_verify_out
   until: http_verify_out is not failed and ( config.content in http_verify_out.content if config.content is defined else True )
   retries: "{{ config.retries | default(2) }}"
