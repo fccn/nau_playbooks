@@ -2,12 +2,12 @@
 
 - set_fact:
     web_server_monitoring_script_initial: "{{ web_server_monitoring_script_initial_docker }}"
-  when: web_server_monitoring_mode == 'docker'
+  when: web_server_monitoring_mode is defined and web_server_monitoring_mode == 'docker'
   tags: web_server_monitoring
 
 - set_fact:
     web_server_monitoring_script_initial: "{{ web_server_monitoring_script_initial_file }}"
-  when: web_server_monitoring_mode == 'file'
+  when: web_server_monitoring_mode is defined and web_server_monitoring_mode == 'file'
   tags: web_server_monitoring
 
 - name: Create nginx monitoring folders
