@@ -1,0 +1,26 @@
+---
+- hosts: statics_servers
+  tasks:
+    - import_role:
+        name: rolling_deploy
+      vars:
+        rolling_deploy_starting: true
+      when: ( groups['statics_servers'] | length ) > 1
+    - apt:
+        name: docker-ce
+        state: absent
+    - apt: 
+        name:
+          - docker-ce-cli
+          - docker-ce
+        state: present
+    - apt: 
+        name: docker-compose
+        state: present
+    - import_role:
+        name: nau_check_urls
+    - import_role:
+        name: rolling_deploy
+      vars:
+        rolling_deploy_starting: false
+      when: ( groups['statics_servers'] | length ) > 1
