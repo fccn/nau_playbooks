@@ -92,6 +92,12 @@
     src: "{{ dockercompose_template }}"
   register: dockerfile
 
+- name: Remove old docker containers
+  docker_container: 
+    name: "{{ item }}"
+    state: absent
+  with_items: "{{ docker_containers_to_remove | default([]) }}"
+
 - name: Stop docker containers and remove its volumes
   docker_service:
     project_src: "{{ image_root_dir }}"
