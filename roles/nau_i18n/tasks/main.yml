@@ -27,6 +27,7 @@
     version: "{{ i18n_repo_version }}"
     accept_hostkey: yes
     force: true
+  become_user: "{{ i18n_user }}"
   register: git_pull
   tags: nau_i18n
 
@@ -51,6 +52,7 @@
 
 - name: Run the publish script from the project directory
   shell: "{{ i18n_repo_path }}/bin/publish_native"
+  become_user: "ubuntu"
   register: publish_output
   tags: nau_i18n
 
