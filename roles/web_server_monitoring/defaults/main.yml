@@ -27,5 +27,5 @@ web_server_monitoring_script_initial_file: cat {{ web_server_monitoring_log_file
 web_server_monitoring_log_filename: /var/log/nginx/access.log
 
 web_server_monitoring_nginx_status_url: http://localhost/nginx_status
-web_server_monitoring_nginx_heartbeat_lms_url: http://localhost:8000/nginx_status
-web_server_monitoring_nginx_heartbeat_studio_url: http://localhost:8010/nginx_status
+web_server_monitoring_nginx_heartbeat_lms_url: http://localhost:8000/heartbeat
+web_server_monitoring_nginx_heartbeat_studio_url: http://localhost:8010/heartbeat
