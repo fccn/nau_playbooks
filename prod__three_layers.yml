@@ -45,6 +45,7 @@
 
 - name: Configure statics servers docker
   hosts: statics_servers
+  serial: "{{ serial_number | default(1) }}"
   become: True
   gather_facts: True
   roles:
@@ -104,6 +105,7 @@
 
 - name: Configure the application server group
   hosts: app_servers
+  serial: "{{ serial_number | default(1) }}"
   become: True
   gather_facts: True
   roles:
@@ -141,6 +143,7 @@
 
 - name: Configure the complementary server group
   hosts: complementary_servers
+  serial: "{{ serial_number | default(1) }}"
   become: True
   gather_facts: True
   roles:
@@ -190,7 +193,7 @@
 
 - name: Configure the wordpress instance
   hosts: wordpress_servers
-  serial: 1
+  serial: "{{ serial_number | default(1) }}"
   become: True
   #become_flags: "-E"
   gather_facts: True
