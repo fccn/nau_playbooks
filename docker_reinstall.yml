@@ -1,20 +1,30 @@
 ---
-- hosts: statics_servers
+- hosts: all
+  serial: 1
   tasks:
+    - import_role: 
+        name: keepalived
+      vars: 
+        keepalived_priority: 1
+      when: vrrp_instances is defined
+    - name: force all notified handlers to run at this point
+      meta: flush_handlers
     - import_role:
         name: rolling_deploy
       vars:
         rolling_deploy_starting: true
-      when: ( groups['statics_servers'] | length ) > 1
-    - apt:
+    - name: Remove docker-ce package
+      apt:
         name: docker-ce
         state: absent
-    - apt: 
+    - name: Install docker-ce-cli and docker-ce packages
+      apt: 
         name:
           - docker-ce-cli
           - docker-ce
         state: present
-    - apt: 
+    - name: Install docker-compose package
+      apt: 
         name: docker-compose
         state: present
     - import_role:
@@ -23,4 +33,6 @@
         name: rolling_deploy
       vars:
         rolling_deploy_starting: false
-      when: ( groups['statics_servers'] | length ) > 1
+    - import_role: 
+        name: keepalived
+      when: vrrp_instances is defined
