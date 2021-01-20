@@ -9,15 +9,16 @@ keepalived_health:
   interval: 2
   timeout: 3
 
-
-vrrp_instances:
-  - name: failover_link
-    ipv6: false
-    state: MASTER
-    check_if: eth1
-    id: 51
-    priority: 200
-    pass: password
-    peer_ip: "CHANGEME"
-    virtual_ip: 
-      - "CHANGEME"
+# Required variable, not defined because it is required to be defined to put keepalived weel configured.
+# Also with it comment by default it is possible to run the role only if this variable is defined.
+# vrrp_instances:
+#   - name: failover_link
+#     ipv6: false
+#     state: MASTER
+#     check_if: eth1
+#     id: 51
+#     priority: 200
+#     pass: password
+#     peer_ip: "CHANGEME"
+#     virtual_ip: 
+#       - "CHANGEME"
