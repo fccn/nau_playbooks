@@ -1,0 +1,9 @@
+---
+- name: Install dependencies
+  package: 
+    name: libsnmp-perl
+
+- name: Copy haproxy.pl
+  copy:
+    src: files/haproxy.pl
+    dest: /etc/snmp/haproxy.pl
