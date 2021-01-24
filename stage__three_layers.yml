@@ -38,7 +38,9 @@
   roles:
     - role: iptables-persistent
     - role: docker
-    - role: docker_container
+    - role: docker_compose
+    - role: haproxy-netsnmp-perl
+    - role: snmpd
     - role: keepalived
       when: vrrp_instances is defined
   tags: load-balancer
