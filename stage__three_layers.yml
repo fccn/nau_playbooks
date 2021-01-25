@@ -22,7 +22,7 @@
     - ssh
 
 - name: Configure hosts file
-  hosts: all,!srv_local,!support_server,!comand_and_control
+  hosts: all,!srv_local,!support_server,!command_and_control
   become: True
   gather_facts: True
   vars:
