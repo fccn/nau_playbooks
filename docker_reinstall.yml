@@ -13,6 +13,8 @@
         name: rolling_deploy
       vars:
         rolling_deploy_starting: true
+    - import_role:
+        name: docker
     - name: Remove docker-ce package
       apt:
         name: docker-ce
