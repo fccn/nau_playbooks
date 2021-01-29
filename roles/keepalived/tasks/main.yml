@@ -1,13 +1,13 @@
 ---
-
-
 - name: Install keepalived packages
   apt:
     name: "{{ keepalived_packages }}"
     state: present
+  tags: keepalived
 
 - name: Adding keepalived configuration template
   template:
     dest: "/etc/keepalived/keepalived.conf"
     src: "keepalived.conf.j2"
   notify: restart keepalived
+  tags: keepalived
