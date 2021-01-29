@@ -116,6 +116,7 @@
         rolling_deploy_starting: true
       when: ( groups['app_servers'] | length ) > 1
     - role: swapfile
+    - role: server_files # copy additional ssl certificates
     - role: nginx
       nginx_sites:
       - cms
