@@ -5,6 +5,11 @@
 # - Persistence servers (mongo, cache and mysql groups)
 # - Application servers (application group & complementary group)
 
+# To mark a server for maintenance, like load balancer or mysql server, append to the shell command arguments:
+#   ansible-playbook -i nau-data/envs/staging/hosts.ini stage__three_layers.yml --tags keepalived --limit slave_persistence_servers -e keepalived_priority=1
+# To mark a server back to normal state, run the same command without the --limit.
+
+
 - name: Bootstrap instances of 16.04
   hosts: all,!idpproxy_servers,!idpauth_servers
   gather_facts: no
@@ -116,6 +121,7 @@
         rolling_deploy_starting: true
       when: ( groups['app_servers'] | length ) > 1
     - role: swapfile
+    - role: server_files # copy additional ssl certificates
     - role: nginx
       nginx_sites:
       - cms
