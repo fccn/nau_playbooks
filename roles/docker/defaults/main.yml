@@ -5,3 +5,6 @@ docker_prerequisites:
   - "ca-certificates"
   - "software-properties-common"
   - "python-pip"
+
+docker_daemon_configuration_path: /etc/docker/daemon.json
+docker_daemon_configurations_dict: []
