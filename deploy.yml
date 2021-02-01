@@ -6,9 +6,11 @@
 # - Application servers (application group & complementary group)
 
 # To mark a server for maintenance, like load balancer or mysql server, append to the shell command arguments:
-#   ansible-playbook -i nau-data/envs/staging/hosts.ini stage__three_layers.yml --tags keepalived --limit slave_persistence_servers -e keepalived_priority=1
+#   ansible-playbook -i nau-data/envs/staging/hosts.ini deploy.yml --tags keepalived --limit slave_persistence_servers -e keepalived_priority=1
 # To mark a server back to normal state, run the same command without the --limit.
-
+#
+# To update only the nau_translations
+#    --tags nau_i18n
 
 - name: Bootstrap instances of 16.04
   hosts: all,!idpproxy_servers,!idpauth_servers
