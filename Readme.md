@@ -28,7 +28,7 @@ ansible-galaxy install -p vendor/roles -r requirements.yml
 Run a playbook
 ==============
 ```
-ansible-playbook -i ../nau-data/envs/development/hosts.ini dev__three_layers.yml
+ansible-playbook -i nau-data/envs/development/hosts.ini dev__three_layers.yml
 ```
 
 
