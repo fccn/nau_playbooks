@@ -10,7 +10,7 @@
         backup_mongo: True
 
 - name: Backup of Mysql data
-  hosts: mysql_servers[1]
+  hosts: slave_persistence_servers
   become: True
   gather_facts: True
   roles:

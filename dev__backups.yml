@@ -1,17 +1,25 @@
 ---
 
-- name: Backup of mysql data
-  hosts: persistence_servers[0]
+- name: Backup of Mongo data
+  hosts: mongo_servers[0]
   become: True
   gather_facts: True
   roles:
     - role: backups
       vars:
         backup_mongo: True
+
+- name: Backup of Mysql data
+  hosts: slave_persistence_servers
+  become: True
+  gather_facts: True
+  roles:
+    - role: backups
+      vars:
         backup_mysql: True
 
-- name: Backup of wordpress data and content
-  hosts: wordpress_servers[0]
+- name: Backup of wordpress master data and content
+  hosts: wordpress_master
   become: True
   gather_facts: True
   roles:
