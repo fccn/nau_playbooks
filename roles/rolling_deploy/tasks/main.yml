@@ -1,7 +1,8 @@
 ---
 
 - debug:
-    msg: "{{ rolling_deploy_msg }} parent servers iptables on rolling deploy role"
+    msg: "{{ rolling_deploy_msg }} parent servers {{ rolling_deploy_parent_servers_ipv4 | join(',') }} on iptables"
+  tags: rolling_deploy
 
 - name: Change parent servers IPv4 using iptables
   iptables: 
