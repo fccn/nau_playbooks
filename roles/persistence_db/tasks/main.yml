@@ -16,6 +16,15 @@
    - restart mysql
   when: install_mysql
 
+- name: Override systemd mysql configuration
+  template:
+    src: systemd-mysql-override.conf.j2
+    dest: /etc/systemd/system/mysql.service.d/override.conf
+  tags: mysql-daemon
+  notify:
+   - restart mysql
+  when: install_mysql
+
 - name: Allow external access to memcache
   template: src=memcached.conf.j2 dest=/etc/memcached.conf
   when: install_memcached

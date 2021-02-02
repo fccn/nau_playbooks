@@ -1,6 +1,9 @@
 ---
   - name: restart mysql
-    service: name=mysql state=restarted
+    systemd:
+      state: restarted
+      daemon_reload: yes
+      name: mysql
 
   - name: restart memcached
     service: name=memcached state=restarted
