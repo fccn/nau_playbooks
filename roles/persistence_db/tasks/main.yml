@@ -21,6 +21,7 @@
     state: directory
     path: /etc/systemd/system/mysql.service.d
   tags: mysql-daemon
+  when: install_mysql
 
 - name: Override systemd mysql configuration
   template:
