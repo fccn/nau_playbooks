@@ -16,6 +16,12 @@
    - restart mysql
   when: install_mysql
 
+- name: Create directory for override systemd mysql configuration
+  file:
+    state: directory
+    path: /etc/systemd/system/mysql.service.d
+  tags: mysql-daemon
+
 - name: Override systemd mysql configuration
   template:
     src: systemd-mysql-override.conf.j2
