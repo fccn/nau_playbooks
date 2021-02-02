@@ -10,3 +10,5 @@
   scm: git
   version: master
 
+- name: geerlingguy.docker
+  version: 3.0.0

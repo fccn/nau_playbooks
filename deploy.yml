@@ -44,7 +44,7 @@
   gather_facts: True
   roles:
     - role: iptables-persistent
-    - role: docker
+    - role: geerlingguy.docker
     - role: docker_compose
     - role: haproxy-netsnmp-perl
     - role: snmpd
@@ -62,7 +62,7 @@
       vars:
         rolling_deploy_starting: true
       when: ( groups['statics_servers'] | length ) > 1
-    - role: docker
+    - role: geerlingguy.docker
     - role: docker_compose
     - role: web_server_monitoring
     - role: snmpd
@@ -214,7 +214,7 @@
       vars:
         rolling_deploy_starting: true
       when: ( groups['wordpress_servers'] | length ) > 1
-    - role: docker
+    - role: geerlingguy.docker
     - role: docker_compose
     - role: wordpress
     - role: web_server_monitoring

@@ -1,8 +1,8 @@
 ---
-- name: Install docker-compose
-  package: 
-    name: docker-compose
-    state: present
+# - name: Install docker-compose
+#   package: 
+#     name: docker-compose
+#     state: present
 
 - name: Create root directory
   file:
