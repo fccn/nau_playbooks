@@ -18,3 +18,10 @@
   tags:
     - wordpress
 
+- name: Build theme
+  command: build.sh 
+  args: 
+    chdir: "{{ wordpress_nau_theme_dest }}"
+  when: wordpress_nau_theme_dest is defined
+  tags:
+    - wordpress
