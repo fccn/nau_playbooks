@@ -32,3 +32,10 @@
   with_items: "{{ web_server_monitoring_files }}"
   when: web_server_monitoring_script_initial is defined
   tags: web_server_monitoring
+
+# Group adm is used for system monitoring tasks
+- name: Adding existing user 'snmp' to group 'adm'. 
+  user:
+    name: snmp
+    groups: adm
+    append: yes # preserve other groups of snmp user

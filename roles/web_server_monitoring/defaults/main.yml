@@ -22,7 +22,7 @@ web_server_monitoring_mode_list:
 web_server_monitoring_scripts_folder: /root/web_server_monitoring
 web_server_monitoring_log_request_time_position: "13"
 web_server_monitoring_range_minutes: 5
-web_server_monitoring_script_initial_docker: docker logs --since 5m {{ web_server_monitoring_docker_container_name }} 2>&1 | egrep "($(date '+%d/%b/%Y:%H:%M:' --date='5 minutes ago')|$(date '+%d/%b/%Y:%H:%M:' --date='4 minutes ago')|$(date '+%d/%b/%Y:%H:%M:' --date='3 minutes ago')|$(date '+%d/%b/%Y:%H:%M:' --date='2 minutes ago')|$(date '+%d/%b/%Y:%H:%M:' --date='1 minutes ago')|$(date '+%d/%b/%Y:%H:%M:'))"
+web_server_monitoring_script_initial_docker: docker logs --since 5m {{ web_server_monitoring_docker_container_name }} 2>&1 
 web_server_monitoring_script_initial_file: cat {{ web_server_monitoring_log_filename }} | egrep "($(date '+%d/%b/%Y:%H:%M:' --date='5 minutes ago')|$(date '+%d/%b/%Y:%H:%M:' --date='4 minutes ago')|$(date '+%d/%b/%Y:%H:%M:' --date='3 minutes ago')|$(date '+%d/%b/%Y:%H:%M:' --date='2 minutes ago')|$(date '+%d/%b/%Y:%H:%M:' --date='1 minutes ago')|$(date '+%d/%b/%Y:%H:%M:'))"
 web_server_monitoring_log_filename: /var/log/nginx/access.log
 
