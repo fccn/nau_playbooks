@@ -39,3 +39,4 @@
     name: snmp
     groups: adm
     append: yes # preserve other groups of snmp user
+  tags: web_server_monitoring
