@@ -19,7 +19,9 @@
     - wordpress
 
 - name: Build theme
-  command: "{{ wordpress_nau_theme_dest }}/./build.sh"
+  command: "make build"
+  args:
+    chdir: "{{ wordpress_nau_theme_dest }}"
   when: wordpress_nau_theme_dest is defined
   tags:
     - wordpress
