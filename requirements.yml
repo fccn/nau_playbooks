@@ -6,7 +6,7 @@
   version: v1.2.0
 
 #- name: shibboleth-idp
-- src: git@gitlab.fccn.pt:nau/shibboleth-3-4-4-centos7-lite.git
+- src: git@github.com:fccn/shibboleth-3-4-4-centos7-lite.git
   scm: git
   version: master
 
