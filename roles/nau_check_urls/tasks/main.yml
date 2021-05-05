@@ -11,8 +11,10 @@
     timeout: "{{ config.timeout | default(60) }}"
     status_code: 
       - "{{ config.status | default(200) }}"
+    follow_redirects: no
     return_content: yes
     validate_certs: no
+    force_basic_auth: "{{ config.user is defined }}"
     user: "{{ config.user | default(omit) }}"
     password: "{{ config.password | default(omit) }}"
   register: http_verify_out
