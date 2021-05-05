@@ -10,11 +10,11 @@
     url: "{{ (config.protocol if config.protocol is defined else 'https') + '://' + (config.server if config.server is defined else 'localhost') + ( (':' + (config.port | string)) if config.port is defined else '') + ( ('/' + config.page) if config.page is defined else '' ) }}"
     timeout: "{{ config.timeout | default(60) }}"
     status_code: 
-      - "{{ config.status | default(200) }}"
+      - "{{ config.status_code | default(200) }}"
     follow_redirects: no
     return_content: yes
     validate_certs: no
-    force_basic_auth: "{{ config.user is defined }}"
+    force_basic_auth: "{{ config.force_basic_auth | default(config.user is defined) }}"
     user: "{{ config.user | default(omit) }}"
     password: "{{ config.password | default(omit) }}"
   register: http_verify_out
