@@ -10,18 +10,18 @@ BRANCH_CONFIGURATION="${BRANCH_CONFIGURATION:=nau-release/juniper}"
 BRANCH_SECURE_DATA="${BRANCH_SECURE_DATA:=master}"
 
 [ -d configuration ] || rm -f configuration
-[ -d configuration ] || git clone -b ${BRANCH_CONFIGURATION} git@gitlab.fccn.pt:nau/configuration.git configuration
+[ -d configuration ] || git clone -b ${BRANCH_CONFIGURATION} git@github.com:fccn/configuration.git configuration
 git -C configuration clean -fdx
 git -C configuration pull
 git -C configuration checkout ${BRANCH_CONFIGURATION}
 
-# [ -d nau_playbooks ] || git clone -b "${BRANCH_NAU_PLAYBOOKS}" git@gitlab.fccn.pt:nau/nau_playbooks.git nau_playbooks
+# [ -d nau_playbooks ] || git clone -b "${BRANCH_NAU_PLAYBOOKS}" git@github.com:fccn/nau_playbooks.git nau_playbooks
 # git -C nau_playbooks clean -fdx
 # git -C nau_playbooks pull
 # git -C nau_playbooks checkout ${BRANCH_NAU_PLAYBOOKS}
 
 [ -d "nau-data" ] || rm -f nau-data
-[ -d "nau-data" ] || git clone -b "${BRANCH_SECURE_DATA}" git@gitlab.fccn.pt:nau/secure-nau-data.git nau-data
+[ -d "nau-data" ] || git clone -b "${BRANCH_SECURE_DATA}" git@github.com:fccn/secure-nau-data.git nau-data
 git -C "nau-data" clean -fdx
 git -C "nau-data" pull
 git -C "nau-data" checkout ${BRANCH_SECURE_DATA}

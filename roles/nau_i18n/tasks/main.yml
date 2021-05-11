@@ -21,7 +21,7 @@
 
 - name: Update the repository
   git:
-    repo: ssh://git@gitlab.fccn.pt/nau/nau_translations.git
+    repo: ssh://git@github.com/fccn/nau_translations.git
     dest: "{{ i18n_repo_path }}"
     key_file: "{{ i18n_root_dir }}/ssh_key"
     version: "{{ i18n_repo_version }}"

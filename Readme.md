@@ -12,8 +12,8 @@ sudo apt-get install -y build-essential software-properties-common python-softwa
 
 
 git clone -b open-release/hawthorn.master https://github.com/edx/configuration.git configuration
-git clone -b master git@gitlab.fccn.pt:nau/nau_playbooks.git nau_playbooks
-git clone -b master git@gitlab.fccn.pt:nau/secure-nau-data.git nau-data
+git clone -b master git@github.com:fccn/nau_playbooks.git nau_playbooks
+git clone -b master git@github.com:fccn/secure-nau-data.git nau-data
 
 virtualenv venv_ops
 source venv_ops/bin/activate
