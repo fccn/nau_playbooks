@@ -41,4 +41,10 @@
     name: snmp
     groups: "{{ web_server_monitoring_snmp_user_on_group }}"
     append: yes # preserve other groups of snmp user
+  notify: restart snmpd
   tags: web_server_monitoring
+
+-  debug: msg="trigger snmpd-restart"
+   notify: restart snmpd
+   changed_when: true
+   when: force_snmpd_restart | default(false)
