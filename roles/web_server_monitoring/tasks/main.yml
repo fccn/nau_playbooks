@@ -2,11 +2,13 @@
 
 - set_fact:
     web_server_monitoring_script_initial: "{{ web_server_monitoring_script_initial_docker }}"
+    web_server_monitoring_snmp_user_on_group: docker
   when: web_server_monitoring_mode is defined and web_server_monitoring_mode == 'docker'
   tags: web_server_monitoring
 
 - set_fact:
     web_server_monitoring_script_initial: "{{ web_server_monitoring_script_initial_file }}"
+    web_server_monitoring_snmp_user_on_group: adm
   when: web_server_monitoring_mode is defined and web_server_monitoring_mode == 'file'
   tags: web_server_monitoring
 
@@ -34,9 +36,9 @@
   tags: web_server_monitoring
 
 # Group adm is used for system monitoring tasks
-- name: Adding existing user 'snmp' to group 'adm'. 
+- name: Adding existing user 'snmp' to group '{{ web_server_monitoring_snmp_user_on_group }}'. 
   user:
     name: snmp
-    groups: adm
+    groups: "{{ web_server_monitoring_snmp_user_on_group }}"
     append: yes # preserve other groups of snmp user
   tags: web_server_monitoring
