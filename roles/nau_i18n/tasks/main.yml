@@ -17,7 +17,7 @@
     group: "{{ i18n_group }}"
     mode: "0600"
   no_log: True
-  when: I18N_GIT_IDENTITY is defined
+  when: I18N_GIT_IDENTITY | default(false)
   tags: nau_i18n
 
 - name: Update the repository
@@ -36,7 +36,7 @@
     dest: "{{ i18n_root_dir }}/ssh_key"
     state: absent
   no_log: True
-  when: I18N_GIT_IDENTITY is defined
+  when: I18N_GIT_IDENTITY | default(false)
   tags: nau_i18n
 
 - name: Get last commit message
