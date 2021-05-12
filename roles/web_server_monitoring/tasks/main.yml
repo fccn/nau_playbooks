@@ -44,7 +44,9 @@
   notify: restart snmpd
   tags: web_server_monitoring
 
--  debug: msg="trigger snmpd-restart"
-   notify: restart snmpd
-   changed_when: true
-   when: force_snmpd_restart | default(false)
+- debug: 
+    msg: trigger restart snmpd
+  notify: restart snmpd
+  changed_when: true
+  when: force_snmpd_restart | default(false)
+  tags: web_server_monitoring
