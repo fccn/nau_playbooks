@@ -35,7 +35,7 @@ pip install -r configuration/requirements.txt
 #pip install --upgrade setuptools
 #cd configuration ; make requirements ; cd .. # pip install -r configuration/requirements.txt
 
-ansible-galaxy install -p vendor/roles -r requirements.yml --ignore-errors
+ansible-galaxy install -p vendor/roles -r requirements.yml --force --ignore-errors
 
 NAU_ENVIRONMENT=$1
 shift
