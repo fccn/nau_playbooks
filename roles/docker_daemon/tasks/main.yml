@@ -13,3 +13,6 @@
     path: /etc/docker/daemon.json
   when: docker_daemon_configurations_dict | length == 0
   notify: restart-docker
+
+- name: Ensure handlers are notified now to avoid containers to be created with old docker daemon configuration like logging
+  meta: flush_handlers
