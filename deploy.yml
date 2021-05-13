@@ -45,6 +45,7 @@
   roles:
     - role: iptables-persistent
     - role: geerlingguy.docker
+    - role: docker_daemon
     - role: docker_compose
     - role: haproxy-netsnmp-perl
     - role: snmpd
@@ -63,6 +64,7 @@
         rolling_deploy_starting: true
       when: ( groups['statics_servers'] | length ) > 1
     - role: geerlingguy.docker
+    - role: docker_daemon
     - role: docker_compose
     - role: web_server_monitoring
     - role: snmpd
@@ -215,6 +217,7 @@
         rolling_deploy_starting: true
       when: ( groups['wordpress_servers'] | length ) > 1
     - role: geerlingguy.docker
+    - role: docker_daemon
     - role: docker_compose
     - role: wordpress
     - role: web_server_monitoring
@@ -261,5 +264,6 @@
   become_flags: "-E" # Needed for jenkins deployment because ubuntu user needs to sudo and that make it lose its ssh agent forwarding env configuration.
   gather_facts: True
   roles:
-    - docker
+    - geerlingguy.docker
+    - docker_daemon
     - docker_compose

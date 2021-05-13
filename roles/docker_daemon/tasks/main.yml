@@ -1,0 +1,15 @@
+---
+
+- name: Configure docker daemon
+  template:
+    dest: /etc/docker/daemon.json
+    src: daemon.json.j2
+  when: docker_daemon_configurations_dict | length > 0
+  notify: restart-docker
+
+- name: Delete docker daemon configuration
+  file:
+    state: absent
+    path: /etc/docker/daemon.json
+  when: docker_daemon_configurations_dict | length == 0
+  notify: restart-docker

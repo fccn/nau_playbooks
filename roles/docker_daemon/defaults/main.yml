@@ -1,0 +1,3 @@
+---
+docker_daemon_configuration_path: /etc/docker/daemon.json
+docker_daemon_configurations_dict: []
