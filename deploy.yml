@@ -43,6 +43,10 @@
   become: True
   gather_facts: True
   roles:
+    - role: keepalived
+      vars: 
+        keepalived_priority: 1 # Lower priority so the VIPs can swap to other machine.
+      when: vrrp_instances is defined
     - role: iptables-persistent
     - role: geerlingguy.docker
     - role: docker_daemon
