@@ -1,5 +1,8 @@
 ---
 
+- name: Ensure handlers are notified now to avoid restarts after the health checks.
+  meta: flush_handlers
+
 # this task shouldn't have a delegate to localhost 
 # because it should be run on inventory hostname locally so traffic didn't go out and enter on the load balancer
 - name: Check if each application is ok
