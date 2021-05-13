@@ -189,6 +189,8 @@
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'insights' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
     - role: insights
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'insights' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
+    - role: mfe_deployer
+      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'mfe' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
     - role: web_server_monitoring
     - role: snmpd
     - role: nau_check_urls
