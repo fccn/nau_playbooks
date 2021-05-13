@@ -11,3 +11,6 @@
     src: "keepalived.conf.j2"
   notify: restart keepalived
   tags: keepalived
+
+- name: Ensure handlers are notified now to avoid run a next role without changing the keepalive priority
+  meta: flush_handlers
