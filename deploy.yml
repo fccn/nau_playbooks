@@ -52,7 +52,7 @@
     - role: iptables-persistent
     - role: geerlingguy.docker
     - role: docker_daemon
-    - role: docker_compose
+    - role: ansible-docker-deploy
     - role: haproxy-netsnmp-perl
     - role: snmpd
     - role: keepalived
@@ -71,7 +71,7 @@
       when: ( groups['statics_servers'] | length ) > 1
     - role: geerlingguy.docker
     - role: docker_daemon
-    - role: docker_compose
+    - role: ansible-docker-deploy
     - role: web_server_monitoring
     - role: snmpd
     - role: nau_check_urls
@@ -226,7 +226,7 @@
       when: ( groups['wordpress_servers'] | length ) > 1
     - role: geerlingguy.docker
     - role: docker_daemon
-    - role: docker_compose
+    - role: ansible-docker-deploy
     - role: wordpress
     - role: web_server_monitoring
     - role: snmpd
@@ -274,4 +274,4 @@
   roles:
     - geerlingguy.docker
     - docker_daemon
-    - docker_compose
+    - ansible-docker-deploy

@@ -43,4 +43,4 @@ shift
 HOSTS_FILE="nau-data/envs/${NAU_ENVIRONMENT}/hosts.ini"
 test -f $HOSTS_FILE || { echo "Missing hosts file $HOSTS_FILE" ; exit -1; }
 
-ansible-playbook -i nau-data/envs/${NAU_ENVIRONMENT}/hosts.ini $@
+ansible-playbook -i $HOSTS_FILE $@

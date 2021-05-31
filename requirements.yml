@@ -7,3 +7,6 @@
 
 - name: geerlingguy.docker
   version: 3.1.2
+
+- src: git+https://github.com/fccn/ansible-docker-deploy.git
+  version: 6d825cad8bfc20302fb5599b5a8d38d3e42cd111
