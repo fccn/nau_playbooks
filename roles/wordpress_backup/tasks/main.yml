@@ -15,10 +15,10 @@
     state: directory
 
 - name: Backup wordpress
-  command: "make --directory={{ image_root_dir }} backup"
+  command: "make --directory={{ docker_deploy_base_folder }} backup"
 
 - name: Move backup file
-  command: "mv {{ image_root_dir }}/wordpress.tar.gz {{ BACKUP_LOCATION }}/{{ BACKUP_DATE }}_wordpress.tar.gz"
+  command: "mv {{ docker_deploy_base_folder }}/wordpress.tar.gz {{ BACKUP_LOCATION }}/{{ BACKUP_DATE }}_wordpress.tar.gz"
 
 - name: Put wordpress backup on ceph using s3
   command: "s3cmd put {{ BACKUP_LOCATION }}/{{ BACKUP_DATE }}_wordpress.tar.gz s3://{{ AWS_S3_DBS_BACKUP_BUCKET_NAME }}/ --no-ssl --host {{ AWS_S3_DBS_BACKUP_HOST }}  --host-bucket {{ AWS_S3_DBS_BACKUP_BUCKET_NAME }}"
