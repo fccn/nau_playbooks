@@ -14,6 +14,7 @@
   tasks:
     - name: Check lag from primary
       shell: mysql -u root -e "show slave status\G" | grep "Seconds_Behind_Master" | awk '{print $2}'
+      when: ( groups['mysql_servers'] | length ) > 1
       register: mysql_output
       changed_when: false
       
@@ -21,7 +22,7 @@
       fail:
         msg: Fail MySQL DB instance is too much behind
       # it is ok if the node is behind from 0 to 9 seconds lag
-      when: mysql_output.stdout is not match("[0-9]")
+      when: ( groups['mysql_servers'] | length ) > 1 and mysql_output.stdout is not match("[0-9]")
 
 - name: Check Mongo Database instances
   # we only need to run th commands on a single server, so we run on the first defined on the ansible
@@ -59,11 +60,15 @@
         warn: false
       register: es_shards_result
       changed_when: false
+
+    - set_fact:
+        # if its a single server there isn't the number of replicas to be on green status
+        expected_status: "{{ 'green' if ( groups['mongo_servers'] | length) > 1 else 'yellow' }}"
       
     - name: Fail if Elasticsearch cluster, indexes and shards health isn't ok
       fail:
         msg: Fail the Elasticsearch cluster, indexes and shards health
-      when: es_shards_result.stdout != "\"green\""
+      when: es_shards_result.stdout != ( '"' + expected_status + '"' )
 
 - name: Check URLs
   hosts: statics_servers,app_servers,complementary_servers,wordpress_servers
