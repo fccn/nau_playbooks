@@ -1,0 +1,30 @@
+# Refreshes the SAML metadata.
+# By default runs on the first app server defined on ansible inventory, 
+# nevertheless other app server could be used if specifing it using the '--limit' argument.
+#
+# Example:
+#   ansible-playbook -i nau-data/envs/development/hosts.ini openedx_lms_saml_pull.yml
+---
+- name: Run LMS cache on first app server
+  hosts: "app_servers:&{{ ansible_limit | default('app_servers') }}[0]"
+  tasks:
+    - name: LMS cache programs
+      become: true # use sudo to run command using other user
+      become_user: edxapp # run command has discovery user
+      args:
+        executable: /bin/bash # use bash instead of sh so we could source venvs
+      shell: |
+        cd
+        source venvs/edxapp/bin/activate
+        source edxapp_env
+        cd edx-platform/
+        ./manage.py lms saml --pull
+      register: lms_cache_output
+
+    - name: Print stdout of lms saml pull output
+      debug:
+        msg: "{{ lms_cache_output.stdout_lines }}"
+
+    - name: Print stderr of lms saml pull output
+      debug:
+        msg: "{{ lms_cache_output.stderr_lines }}"
