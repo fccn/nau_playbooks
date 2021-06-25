@@ -1,3 +1,4 @@
+# Ansible playbook that reinstalls the docker service on all the servers.
 ---
 - hosts: all
   serial: 1
@@ -14,7 +15,9 @@
       vars:
         rolling_deploy_starting: true
     - import_role:
-        name: docker
+        name: geerlingguy.docker
+    - import_role:
+        name: docker_daemon
     - name: Remove docker-ce package
       apt:
         name: docker-ce
