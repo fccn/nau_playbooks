@@ -32,6 +32,8 @@
       apt: 
         name: docker-compose
         state: present
+    - name: force all notified handlers to run at this point
+      meta: flush_handlers
     - import_role:
         name: nau_check_urls
     - import_role:
