@@ -1,7 +1,0 @@
----
-- name: Restore wordpress
-  hosts: wordpress_servers
-  become: True
-  gather_facts: True
-  roles:
-    - wordpress_restore
