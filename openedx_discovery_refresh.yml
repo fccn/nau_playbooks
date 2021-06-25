@@ -1,6 +1,22 @@
+# Run discovery refresh django scripts, like: 
+# - Refresh course metadata
+# - Remove unused indexes
+# - Update index
+# 
+# Then caches the LMS programs data.
+#
+# By default it is used the first complementary server and app server defined on the ansible inventory.
+# If it's required to use other server, then customize it by using the ansible extra vars:
+#
+# Ansible playbook extra variables:
+# - target_complementary_server
+# - target_app_server
+#
+# Example: 
+#   ansible-playbook -i nau-data/envs/development/hosts.ini openedx_discovery_refresh.yml -e target_complementary_server=other-compl-dev-server.nau.edu.pt
 ---
 - name: Run discovery django scripts on first complementary server
-  hosts: complementary_servers[0]
+  hosts: "complementary_servers:&{{ target_complementary_server | default('complementary_servers') }}[0]"
   tasks:
     - name: Refresh course metadata, remove unused indexes and update index
       become: true # use sudo to run command using other user
@@ -26,7 +42,7 @@
         msg: "{{ discovery_output.stderr_lines }}"
 
 - name: Run LMS cache on first app server
-  hosts: app_servers[0]
+  hosts: "app_servers:&{{ target_app_server | default('app_servers') }}[0]"
   tasks:
     - name: LMS cache programs
       become: true # use sudo to run command using other user

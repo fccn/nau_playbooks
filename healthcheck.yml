@@ -6,9 +6,18 @@
 # - Elasticsearch
 #
 # 2. Run check urls for all the web servers
+#
+# Ansible playbook extra variables:
+# - target_mysql_server - used to check only a subrange of MySQL databases for its health
+# - target_mongo_server - used to change the default Mongo database instance where to check the health of the cluster
+#
+# Example:
+#   ansible-playbook -i nau-data/envs/development/hosts.ini healthcheck.yml
+#
 ---
 - name: Check MySQL Database instances
   hosts: mysql_servers
+  hosts: "mysql_servers:&{{ target_mysql_server | default('mysql_servers') }}"
   become: True
   gather_facts: True
   tasks:
@@ -25,8 +34,8 @@
       when: ( groups['mysql_servers'] | length ) > 1 and mysql_output.stdout is not match("[0-9]")
 
 - name: Check Mongo Database instances
-  # we only need to run th commands on a single server, so we run on the first defined on the ansible
-  hosts: mongo_servers[0]
+  # we only need to run the commands on a single server, so we run by default on the first defined on the ansible
+  hosts: "mongo_servers:&{{ target_mongo_server | default('mongo_servers') }}[0]"
   become: True
   gather_facts: True
   tasks:
