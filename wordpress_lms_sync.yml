@@ -1,0 +1,58 @@
+# Ansible playbook to synchronize WordPress pages with information on the Open edX LMS/Studio.
+# It runs a git clone on the localhost machine, run a docker build, generates a configuration file and then runs the built docker image.
+#
+# Example:
+#   ansible-playbook -i nau-data/envs/staging/hosts.ini wordpress_lms_sync.yml -e "extra_params: -t"
+---
+- name: Synchronize WordPress pages with information on Open EDX LMS
+  hosts: command_and_control
+  tasks:
+    - set_fact: 
+        nau_wp_sync_version: "{{ nau_wp_sync_version | default('master') }}"
+    - set_fact: 
+        nau_wp_sync_extra_params: "{{ extra_params | default('') }}"
+        nau_wp_sync_base_directory: /tmp/nau-wp-sync/{{ nau_wp_sync_version }}
+
+    - name: Create folder
+      file:
+        path: "{{ nau_wp_sync_base_directory }}"
+        state: directory
+
+    - name: Updates the repository code
+      git:
+        repo: "https://github.com/fccn/nau-wp-sync.git"
+        dest: "{{ nau_wp_sync_base_directory }}"
+        version: "{{ nau_wp_sync_version }}"
+        accept_hostkey: yes
+        force: true 
+
+    - name: Build docker image using on {{ nau_wp_sync_version }} version
+      shell: docker build -t nau-wp-sync:{{ nau_wp_sync_version }} .
+      args:
+        chdir: "{{ nau_wp_sync_base_directory }}"
+
+    - name: Generates a configuration file
+      template: 
+        src: "{{ COMMON_PATH_CUSTOM_FILES }}/wordpress/nau-wp-sync/config.yml.j2"
+        dest: "{{ nau_wp_sync_base_directory }}/config.yml"
+
+    - name: Runs the script on a docker container
+      shell: docker run -t --rm --name nau-wp-sync-{{ nau_wp_sync_version }} --mount type=bind,source={{ nau_wp_sync_base_directory }}/config.yml,target=/usr/src/app/config.yml nau-wp-sync:{{ nau_wp_sync_version }} python sync.py {{ nau_wp_sync_extra_params }}
+      args:
+        chdir: "{{ nau_wp_sync_base_directory }}"
+      register: sync_output
+
+    - name: Print stdout of lms saml pull output
+      debug:
+        msg: "{{ sync_output.stdout_lines }}"
+      when: sync_output.stdout_lines is defined
+
+    - name: Print stderr of lms saml pull output
+      debug:
+        msg: "{{ sync_output.stderr_lines }}"
+      when: sync_output.stderr_lines is defined
+
+    - name: Clean
+      file:
+        path: "{{ nau_wp_sync_base_directory }}"
+        state: absent
