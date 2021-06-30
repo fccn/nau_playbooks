@@ -66,11 +66,12 @@
         dest: /nau/ops/wordpress/wp-content/nau_reports.xlsx
         mode: pull
       delegate_to: 172.23.2.41 # other env machine
+      become: true
       tags: sync
 
     # - name: Move file
-    #   shell: ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ ansible_user_id }}@172.23.2.41 sudo mv /home/ubuntu/nau_reports.xlsx /nau/ops/wordpress/wp-content/nau_reports.xlsx
-    #   #delegate_to: localhost
+    #   shell: sudo mv /home/ubuntu/nau_reports.xlsx /nau/ops/wordpress/wp-content/nau_reports.xlsx
+    #   delegate_to: 172.23.2.41
     #   tags: move
 
     - name: Clean everything and also config.ini for security reasons
