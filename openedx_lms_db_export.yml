@@ -1,75 +1,75 @@
-# Ansible playbook to synchronize WordPress pages with information on the Open edX LMS/Studio.
+# Ansible playbook to export open edx database to excel with information on the Open edX LMS/Studio.
 # It runs a git clone on the localhost machine, run a docker build, generates a configuration file and then runs the built docker image.
 #
 # Example:
 #   ansible-playbook -i nau-data/envs/staging/hosts.ini wordpress_lms_sync.yml -e "extra_params: -t"
 ---
-- name: Synchronize WordPress pages with information on Open EDX LMS
+- name: Exports information to excel from Open EDX LMS/Studio databases
   hosts: command_and_control
   become: True
   gather_facts: True
   tasks:
     - set_fact: 
-        nau_wp_sync_version: "{{ nau_wp_sync_version | default('master') }}"
+        nau_db_exporter_version: "{{ nau_db_exporter_version | default('master') }}"
     - set_fact: 
-        nau_wp_sync_extra_params: "{{ extra_params | default('') }}"
-        nau_wp_sync_base_directory: /tmp/nau-database-exporter-{{ nau_wp_sync_version }}
+        nau_db_exporter_extra_params: "{{ extra_params | default('') }}"
+        nau_db_exporter_base_directory: /tmp/nau-database-exporter-{{ nau_db_exporter_version }}
 
     - name: Create folder
       file:
-        path: "{{ nau_wp_sync_base_directory }}"
+        path: "{{ nau_db_exporter_base_directory }}"
         state: directory
 
     - name: Updates the repository code
       git:
         repo: "https://github.com/fccn/nau-database-exporter.git"
-        dest: "{{ nau_wp_sync_base_directory }}"
-        version: "{{ nau_wp_sync_version }}"
+        dest: "{{ nau_db_exporter_base_directory }}"
+        version: "{{ nau_db_exporter_version }}"
         accept_hostkey: yes
         force: true 
 
-    - name: Build docker image using on {{ nau_wp_sync_version }} version
-      shell: docker build -t nau-database-exporter:{{ nau_wp_sync_version }} .
+    - name: Build docker image using on {{ nau_db_exporter_version }} version
+      shell: docker build -t nau-database-exporter:{{ nau_db_exporter_version }} .
       args:
-        chdir: "{{ nau_wp_sync_base_directory }}"
+        chdir: "{{ nau_db_exporter_base_directory }}"
 
     - name: Generates a configuration file
       template: 
         src: "{{ COMMON_PATH_CUSTOM_FILES }}/nau-database-exporter/config.ini.j2"
-        dest: "{{ nau_wp_sync_base_directory }}/config.ini"
+        dest: "{{ nau_db_exporter_base_directory }}/config.ini"
 
     - name: Runs the python report.py script on a docker container
       shell: |
         docker run -t --rm \
-        --name nau-database-exporter-{{ nau_wp_sync_version }} \
-        --mount type=bind,source={{ nau_wp_sync_base_directory }}/config.ini,target=/usr/src/app/config.ini \
-        -v {{ nau_wp_sync_base_directory }}/output:/usr/src/app/output \
-        nau-database-exporter:{{ nau_wp_sync_version }} \
-        python report.py {{ nau_wp_sync_extra_params }}
+        --name nau-database-exporter-{{ nau_db_exporter_version }} \
+        --mount type=bind,source={{ nau_db_exporter_base_directory }}/config.ini,target=/usr/src/app/config.ini \
+        -v {{ nau_db_exporter_base_directory }}/output:/usr/src/app/output \
+        nau-database-exporter:{{ nau_db_exporter_version }} \
+        python report.py {{ nau_db_exporter_extra_params }}
       args:
-        chdir: "{{ nau_wp_sync_base_directory }}"
+        chdir: "{{ nau_db_exporter_base_directory }}"
       register: sync_output
 
-    - name: Print stdout of lms saml pull output
+    - name: Print stdout of export output
       debug:
         msg: "{{ sync_output.stdout_lines }}"
       when: sync_output.stdout_lines is defined
 
-    - name: Print stderr of lms saml pull output
+    - name: Print stderr of export output
       debug:
         msg: "{{ sync_output.stderr_lines }}"
       when: sync_output.stderr_lines is defined
 
     - name: Transfer file from cnc machine to web server on STAGE
       synchronize:
-        src: "{{ nau_wp_sync_base_directory }}/output/nau_reports.xlsx"
+        src: "{{ nau_db_exporter_base_directory }}/output/nau_reports.xlsx"
         dest: /nau/ops/wordpress/wp-content/nau_reports.xlsx
         mode: pull
       delegate_to: 172.23.2.41 # other env machine
 
     - name: Clean everything and also config.ini for security reasons
       file:
-        path: "{{ nau_wp_sync_base_directory }}"
+        path: "{{ nau_db_exporter_base_directory }}"
         state: absent
 
     - name: Send an HTTP GET to Google AppScript to force the update
