@@ -44,12 +44,12 @@
         chdir: "{{ nau_wp_sync_base_directory }}"
       register: sync_output
 
-    - name: Print stdout of lms saml pull output
+    - name: Print stdout of sync output
       debug:
         msg: "{{ sync_output.stdout_lines }}"
       when: sync_output.stdout_lines is defined
 
-    - name: Print stderr of lms saml pull output
+    - name: Print stderr of sync output
       debug:
         msg: "{{ sync_output.stderr_lines }}"
       when: sync_output.stderr_lines is defined
