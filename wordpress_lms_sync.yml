@@ -6,12 +6,14 @@
 ---
 - name: Synchronize WordPress pages with information on Open EDX LMS
   hosts: command_and_control
+  become: True
+  gather_facts: True
   tasks:
     - set_fact: 
         nau_wp_sync_version: "{{ nau_wp_sync_version | default('master') }}"
     - set_fact: 
         nau_wp_sync_extra_params: "{{ extra_params | default('') }}"
-        nau_wp_sync_base_directory: /tmp/nau-wp-sync/{{ nau_wp_sync_version }}
+        nau_wp_sync_base_directory: /tmp/nau-wp-sync-{{ nau_wp_sync_version }}
 
     - name: Create folder
       file:
