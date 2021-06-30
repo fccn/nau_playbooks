@@ -8,13 +8,12 @@
   hosts: command_and_control
   become: True
   gather_facts: True
+  vars: 
+    _nau_db_exporter_version: "{{ nau_db_exporter_version | default('master') }}"
+    nau_db_exporter_extra_params: "{{ extra_params | default('') }}"
+    nau_db_exporter_base_directory: /tmp/nau-database-exporter-{{ _nau_db_exporter_version }}
+  
   tasks:
-    - set_fact: 
-        nau_db_exporter_version: "{{ nau_db_exporter_version | default('master') }}"
-    - set_fact: 
-        nau_db_exporter_extra_params: "{{ extra_params | default('') }}"
-        nau_db_exporter_base_directory: /tmp/nau-database-exporter-{{ nau_db_exporter_version }}
-
     - name: Create folder
       file:
         path: "{{ nau_db_exporter_base_directory }}"
@@ -24,12 +23,12 @@
       git:
         repo: "https://github.com/fccn/nau-database-exporter.git"
         dest: "{{ nau_db_exporter_base_directory }}"
-        version: "{{ nau_db_exporter_version }}"
+        version: "{{ _nau_db_exporter_version }}"
         accept_hostkey: yes
         force: true 
 
-    - name: Build docker image using on {{ nau_db_exporter_version }} version
-      shell: docker build -t nau-database-exporter:{{ nau_db_exporter_version }} .
+    - name: Build docker image using on {{ _nau_db_exporter_version }} version
+      shell: docker build -t nau-database-exporter:{{ _nau_db_exporter_version }} .
       args:
         chdir: "{{ nau_db_exporter_base_directory }}"
 
@@ -41,10 +40,10 @@
     - name: Runs the python report.py script on a docker container
       shell: |
         docker run -t --rm \
-        --name nau-database-exporter-{{ nau_db_exporter_version }} \
+        --name nau-database-exporter-{{ _nau_db_exporter_version }} \
         --mount type=bind,source={{ nau_db_exporter_base_directory }}/config.ini,target=/usr/src/app/config.ini \
         -v {{ nau_db_exporter_base_directory }}/output:/usr/src/app/output \
-        nau-database-exporter:{{ nau_db_exporter_version }} \
+        nau-database-exporter:{{ _nau_db_exporter_version }} \
         python report.py {{ nau_db_exporter_extra_params }}
       args:
         chdir: "{{ nau_db_exporter_base_directory }}"
@@ -63,9 +62,16 @@
     - name: Transfer file from cnc machine to web server on STAGE
       synchronize:
         src: "{{ nau_db_exporter_base_directory }}/output/nau_reports.xlsx"
+        #dest: /home/ubuntu/nau_reports.xlsx 
         dest: /nau/ops/wordpress/wp-content/nau_reports.xlsx
         mode: pull
       delegate_to: 172.23.2.41 # other env machine
+      tags: sync
+
+    # - name: Move file
+    #   shell: ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ ansible_user_id }}@172.23.2.41 sudo mv /home/ubuntu/nau_reports.xlsx /nau/ops/wordpress/wp-content/nau_reports.xlsx
+    #   #delegate_to: localhost
+    #   tags: move
 
     - name: Clean everything and also config.ini for security reasons
       file:
