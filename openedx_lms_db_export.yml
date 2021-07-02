@@ -6,7 +6,7 @@
 ---
 - name: Exports information to excel from Open EDX LMS/Studio databases
   hosts: command_and_control
-  become: True
+  # become: True
   gather_facts: True
   vars: 
     _nau_db_exporter_version: "{{ nau_db_exporter_version | default('master') }}"
@@ -75,13 +75,11 @@
         #dest: /nau/ops/wordpress/wp-content/nau_reports.xlsx
         mode: pull
       delegate_to: 172.23.2.41 # other env machine
-      become: true
       tags: sync
 
     - name: Move file
-      shell: mv /home/ubuntu/nau_reports.xlsx /nau/ops/wordpress/wp-content/nau_reports.xlsx
+      shell: sudo mv /home/ubuntu/nau_reports.xlsx /nau/ops/wordpress/wp-content/nau_reports.xlsx
       delegate_to: 172.23.2.41
-      become: true
       tags: move
 
     - name: Clean everything and also config.ini for security reasons
