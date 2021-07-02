@@ -60,33 +60,33 @@
       when: sync_output.stderr_lines is defined
 
     # Fix rsync problem because destination folder must have www-data user and group as owner
-    - name: Adding existing user ubuntu to group www-data
-      user:
-        name: ubuntu
-        groups: www-data
-        append: yes
-      delegate_to: 172.23.2.41 # other env machine
+    # - name: Adding existing user ubuntu to group www-data
+    #   user:
+    #     name: ubuntu
+    #     groups: www-data
+    #     append: yes
+    #   delegate_to: 172.23.2.41 # other env machine
 
-    - name: Transfer file from cnc machine to web server on STAGE
-      synchronize:
-        src: "{{ nau_db_exporter_base_directory }}/output/nau_reports.xlsx"
-        # needs to be on this folder!
-        dest: /home/ubuntu/nau_reports.xlsx 
-        #dest: /nau/ops/wordpress/wp-content/nau_reports.xlsx
-        mode: pull
-      delegate_to: 172.23.2.41 # other env machine
-      tags: sync
+    # - name: Transfer file from cnc machine to web server on STAGE
+    #   synchronize:
+    #     src: "{{ nau_db_exporter_base_directory }}/output/nau_reports.xlsx"
+    #     # needs to be on this folder!
+    #     dest: /home/ubuntu/nau_reports.xlsx 
+    #     #dest: /nau/ops/wordpress/wp-content/nau_reports.xlsx
+    #     mode: pull
+    #   delegate_to: 172.23.2.41 # other env machine
+    #   tags: sync
 
-    - name: Move file
-      shell: sudo mv /home/ubuntu/nau_reports.xlsx /nau/ops/wordpress/wp-content/nau_reports.xlsx
-      delegate_to: 172.23.2.41
-      tags: move
+    # - name: Move file
+    #   shell: sudo mv /home/ubuntu/nau_reports.xlsx /nau/ops/wordpress/wp-content/nau_reports.xlsx
+    #   delegate_to: 172.23.2.41
+    #   tags: move
 
-    - name: Clean everything and also config.ini for security reasons
-      file:
-        path: "{{ nau_db_exporter_base_directory }}"
-        state: absent
+    # - name: Clean everything and also config.ini for security reasons
+    #   file:
+    #     path: "{{ nau_db_exporter_base_directory }}"
+    #     state: absent
 
-    - name: Send an HTTP GET to Google AppScript to force the update
-      uri:
-        url: https://script.google.com/macros/s/AKfycbzd3otfV2AtO1r-fqyCzaLWshDt6S3B4y3lO84eSPqDgODnGJ0/exec
+    # - name: Send an HTTP GET to Google AppScript to force the update
+    #   uri:
+    #     url: https://script.google.com/macros/s/AKfycbzd3otfV2AtO1r-fqyCzaLWshDt6S3B4y3lO84eSPqDgODnGJ0/exec
