@@ -6,7 +6,7 @@
 ---
 - name: Exports information to excel from Open EDX LMS/Studio databases
   hosts: command_and_control
-  # become: True
+  become: True
   gather_facts: True
   vars: 
     _nau_db_exporter_version: "{{ nau_db_exporter_version | default('master') }}"
