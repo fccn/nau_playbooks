@@ -151,6 +151,7 @@
     - role: logrotate_overrides
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'aws' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
     - role: nau_i18n
+      when: nau_translations_active | default(True)
     - role: web_server_monitoring
     - role: snmpd
     - role: nau_check_urls
