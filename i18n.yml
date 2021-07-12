@@ -1,8 +1,0 @@
----
-
-- name: Update and publish the nau_translation project
-  hosts: app_servers
-  become: True
-  gather_facts: False
-  roles:
-    - role: nau_i18n

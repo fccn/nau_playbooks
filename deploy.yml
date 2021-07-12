@@ -9,8 +9,6 @@
 #   ansible-playbook -i nau-data/envs/staging/hosts.ini deploy.yml --tags keepalived --limit slave_persistence_servers -e keepalived_priority=1
 # To mark a server back to normal state, run the same command without the --limit.
 #
-# To update only the nau_translations
-#    --tags nau_i18n
 
 - name: Bootstrap instances of 16.04
   hosts: all,!idpproxy_servers,!idpauth_servers
@@ -150,8 +148,6 @@
       when: POSTFIX_QUEUE_EXTERNAL_SMTP_HOST is defined and POSTFIX_QUEUE_EXTERNAL_SMTP_HOST != ""
     - role: logrotate_overrides
       when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'aws' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
-    - role: nau_i18n
-      when: nau_translations_active | default(True) | bool
     - role: web_server_monitoring
     - role: snmpd
     - role: nau_check_urls
