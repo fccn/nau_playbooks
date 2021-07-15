@@ -18,20 +18,6 @@
         name: geerlingguy.docker
     - import_role:
         name: docker_daemon
-    - name: Remove docker-ce package
-      apt:
-        name: docker-ce
-        state: absent
-    - name: Install docker-ce-cli and docker-ce packages
-      apt: 
-        name:
-          - docker-ce-cli
-          - docker-ce
-        state: present
-    - name: Install docker-compose package
-      apt: 
-        name: docker-compose
-        state: present
     - name: force all notified handlers to run at this point
       meta: flush_handlers
     - import_role:
