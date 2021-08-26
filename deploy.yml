@@ -208,7 +208,7 @@
     - analytics_pipeline
     - analytics_pipeline_configuration
 
-- name: Configure the wordpress instance
+- name: Configure the wordpress marketing servers
   hosts: wordpress_servers
   serial: "{{ serial_number | default(1) }}"
   become: True
@@ -235,6 +235,35 @@
   tags:
     - wordpress
     - marketing
+
+- name: Configure the richie marketing servers
+  hosts: richie_servers
+  serial: "{{ serial_number | default(1) }}"
+  become: True
+  #become_flags: "-E"
+  gather_facts: True
+  vars:
+    rolling_deploy_docker: true
+  roles: 
+    - role: rolling_deploy
+      vars:
+        rolling_deploy_starting: true
+      when: ( groups['richie_servers'] | length ) > 1
+    - role: geerlingguy.docker
+    - role: docker_daemon
+    - role: ansible-docker-deploy
+    #- role: basic-authentication
+    # - role: web_server_monitoring
+    # - role: snmpd
+    # - role: nau_check_urls
+    - role: rolling_deploy
+      vars:
+        rolling_deploy_starting: false
+      when: ( groups['richie_servers'] | length ) > 1
+  tags:
+    - wordpress
+    - marketing
+
 
 # specific variables are configured on nau-data/envs/<env>/group_vars/idpproxy_servers.yml
 - name: Configure Shibboleth IdP
