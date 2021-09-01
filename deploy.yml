@@ -11,7 +11,7 @@
 #
 
 - name: Bootstrap instances of 16.04
-  hosts: all,!idpproxy_servers,!idpauth_servers
+  hosts: all,!idpproxy_servers,!idpauth_servers,!richie_servers
   gather_facts: no
   become: true
   roles:

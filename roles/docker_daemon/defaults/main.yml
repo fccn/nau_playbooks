@@ -1,3 +1,7 @@
 ---
 docker_daemon_configuration_path: /etc/docker/daemon.json
 docker_daemon_configurations_dict: []
+
+docker_daemon_packages:
+  - "{{ 'python-pip'        if ansible_distribution == 'Ubuntu' and ansible_distribution_version == '16.04' else 'python3-pip' }}" 
+  - "{{ 'python-setuptools' if ansible_distribution == 'Ubuntu' and ansible_distribution_version == '16.04' else 'python3-setuptools' }}" 
