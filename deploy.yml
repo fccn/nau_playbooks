@@ -253,9 +253,9 @@
     - role: docker_daemon
     - role: ansible-docker-deploy
     #- role: basic-authentication
-    # - role: web_server_monitoring
-    # - role: snmpd
-    # - role: nau_check_urls
+    - role: web_server_monitoring
+    - role: snmpd
+    - role: nau_check_urls
     - role: rolling_deploy
       vars:
         rolling_deploy_starting: false
