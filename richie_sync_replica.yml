@@ -1,0 +1,14 @@
+---
+- name: Backup of richie primary data
+  hosts: richie_primary
+  become: True
+  gather_facts: True
+  roles:
+    - nau_backup
+
+- name: Restore richie replica from backup
+  hosts: richie_replica
+  become: True
+  gather_facts: True
+  roles:
+    - nau_restore

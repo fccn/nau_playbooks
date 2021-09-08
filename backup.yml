@@ -23,4 +23,11 @@
   become: True
   gather_facts: True
   roles:
-    - wordpress_backup
+    - nau_backup
+
+- name: Backup of richie primary data
+  hosts: richie_primary
+  become: True
+  gather_facts: True
+  roles:
+    - nau_backup
