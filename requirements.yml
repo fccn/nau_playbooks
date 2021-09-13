@@ -9,4 +9,4 @@
   version: 3.1.2
 
 - src: git+https://github.com/fccn/ansible-docker-deploy.git
-  version: 5d67b543962c90dedcc9561223e628fb9e2abca8
+  version: 893635cc4db6b4210c7106ce863d5d573d97ce13
