@@ -40,6 +40,8 @@
 -A INPUT -s 193.136.7.2 -m comment --comment "Monitorization Sirens" -j ACCEPT
 -A INPUT -s 193.136.7.7 -m comment --comment "Monitorization Sirens bkp" -j ACCEPT
 -A INPUT -s 10.0.5.11 -m comment --comment "Monitorization Ananda" -j ACCEPT
+-A INPUT -s 193.136.7.12 -m comment --comment "Monitorization Icinga" -j ACCEPT
+-A INPUT -s 193.136.7.14 -m comment --comment "Monitorization Cacti" -j ACCEPT
 
 # Docker rules please dont edit this lines
 -A FORWARD -j DOCKER-USER
