@@ -9,8 +9,12 @@
   template:
     dest: "/etc/keepalived/keepalived.conf"
     src: "keepalived.conf.j2"
-  notify: restart keepalived
   tags: keepalived
+  register: keepalived_conf_out
 
-- name: Ensure handlers are notified now to avoid run a next role without changing the keepalive priority
-  meta: flush_handlers
+- name: Restart keepalived if configuration has changed
+  service: 
+    name : keepalived
+    enabled: yes
+    state: restarted
+  when: keepalived_conf_out.changed
