@@ -47,8 +47,8 @@
       vars: 
         keepalived_priority: 1 # Lower priority so the VIPs can swap to other machine.
       when: vrrp_instances is defined
-    - role: ansible-firewall
     - role: geerlingguy.docker
+    - role: ansible-firewall
     - role: docker_daemon
     - role: ansible-docker-deploy
     - role: haproxy-netsnmp-perl
