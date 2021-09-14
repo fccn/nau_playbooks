@@ -8,5 +8,8 @@
 - name: geerlingguy.docker
   version: 3.1.2
 
+- src: git+https://github.com/fccn/ansible-firewall.git
+  version: b4fd0250e3f7df4adf45b8b617264765ab1d3061
+
 - src: git+https://github.com/fccn/ansible-docker-deploy.git
-  version: 1c35741e8d97cb0c3d8579c52965ef3a75d3a7a6
+  version: 893635cc4db6b4210c7106ce863d5d573d97ce13

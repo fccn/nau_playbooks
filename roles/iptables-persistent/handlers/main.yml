@@ -1,9 +1,0 @@
----
-# Handlers for iptables-persistent
-- name: netfilter restart
-  service: name=netfilter-persistent enabled=yes state=restarted
-  listen: restart iptables-persistent
-
-- name: docker restart
-  service: name=docker enabled=yes state=restarted
-  listen: restart iptables-persistent
