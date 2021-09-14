@@ -45,7 +45,7 @@
   roles:
     - role: keepalived
       vars: 
-        keepalived_priority: 1 # Lower priority so the VIPs can swap to other machine.
+        keepalived_priority_value: 1 # Lower priority so the VIPs can swap to other machine.
       when: vrrp_instances is defined
     - role: geerlingguy.docker
     - role: ansible-firewall
@@ -54,6 +54,8 @@
     - role: haproxy-netsnmp-perl
     - role: snmpd
     - role: keepalived
+      vars:
+        keepalived_priority_value: "{{ keepalived_priority }}"
       when: vrrp_instances is defined
   tags: load-balancer
 
