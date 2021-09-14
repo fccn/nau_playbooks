@@ -17,4 +17,5 @@
     name : keepalived
     enabled: yes
     state: restarted
-  when: keepalived_conf_out.changed
+  tags: keepalived
+  when: keepalived_conf_out.changed or ( keepalived_service_force_restart | default (false) | bool )
