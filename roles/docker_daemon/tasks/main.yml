@@ -1,18 +1,5 @@
 ---
 
-- name: Install package dependencies
-  package:
-    name: "{{ item }}"
-  with_items: "{{ docker_daemon_packages }}"
-
-- name: Install pip dependencies
-  pip:
-    name: 
-      - docker-py
-      - docker-compose
-      - selectors
-    state: present
-
 - name: Configure docker daemon
   template:
     dest: /etc/docker/daemon.json
