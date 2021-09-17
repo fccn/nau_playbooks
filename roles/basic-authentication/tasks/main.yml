@@ -1,0 +1,18 @@
+---
+
+- name: Make sure we can use htpasswd module
+  apt: 
+    pkg: python-passlib
+    state: present
+  when: basic_authentication_users is defined and ( basic_authentication_users | length > 0 )
+
+- name: Write out htpasswd file
+  htpasswd:
+    name: "{{ item.name }}"
+    password: "{{ item.password }}"
+    path: "{{ item.path }}"
+    state: "{{ item.state | default(omit) }}"
+    owner: "{{ item.owner | default(omit) }}"
+    group: "{{ item.group | default(omit) }}"
+    mode: "{{ item.mode   | default(omit) }}"
+  with_items: "{{ basic_authentication_users }}"

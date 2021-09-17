@@ -253,8 +253,8 @@
       when: ( groups['richie_servers'] | length ) > 1
     - role: geerlingguy.docker
     - role: docker_daemon
+    - role: basic-authentication
     - role: ansible-docker-deploy
-    #- role: basic-authentication
     - role: web_server_monitoring
     - role: snmpd
     - role: nau_check_urls
