@@ -16,3 +16,4 @@
     group: "{{ item.group | default(omit) }}"
     mode: "{{ item.mode   | default(omit) }}"
   with_items: "{{ basic_authentication_users }}"
+  when: basic_authentication_users is defined and ( basic_authentication_users | length > 0 )
