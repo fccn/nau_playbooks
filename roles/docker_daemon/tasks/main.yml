@@ -5,6 +5,7 @@
     dest: /etc/docker/daemon.json
     src: daemon.json.j2
   when: docker_daemon_configurations_dict | length > 0
+  tags: docker_daemon
   notify: restart-docker
 
 - name: Delete docker daemon configuration
@@ -12,7 +13,9 @@
     state: absent
     path: /etc/docker/daemon.json
   when: docker_daemon_configurations_dict | length == 0
+  tags: docker_daemon
   notify: restart-docker
 
 - name: Ensure handlers are notified now to avoid containers to be created with old docker daemon configuration like logging
+  tags: docker_daemon
   meta: flush_handlers
