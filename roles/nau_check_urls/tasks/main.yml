@@ -25,7 +25,9 @@
   retries: "{{ config.retries | default(2) }}"
   delay: 30
   check_mode: no
-  tags: nau_check_urls
+  tags: 
+    - nau_check_urls
+    - always
   loop_control:
     label: "Check if {{ config.name }} is ok"
     loop_var: config

@@ -2,7 +2,9 @@
 
 - debug:
     msg: "{{ rolling_deploy_msg }} parent servers {{ rolling_deploy_parent_servers_ipv4 | join(',') }} on iptables"
-  tags: rolling_deploy
+  tags: 
+    - rolling_deploy
+    - always
 
 - name: Change parent servers IPv4 using iptables
   iptables: 
@@ -15,7 +17,9 @@
     state: "{{ rolling_deploy_iptables_state }}" # present or absent
   when: rolling_deploy_parent_servers_ipv4 | length > 0
   become: yes
-  tags: rolling_deploy
+  tags: 
+    - rolling_deploy
+    - always
 
 - name: Change parent servers IPv6 using iptables
   iptables: 
@@ -28,4 +32,6 @@
     state: "{{ rolling_deploy_iptables_state }}" # present or absent
   when: rolling_deploy_parent_servers_ipv6 | length > 0
   become: yes
-  tags: rolling_deploy
+  tags: 
+    - rolling_deploy
+    - always
