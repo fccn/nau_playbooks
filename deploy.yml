@@ -303,3 +303,11 @@
     - geerlingguy.docker
     - docker_daemon
     - ansible-docker-deploy
+
+- name: Configure command and control server
+  hosts: command_and_control
+  become: True
+  gather_facts: True
+  roles:
+    - geerlingguy.docker
+    - docker_daemon
