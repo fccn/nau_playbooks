@@ -24,7 +24,7 @@
       args:
         executable: /bin/bash # use bash instead of sh so we could source venvs
       # Example to run something manually
-      #   sudo -u discovery /bin/bash -c "source venvs/discovery/bin/activate && source discovery_env && cd discovery && ./manage.py help"
+      #   sudo -u discovery /bin/bash -c "cd /edx/app/discovery && source venvs/discovery/bin/activate && source discovery_env && cd discovery && ./manage.py help"
       shell: |
         cd &&
         source venvs/discovery/bin/activate &&
