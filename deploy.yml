@@ -32,6 +32,9 @@
   gather_facts: True
   vars:
     hosts_add_basic_ipv6: true
+    hosts_entries: 
+      - name: "{{ nau_ceph_host }}"
+        ip: "{{ nau_ceph_s3_ip }}"
   roles: 
     - bertvv.hosts
   tags: hosts
