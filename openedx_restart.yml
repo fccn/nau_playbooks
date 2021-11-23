@@ -1,6 +1,6 @@
 ---
-- name: Restart all apps on supervisord like lms and studio
-  hosts: app_servers
+- name: Restart all open edx apps using supervisord like lms, studio, insights, notes, discovery, ecommerce
+  hosts: app_servers,complementary_servers
   serial: 1 # each server
   become: True
   gather_facts: False
