@@ -32,7 +32,7 @@
         cd discovery &&
         ./manage.py refresh_course_metadata &&
         ./manage.py remove_unused_indexes &&
-        ./manage.py update_index  --batch-size 80 --disable-change-limit
+        ./manage.py update_index --batch-size 20 --disable-change-limit
       register: discovery_output
 
     - name: Print stdout of refresh course metadata output
