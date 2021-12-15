@@ -1,0 +1,5 @@
+---
+- name: Remove edx ubuntu ppa repo
+  apt_repository: 
+    repo: "{{ COMMON_EDX_PPA }}"
+    state: absent

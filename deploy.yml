@@ -84,6 +84,7 @@
   become: True
   gather_facts: True
   roles:
+    - role: remove_edx_apt_ppa_repo
     - role: swapfile
     - role: data_dirs
     - role: edxlocal
@@ -129,6 +130,7 @@
       vars:
         rolling_deploy_starting: true
       when: ( groups['app_servers'] | length ) > 1
+    - role: remove_edx_apt_ppa_repo
     - role: swapfile
     - role: server_files # copy additional ssl certificates
     - role: nginx
@@ -167,6 +169,7 @@
       vars:
         rolling_deploy_starting: true
       when: ( groups['complementary_servers'] | length ) > 1
+    - role: remove_edx_apt_ppa_repo
     - role: swapfile
     - role: nginx
       nginx_sites:
@@ -204,6 +207,7 @@
   vars:
     ANALYTICS_API_SERVICE_CONFIG: "When defined, we create the analytics-api users at the db"
   roles:
+    - role: remove_edx_apt_ppa_repo
     - role: swapfile
     - role: edxlocal
     - analytics_pipeline
