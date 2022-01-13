@@ -28,6 +28,7 @@ analytics_pipeline_configuration_repo: "https://github.com/edx/edx-analytics-pip
 analytics_pipeline_configuration_repo_version: "master"
 
 analytics_pipeline_configuration_source: "hdfs://localhost:9000"
+analytics_pipeline_configuration_hadoop_tmp_dir: "{{ analytics_pipeline_configuration_home_dir }}/hadoop-tmp"
 
 analytics_pipeline_configuration_common_directories:
   - {
@@ -44,6 +45,12 @@ analytics_pipeline_configuration_common_directories:
     }
   - {
       path: "{{ analytics_pipeline_configuration_hadoop_logs_dir }}",
+      state: "directory",
+      owner: "hadoop",
+      group: "hadoop"
+    }
+  - {
+      path: "{{ analytics_pipeline_configuration_hadoop_tmp_dir }}",
       state: "directory",
       owner: "hadoop",
       group: "hadoop"
