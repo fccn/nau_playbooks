@@ -1,0 +1,12 @@
+---
+
+- name: Configure the application server group
+  hosts: app_servers
+  serial: "{{ serial_number | default(1) }}"
+  become: True
+  gather_facts: True
+  roles:
+    - remove_edx_apt_ppa_repo
+    - server_utils
+    - security
+    - common

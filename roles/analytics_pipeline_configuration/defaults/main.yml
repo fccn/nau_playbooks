@@ -12,6 +12,7 @@ analytics_pipeline_configuration_debian_pkgs:
   - libxslt1-dev
   - libjpeg8-dev
   - zlib1g-dev
+  - s3cmd
 
 analytics_pipeline_configuration_common_pip_pkgs:
   - virtualenv
