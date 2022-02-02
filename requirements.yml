@@ -9,7 +9,7 @@
   version: 3.1.2
 
 - src: git+https://github.com/fccn/ansible-firewall.git
-  version: b4fd0250e3f7df4adf45b8b617264765ab1d3061
+  version: 0cf719a0899e705b3e5dfe1782c727bb36777c9e
 
 - src: git+https://github.com/fccn/ansible-docker-deploy.git
   version: 411d6e8f673fd4fec666ebe728e320143e7eaf93
