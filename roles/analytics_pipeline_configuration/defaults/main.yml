@@ -17,6 +17,7 @@ analytics_pipeline_configuration_debian_pkgs:
 analytics_pipeline_configuration_common_pip_pkgs:
   - virtualenv
   - awscli
+  - mechanize
 
 analytics_pipeline_configuration_home_dir: "/nau/analytics"
 analytics_pipeline_configuration_hadoop_logs_dir: "{{ analytics_pipeline_configuration_home_dir }}/tracking"
