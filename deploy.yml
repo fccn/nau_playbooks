@@ -37,7 +37,7 @@
 
 - name: Configure load balancer docker
   # Deploy before on backup balancer, so if there is an error during the ansible deployment the primary continue to serve
-  hosts: balancer_backup,balancer_master
+  hosts: balancer_servers
   serial: "{{ serial_number | default(1) }}"
   become: True
   gather_facts: True
