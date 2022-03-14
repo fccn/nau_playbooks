@@ -14,16 +14,18 @@
         fail_msg: "Current Richie responding server should be the primary"
         success_msg: "Current Richie responding server is the primary"
 
-- name: Backup of richie primary data
+- name: Backup of richie primary data if it's ok
   hosts: richie_primary
   become: True
   gather_facts: True
   roles:
+    - nau_check_urls
     - nau_backup
 
-- name: Restore richie replica from backup
+- name: Restore richie replica from backup and check if it is ok
   hosts: richie_replica
   become: True
   gather_facts: True
   roles:
     - nau_backup_restore
+    - nau_check_urls
