@@ -80,7 +80,7 @@
       when: es_shards_result.stdout != ( '"' + expected_status + '"' )
 
 - name: Check URLs
-  hosts: statics_servers,app_servers,complementary_servers,wordpress_servers
+  hosts: all
   become: True
   gather_facts: True
   roles:

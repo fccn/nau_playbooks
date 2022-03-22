@@ -1,7 +1,7 @@
 #!/bin/bash -xe
 #
 # Example
-#  ./run-ansible-playbook development dev__three_layers.yml --limit wordpress_servers --check
+#  ./run-ansible-playbook development deploy.yml --limit richie_servers --check
 #
 export LC_ALL='en_US.UTF-8'
 

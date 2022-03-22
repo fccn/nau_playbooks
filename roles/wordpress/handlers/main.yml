@@ -1,3 +1,0 @@
----
-- name: restart wordpress
-  shell: "{{ wordpress_restart_command }}"

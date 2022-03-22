@@ -18,13 +18,6 @@
       vars:
         backup_mysql: True
 
-- name: Backup of wordpress master data and content
-  hosts: wordpress_master
-  become: True
-  gather_facts: True
-  roles:
-    - nau_backup
-
 - name: Backup of richie primary data
   hosts: richie_primary
   become: True
