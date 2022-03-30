@@ -1,0 +1,13 @@
+# Run the pakiti client, but don't install it
+# Pakiti is library that extracts some audit information on the server and sends its data to a pakiti server
+---
+- name: Runs the pakiti client
+  hosts: all
+  # ansible by default run parallel for every server, but we change this to run on synchronous mode.
+  serial: "{{ serial_number | default(1) }}"
+  become: True
+  gather_facts: False
+  roles: 
+    - role: pakiti
+      vars:
+        pakiti_push: true # only run pakiti, not install it

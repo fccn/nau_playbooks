@@ -13,3 +13,6 @@
 
 - src: git+https://github.com/fccn/ansible-docker-deploy.git
   version: 411d6e8f673fd4fec666ebe728e320143e7eaf93
+
+- src: git+https://github.com/fccn/ansible_pakiti_client.git
+  version: ae3d5b650e78a0276554c2e6af8a1ed7c8a349c4

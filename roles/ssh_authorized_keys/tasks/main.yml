@@ -9,3 +9,5 @@
   when: item.when | default(true)
   with_items: "{{ authorized_keys_for_user }}"
   ignore_errors: "{{ ansible_check_mode }}"
+  tags: 
+    - ssh

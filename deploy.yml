@@ -17,14 +17,13 @@
   roles:
     - python_minimal
 
-- name: Copy SSH Authorized keys
+- name: Copy SSH Authorized keys and install pakiti client
   hosts: all
   become: True
   gather_facts: True
   roles:
     - role: ssh_authorized_keys
-  tags: 
-    - ssh
+    - role: ansible_pakiti_client
 
 - name: Configure hosts file
   hosts: all,!srv_local,!support_server,!command_and_control
