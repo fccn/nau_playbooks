@@ -8,6 +8,7 @@
   become: True
   gather_facts: False
   roles: 
-    - role: pakiti
+    - role: ansible_pakiti_client
       vars:
+        pakiti_install: false # do not install the pakiti client because it should be installed using the deploy playbook
         pakiti_push: true # only run pakiti, not install it
