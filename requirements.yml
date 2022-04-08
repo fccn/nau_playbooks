@@ -1,18 +1,28 @@
 ---
+# Manage /etc/hosts file
 - name: bertvv.hosts
   version: v1.2.0
 
+# Install pip
+- name: geerlingguy.pip
+  version: 2.1.0
+
+# Install docker
+- name: geerlingguy.docker
+  version: 4.2.1
+
+# Install IdP Shibboleth, fccn stuff
 - src: git+https://github.com/fccn/shibboleth-3-4-4-centos7-lite.git
   version: a6802ea65f76ceadf40605aa19a7a05721cb74e7
 
-- name: geerlingguy.docker
-  version: 4.1.3
-
+# Manage iptables
 - src: git+https://github.com/fccn/ansible-firewall.git
   version: 0cf719a0899e705b3e5dfe1782c727bb36777c9e
 
+# Utility to deploy apps to docker compose or swarm
 - src: git+https://github.com/fccn/ansible-docker-deploy.git
   version: 411d6e8f673fd4fec666ebe728e320143e7eaf93
 
+# Auditory of the installed packages and software
 - src: git+https://github.com/fccn/ansible_pakiti_client.git
   version: ddd5c497721f7fbfef2e15a7696ec85d9a5b7ea2

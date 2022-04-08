@@ -1,0 +1,18 @@
+---
+user_group_primary: ubuntu
+
+user_groups_default:
+  - name: "{{ user_group_primary }}"
+    gid: 1000
+user_groups: "{{ user_groups_default }}"
+
+users_default:
+  - name: ubuntu
+    uid: 1000
+    group: "{{ user_group_primary }}"
+users: "{{ users_default }}"
+
+users_absent:
+  - fccn
+
+sudoers_line: "{{ user_group_primary }}  ALL=(ALL:ALL) NOPASSWD: ALL"

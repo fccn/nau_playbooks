@@ -11,17 +11,30 @@
 #
 
 - name: Bootstrap instances of 16.04
-  hosts: all,!idpproxy_servers,!idpauth_servers,!richie_servers
+  hosts: all,!idpproxy_servers,!idpauth_servers,!richie_servers,!nau_servers
   gather_facts: no
   become: true
   roles:
     - python_minimal
 
-- name: Copy SSH Authorized keys and install pakiti client
+- name: Bootstrap instances of 20.04
+  hosts: nau_servers
+  gather_facts: no
+  become: true
+  tasks:
+    # - name: Install and configure python
+    #   package:
+    #     name: python-is-python3
+    #     state: present
+    - include_role: 
+        name: geerlingguy.pip
+
+- name: Infrastructure configuration
   hosts: all
   become: True
   gather_facts: True
   roles:
+    - role: users
     - role: ssh_authorized_keys
     - role: ansible_pakiti_client
 
@@ -273,3 +286,30 @@
     - geerlingguy.docker
     - docker_daemon
     - ansible-docker-deploy
+
+- name: Configure NAU docker swarm VMs
+  hosts: nau_servers
+  serial: "{{ serial_number | default(1) }}"
+  become: True
+  gather_facts: True
+  roles:
+    # installs docker software
+    - role: geerlingguy.docker 
+    # configures the docker daemon
+    - role: docker_daemon
+    - role: docker_swarm
+      vars:
+        docker_swarm_manager: "{{ groups['nau_docker_swarm_manager'] }}"
+        docker_swarm_worker: "{{ groups['nau_docker_swarm_worker'] }}"
+        # on ansible inventory each host has its IPv4 address on the `ansible_host` variable
+        docker_swarm_node_advertise_addr: "{{ hostvars[inventory_hostname].ansible_host }}"
+    
+    # - role: ansible-docker-deploy
+    #   vars:
+    #     docker_deploy_base_folder: /nau/ops/openedx/mysql
+    #     docker_deploy_stack_template: "{{ COMMON_PATH_CUSTOM_FILES }}/openedx/docker-stack.yml"
+    #     docker_deploy_templates:
+    #       - src: "{{ COMMON_PATH_CUSTOM_FILES }}/openedx/mysql/mysql.cfg"
+    #         dest: "{{ docker_deploy_base_folder }}/mysql.cfg"
+    #         #when: "{{ not openedx_mysql_skip | default(false) }}"
+

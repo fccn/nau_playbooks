@@ -1,0 +1,54 @@
+---
+- name: Checks if required variables are available
+  fail:
+   msg: Please define the docker_swarm_manager and docker_swarm_worker (ansible groups)
+  when: > 
+    docker_swarm_manager is not defined or 
+    docker_swarm_worker is not defined
+  tags:
+    - swarm
+    - swarm-manager
+    - swarm-worker
+
+- name: Checks if docker is available
+  stat:
+    path: "{{ docker_path }}"
+  register: stat_result
+  tags:
+    - swarm
+    - swarm-manager
+    - swarm-worker
+
+- name: fail if docker not available
+  fail:
+    msg: "{{ docker_path }} is not available, please make sure docker is available"
+  when: not stat_result.stat.exists
+  tags:
+    - swarm
+    - swarm-manager
+    - swarm-worker
+
+- name: Install docker swarm pip dependencies
+  pip:
+    name: "{{ docker_swarm_pip_pkgs }}"
+    state: present
+
+- name: Configures manager
+  include_tasks: manager.yml
+  when: inventory_hostname in docker_swarm_manager
+  tags:
+    - swarm
+    - swarm-manager
+
+- name: Configures workers
+  include_tasks: worker.yml
+  when: inventory_hostname in docker_swarm_worker
+  tags:
+    - swarm
+    - swarm-worker
+
+- name: Removes cluster
+  include_tasks: remove.yml
+  when: remove_swarm_cluster|bool
+  tags:
+    - swarm-remove

@@ -1,0 +1,37 @@
+---
+- name: Remove developer linux user
+  user:
+    name: "{{ item }}"
+    state: absent
+    remove: yes
+  with_items: "{{ users_absent | default([]) }}"
+  tags: users
+
+- name: Create groups
+  group:
+    name: "{{ item.name }}"
+    gid: "{{ item.gid }}"
+  loop_control:
+    label: "{{ item.name }}"
+  with_items: "{{ user_groups }}"
+  tags: users
+
+- name: Create developer linux user
+  user:
+    name: "{{ item.name }}"
+    uid: "{{ item.uid }}"
+    group: "{{ item.group }}"
+    shell: /bin/bash
+    state: present
+  loop_control:
+    label: "{{ item.name }}"
+  with_items: "{{ users }}"
+  tags: users
+
+- name: Give sudo access without password
+  blockinfile:
+    path: /etc/sudoers
+    block: |
+      
+      {{ sudoers_line }}
+    backup: yes

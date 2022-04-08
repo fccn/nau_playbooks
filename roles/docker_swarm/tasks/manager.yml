@@ -1,0 +1,16 @@
+---
+- name: Init a new swarm with default parameters
+  docker_swarm:
+    state: present
+    advertise_addr: "{{ docker_swarm_node_advertise_addr }}"
+  register: result_output
+  tags:
+    - swarm
+    - swarm-manager
+
+- name: Sets swarm manager facts
+  set_fact:
+    swarm_facts: "{{ result_output }}"
+  tags:
+    - swarm
+    - swarm-manager
