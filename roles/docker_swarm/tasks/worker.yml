@@ -16,15 +16,6 @@
     - swarm
     - swarm-worker
 
-# - name: Collect docker swarm manager facts
-#   setup:
-#   delegate_to: "{{ docker_swarm_manager[0] }}"
-#   delegate_facts: true
-#   when: hostvars[docker_swarm_manager[0]] is undefined
-#   tags:
-#     - swarm
-#     - swarm-worker
-
 - name: Adds node
   docker_swarm:
     state: join

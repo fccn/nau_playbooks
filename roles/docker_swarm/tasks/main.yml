@@ -33,12 +33,33 @@
     name: "{{ docker_swarm_pip_pkgs }}"
     state: present
 
+- name: Gather facts from docker swarm managers and workers
+  setup:
+  delegate_to: "{{ item }}"
+  delegate_facts: true
+  when: item != inventory_hostname
+  loop: "{{ docker_swarm_manager + docker_swarm_worker }}"
+  tags:
+    - swarm
+    - swarm-manager
+    - swarm-worker
+    - swarm-labels
+
 - name: Configures manager
   include_tasks: manager.yml
   when: inventory_hostname in docker_swarm_manager
   tags:
     - swarm
     - swarm-manager
+
+- name: Configures nodes labels
+  include_tasks: labels.yml
+  when: inventory_hostname in docker_swarm_manager
+  tags:
+    - swarm
+    - swarm-manager
+    - swarm-worker
+    - swarm-labels
 
 - name: Configures workers
   include_tasks: worker.yml

@@ -1,0 +1,38 @@
+version: "3.8"
+
+services:
+{% for mysql_container in openedx_mysql_containers %}
+
+  mysql_{{loop.index}}:
+    image: {{ openedx_mysql_docker_image | default("docker.io/mysql:5.7.37-debian") }}
+    environment:
+      MYSQL_ROOT_PASSWORD: "{{ EDXAPP_MYSQL_PASSWORD_ADMIN }}"
+      MYSQL_DATABASE: "{{ EDXAPP_MYSQL_DB_NAME }}"
+      MYSQL_USER: "{{ COMMON_MYSQL_ADMIN_USER }}"
+      MYSQL_PASSWORD: "{{ EDXAPP_MYSQL_PASSWORD_ADMIN }}" 
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping --silent -p{{ EDXAPP_MYSQL_PASSWORD_ADMIN }} || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 30
+      start_period: 10s
+    volumes:
+      - {{ mysql_container.data }}:/var/lib/mysql
+    ports:
+{% for port in mysql_container.ports %}
+      - {{ port }}
+{% endfor %}
+    deploy:
+      replicas: 1
+      mode: replicated
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          memory: 4G
+      placement:
+        constraints:
+{% for constraint in mysql_container.constraints %}
+          - {{ constraint }}
+{% endfor %}
+{% endfor %}
