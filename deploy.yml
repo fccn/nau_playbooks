@@ -11,23 +11,18 @@
 #
 
 - name: Bootstrap instances of 16.04
-  hosts: all,!idpproxy_servers,!idpauth_servers,!richie_servers,!nau_servers
+  hosts: all,!idpproxy_servers,!idpauth_servers,!richie_servers,!nau_docker_swarm_servers
   gather_facts: no
   become: true
   roles:
     - python_minimal
 
 - name: Bootstrap instances of 20.04
-  hosts: nau_servers
+  hosts: nau_docker_swarm_servers
   gather_facts: no
   become: true
-  tasks:
-    # - name: Install and configure python
-    #   package:
-    #     name: python-is-python3
-    #     state: present
-    - include_role: 
-        name: geerlingguy.pip
+  roles:
+    - geerlingguy.pip
 
 - name: Infrastructure configuration
   hosts: all
@@ -288,7 +283,7 @@
     - ansible-docker-deploy
 
 - name: Configure NAU docker swarm VMs
-  hosts: nau_servers
+  hosts: nau_docker_swarm_servers
   serial: "{{ serial_number | default(1) }}"
   become: True
   gather_facts: True
@@ -307,9 +302,6 @@
         docker_swarm_worker: "{{ groups['nau_docker_swarm_worker'] }}"
         # on ansible inventory each host has its IPv4 address on the `ansible_host` variable
         docker_swarm_node_advertise_addr: "{{ hostvars[inventory_hostname].ansible_host }}"
-    
-    - debug:
-        msg: 'show create folder: {{ inventory_hostname in ("nau01-dev.nau.fccn.pt", "nau02-dev.nau.fccn.pt") }}'
 
     - name: Create folders used as volumes on all docker swarm nodes and not only on the 1st manager
       file:
@@ -320,7 +312,8 @@
         recurse: true
         state: directory
       when: item.when | default(true) | bool
-      loop: "{{ docker_deploy_folders_additional }}"
+      # Include future stacks
+      loop: "{{ openedx_docker_deploy_folders_additional }}"
       loop_control:
         label: "{{ item }} + {{ item.when }}"
 
@@ -331,20 +324,10 @@
   roles: 
     - role: ansible-docker-deploy
       vars:
-        docker_deploy_stack_name: openedx
-        docker_deploy_stack_template: "files/openedx/docker-stack.yml"
-        docker_deploy_base_folder: /nau/ops/openedx
-        # docker_deploy_templates:
-        #   - src: "{{ COMMON_PATH_CUSTOM_FILES }}/openedx/mysql/mysql.cfg"
-        #     dest: "{{ docker_deploy_base_folder }}/mysql/mysql.cfg"
-        #     when: "{{ not openedx_mysql_skip | default(false) }}" # optional to not update mysql configuration files
-
-            # nginx site available within the docker image or deployed by ansible ?
-            # If by ansible include it in here.
-
-        # docker_deploy_files:
-        #   - src: "{{ COMMON_PATH_CUSTOM_FILES }}/openedx/nginx/ssl/{{ openedx_nginx_ssl_crt }}"
-        #     dest: "{{ docker_deploy_base_folder }}/nginx/{{ openedx_nginx_ssl_crt }}"
-        #     when: "{{ not openedx_nginx_skip | default(false) }}" # optional to not update nginx configuration files
-        
-        
+        # prefix all variables with the stack name so we can in the future deploy other stacks to the swarm
+        docker_deploy_stack_name: "{{ openedx_docker_deploy_stack_name }}"
+        docker_deploy_stack_template: "{{ openedx_docker_deploy_stack_template }}"
+        docker_deploy_base_folder: "{{ openedx_docker_deploy_base_folder }}"
+        docker_deploy_templates: "{{ openedx_docker_deploy_templates }}"
+        docker_deploy_files: "{{ openedx_docker_deploy_files }}"
+        docker_deploy_folders_additional: "{{ openedx_docker_deploy_folders_additional }}"
