@@ -1,0 +1,8 @@
+# install specific version of pip
+-r configuration/pre-requirements.txt
+
+# Install specific version of setuptools
+setuptools==44.1.0
+
+# Install upstream Open edX configuration requirements
+-r configuration/requirements.txt

@@ -5,36 +5,36 @@
 #
 export LC_ALL='en_US.UTF-8'
 
+# Prepare the upstream Open edX configuration repository
+# clone if not exists and checkout the branch defined on the environment variable `BRANCH_CONFIGURATION`
+# or use the default `nau-release/lilac` branch
 BRANCH_CONFIGURATION="${BRANCH_CONFIGURATION:=nau-release/lilac}"
-#BRANCH_NAU_PLAYBOOKS="${BRANCH_NAU_PLAYBOOKS:=master}"
-BRANCH_SECURE_DATA="${BRANCH_SECURE_DATA:=master}"
-
 [ -d configuration ] || rm -f configuration
 [ -d configuration ] || git clone -b ${BRANCH_CONFIGURATION} git@github.com:fccn/configuration.git configuration
 git -C configuration clean -fdx
 git -C configuration pull
 git -C configuration checkout ${BRANCH_CONFIGURATION}
 
-# [ -d nau_playbooks ] || git clone -b "${BRANCH_NAU_PLAYBOOKS}" git@github.com:fccn/nau_playbooks.git nau_playbooks
-# git -C nau_playbooks clean -fdx
-# git -C nau_playbooks pull
-# git -C nau_playbooks checkout ${BRANCH_NAU_PLAYBOOKS}
-
+# Prepare the secure-nau-data
+# clone if not exists and checkout the branch defined on the environment variable `BRANCH_SECURE_DATA`
+# or use the default `master` branch
+BRANCH_SECURE_DATA="${BRANCH_SECURE_DATA:=master}"
 [ -d "nau-data" ] || rm -f nau-data
 [ -d "nau-data" ] || git clone -b "${BRANCH_SECURE_DATA}" git@github.com:fccn/secure-nau-data.git nau-data
 git -C "nau-data" clean -fdx
 git -C "nau-data" pull
 git -C "nau-data" checkout ${BRANCH_SECURE_DATA}
 
+# Recreate the virtual environment
 rm -rf venv_ops
 virtualenv venv_ops --python=python3.8
 . venv_ops/bin/activate
 
-pip install setuptools==44.1.0
-pip install -r configuration/requirements.txt
-#pip install --upgrade setuptools
-#cd configuration ; make requirements ; cd .. # pip install -r configuration/requirements.txt
+# Install pip requirements including the upstream Open edX configuration repo requirements
+# including specific pip version, setuptools and other pip modules
+pip install -r requirements.txt --exists-action w
 
+# Install additional roles from ansible galaxy and directly from git
 ansible-galaxy install -p vendor/roles -r requirements.yml --force --ignore-errors
 
 NAU_ENVIRONMENT=$1
