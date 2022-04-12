@@ -27,7 +27,7 @@ git -C "nau-data" pull
 git -C "nau-data" checkout ${BRANCH_SECURE_DATA}
 
 rm -rf venv_ops
-virtualenv venv_ops #--python=$(which python3.6)
+virtualenv venv_ops --python=python3.8
 . venv_ops/bin/activate
 
 pip install setuptools==44.1.0
