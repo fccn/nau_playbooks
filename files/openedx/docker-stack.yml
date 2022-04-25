@@ -27,7 +27,7 @@ services:
         protocol: tcp
         mode: ingress
     configs:
-      - source: {{ mysql_container.openedx_mysql_config_name }}_{{ hostvars[inventory_hostname]['docker_deploy_config_' + openedx_docker_deploy_stack_name + '_' + mysql_container.openedx_mysql_config_name ][:10] }}
+      - source: {{ mysql_container.openedx_mysql_config_name }}_{{ hostvars[inventory_hostname]['docker_deploy_configs_checksum'][ openedx_docker_deploy_stack_name + '_' + mysql_container.openedx_mysql_config_name ][:10] }}
         target: /etc/mysql/conf.d/mysql.cnf
     deploy:
       replicas: 1
@@ -44,6 +44,6 @@ services:
 
 configs:
 {% for template in ( docker_deploy_templates | selectattr('config_name', 'defined') | list ) %}
-  {{ template.config_name }}_{{ hostvars[inventory_hostname]['docker_deploy_config_' + openedx_docker_deploy_stack_name + '_' + template.config_name ][:10] }}:
+  {{ template.config_name }}_{{ hostvars[inventory_hostname]['docker_deploy_configs_checksum'][ openedx_docker_deploy_stack_name + '_' + template.config_name ][:10] }}:
     file: {{ template.dest }}
 {% endfor %}

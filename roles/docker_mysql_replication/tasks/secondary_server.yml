@@ -20,7 +20,7 @@
 
 - name: Check slave replication status.
   mysql_replication:
-    mode: getreplica
+    mode: getslave
     login_host: "{{ _login_host }}"
     login_user: "{{ _login_user }}"
     login_password: "{{ _login_password }}"
@@ -50,7 +50,7 @@
 
 - name: Stop if slave is already running
   mysql_replication:
-    mode: stopreplica
+    mode: stopslave
     master_host: "{{ _master_server_ip }}"
     master_user: "{{ _user }}"
     master_password: "{{ _password }}"
@@ -74,7 +74,7 @@
 
 - name: Change master in slave server
   mysql_replication:
-    mode: changeprimary
+    mode: changemaster
     master_host: "{{ _master_server_ip }}"
     master_user: "{{ _user }}"
     master_password: "{{ _password }}"
@@ -86,7 +86,7 @@
 
 - name: Start slave server
   mysql_replication:
-    mode: startreplica
+    mode: startslave
     login_host: "{{ _login_host }}"
     login_user: "{{ _login_user }}"
     login_password: "{{ _login_password }}"
@@ -95,7 +95,7 @@
 
 - name: Check slave replication status.
   mysql_replication:
-    mode: getreplica
+    mode: getslave
     login_host: "{{ _login_host }}"
     login_user: "{{ _login_user }}"
     login_password: "{{ _login_password }}"
