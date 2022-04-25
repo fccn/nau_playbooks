@@ -1,0 +1,30 @@
+---
+
+- name: Set facts/variables
+  set_fact:
+    mysql_container_name: "{{ mysql_container_dict.key }}"
+    mysql_container: "{{ mysql_container_dict.value }}"
+  tags: always
+
+- name: Set facts/variables
+  set_fact:
+    _user: "{{ mysql_container.mysql_replication_user | default(docker_mysql_replication_user) }}"
+    _password: "{{ mysql_container.mysql_replication_password | default(docker_mysql_replication_password) }}"
+    _login_user: "{{ mysql_container.mysql_replication_login_user | default(docker_mysql_replication_login_user) | default('root') }}"
+    _login_password: "{{ mysql_container.mysql_replication_login_password | default(docker_mysql_replication_login_password) }}"
+    _login_host: "{{ mysql_container.mysql_replication_login_host | default(docker_mysql_replication_login_host) | default('127.0.0.1') }}"
+    _login_port: "{{ mysql_container.mysql_replication_login_port | default(docker_mysql_replication_login_port) | default(3306) }}"
+  tags: always
+
+- name: Print docker mysql replication role internal variables
+  debug:
+    var: "{{ item }}"
+  when: ansible_verbosity > 0
+  with_items:
+    - _user
+    - _password
+    - _login_user
+    - _login_password
+    - _login_host
+    - _login_port
+  tags: always

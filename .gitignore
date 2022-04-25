@@ -8,3 +8,4 @@ solita_jenkins
 #nau-data/
 venv_ops/
 venv/
+mysql_dumb.sql

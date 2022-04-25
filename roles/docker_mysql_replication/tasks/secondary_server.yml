@@ -1,0 +1,111 @@
+---
+- name: Set facts
+  include_tasks: set_shared_facts.yml
+  tags: always
+
+- name: Print which container it is configuring
+  debug:
+    msg: "Configure container {{ mysql_container_name }}"
+  tags: always
+
+- name: Set facts/variables
+  set_fact:
+    _master_server_ip: "{{ mysql_container.mysql_replication_master_server_ip | default(docker_mysql_replication_master_server_ip) }}"
+  tags: always
+
+- name: Copy data snapshot from localhost to slave
+  shell: rsync -avhe 'ssh -o StrictHostKeyChecking=no -o ConnectTimeout=60 -o ServerAliveInterval=300 -o ServerAliveCountMax=30' {{ docker_mysql_replication_dump_file | basename }} root@{{ hostvars[inventory_hostname].ansible_host }}:{{ docker_mysql_replication_dump_file }}
+  delegate_to: localhost
+  tags: docker_mysql_replication
+
+- name: Check slave replication status.
+  mysql_replication:
+    mode: getreplica
+    login_host: "{{ _login_host }}"
+    login_user: "{{ _login_user }}"
+    login_password: "{{ _login_password }}"
+    login_port: "{{ _login_port }}"
+  ignore_errors: true
+  register: slave
+  tags: docker_mysql_replication
+
+- name: Put replication configuration file
+  template: 
+    src: replication.cnf.j2 
+    dest: "{{ docker_mysql_replication_cnf_path }}"
+  when: docker_mysql_replication_template | default(True)
+  register: replication_config_out
+  tags: docker_mysql_replication
+
+- name: Get secondary database docker container id
+  command: docker ps --filter "name={{ mysql_container_name }}" --format {% raw %}"{{.ID}}"{% endraw %}
+  register: mysql_container_id
+  changed_when: false
+  tags: docker_mysql_replication
+
+- name: Restart Mysql
+  command: docker restart {{ mysql_container_id.stdout }}
+  when: ( docker_mysql_replication_template | default(True) ) and replication_config_out.changed
+  tags: docker_mysql_replication
+
+- name: Stop if slave is already running
+  mysql_replication:
+    mode: stopreplica
+    master_host: "{{ _master_server_ip }}"
+    master_user: "{{ _user }}"
+    master_password: "{{ _password }}"
+    login_host: "{{ _login_host }}"
+    login_user: "{{ _login_user }}"
+    login_password: "{{ _login_password }}"
+    login_port: "{{ _login_port }}"
+  tags: docker_mysql_replication
+
+- name: Restore database
+  shell: docker exec -i -e MYSQL_PWD={{ _login_password }} {{ mysql_container_id.stdout }} mysql --user={{ _login_user }} < {{ docker_mysql_replication_dump_file }}
+  tags: docker_mysql_replication
+  register: restore_db_out
+  tags: docker_mysql_replication
+
+- name: Print restore output database
+  debug:
+    var: restore_db_out.stdout
+  when: ansible_verbosity > 0
+  tags: docker_mysql_replication
+
+- name: Change master in slave server
+  mysql_replication:
+    mode: changeprimary
+    master_host: "{{ _master_server_ip }}"
+    master_user: "{{ _user }}"
+    master_password: "{{ _password }}"
+    login_host: "{{ _login_host }}"
+    login_user: "{{ _login_user }}"
+    login_password: "{{ _login_password }}"
+    login_port: "{{ _login_port }}"
+  tags: docker_mysql_replication
+
+- name: Start slave server
+  mysql_replication:
+    mode: startreplica
+    login_host: "{{ _login_host }}"
+    login_user: "{{ _login_user }}"
+    login_password: "{{ _login_password }}"
+    login_port: "{{ _login_port }}"
+  tags: docker_mysql_replication
+
+- name: Check slave replication status.
+  mysql_replication:
+    mode: getreplica
+    login_host: "{{ _login_host }}"
+    login_user: "{{ _login_user }}"
+    login_password: "{{ _login_password }}"
+    login_port: "{{ _login_port }}"
+  # ignore_errors: true
+  register: slave
+  tags: docker_mysql_replication
+
+- name: Remove data snapshot in slave server
+  file:
+    dest: "{{ docker_mysql_replication_dump_file }}"
+    state: absent
+  tags: docker_mysql_replication

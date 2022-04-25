@@ -1,0 +1,7 @@
+---
+
+- name: Install pip package requirements
+  pip:
+    name: "{{ docker_mysql_replication_common_pip_pkgs }}"
+    state: present
+  tags: docker_mysql_replication

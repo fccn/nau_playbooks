@@ -1,0 +1,12 @@
+---
+
+# docker_mysql_replication_user: 'set me please'
+# docker_mysql_replication_password: 'set me please'
+# docker_mysql_replication_master_server_ip: "{{ hostvars[groups['master_db_server'][0]].ansible_host }}"
+# docker_mysql_replication_slave_server_ip: "{{ hostvars[groups['slave_db_server'][0]].ansible_host }}"
+docker_mysql_replication_dump_file: /tmp/mysql_dumb.sql
+#docker_mysql_replication_template: True
+docker_mysql_replication_cnf_path: /etc/mysql/mysql.conf.d/replication.cnf
+
+docker_mysql_replication_common_pip_pkgs:
+  - PyMySQL==0.9.3

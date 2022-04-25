@@ -1,0 +1,13 @@
+[mysqld]
+server-id         = {{ item.mysql_container.server_id }}
+log-bin           = bin.log
+log-bin-index     = bin-log.index
+binlog_format     = row
+log_slave_updates = 1
+master-info-repository = TABLE
+{% if ( item.mysql_container.read_only | default(False) ) %}
+read_only         = 1
+{% endif %}
+{% if ( item.mysql_container.super_read_only | default(False) ) %}
+super_read_only         = 1
+{% endif %}

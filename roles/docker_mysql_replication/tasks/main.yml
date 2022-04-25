@@ -1,0 +1,20 @@
+---
+
+- include_tasks: install_requirements.yml
+  tags: docker_mysql_replication
+
+- name: Configure primary (master)
+  include_tasks: primary_server.yml
+  when: mysql_container_dict.value.host_fqdn == inventory_hostname and ( mysql_container_dict.value.primary | default(False) )
+  loop_control:
+    loop_var: mysql_container_dict
+  loop: "{{ lookup('dict', docker_mysql_replication_containers) }}"
+  tags: docker_mysql_replication
+
+- name: Configure secondary (slave)
+  include_tasks: secondary_server.yml
+  when: mysql_container_dict.value.host_fqdn == inventory_hostname and ( not ( mysql_container_dict.value.primary | default(False) ) )
+  loop_control:
+    loop_var: mysql_container_dict
+  loop: "{{ lookup('dict', docker_mysql_replication_containers) }}"
+  tags: docker_mysql_replication

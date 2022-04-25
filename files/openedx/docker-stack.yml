@@ -1,15 +1,16 @@
 version: "3.8"
 
 services:
-{% for mysql_container in openedx_mysql_containers %}
+{% for mysql_container_name, mysql_container in openedx_mysql_containers.items() %}
 
-  mysql_{{loop.index}}:
+  {{ mysql_container_name }}:
     image: {{ openedx_mysql_docker_image | default("docker.io/mysql:5.7.37-debian") }}
     environment:
       MYSQL_ROOT_PASSWORD: "{{ EDXAPP_MYSQL_PASSWORD_ADMIN }}"
       MYSQL_DATABASE: "{{ EDXAPP_MYSQL_DB_NAME }}"
-      MYSQL_USER: "{{ COMMON_MYSQL_ADMIN_USER }}"
-      MYSQL_PASSWORD: "{{ EDXAPP_MYSQL_PASSWORD_ADMIN }}" 
+      # MYSQL_USER: "{{ COMMON_MYSQL_ADMIN_USER }}"
+      # MYSQL_PASSWORD: "{{ EDXAPP_MYSQL_PASSWORD_ADMIN }}"
+      # MYSQL_ROOT_HOST: "{{ openedx_mysql_root_host }}"
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping --silent -p{{ EDXAPP_MYSQL_PASSWORD_ADMIN }} || exit 1"]
       interval: 30s
@@ -19,9 +20,15 @@ services:
     volumes:
       - {{ mysql_container.data }}:/var/lib/mysql
     ports:
-{% for port in mysql_container.ports %}
-      - {{ port }}
-{% endfor %}
+      # In future after the migration of everything to swarm, limit this connection to localhost
+      # example with: "127.0.0.1:3306:3306"
+      - target: 3306
+        published: {{ mysql_container.ingress_port }}
+        protocol: tcp
+        mode: ingress
+    configs:
+      - source: {{ mysql_container.openedx_mysql_config_name }}_{{ hostvars[inventory_hostname]['docker_deploy_config_' + openedx_docker_deploy_stack_name + '_' + mysql_container.openedx_mysql_config_name ][:10] }}
+        target: /etc/mysql/conf.d/mysql.cnf
     deploy:
       replicas: 1
       mode: replicated
@@ -32,7 +39,11 @@ services:
           memory: 4G
       placement:
         constraints:
-{% for constraint in mysql_container.constraints %}
-          - {{ constraint }}
+          - node.labels.fqdn == {{ mysql_container.host_fqdn }}
 {% endfor %}
+
+configs:
+{% for template in ( docker_deploy_templates | selectattr('config_name', 'defined') | list ) %}
+  {{ template.config_name }}_{{ hostvars[inventory_hostname]['docker_deploy_config_' + openedx_docker_deploy_stack_name + '_' + template.config_name ][:10] }}:
+    file: {{ template.dest }}
 {% endfor %}

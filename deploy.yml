@@ -11,14 +11,14 @@
 #
 
 - name: Bootstrap instances of 16.04
-  hosts: all,!idpproxy_servers,!idpauth_servers,!richie_servers,!nau_docker_swarm_servers
+  hosts: all,!idpproxy_servers,!idpauth_servers,!richie_servers,!nau_docker_swarm_manager,!nau_docker_swarm_worker
   gather_facts: no
   become: true
   roles:
     - python_minimal
 
 - name: Bootstrap instances of 20.04
-  hosts: nau_docker_swarm_servers
+  hosts: nau_docker_swarm_manager,nau_docker_swarm_worker
   gather_facts: no
   become: true
   roles:
@@ -283,7 +283,7 @@
     - ansible-docker-deploy
 
 - name: Configure NAU docker swarm VMs
-  hosts: nau_docker_swarm_servers
+  hosts: nau_docker_swarm_manager,nau_docker_swarm_worker
   serial: "{{ serial_number | default(1) }}"
   become: True
   gather_facts: True
@@ -313,21 +313,38 @@
         state: directory
       when: item.when | default(true) | bool
       # Include future stacks
-      loop: "{{ openedx_docker_deploy_folders_additional }}"
       loop_control:
-        label: "{{ item }} + {{ item.when }}"
+        label: "{{ item.dest }} + {{ item.when }}"
+      loop: "{{ openedx_docker_deploy_folders_additional }}"
+      tags: docker_deploy
 
 - name: Deploy openedx to the first docker swarm manager
   hosts: nau_docker_swarm_manager[0]
   become: True
   gather_facts: True
-  roles: 
-    - role: ansible-docker-deploy
+  roles:
+    - name: Deploy openedx stack
+      role: ansible-docker-deploy
       vars:
         # prefix all variables with the stack name so we can in the future deploy other stacks to the swarm
         docker_deploy_stack_name: "{{ openedx_docker_deploy_stack_name }}"
         docker_deploy_stack_template: "{{ openedx_docker_deploy_stack_template }}"
         docker_deploy_base_folder: "{{ openedx_docker_deploy_base_folder }}"
-        docker_deploy_templates: "{{ openedx_docker_deploy_templates }}"
-        docker_deploy_files: "{{ openedx_docker_deploy_files }}"
+        docker_deploy_templates: "{{ openedx_docker_deploy_templates | default([]) }}"
+        docker_deploy_files: "{{ openedx_docker_deploy_files | default([]) }}"
         docker_deploy_folders_additional: "{{ openedx_docker_deploy_folders_additional }}"
+        docker_deploy_configs: "{{ openedx_docker_deploy_configs | default([]) }}"
+        docker_deploy_secrets: "{{ openedx_docker_deploy_secrets | default([]) }}"
+
+- name: Configure NAU docker swarm replication
+  hosts: nau_docker_swarm_manager,nau_docker_swarm_worker
+  serial: "{{ serial_number | default(1) }}"
+  roles:
+    - name: Initialize openedx mysql database replication
+      role: docker_mysql_replication
+      when: openedx_mysql_replication_initialize | default(False)
+      vars:
+        # The replication mysql files are templated using the ansible-docker-deploy role instead of docker_mysql_replication role
+        docker_mysql_replication_template: false
+        # dict with docker containers configuration
+        docker_mysql_replication_containers: "{{ openedx_mysql_containers }}"
