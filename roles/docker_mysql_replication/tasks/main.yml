@@ -1,7 +1,7 @@
 ---
 
 - include_tasks: install_requirements.yml
-  tags: docker_mysql_replication
+  tags: always
 
 - name: Configure primary (master)
   include_tasks: primary_server.yml
@@ -9,7 +9,7 @@
   loop_control:
     loop_var: mysql_container_dict
   loop: "{{ lookup('dict', docker_mysql_replication_containers) }}"
-  tags: docker_mysql_replication
+  tags: always
 
 - name: Configure secondary (slave)
   include_tasks: secondary_server.yml
@@ -17,4 +17,4 @@
   loop_control:
     loop_var: mysql_container_dict
   loop: "{{ lookup('dict', docker_mysql_replication_containers) }}"
-  tags: docker_mysql_replication
+  tags: always

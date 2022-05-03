@@ -48,6 +48,10 @@
           and ( _mysql_databases_to_dump is iterable ) and ( _mysql_databases_to_dump is not string )
   tags: always
 
+- name: Set facts
+  include_tasks: create_additional.yml
+  tags: always
+
 - name: Create replication user
   mysql_user:
     name: "{{ _user }}"

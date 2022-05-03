@@ -1,0 +1,12 @@
+---
+openark_orchestrator_port: 3000
+openark_orchestrator_status_endpoint: /api/status
+
+openark_orchestrator_docker_deploy_base_folder: /nau/ops/orchestrator
+openark_orchestrator_docker_deploy_compose_template: templates/docker-compose.yml
+openark_orchestrator_docker_deploy_templates: 
+  - src: templates/orchestrator.conf.json
+    dest: "{{ docker_deploy_base_folder }}/orchestrator.conf.json"
+    config_name: orchestrator_conf_json
+
+openark_orchestrator_data_folder: /var/lib/orchestrator_data/orchestrator.db

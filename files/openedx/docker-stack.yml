@@ -5,6 +5,7 @@ services:
 
   {{ mysql_container_name }}:
     image: {{ openedx_mysql_docker_image | default("docker.io/mysql:5.7.37-debian") }}
+    hostname: {{ mysql_container.hostname }}
     environment:
       MYSQL_ROOT_PASSWORD: "{{ EDXAPP_MYSQL_PASSWORD_ADMIN }}"
       MYSQL_DATABASE: "{{ EDXAPP_MYSQL_DB_NAME }}"

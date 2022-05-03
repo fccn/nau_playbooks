@@ -11,7 +11,7 @@
 #
 
 - name: Bootstrap instances of 16.04
-  hosts: all,!idpproxy_servers,!idpauth_servers,!richie_servers,!nau_docker_swarm_manager,!nau_docker_swarm_worker
+  hosts: all,!idpproxy_servers,!idpauth_servers,!richie_servers,!nau_docker_swarm_manager,!nau_docker_swarm_worker,!support_server
   gather_facts: no
   become: true
   roles:
@@ -348,3 +348,12 @@
         docker_mysql_replication_template: false
         # dict with docker containers configuration
         docker_mysql_replication_containers: "{{ openedx_mysql_containers }}"
+
+- name: Configure support server
+  hosts: support_server
+  become: True
+  gather_facts: True
+  roles:
+    - role: geerlingguy.docker
+    - role: docker_daemon
+    - role: openark_orchestrator

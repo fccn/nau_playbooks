@@ -1,0 +1,30 @@
+version: "3.8"
+
+services:
+  orchestrator:
+    image: openarkcode/orchestrator:v3.2.4
+    restart: always
+    depends_on:
+      - db
+    configs:
+      - source: orchestrator_conf_json_{{ hostvars[inventory_hostname]['docker_deploy_configs_checksum']['orchestrator_orchestrator_conf_json'][:10] }}
+        target: /etc/orchestrator.conf.json
+    # Add an extra /etc/hosts for each server that we want to the orchestrator to manage
+    extra_hosts:
+{% for extra_host_name, extra_host_ip in openark_orchestrator_extra_hosts.items() %}
+      - "{{ extra_host_name }}:{{ extra_host_ip }}"
+{% endfor %}
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail localhost:3000{{ openark_orchestrator_status_endpoint }} || exit 1"]
+      interval: 30s
+      timeout: 30s
+      retries: 30
+      start_period: 20s
+    ports:
+      - "{{ openark_orchestrator_port }}:3000"
+    volumes:
+      - "./orchestrator_data:/var/lib/orchestrator_data"
+
+configs:
+  orchestrator_conf_json_{{ hostvars[inventory_hostname]['docker_deploy_configs_checksum']['orchestrator_orchestrator_conf_json'][:10] }}:
+    file: orchestrator.conf.json
