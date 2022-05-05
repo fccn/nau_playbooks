@@ -51,6 +51,7 @@
     - role: ansible-docker-deploy
     - role: haproxy-netsnmp-perl
     - role: snmpd
+    - role: nau_check_urls
     - role: keepalived
       vars:
         keepalived_priority_value: "{{ keepalived_priority }}"
