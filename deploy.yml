@@ -285,7 +285,7 @@
 
 - name: Configure NAU docker swarm VMs
   hosts: nau_docker_swarm_manager,nau_docker_swarm_worker
-  serial: "{{ serial_number | default(1) }}"
+  #serial: "{{ serial_number | default(1) }}"
   become: True
   gather_facts: True
   tasks:
