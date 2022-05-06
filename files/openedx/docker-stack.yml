@@ -78,6 +78,8 @@ services:
     deploy:
       replicas: 1
       mode: replicated
+      placement:
+        max_replicas_per_node: 1
       restart_policy:
         condition: on-failure
       resources:
