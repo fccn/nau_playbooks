@@ -1,6 +1,51 @@
 version: "3.8"
 
 services:
+  mysql_lb_haproxy:
+    image: {{ openedx_mysql_lb_haproxy_docker_image | default('haproxy:2.4.16') }}
+    ports:
+      # write
+      - target:    {{ openedx_mysql_lb_haproxy_write_port | default(3306) }}
+        published: {{ openedx_mysql_lb_haproxy_write_port | default(3306) }}
+        protocol:  tcp
+        mode:      ingress
+      # read
+      - target:    {{ openedx_mysql_lb_haproxy_readonly_port | default(3307) }}
+        published: {{ openedx_mysql_lb_haproxy_readonly_port | default(3307) }}
+        protocol:  tcp
+        mode:      ingress
+      # statistics
+      - target:    {{ openedx_mysql_lb_haproxy_statistics_port | default(1936) }}
+        published: {{ openedx_mysql_lb_haproxy_statistics_port | default(1936) }}
+        protocol:  tcp
+        # each container have a statistics page but we should view only one on each host
+        mode:      host
+    configs:
+      - source: {{ openedx_mysql_lb_haproxy_cfc_config_name }}_{{ hostvars[inventory_hostname]['docker_deploy_configs_checksum'][ openedx_docker_deploy_stack_name + '_' + openedx_mysql_lb_haproxy_cfc_config_name ][:10] }}
+        target: /usr/local/etc/haproxy/haproxy.cfg
+    deploy:
+      replicas: {{ openedx_mysql_lb_haproxy_deploy_replicas_count | default(2) }}
+      placement:
+        max_replicas_per_node: 1
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          memory: 4G
+      # we can't start-first because we have statistics port using host mode
+      # nevertheless because still can have this because we have at least 2 replicas 
+      # and we are deploy only one each time
+      update_config:
+        parallelism: 1
+        failure_action: rollback
+        order: stop-first
+    healthcheck:
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/example.com/{{ openedx_mysql_lb_haproxy_write_port | default(3306) }}", "&&", "echo", "''", ">", "/dev/tcp/example.com/{{ openedx_mysql_lb_haproxy_readonly_port | default(3306) }}", "||", "exit", "1"]
+      start_period: 3s
+      retries: 10
+      interval: 10s
+      timeout: 10s
+
 {% for mysql_container_name, mysql_container in openedx_mysql_containers.items() %}
 
   {{ mysql_container_name }}:
