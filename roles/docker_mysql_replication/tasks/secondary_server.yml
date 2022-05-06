@@ -11,6 +11,7 @@
 - name: Set facts/variables
   set_fact:
     _master_server_ip: "{{ mysql_container.mysql_replication_master_server_ip | default(docker_mysql_replication_master_server_ip) }}"
+    _master_port: "{{ mysql_container.mysql_replication_master_port | default(docker_mysql_replication_master_port) | default(3306) }}"
   tags: always
 
 - name: Copy data snapshot from localhost to slave
@@ -52,6 +53,7 @@
   mysql_replication:
     mode: stopslave
     master_host: "{{ _master_server_ip }}"
+    master_port: "{{ _master_port }}"
     master_user: "{{ _user }}"
     master_password: "{{ _password }}"
     login_host: "{{ _login_host }}"
@@ -76,6 +78,7 @@
   mysql_replication:
     mode: changemaster
     master_host: "{{ _master_server_ip }}"
+    master_port: "{{ _master_port }}"
     master_user: "{{ _user }}"
     master_password: "{{ _password }}"
     login_host: "{{ _login_host }}"
