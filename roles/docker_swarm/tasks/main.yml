@@ -52,6 +52,13 @@
     - swarm
     - swarm-manager
 
+- name: Configures workers
+  include_tasks: worker.yml
+  when: inventory_hostname in docker_swarm_worker
+  tags:
+    - swarm
+    - swarm-worker
+
 - name: Configures nodes labels
   include_tasks: labels.yml
   when: inventory_hostname in docker_swarm_manager
@@ -60,13 +67,6 @@
     - swarm-manager
     - swarm-worker
     - swarm-labels
-
-- name: Configures workers
-  include_tasks: worker.yml
-  when: inventory_hostname in docker_swarm_worker
-  tags:
-    - swarm
-    - swarm-worker
 
 - name: Removes cluster
   include_tasks: remove.yml
