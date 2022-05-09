@@ -19,7 +19,7 @@
 - name: Create additional database users
   mysql_user:
     name: "{{ item.user }}"
-    password: "{{ item.pass }}"
+    password: "{{ item.pass | default(omit) }}"
     login_host: "{{ _login_host }}"
     login_user: "{{ _login_user }}"
     login_password: "{{ _login_password }}"
