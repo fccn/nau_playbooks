@@ -21,7 +21,7 @@ services:
         # each container have a statistics page but we should view only one on each host
         mode:      host
     configs:
-      - source: {{ openedx_mysql_lb_haproxy_cfc_config_name }}_{{ hostvars[inventory_hostname]['docker_deploy_configs_checksum'][ openedx_docker_deploy_stack_name + '_' + openedx_mysql_lb_haproxy_cfc_config_name ][:10] }}
+      - source: {{ openedx_mysql_lb_haproxy_cfc_config_name }}_{{ hostvars[inventory_hostname]['docker_deploy_configs_checksum'][ openedx_docker_deploy_stack_name + '_' + openedx_mysql_lb_haproxy_cfc_config_name ] }}
         target: /usr/local/etc/haproxy/haproxy.cfg
     deploy:
       replicas: {{ openedx_mysql_lb_haproxy_deploy_replicas_count | default(2) }}
@@ -52,11 +52,13 @@ services:
     image: {{ openedx_mysql_docker_image | default("docker.io/mysql:5.7.37-debian") }}
     hostname: {{ mysql_container.hostname }}
     environment:
-      MYSQL_ROOT_PASSWORD: "{{ EDXAPP_MYSQL_PASSWORD_ADMIN }}"
       MYSQL_DATABASE: "{{ EDXAPP_MYSQL_DB_NAME }}"
-      # MYSQL_USER: "{{ COMMON_MYSQL_ADMIN_USER }}"
-      # MYSQL_PASSWORD: "{{ EDXAPP_MYSQL_PASSWORD_ADMIN }}"
-      # MYSQL_ROOT_HOST: "{{ openedx_mysql_root_host }}"
+    secrets:
+      - source: {{ mysql_container.docker_secret_name_mysql_root_password }}_{{ hostvars[inventory_hostname]['docker_deploy_secrets_checksum'][ openedx_docker_deploy_stack_name + '_' + mysql_container.docker_secret_name_mysql_root_password ] }}
+        target: /run/secrets/mysql-root-password
+    configs:
+      - source: {{ mysql_container.docker_config_name_mysql_cfg }}_{{ hostvars[inventory_hostname]['docker_deploy_configs_checksum'][ openedx_docker_deploy_stack_name + '_' + mysql_container.docker_config_name_mysql_cfg ] }}
+        target: /etc/mysql/conf.d/mysql.cnf
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping --silent -p{{ EDXAPP_MYSQL_PASSWORD_ADMIN }} || exit 1"]
       interval: 30s
@@ -72,9 +74,6 @@ services:
         published: {{ mysql_container.ingress_port }}
         protocol: tcp
         mode: ingress
-    configs:
-      - source: {{ mysql_container.openedx_mysql_config_name }}_{{ hostvars[inventory_hostname]['docker_deploy_configs_checksum'][ openedx_docker_deploy_stack_name + '_' + mysql_container.openedx_mysql_config_name ][:10] }}
-        target: /etc/mysql/conf.d/mysql.cnf
     deploy:
       replicas: 1
       mode: replicated
@@ -91,7 +90,12 @@ services:
 {% endfor %}
 
 configs:
-{% for template in ( docker_deploy_templates | selectattr('config_name', 'defined') | list ) %}
-  {{ template.config_name }}_{{ hostvars[inventory_hostname]['docker_deploy_configs_checksum'][ openedx_docker_deploy_stack_name + '_' + template.config_name ][:10] }}:
+{% for template in ( openedx_docker_deploy_templates | selectattr('config_name', 'defined') | list ) %}
+  {{ template.config_name }}_{{ hostvars[inventory_hostname]['docker_deploy_configs_checksum'][ openedx_docker_deploy_stack_name + '_' + template.config_name ] }}:
+    file: {{ template.dest }}
+{% endfor %}
+secrets:
+{% for template in ( openedx_docker_deploy_templates | selectattr('secret_name', 'defined') | list ) %}
+  {{ template.secret_name }}_{{ hostvars[inventory_hostname]['docker_deploy_secrets_checksum'][ openedx_docker_deploy_stack_name + '_' + template.secret_name ] }}:
     file: {{ template.dest }}
 {% endfor %}
