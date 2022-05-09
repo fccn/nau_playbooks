@@ -337,7 +337,7 @@
         docker_deploy_configs: "{{ openedx_docker_deploy_configs | default([]) }}"
         docker_deploy_secrets: "{{ openedx_docker_deploy_secrets | default([]) }}"
 
-- name: Configure NAU docker swarm replication
+- name: Configure NAU OpenedX MySQL replication
   hosts: nau_docker_swarm_manager,nau_docker_swarm_worker
   serial: "{{ serial_number | default(1) }}"
   roles:
