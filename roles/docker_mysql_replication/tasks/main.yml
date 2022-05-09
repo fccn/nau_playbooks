@@ -8,6 +8,7 @@
   when: mysql_container_dict.value.host_fqdn == inventory_hostname and ( mysql_container_dict.value.primary | default(False) )
   loop_control:
     loop_var: mysql_container_dict
+    label: "{{ mysql_container_dict.key }}"
   loop: "{{ lookup('dict', docker_mysql_replication_containers) }}"
   tags: always
 
@@ -16,5 +17,6 @@
   when: mysql_container_dict.value.host_fqdn == inventory_hostname and ( not ( mysql_container_dict.value.primary | default(False) ) )
   loop_control:
     loop_var: mysql_container_dict
+    label: "{{ mysql_container_dict.key }}"
   loop: "{{ lookup('dict', docker_mysql_replication_containers) }}"
   tags: always
