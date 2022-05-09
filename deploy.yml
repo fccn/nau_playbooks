@@ -339,6 +339,8 @@
 
 - name: Configure NAU OpenedX MySQL replication
   hosts: nau_docker_swarm_manager,nau_docker_swarm_worker
+  become: True
+  gather_facts: True
   serial: "{{ serial_number | default(1) }}"
   roles:
     - name: Initialize openedx mysql database replication
