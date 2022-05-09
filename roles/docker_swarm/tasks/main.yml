@@ -32,6 +32,11 @@
   pip:
     name: "{{ docker_swarm_pip_pkgs }}"
     state: present
+  tags:
+    - swarm
+    - swarm-manager
+    - swarm-worker
+    - swarm-labels
 
 - name: Gather facts from docker swarm managers and workers
   setup:
