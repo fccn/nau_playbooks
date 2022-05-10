@@ -53,6 +53,7 @@ services:
     hostname: {{ mysql_container.hostname }}
     environment:
       MYSQL_DATABASE: "{{ EDXAPP_MYSQL_DB_NAME }}"
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql-root-password
     secrets:
       - source: {{ mysql_container.docker_secret_name_mysql_root_password }}_{{ hostvars[inventory_hostname]['docker_deploy_secrets_checksum'][ openedx_docker_deploy_stack_name + '_' + mysql_container.docker_secret_name_mysql_root_password ] }}
         target: /run/secrets/mysql-root-password
