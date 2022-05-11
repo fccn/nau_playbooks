@@ -15,8 +15,7 @@
 #   ansible-playbook -i nau-data/envs/development/hosts.ini healthcheck.yml
 #
 ---
-- name: Check MySQL Database instances
-  hosts: mysql_servers
+- name: Check MySQL 5.6 Database instances
   hosts: "mysql_servers:&{{ target_mysql_server | default('mysql_servers') }}"
   become: True
   gather_facts: True
@@ -32,6 +31,35 @@
         msg: Fail MySQL DB instance is too much behind
       # it is ok if the node is behind from 0 to 9 seconds lag
       when: ( groups['mysql_servers'] | length ) > 1 and mysql_output.stdout is not match("[0-9]")
+
+- name: Check MySQL 5.7 Database instances
+  hosts: nau_docker_swarm_servers
+  become: True
+  gather_facts: True
+  tasks:
+    - name: Check lag from primary
+      shell: docker exec -it -e MYSQL_PWD={{ EDXAPP_MYSQL_PASSWORD_ADMIN }} $(docker ps --filter "name=openedx_{{ openedx_mysql_container.key }}" {% raw %} --format "{{.ID}}" {% endraw %}) bash -c "echo 'show slave status \G;' | mysql -u root" | grep "Seconds_Behind_Master" | awk '{print $2}'
+      when: not openedx_mysql_container.value.primary and inventory_hostname == openedx_mysql_container.value.host_fqdn
+      loop: "{{ openedx_mysql_containers | default({}) | dict2items }}"
+      loop_control:
+        label: "{{ openedx_mysql_container.key }}"
+        loop_var: openedx_mysql_container
+      register: mysql_outputs
+      changed_when: false
+      
+    - debug:
+        msg: "{{ mysql_outputs }}"
+      when: ansible_verbosity > 0
+
+    - name: Fail if MySQL DB instance is too much behind
+      fail:
+        msg: Fail MySQL DB instance is too much behind
+      # it is ok if the node is behind from 0 to 9 seconds lag
+      when: ( not ( mysql_output.skipped | default(false) ) ) and mysql_output.stdout is not match("[0-9]")
+      loop: "{{ mysql_outputs.results }}"
+      loop_control:
+        loop_var: mysql_output
+        label: "host: {{ mysql_output.openedx_mysql_container.value.host_fqdn }} container: {{ mysql_output.openedx_mysql_container.key }}"
 
 - name: Check Mongo Database instances
   # we only need to run the commands on a single server, so we run by default on the first defined on the ansible
