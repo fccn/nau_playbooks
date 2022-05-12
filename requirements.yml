@@ -15,4 +15,4 @@
   version: 411d6e8f673fd4fec666ebe728e320143e7eaf93
 
 - src: git+https://github.com/fccn/ansible_pakiti_client.git
-  version: ddd5c497721f7fbfef2e15a7696ec85d9a5b7ea2
+  version: f8edb9c2cfa77d7d075f18eb5bbde7704a20a4e3
