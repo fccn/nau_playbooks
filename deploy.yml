@@ -9,6 +9,8 @@
 #   ansible-playbook -i nau-data/envs/staging/hosts.ini deploy.yml --tags keepalived --limit slave_persistence_servers -e keepalived_priority=1
 # To mark a server back to normal state, run the same command without the --limit.
 #
+# To update MySQL database grants run:
+#   ansible-playbook -i ../nau-data/envs/staging/hosts.ini deploy.yml -e openedx_mysql_replication_initialize=true --limit nau_docker_swarm_servers --tags docker_mysql_replication_additional_users
 
 - name: Bootstrap instances of 16.04
   hosts: all,!idpproxy_servers,!idpauth_servers,!richie_servers,!nau_docker_swarm_manager,!nau_docker_swarm_worker,!support_server
