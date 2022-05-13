@@ -7,12 +7,14 @@
     state: present
     update_cache: yes
   with_items: "{{ analytics_pipeline_configuration_debian_pkgs }}"
+  tags: analytics_pipeline_configuration
 
 - name: pip install virtualenv
   pip:
     name: "{{ item }}"
     state: present
   with_items: "{{ analytics_pipeline_configuration_common_pip_pkgs }}"
+  tags: analytics_pipeline_configuration
 
 - name: Create necessary directories
   file:
@@ -22,6 +24,7 @@
     group: "{{ item.group | default('ubuntu') }}"
     mode: "0755"
   with_items: "{{ analytics_pipeline_configuration_common_directories }}"
+  tags: analytics_pipeline_configuration
 
 - name: Copy analytics pipeline configuration files to the right path
   template:
@@ -34,6 +37,7 @@
     - "reports_output_db.json"
     - "edxapp_input_db.json"
     - "overrides.cfg"
+  tags: analytics_pipeline_configuration
 
 # The two tasks below are required to run analytics-pipeline GeoIP-history task
 
@@ -44,12 +48,16 @@
     owner: "hadoop"
     group: "hadoop"
     force: yes
-  tags: geoip-analytics-configuration
+  tags: 
+    - geoip-analytics-configuration
+    - analytics_pipeline_configuration
 
 - name: Copy GeoIP data from local filesystem to HDFS
   shell: ". {{ analytics_pipeline_configuration_hadoop_conf_dir }}/hadoop-env.sh && hdfs dfs -copyFromLocal -f {{ analytics_pipeline_configuration_files_dir }}/geo.dat hdfs://localhost:9000/edx-analytics-pipeline/packages/"
   become_user: "hadoop"
-  tags: geoip-analytics-configuration
+  tags: 
+    - geoip-analytics-configuration
+    - analytics_pipeline_configuration
 
 - name: fetching edx-analytics-pipeline repo
   git:
@@ -58,12 +66,14 @@
     version: "{{ analytics_pipeline_configuration_repo_version }}"
     accept_hostkey: yes
   become_user: "{{ analytics_pipeline_configuration_user }}"
+  tags: analytics_pipeline_configuration
 
 - name: Create the analytics pipeline configuration virtualenv
   command: "virtualenv {{ analytics_pipeline_configuration_venv_dir }}"
   args:
     creates: "{{ analytics_pipeline_configuration_venv_dir }}/bin/pip"
   become_user: "{{ analytics_pipeline_configuration_user }}"
+  tags: analytics_pipeline_configuration
 
 - name: pre bootstrap step
   shell: "source {{ analytics_pipeline_configuration_venv_dir }}/bin/activate && pip install -r requirements/pip.txt"
@@ -71,7 +81,7 @@
     chdir: "{{ analytics_pipeline_configuration_repo_path }}"
     executable: /bin/bash
   become_user: "{{ analytics_pipeline_configuration_user }}"
-
+  tags: analytics_pipeline_configuration
 
 - name: Bootstrap of edx-analytics-pipeline configuration
   shell: "source {{ analytics_pipeline_configuration_venv_dir }}/bin/activate && make bootstrap"
@@ -79,3 +89,4 @@
     chdir: "{{ analytics_pipeline_configuration_repo_path }}"
     executable: /bin/bash
   become_user: "{{ analytics_pipeline_configuration_user }}"
+  tags: analytics_pipeline_configuration
