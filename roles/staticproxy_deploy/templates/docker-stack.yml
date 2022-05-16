@@ -1,0 +1,55 @@
+# {{ ansible_managed }}
+version: '3.8'
+
+services:
+  nginx:
+    image: {{ staticproxy_nginx_image }}
+    restart: always
+    ports:
+      - target: 80
+        published: {{ staticproxy_nginx_http_ingress_port }}
+        protocol: tcp
+        mode: ingress
+      - target: 443
+        published: {{ staticproxy_nginx_https_ingress_port }}
+        protocol: tcp
+        mode: ingress
+    deploy:
+      replicas: {{ staticproxy_nginx_replicas }}
+      mode: replicated
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 300M
+      placement:
+        max_replicas_per_node: 1
+{% if staticproxy_docker_placement_constraints is defined and ( staticproxy_docker_placement_constraints | length > 0 ) %}
+        constraints:
+{% for key, value in staticproxy_docker_placement_constraints.items() %}
+          - {{ key }} == {{ value }}
+{% endfor %}
+{% endif %}
+{% if (staticproxy_docker_deploy_templates + staticproxy_docker_deploy_files) | selectattr('config_name', 'defined') | list | length > 0  %}
+    configs:
+{% for f in ( (staticproxy_docker_deploy_templates + staticproxy_docker_deploy_files) | selectattr('config_name', 'defined') | list ) %}
+      - source: {{ f.config_name }}_{{ hostvars[inventory_hostname]['docker_deploy_configs_checksum'][ staticproxy_docker_deploy_stack_name + '_' + f.config_name ] }}
+        target: {{ f.docker_target }}
+{% endfor %}
+{% endif %}
+    extra_hosts:
+      - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
+    healthcheck:
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/example.com/80", "&&", "echo", "''", ">", "/dev/tcp/example.com/443", "||", "exit", "1"]
+      start_period: 3s
+      retries: 10
+      interval: 10s
+      timeout: 10s
+
+configs:
+{% for f in ( (staticproxy_docker_deploy_templates + staticproxy_docker_deploy_files) | selectattr('config_name', 'defined') | list ) %}
+  {{ f.config_name }}_{{ hostvars[inventory_hostname]['docker_deploy_configs_checksum'][ staticproxy_docker_deploy_stack_name + '_' + f.config_name ] }}:
+    file: {{ f.dest }}
+{% endfor %}

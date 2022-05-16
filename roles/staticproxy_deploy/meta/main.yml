@@ -1,0 +1,4 @@
+---
+dependencies:
+  - role: ansible-docker-deploy
+  - role: nau_check_urls
