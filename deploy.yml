@@ -1,17 +1,61 @@
 ---
-
+# Ansible playbook that deploys NAU.
+#
+#
 # Open edX instance with 3 layers:
 # - Load balancer servers
-# - Persistence servers (mongo, cache and mysql groups)
-# - Application servers (application group & complementary group)
-
-# To mark a server for maintenance, like load balancer or mysql server, append to the shell command arguments:
-#   ansible-playbook -i nau-data/envs/staging/hosts.ini deploy.yml --tags keepalived --limit slave_persistence_servers -e keepalived_priority=1
-# To mark a server back to normal state, run the same command without the --limit.
+# - Persistence servers (mongo_servers, cache_servers and mysql_servers)
+# - Application servers (app_servers & complementary_servers)
 #
-# To update MySQL database grants run:
-#   ansible-playbook -i ../nau-data/envs/staging/hosts.ini deploy.yml -e openedx_mysql_replication_initialize=true --limit nau_docker_swarm_servers --tags docker_mysql_replication_additional_users
-
+# NAU also has other services like:
+# - richie for marketing site
+# - static proxy service
+# - fam servers that print course certificate to PDF
+#
+# Examples:
+#   To deploy the application servers and deploy 2 servers at once run:
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit app_servers -e serial_number=2
+#
+#   To deploy the application servers and migrate the database changes
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit app_servers -e "migrate_db=yes"
+#
+#   To deploy the application servers with a specific themes version
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit app_servers -e "THEMES_VERSION=master"
+#
+#   To deploy the complementary servers and its services run:
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit complementary_servers
+#
+#   To deploy the load balancers run:
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit balancer_servers
+#
+#   To deploy static servers run:
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit statics_servers
+#
+#   To deploy IdP proxy servers run:
+#     ansible-playbook -i nau-data/:nvs/<env>/hosts.ini deploy.yml --limit idpproxy_servers
+#
+#   To deploy IdP Auth servers run:
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit idpauth_servers
+#
+#   To deploy fam servers run:
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit fam_servers
+#
+#   To mark a server for maintenance, like load balancer or mysql server, append to the shell command arguments:
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --tags keepalived --limit slave_persistence_servers -e keepalived_priority=1
+#   To mark a server back to normal state, run the same command without the --limit.
+#
+#   To update MySQL database grants run:
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml -e openedx_mysql_replication_initialize=true --limit nau_docker_swarm_servers --tags docker_mysql_replication_additional_users
+#
+#   To deploy only specific servers run:
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit richie_servers
+#
+#   To deploy the static proxy on the first docker swarm manager
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_manager[0] -e deploy_staticproxy=true
+#
+#   To deploy the openedx on the first docker swarm manager
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_manager[0] -e deploy_openedx=true
+#
 - name: Bootstrap instances of 16.04
   hosts: all,!idpproxy_servers,!idpauth_servers,!richie_servers,!nau_docker_swarm_manager,!nau_docker_swarm_worker,!support_server
   gather_facts: no
