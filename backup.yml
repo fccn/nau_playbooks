@@ -10,11 +10,12 @@
         backup_mongo: True
 
 - name: Backup of Mysql data
-  hosts: slave_persistence_servers
+  hosts: openedx_backup_mysql_server
   become: True
   gather_facts: True
   roles:
     - role: backups
+      when: openedx_backup_mysql_server
       vars:
         backup_mysql: True
 
