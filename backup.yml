@@ -18,6 +18,8 @@
       when: openedx_backup_mysql_server
       vars:
         backup_mysql: True
+        backup_mysql_login_user: "{{ openedx_backup_mysql_login_user }}"
+        backup_mysql_login_password: "{{ openedx_backup_mysql_login_password }}"
 
 - name: Backup of richie primary data
   hosts: richie_primary

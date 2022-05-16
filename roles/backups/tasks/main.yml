@@ -14,8 +14,8 @@
 
 - name: Create mysql database backup
   mysql_db:
-    login_user: root
-    login_password: "{{ backup_mysql_root_password }}"
+    login_user: "{{ backup_mysql_login_user }}"
+    login_password: "{{ backup_mysql_login_password }}"
     login_host: "{{ backup_mysql_login_host | default('127.0.0.1') }}"
     login_port: "{{ backup_mysql_login_port | default(3306) }}"
     state: dump
