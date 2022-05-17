@@ -80,6 +80,3 @@ openedx_mysql_lb_haproxy_write_port: 3306
 openedx_mysql_lb_haproxy_readonly_port: 3307
 openedx_mysql_lb_haproxy_statistics_port: 1936
 openedx_mysql_lb_haproxy_cfc_config_name: mysql_haproxy_cfg
-
-openedx_backup_mysql_login_user: "{{ COMMON_MYSQL_ADMIN_USER }}"
-openedx_backup_mysql_login_password: "{{ EDXAPP_MYSQL_PASSWORD_ADMIN }}"

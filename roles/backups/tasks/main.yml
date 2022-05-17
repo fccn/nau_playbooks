@@ -12,16 +12,19 @@
     path: "{{BACKUP_LOCATION}}"
     state: directory
 
-- name: Create mysql database backup
-  mysql_db:
-    login_user: "{{ backup_mysql_login_user }}"
-    login_password: "{{ backup_mysql_login_password }}"
-    login_host: "{{ backup_mysql_login_host | default('127.0.0.1') }}"
-    login_port: "{{ backup_mysql_login_port | default(3306) }}"
-    state: dump
-    name: all
-    single_transaction: true
-    target: "{{ BACKUP_LOCATION }}/{{ BACKUP_DATE }}.mysql.sql"
+- name: Install mysql dump
+  package: 
+    name: mysql-client
+  when: backup_mysql
+
+- name: Get mysql database docker container id
+  command: docker ps --filter "name={{ backup_mysql_container_name }}" --format {% raw %}"{{.ID}}"{% endraw %}
+  register: mysql_container_id
+  changed_when: false
+  when: backup_mysql
+
+- name: Create data snapshot
+  shell: docker exec -it -e MYSQL_PWD={{ backup_mysql_login_password }} {{ mysql_container_id.stdout }} /usr/bin/mysqldump --user={{ backup_mysql_login_user }} --single-transaction --all-databases > {{ BACKUP_LOCATION }}/{{ BACKUP_DATE }}.mysql.sql
   when: backup_mysql
 
 - name: Give the server time to recover
