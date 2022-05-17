@@ -38,28 +38,24 @@
   gather_facts: True
   tasks:
     - name: Check lag from primary
-      shell: docker exec -it -e MYSQL_PWD={{ EDXAPP_MYSQL_PASSWORD_ADMIN }} $(docker ps --filter "name=openedx_{{ openedx_mysql_container.key }}" {% raw %} --format "{{.ID}}" {% endraw %}) bash -c "echo 'show slave status \G;' | mysql -u root" | grep "Seconds_Behind_Master" | awk '{print $2}'
-      when: not openedx_mysql_container.value.primary and inventory_hostname == openedx_mysql_container.value.host_fqdn
-      loop: "{{ openedx_mysql_containers | default({}) | dict2items }}"
-      loop_control:
-        label: "{{ openedx_mysql_container.key }}"
-        loop_var: openedx_mysql_container
-      register: mysql_outputs
+      shell: docker exec -it -e MYSQL_PWD={{ EDXAPP_MYSQL_PASSWORD_ADMIN }} $(docker ps --filter "name={{ openedx_mysql_replica_container_name }}" {% raw %} --format "{{.ID}}" {% endraw %}) bash -c "echo 'show slave status \G;' | mysql -u root" | grep "Seconds_Behind_Master" | awk '{print $2}'
+      when: openedx_mysql_replica_server == inventory_hostname
+      register: mysql_output
       changed_when: false
-      
+    
     - debug:
-        msg: "{{ mysql_outputs }}"
-      when: ansible_verbosity > 0
+        msg: "{{ mysql_output }}"
+      when: openedx_mysql_replica_server == inventory_hostname and ansible_verbosity > 0
+
+    - debug:
+        msg: "Seconds_Behind_Master: {{ mysql_output.stdout }}"
+      when: openedx_mysql_replica_server == inventory_hostname
 
     - name: Fail if MySQL DB instance is too much behind
       fail:
         msg: Fail MySQL DB instance is too much behind
       # it is ok if the node is behind from 0 to 9 seconds lag
-      when: ( not ( mysql_output.skipped | default(false) ) ) and mysql_output.stdout is not match("[0-9]")
-      loop: "{{ mysql_outputs.results }}"
-      loop_control:
-        loop_var: mysql_output
-        label: "host: {{ mysql_output.openedx_mysql_container.value.host_fqdn }} container: {{ mysql_output.openedx_mysql_container.key }}"
+      when: openedx_mysql_replica_server == inventory_hostname and mysql_output.stdout is not match("^[0-9]$")
 
 - name: Check Mongo Database instances
   # we only need to run the commands on a single server, so we run by default on the first defined on the ansible
