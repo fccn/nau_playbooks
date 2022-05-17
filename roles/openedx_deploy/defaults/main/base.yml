@@ -3,9 +3,13 @@ openedx_docker_deploy_stack_name: openedx
 openedx_docker_deploy_stack_template: templates/docker-stack.yml
 openedx_docker_deploy_base_folder: /nau/ops/openedx
 
-openedx_docker_deploy_templates: "{{ openedx_mysql_docker_deploy_templates }}"
+openedx_docker_deploy_templates: "{{ openedx_base_docker_deploy_templates + openedx_mysql_docker_deploy_templates }}"
 # + openedx_mongodb_docker_deploy_templates
 # ...
+
+openedx_base_docker_deploy_templates:
+  - src:  templates/Makefile
+    dest: "{{ openedx_docker_deploy_base_folder }}/Makefile"
 
 openedx_docker_deploy_folders_additional: "{{ openedx_mysql_docker_deploy_folders_additional }}"
 # + openedx_mongodb_docker_deploy_folders_additional
