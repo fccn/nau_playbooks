@@ -10,12 +10,12 @@
         backup_mongo: True
 
 - name: Backup of Mysql data
-  hosts: openedx_backup_mysql_server
+  hosts: nau_docker_swarm_servers
   become: True
   gather_facts: True
   roles:
     - role: backups
-      when: openedx_backup_mysql_server
+      when: openedx_mysql_replica_server == inventory_hostname
       vars:
         backup_mysql: True
         backup_mysql_login_user: "{{ openedx_backup_mysql_login_user }}"
