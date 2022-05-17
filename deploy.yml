@@ -51,10 +51,10 @@
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit richie_servers
 #
 #   To deploy the static proxy on the first docker swarm manager
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_manager[0] -e deploy_staticproxy=true
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_manager[0] -e staticproxy_deploy=true
 #
 #   To deploy the openedx on the first docker swarm manager
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_manager[0] -e deploy_openedx=true
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_manager[0] -e openedx_deploy=true
 #
 - name: Bootstrap instances of 16.04
   hosts: all,!idpproxy_servers,!idpauth_servers,!richie_servers,!nau_docker_swarm_manager,!nau_docker_swarm_worker,!support_server
@@ -358,7 +358,7 @@
         mode: "{{ item.dir_mode | default(omit) }}"
         recurse: true
         state: directory
-      when: (deploy_openedx | default(false)) and (item.when | default(true) | bool)
+      when: (openedx_deploy | default(false)) and (item.when | default(true) | bool)
       # Include future stacks
       loop_control:
         label: "{{ item.dest }} + {{ item.when }}"
@@ -371,18 +371,7 @@
   gather_facts: True
   roles:
     - name: Deploy openedx stack
-      role: ansible-docker-deploy
-      when: deploy_openedx | default(false)
-      vars:
-        # prefix all variables with the stack name so we can in the future deploy other stacks to the swarm
-        docker_deploy_stack_name: "{{ openedx_docker_deploy_stack_name }}"
-        docker_deploy_stack_template: "{{ openedx_docker_deploy_stack_template }}"
-        docker_deploy_base_folder: "{{ openedx_docker_deploy_base_folder }}"
-        docker_deploy_templates: "{{ openedx_docker_deploy_templates | default([]) }}"
-        docker_deploy_files: "{{ openedx_docker_deploy_files | default([]) }}"
-        docker_deploy_folders_additional: "{{ openedx_docker_deploy_folders_additional | default([]) }}"
-        docker_deploy_configs: "{{ openedx_docker_deploy_configs | default([]) }}"
-        docker_deploy_secrets: "{{ openedx_docker_deploy_secrets | default([]) }}"
+      role: openedx_deploy
 
 - name: Configure NAU OpenedX MySQL replication
   hosts: nau_docker_swarm_manager,nau_docker_swarm_worker
@@ -417,4 +406,3 @@
   roles:
     - name: Deploy staticproxy stack
       role: staticproxy_deploy
-      when: deploy_staticproxy | default(false)
