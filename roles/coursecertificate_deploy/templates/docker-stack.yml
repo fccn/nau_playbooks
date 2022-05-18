@@ -30,14 +30,13 @@ services:
         condition: on-failure
       resources:
         limits:
-          memory: 4G
-      # we can't start-first because we have statistics port using host mode
-      # nevertheless because still can have this because we have at least 2 replicas 
-      # and we are deploy only one each time
+          memory: 1G
+        reservations:
+          memory: 100M
       update_config:
         parallelism: 1
         failure_action: rollback
-        order: stop-first
+        order: start-first
     healthcheck:
       test: ["CMD", "echo", "''", ">", "/dev/tcp/example.com/{{ coursecertificate_mysql_lb_haproxy_write_port | default(3306) }}", "&&", "echo", "''", ">", "/dev/tcp/example.com/{{ coursecertificate_mysql_lb_haproxy_readonly_port | default(3306) }}", "||", "exit", "1"]
       start_period: 3s
@@ -80,9 +79,13 @@ services:
         condition: on-failure
       resources:
         limits:
-          memory: 2G
+          memory: 128M
         reservations:
-          memory: 300M
+          memory: 5M
+      update_config:
+        parallelism: 1
+        failure_action: rollback
+        order: start-first
       placement:
         max_replicas_per_node: 1
 {% if coursecertificate_docker_placement_constraints is defined and ( coursecertificate_docker_placement_constraints | length > 0 ) %}

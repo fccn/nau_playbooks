@@ -21,9 +21,9 @@ services:
         condition: on-failure
       resources:
         limits:
-          memory: 2G
+          memory: 128M
         reservations:
-          memory: 300M
+          memory: 5M
       placement:
         max_replicas_per_node: 1
 {% if staticproxy_docker_placement_constraints is defined and ( staticproxy_docker_placement_constraints | length > 0 ) %}
