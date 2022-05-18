@@ -399,10 +399,13 @@
     - role: docker_daemon
     - role: openark_orchestrator
 
-- name: Deploy staticproxy static service on docker swarm manager
+- name: Deploy staticproxy and coursecertificate stacks on docker swarm manager
   hosts: nau_docker_swarm_manager[0]
   become: True
   gather_facts: True
   roles:
     - name: Deploy staticproxy stack
       role: staticproxy_deploy
+
+    - name: Deploy coursecertificate stack
+      role: coursecertificate_deploy

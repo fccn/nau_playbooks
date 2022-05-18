@@ -1,0 +1,110 @@
+version: "3.8"
+
+services:
+  app:
+    image: {{ coursecertificate_app_docker_image }}
+    ports:
+      - target:    {{ coursecertificate_app_docker_port_target | default(5000) }}
+        published: {{ coursecertificate_app_docker_port_published | default(5000) }}
+        protocol:  tcp
+        mode:      ingress
+{% if (coursecertificate_docker_deploy_templates + coursecertificate_docker_deploy_files) | selectattr('config_name', 'defined') | selectattr('service', 'equalto', 'app') | list | length > 0  %}
+    configs:
+{% for fc in ( (coursecertificate_docker_deploy_templates + coursecertificate_docker_deploy_files) | selectattr('config_name', 'defined') | selectattr('service', 'equalto', 'app')  | list ) %}
+      - source: {{ fc.config_name }}_{{ hostvars[inventory_hostname]['docker_deploy_configs_checksum'][ coursecertificate_docker_deploy_stack_name + '_' + fc.config_name ] }}
+        target: {{ fc.docker_target }}
+{% endfor %}
+{% endif %}
+{% if (coursecertificate_docker_deploy_templates + coursecertificate_docker_deploy_files) | selectattr('secret_name', 'defined') | selectattr('service', 'equalto', 'app') | list | length > 0  %}
+    secrets:
+{% for fs in ( (coursecertificate_docker_deploy_templates + coursecertificate_docker_deploy_files) | selectattr('secret_name', 'defined') | selectattr('service', 'equalto', 'app')  | list ) %}
+      - source: {{ fs.secret_name }}_{{ hostvars[inventory_hostname]['docker_deploy_secrets_checksum'][ coursecertificate_docker_deploy_stack_name + '_' + fs.secret_name ] }}
+        target: {{ fs.docker_target }}
+{% endfor %}
+{% endif %}
+    deploy:
+      replicas: {{ coursecertificate_app_replicas }}
+      placement:
+        max_replicas_per_node: 1
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          memory: 4G
+      # we can't start-first because we have statistics port using host mode
+      # nevertheless because still can have this because we have at least 2 replicas 
+      # and we are deploy only one each time
+      update_config:
+        parallelism: 1
+        failure_action: rollback
+        order: stop-first
+    healthcheck:
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/example.com/{{ coursecertificate_mysql_lb_haproxy_write_port | default(3306) }}", "&&", "echo", "''", ">", "/dev/tcp/example.com/{{ coursecertificate_mysql_lb_haproxy_readonly_port | default(3306) }}", "||", "exit", "1"]
+      start_period: 3s
+      retries: 10
+      interval: 10s
+      timeout: 10s
+
+  nginx:
+    image: {{ coursecertificate_nginx_image }}
+    restart: always
+    ports:
+      - target: 80
+        published: {{ coursecertificate_nginx_http_ingress_port }}
+        protocol: tcp
+        mode: ingress
+      - target: 443
+        published: {{ coursecertificate_nginx_https_ingress_port }}
+        protocol: tcp
+        mode: ingress
+{% if (coursecertificate_docker_deploy_templates + coursecertificate_docker_deploy_files) | selectattr('config_name', 'defined') | selectattr('service', 'equalto', 'nginx') | list | length > 0  %}
+    configs:
+{% for fcn in ( (coursecertificate_docker_deploy_templates + coursecertificate_docker_deploy_files) | selectattr('config_name', 'defined') | selectattr('service', 'equalto', 'nginx') | list ) %}
+      - source: {{ fcn.config_name }}_{{ hostvars[inventory_hostname]['docker_deploy_configs_checksum'][ coursecertificate_docker_deploy_stack_name + '_' + fcn.config_name ] }}
+        target: {{ fcn.docker_target }}
+{% endfor %}
+{% endif %}
+{% if (coursecertificate_docker_deploy_templates + coursecertificate_docker_deploy_files) | selectattr('secret_name', 'defined') | selectattr('service', 'equalto', 'nginx') | list | length > 0  %}
+    secrets:
+{% for fsn in ( (coursecertificate_docker_deploy_templates + coursecertificate_docker_deploy_files) | selectattr('secret_name', 'defined') | selectattr('service', 'equalto', 'nginx') | list ) %}
+      - source: {{ fsn.secret_name }}_{{ hostvars[inventory_hostname]['docker_deploy_secrets_checksum'][ coursecertificate_docker_deploy_stack_name + '_' + fsn.secret_name ] }}
+        target: {{ fsn.docker_target }}
+{% endfor %}
+{% endif %}
+    extra_hosts:
+      - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
+    deploy:
+      replicas: {{ coursecertificate_nginx_replicas }}
+      mode: replicated
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 300M
+      placement:
+        max_replicas_per_node: 1
+{% if coursecertificate_docker_placement_constraints is defined and ( coursecertificate_docker_placement_constraints | length > 0 ) %}
+        constraints:
+{% for key, value in coursecertificate_docker_placement_constraints.items() %}
+          - {{ key }} == {{ value }}
+{% endfor %}
+{% endif %}
+    healthcheck:
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/example.com/80", "&&", "echo", "''", ">", "/dev/tcp/example.com/443", "||", "exit", "1"]
+      start_period: 3s
+      retries: 10
+      interval: 10s
+      timeout: 10s
+
+configs:
+{% for fcd in ( (coursecertificate_docker_deploy_templates + coursecertificate_docker_deploy_files) | selectattr('config_name', 'defined') | list ) %}
+  {{ fcd.config_name }}_{{ hostvars[inventory_hostname]['docker_deploy_configs_checksum'][ coursecertificate_docker_deploy_stack_name + '_' + fcd.config_name ] }}:
+    file: {{ fcd.dest }}
+{% endfor %}
+secrets:
+{% for fsd in ( (coursecertificate_docker_deploy_templates + coursecertificate_docker_deploy_files) | selectattr('secret_name', 'defined') | list ) %}
+  {{ fsd.secret_name }}_{{ hostvars[inventory_hostname]['docker_deploy_secrets_checksum'][ coursecertificate_docker_deploy_stack_name + '_' + fsd.secret_name ] }}:
+    file: {{ fsd.dest }}
+{% endfor %}
