@@ -399,7 +399,9 @@
     - role: docker_daemon
     - role: openark_orchestrator
 
-- name: Deploy staticproxy and coursecertificate stacks on docker swarm manager
+# Do not merge this task with the next, if we merge then it isn't possible to check urls of both tasks.
+#   --limit nau_docker_swarm_servers --tags nau_check_urls
+- name: Deploy staticproxy stacks on docker swarm manager
   hosts: nau_docker_swarm_manager[0]
   become: True
   gather_facts: True
@@ -407,5 +409,10 @@
     - name: Deploy staticproxy stack
       role: staticproxy_deploy
 
+- name: Deploy coursecertificate stacks on docker swarm manager
+  hosts: nau_docker_swarm_manager[0]
+  become: True
+  gather_facts: True
+  roles:
     - name: Deploy coursecertificate stack
       role: coursecertificate_deploy
