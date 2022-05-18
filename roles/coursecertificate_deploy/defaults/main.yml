@@ -57,3 +57,17 @@ coursecertificate_nginx_http2: true
 coursecertificate_app_docker_image: nauedu/nau-course-certificate:latest
 coursecertificate_app_replicas: 1
 coursecertificate_app_lms_server_url: https://{{ EDXAPP_LMS_SITE_NAME }}
+
+coursecertificate_nau_urls_to_check:
+  - name: coursecertificate robots.txt
+    host: "{{ coursecertificate_server_name }}"
+    protocol: https
+    page: robots.txt
+    content: User-agent
+    retries: 5
+    port: "{{ coursecertificate_nginx_https_ingress_port }}"
+  - name: coursecertificate an image
+    host: "{{ coursecertificate_server_name }}"
+    protocol: https
+    page: static/images/digital_sign/digital_signature_en.png
+    port: "{{ coursecertificate_nginx_https_ingress_port }}"
