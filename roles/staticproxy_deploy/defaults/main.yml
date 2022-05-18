@@ -12,7 +12,7 @@ staticproxy_docker_deploy_templates:
 staticproxy_nginx_ssl_certificate_folder: "{{ COMMON_PATH_CUSTOM_FILES }}/static/nginx/ssl"
 staticproxy_nginx_proxy_protocol: false
 staticproxy_nginx_http2: true
-staticproxy_nginx_image: nginx:1.20.1
+staticproxy_nginx_image: nginx:1.20.2
 staticproxy_nginx_http_ingress_port:  22080
 staticproxy_nginx_https_ingress_port: 22443
 staticproxy_nginx_replicas: 1
