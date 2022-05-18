@@ -32,10 +32,17 @@ services:
           - {{ key }} == {{ value }}
 {% endfor %}
 {% endif %}
-{% if (staticproxy_docker_deploy_templates + staticproxy_docker_deploy_files) | selectattr('config_name', 'defined') | list | length > 0  %}
+{% if (docker_deploy_templates + docker_deploy_files) | selectattr('config_name', 'defined') | list | length > 0  %}
     configs:
-{% for f in ( (staticproxy_docker_deploy_templates + staticproxy_docker_deploy_files) | selectattr('config_name', 'defined') | list ) %}
-      - source: {{ f.config_name }}_{{ hostvars[inventory_hostname]['docker_deploy_configs_checksum'][ staticproxy_docker_deploy_stack_name + '_' + f.config_name ] }}
+{% for f in ( (docker_deploy_templates + docker_deploy_files) | selectattr('config_name', 'defined') | list ) %}
+      - source: {{ f.config_name }}_{{ hostvars[inventory_hostname]['docker_deploy_configs_checksum'][ docker_deploy_stack_name + '_' + f.config_name ] }}
+        target: {{ f.docker_target }}
+{% endfor %}
+{% endif %}
+{% if (docker_deploy_templates + docker_deploy_files) | selectattr('secret_name', 'defined') | list | length > 0  %}
+    secrets:
+{% for f in ( (docker_deploy_templates + docker_deploy_files) | selectattr('secret_name', 'defined') | list ) %}
+      - source: {{ f.secret_name }}_{{ hostvars[inventory_hostname]['docker_deploy_secrets_checksum'][ docker_deploy_stack_name + '_' + f.secret_name ] }}
         target: {{ f.docker_target }}
 {% endfor %}
 {% endif %}
@@ -49,7 +56,12 @@ services:
       timeout: 10s
 
 configs:
-{% for f in ( (staticproxy_docker_deploy_templates + staticproxy_docker_deploy_files) | selectattr('config_name', 'defined') | list ) %}
-  {{ f.config_name }}_{{ hostvars[inventory_hostname]['docker_deploy_configs_checksum'][ staticproxy_docker_deploy_stack_name + '_' + f.config_name ] }}:
+{% for f in ( (docker_deploy_templates + docker_deploy_files) | selectattr('config_name', 'defined') | list ) %}
+  {{ f.config_name }}_{{ hostvars[inventory_hostname]['docker_deploy_configs_checksum'][ docker_deploy_stack_name + '_' + f.config_name ] }}:
+    file: {{ f.dest }}
+{% endfor %}
+secrets:
+{% for f in ( (docker_deploy_templates + docker_deploy_files) | selectattr('secret_name', 'defined') | list ) %}
+  {{ f.secret_name }}_{{ hostvars[inventory_hostname]['docker_deploy_secrets_checksum'][ docker_deploy_stack_name + '_' + f.secret_name ] }}:
     file: {{ f.dest }}
 {% endfor %}

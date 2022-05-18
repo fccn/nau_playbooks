@@ -21,11 +21,11 @@ staticproxy_docker_deploy_files:
   - src: "{{ staticproxy_nginx_ssl_certificate_key }}"
     dest: "{{ staticproxy_docker_deploy_base_folder }}/certificate.key.pem"
     docker_target: /etc/ssl/certs/certificate.key.pem
-    config_name: certificate_key
+    secret_name: certificate_key
   - src: "{{ staticproxy_nginx_ssl_certificate_crt }}"
     dest: "{{ staticproxy_docker_deploy_base_folder }}/certificate.crt.pem"
     docker_target: /etc/ssl/certs/certificate.crt.pem
-    config_name: certificate_crt
+    secret_name: certificate_crt
 
 # Nginx is only a reverse proxy to reach the buckets that need public access with or without signature
 staticproxy_nginx_servers: "{{ staticproxy_nginx_servers_default }}"
