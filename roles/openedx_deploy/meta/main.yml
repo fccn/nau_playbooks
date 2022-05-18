@@ -3,4 +3,3 @@ dependencies:
   - role: ansible-docker-deploy
     when: openedx_deploy | default(false)
   - role: nau_check_urls
-    when: (openedx_deploy | default(false)) or (healthcheck | default(false))

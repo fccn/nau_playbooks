@@ -47,7 +47,7 @@ staticproxy_nginx_servers_default:
 
 # List of URLs to check during deployment.
 staticproxy_nau_urls_to_check:
-  - name: maintenance page
+  - name: staticproxy maintenance page
     host: "shared.{{ nau_ceph_host_public }}"
     protocol: https
     page: maintenance-site/index.html
