@@ -30,23 +30,10 @@ status-healthcheck: ## healthcheck - check if it's running the requested service
 
 # View the logs of the specified service container
 _%-logs:
-	docker service logs --follow --tail=500 {{ docker_deploy_stack_name }}_$*
+	docker service logs --follow --tail=500 openedx_$*
 
 {% for _service in ( (docker_deploy_templates + docker_deploy_files) | selectattr('service', 'defined') | map(attribute='service') | unique | list ) %}
 logs-{{ _service }}: _{{ _service }}-logs ## View last 500 lines of logs of the {{ _service }} docker service
 .PHONY: {{ _service }}-logs
 
 {% endfor %}
-
-##################################################
-# Specific openedx targets
-
-status-mysql_1-primary: ## show primary master status on mysql_1 docker container
-	@echo "Write down the value of db user '{{ openedx_mysql_containers.mysql_1.mysql_replication_login_user }}' value of 'openedx_mysql_containers.mysql_1.mysql_replication_login_password' that defaults to 'EDXAPP_MYSQL_PASSWORD_ADMIN'"
-	@echo 'show master status \G' | mysql -u root --host 127.0.0.1 --port {{ openedx_mysql_containers.mysql_1.ingress_port }} -p
-.PHONY: mysql-slave-status
-
-status-mysql_2-replica: ## show replica slave status on mysql_2 docker container
-	@echo "Write down the value of db user '{{ openedx_mysql_containers.mysql_2.mysql_replication_login_user }}' value of 'openedx_mysql_containers.mysql_2.mysql_replication_login_password' that defaults to 'EDXAPP_MYSQL_PASSWORD_ADMIN'"
-	echo 'show slave status \G' | mysql -u root --host 127.0.0.1 --port {{ openedx_mysql_containers.mysql_2.ingress_port }} -p
-.PHONY: mysql-slave-status

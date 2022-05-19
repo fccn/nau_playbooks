@@ -5,13 +5,15 @@ coursecertificate_docker_deploy_base_folder: /nau/ops/coursecertificate
 
 coursecertificate_docker_deploy_templates: "{{ coursecertificate_docker_deploy_templates_default }}"
 coursecertificate_docker_deploy_templates_default:
+  - src:  "{{ coursecertificate_makefile_template | default('templates/Makefile') }}"
+    dest: "{{ coursecertificate_docker_deploy_base_folder }}/Makefile"
   - src: "{{ coursecertificate_nginx_conf_template }}"
-    dest: "{{ coursecertificate_docker_deploy_base_folder }}/nginx.conf"
+    dest: "{{ coursecertificate_docker_deploy_base_folder }}/nginx/nginx.conf"
     docker_target: /etc/nginx/nginx.conf
     config_name: nginx_conf
     service: nginx
   - src: "{{ coursecertificate_app_config_template }}"
-    dest: "{{ docker_deploy_base_folder }}/config.yml"
+    dest: "{{ docker_deploy_base_folder }}/app/config.yml"
     docker_target: /app/config.yml
     config_name: app_config
     service: app
@@ -19,17 +21,17 @@ coursecertificate_docker_deploy_templates_default:
 coursecertificate_docker_deploy_files: "{{ coursecertificate_docker_deploy_files_default }}"
 coursecertificate_docker_deploy_files_default:
   - src: "{{ coursecertificate_nginx_ssl_certificate_key }}"
-    dest: "{{ coursecertificate_docker_deploy_base_folder }}/certificate.key.pem"
+    dest: "{{ coursecertificate_docker_deploy_base_folder }}/nginx/ssl/certificate.key.pem"
     docker_target: /etc/ssl/certs/certificate.key.pem
     secret_name: certificate_key
     service: nginx
   - src: "{{ coursecertificate_nginx_ssl_certificate_crt }}"
-    dest: "{{ coursecertificate_docker_deploy_base_folder }}/certificate.crt.pem"
+    dest: "{{ coursecertificate_docker_deploy_base_folder }}/nginx/ssl/certificate.crt.pem"
     docker_target: /etc/ssl/certs/certificate.crt.pem
     secret_name: certificate_crt
     service: nginx
   - src: "{{ coursecertificate_app_sign_pdf_p12 }}"
-    dest: "{{ coursecertificate_docker_deploy_base_folder }}/sign-pdf.p12"
+    dest: "{{ coursecertificate_docker_deploy_base_folder }}/app/sign-pdf.p12"
     docker_target: /app/digital_signature/sign-pdf.p12
     secret_name: sign_pdf_p12
     service: app

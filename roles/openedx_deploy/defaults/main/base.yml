@@ -8,7 +8,7 @@ openedx_docker_deploy_templates: "{{ openedx_base_docker_deploy_templates + open
 # ...
 
 openedx_base_docker_deploy_templates:
-  - src:  templates/Makefile
+  - src:  "{{ openedx_makefile_template | default('templates/Makefile') }}"
     dest: "{{ openedx_docker_deploy_base_folder }}/Makefile"
 
 openedx_docker_deploy_folders_additional: "{{ openedx_mysql_docker_deploy_folders_additional }}"

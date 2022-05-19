@@ -4,8 +4,10 @@ staticproxy_docker_deploy_stack_template: templates/docker-stack.yml
 staticproxy_docker_deploy_base_folder: /nau/ops/staticproxy
 
 staticproxy_docker_deploy_templates:
+  - src: "{{ staticproxy_makefile_template | default('templates/Makefile') }}"
+    dest: "{{ staticproxy_docker_deploy_base_folder }}/Makefile"
   - src: "{{ staticproxy_nginx_conf_template | default('templates/nginx.conf') }}"
-    dest: "{{ staticproxy_docker_deploy_base_folder }}/nginx.conf"
+    dest: "{{ staticproxy_docker_deploy_base_folder }}/nginx/nginx.conf"
     docker_target: /etc/nginx/nginx.conf
     config_name: nginx_conf
 
@@ -19,11 +21,11 @@ staticproxy_nginx_replicas: 1
 
 staticproxy_docker_deploy_files:
   - src: "{{ staticproxy_nginx_ssl_certificate_key }}"
-    dest: "{{ staticproxy_docker_deploy_base_folder }}/certificate.key.pem"
+    dest: "{{ staticproxy_docker_deploy_base_folder }}/nginx/ssl/certificate.key.pem"
     docker_target: /etc/ssl/certs/certificate.key.pem
     secret_name: certificate_key
   - src: "{{ staticproxy_nginx_ssl_certificate_crt }}"
-    dest: "{{ staticproxy_docker_deploy_base_folder }}/certificate.crt.pem"
+    dest: "{{ staticproxy_docker_deploy_base_folder }}/nginx/ssl/certificate.crt.pem"
     docker_target: /etc/ssl/certs/certificate.crt.pem
     secret_name: certificate_crt
 
