@@ -1,4 +1,7 @@
-# Makefile with helper commands to manage openedx docker swarm
+# {{ ansible_managed }}
+################################################################
+# Makefile with helper commands to manage openedx docker swarm #
+################################################################
 
 ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
@@ -6,19 +9,38 @@ ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 default: help
 
 deploy: ## deploy docker stack
-	docker stack deploy openedx --compose-file docker-stack.yml
+	docker stack deploy {{ docker_deploy_stack_name }} --compose-file docker-stack.yml
 .PHONY: deploy
 
-service-ls: ## list the docker service
-	docker service ls
-.PHONY: ls
+status-service-ls: ## list {{ docker_deploy_stack_name }} stack services
+	docker service ls --filter name={{ docker_deploy_stack_name }}
+.PHONY: service-ls
 
-mysql-primary-status: ## show primary master status
-	echo 'show slave status \G' | mysql -u root --host 127.0.0.1 --port 3306 -p
+status-stack-ps: ## list the tasks in the {{ docker_deploy_stack_name }} stack
+	docker stack ps {{ docker_deploy_stack_name }}
+.PHONY: stack-ps
+
+status-healthcheck: ## healthcheck - check if it's running the requested service replicas
+	@docker service ls --filter name={{ docker_deploy_stack_name }} --format {% raw %}'{{.Replicas}}'{% endraw %} | egrep -o '[0-9]+/[0-9]+' | awk -F/ '{ if ($$1 != $$2 && $$2 != 0) exit -1}' && echo "OK" || echo "Not ok"
+.PHONY: healthcheck
+
+# View the logs of the specified service container
+_%-logs:
+	docker service logs --follow --tail=500 openedx_$*
+
+{% for _service in ( (docker_deploy_templates + docker_deploy_files) | selectattr('service', 'defined') | map(attribute='service') | unique | list ) %}
+logs-{{ _service }}: _{{ _service }}-logs ## View last 500 lines of logs of the {{ _service }} docker service
+.PHONY: {{ _service }}-logs
+
+{% endfor %}
+status-mysql_1-primary: ## show primary master status on mysql_1 docker container
+	@echo "Write down the value of db user '{{ openedx_mysql_containers.mysql_1.mysql_replication_login_user }}' value of 'openedx_mysql_containers.mysql_1.mysql_replication_login_password' that defaults to 'EDXAPP_MYSQL_PASSWORD_ADMIN'"
+	@echo 'show master status \G' | mysql -u root --host 127.0.0.1 --port {{ openedx_mysql_containers.mysql_1.ingress_port }} -p
 .PHONY: mysql-slave-status
 
-mysql-replica-status: ## show replica slave status
-	echo 'show slave status \G' | mysql -u root --host 127.0.0.1 --port 3307 -p
+status-mysql_2-replica: ## show replica slave status on mysql_2 docker container
+	@echo "Write down the value of db user '{{ openedx_mysql_containers.mysql_2.mysql_replication_login_user }}' value of 'openedx_mysql_containers.mysql_2.mysql_replication_login_password' that defaults to 'EDXAPP_MYSQL_PASSWORD_ADMIN'"
+	echo 'show slave status \G' | mysql -u root --host 127.0.0.1 --port {{ openedx_mysql_containers.mysql_2.ingress_port }} -p
 .PHONY: mysql-slave-status
 
 help:

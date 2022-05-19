@@ -1,3 +1,5 @@
+{% import '_docker_deploy_helper.j2' as helper with context %}
+# {{ ansible_managed }}
 version: "3.8"
 
 services:
@@ -20,9 +22,8 @@ services:
         protocol:  tcp
         # each container have a statistics page but we should view only one on each host
         mode:      host
-    configs:
-      - source: {{ openedx_mysql_lb_haproxy_cfc_config_name }}_{{ hostvars[inventory_hostname]['docker_deploy_configs_checksum'][ openedx_docker_deploy_stack_name + '_' + openedx_mysql_lb_haproxy_cfc_config_name ] }}
-        target: /usr/local/etc/haproxy/haproxy.cfg
+{{ helper.service_configs(service='mysql_lb_haproxy') }}
+{{ helper.service_secrets(service='mysql_lb_haproxy') }}
     deploy:
       replicas: {{ openedx_mysql_lb_haproxy_deploy_replicas_count | default(2) }}
       placement:
@@ -54,12 +55,8 @@ services:
     environment:
       MYSQL_DATABASE: "{{ EDXAPP_MYSQL_DB_NAME }}"
       MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql-root-password
-    secrets:
-      - source: {{ mysql_container.docker_secret_name_mysql_root_password }}_{{ hostvars[inventory_hostname]['docker_deploy_secrets_checksum'][ openedx_docker_deploy_stack_name + '_' + mysql_container.docker_secret_name_mysql_root_password ] }}
-        target: /run/secrets/mysql-root-password
-    configs:
-      - source: {{ mysql_container.docker_config_name_mysql_cfg }}_{{ hostvars[inventory_hostname]['docker_deploy_configs_checksum'][ openedx_docker_deploy_stack_name + '_' + mysql_container.docker_config_name_mysql_cfg ] }}
-        target: /etc/mysql/conf.d/mysql.cnf
+{{ helper.service_configs(service=mysql_container_name) }}
+{{ helper.service_secrets(service=mysql_container_name) }}
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping --silent -p{{ EDXAPP_MYSQL_PASSWORD_ADMIN }} || exit 1"]
       interval: 30s
@@ -90,13 +87,5 @@ services:
           - node.labels.fqdn == {{ mysql_container.host_fqdn }}
 {% endfor %}
 
-configs:
-{% for template in ( openedx_docker_deploy_templates | selectattr('config_name', 'defined') | list ) %}
-  {{ template.config_name }}_{{ hostvars[inventory_hostname]['docker_deploy_configs_checksum'][ openedx_docker_deploy_stack_name + '_' + template.config_name ] }}:
-    file: {{ template.dest }}
-{% endfor %}
-secrets:
-{% for template in ( openedx_docker_deploy_templates | selectattr('secret_name', 'defined') | list ) %}
-  {{ template.secret_name }}_{{ hostvars[inventory_hostname]['docker_deploy_secrets_checksum'][ openedx_docker_deploy_stack_name + '_' + template.secret_name ] }}:
-    file: {{ template.dest }}
-{% endfor %}
+{{ helper.configs() }}
+{{ helper.secrets() }}

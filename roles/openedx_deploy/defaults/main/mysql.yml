@@ -3,20 +3,30 @@ openedx_mysql_docker_deploy_templates:
   - src_data: "{{ EDXAPP_MYSQL_PASSWORD_ADMIN }}"
     dest: "{{ openedx_docker_deploy_base_folder }}/mysql_1/mysql-root-password"
     secret_name: "{{ openedx_mysql_containers.mysql_1.docker_secret_name_mysql_root_password }}"
+    service: mysql_1
+    docker_target: /run/secrets/mysql-root-password
   - src_data: "{{ EDXAPP_MYSQL_PASSWORD_ADMIN }}"
     dest: "{{ openedx_docker_deploy_base_folder }}/mysql_2/mysql-root-password"
     secret_name: "{{ openedx_mysql_containers.mysql_2.docker_secret_name_mysql_root_password }}"
+    service: mysql_2
+    docker_target: /run/secrets/mysql-root-password
   - src:  roles/docker_mysql_replication/templates/replication.cnf.j2
     dest: "{{ openedx_docker_deploy_base_folder }}/mysql_1/mysql.cfg"
     config_name: "{{ openedx_mysql_containers.mysql_1.docker_config_name_mysql_cfg }}"
     mysql_container: "{{ openedx_mysql_containers.mysql_1 }}"
+    service: mysql_1
+    docker_target: /etc/mysql/conf.d/mysql.cnf
   - src:  roles/docker_mysql_replication/templates/replication.cnf.j2
     dest: "{{ openedx_docker_deploy_base_folder }}/mysql_2/mysql.cfg"
     config_name: "{{ openedx_mysql_containers.mysql_2.docker_config_name_mysql_cfg }}"
     mysql_container: "{{ openedx_mysql_containers.mysql_2 }}"
+    service: mysql_2
+    docker_target: /etc/mysql/conf.d/mysql.cnf
   - src:  templates/mysql_lb_haproxy/haproxy.cfg
     dest: "{{ openedx_docker_deploy_base_folder }}/mysql_lb_haproxy/haproxy.cfg"
     config_name: "{{ openedx_mysql_lb_haproxy_cfc_config_name }}"
+    service: mysql_lb_haproxy
+    docker_target: /usr/local/etc/haproxy/haproxy.cfg
 
 # need last slash
 openedx_mysql_data: /data/openedx/mysql/
