@@ -1,3 +1,4 @@
+{% import '_docker_deploy_helper.j2' as helper with context %}
 # {{ ansible_managed }}
 version: '3.8'
 
@@ -32,20 +33,6 @@ services:
           - {{ key }} == {{ value }}
 {% endfor %}
 {% endif %}
-{% if (docker_deploy_templates + docker_deploy_files) | selectattr('config_name', 'defined') | list | length > 0  %}
-    configs:
-{% for f in ( (docker_deploy_templates + docker_deploy_files) | selectattr('config_name', 'defined') | list ) %}
-      - source: {{ f.config_name }}_{{ hostvars[inventory_hostname]['docker_deploy_configs_checksum'][ docker_deploy_stack_name + '_' + f.config_name ] }}
-        target: {{ f.docker_target }}
-{% endfor %}
-{% endif %}
-{% if (docker_deploy_templates + docker_deploy_files) | selectattr('secret_name', 'defined') | list | length > 0  %}
-    secrets:
-{% for f in ( (docker_deploy_templates + docker_deploy_files) | selectattr('secret_name', 'defined') | list ) %}
-      - source: {{ f.secret_name }}_{{ hostvars[inventory_hostname]['docker_deploy_secrets_checksum'][ docker_deploy_stack_name + '_' + f.secret_name ] }}
-        target: {{ f.docker_target }}
-{% endfor %}
-{% endif %}
     extra_hosts:
       - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
     healthcheck:
@@ -54,14 +41,8 @@ services:
       retries: 10
       interval: 10s
       timeout: 10s
+{{ helper.service_configs() }}
+{{ helper.service_secrets() }}
 
-configs:
-{% for f in ( (docker_deploy_templates + docker_deploy_files) | selectattr('config_name', 'defined') | list ) %}
-  {{ f.config_name }}_{{ hostvars[inventory_hostname]['docker_deploy_configs_checksum'][ docker_deploy_stack_name + '_' + f.config_name ] }}:
-    file: {{ f.dest }}
-{% endfor %}
-secrets:
-{% for f in ( (docker_deploy_templates + docker_deploy_files) | selectattr('secret_name', 'defined') | list ) %}
-  {{ f.secret_name }}_{{ hostvars[inventory_hostname]['docker_deploy_secrets_checksum'][ docker_deploy_stack_name + '_' + f.secret_name ] }}:
-    file: {{ f.dest }}
-{% endfor %}
+{{ helper.configs() }}
+{{ helper.secrets() }}

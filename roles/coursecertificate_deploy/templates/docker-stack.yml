@@ -1,3 +1,5 @@
+{% import '_docker_deploy_helper.j2' as helper with context %}
+# {{ ansible_managed }}
 version: "3.8"
 
 services:
@@ -8,20 +10,8 @@ services:
         published: {{ coursecertificate_app_docker_port_published | default(5000) }}
         protocol:  tcp
         mode:      ingress
-{% if (coursecertificate_docker_deploy_templates + coursecertificate_docker_deploy_files) | selectattr('config_name', 'defined') | selectattr('service', 'equalto', 'app') | list | length > 0  %}
-    configs:
-{% for fc in ( (coursecertificate_docker_deploy_templates + coursecertificate_docker_deploy_files) | selectattr('config_name', 'defined') | selectattr('service', 'equalto', 'app')  | list ) %}
-      - source: {{ fc.config_name }}_{{ hostvars[inventory_hostname]['docker_deploy_configs_checksum'][ coursecertificate_docker_deploy_stack_name + '_' + fc.config_name ] }}
-        target: {{ fc.docker_target }}
-{% endfor %}
-{% endif %}
-{% if (coursecertificate_docker_deploy_templates + coursecertificate_docker_deploy_files) | selectattr('secret_name', 'defined') | selectattr('service', 'equalto', 'app') | list | length > 0  %}
-    secrets:
-{% for fs in ( (coursecertificate_docker_deploy_templates + coursecertificate_docker_deploy_files) | selectattr('secret_name', 'defined') | selectattr('service', 'equalto', 'app')  | list ) %}
-      - source: {{ fs.secret_name }}_{{ hostvars[inventory_hostname]['docker_deploy_secrets_checksum'][ coursecertificate_docker_deploy_stack_name + '_' + fs.secret_name ] }}
-        target: {{ fs.docker_target }}
-{% endfor %}
-{% endif %}
+{{ helper.service_configs(service='app') }}
+{{ helper.service_secrets(service='app') }}
     deploy:
       replicas: {{ coursecertificate_app_replicas }}
       placement:
@@ -56,20 +46,8 @@ services:
         published: {{ coursecertificate_nginx_https_ingress_port }}
         protocol: tcp
         mode: ingress
-{% if (coursecertificate_docker_deploy_templates + coursecertificate_docker_deploy_files) | selectattr('config_name', 'defined') | selectattr('service', 'equalto', 'nginx') | list | length > 0  %}
-    configs:
-{% for fcn in ( (coursecertificate_docker_deploy_templates + coursecertificate_docker_deploy_files) | selectattr('config_name', 'defined') | selectattr('service', 'equalto', 'nginx') | list ) %}
-      - source: {{ fcn.config_name }}_{{ hostvars[inventory_hostname]['docker_deploy_configs_checksum'][ coursecertificate_docker_deploy_stack_name + '_' + fcn.config_name ] }}
-        target: {{ fcn.docker_target }}
-{% endfor %}
-{% endif %}
-{% if (coursecertificate_docker_deploy_templates + coursecertificate_docker_deploy_files) | selectattr('secret_name', 'defined') | selectattr('service', 'equalto', 'nginx') | list | length > 0  %}
-    secrets:
-{% for fsn in ( (coursecertificate_docker_deploy_templates + coursecertificate_docker_deploy_files) | selectattr('secret_name', 'defined') | selectattr('service', 'equalto', 'nginx') | list ) %}
-      - source: {{ fsn.secret_name }}_{{ hostvars[inventory_hostname]['docker_deploy_secrets_checksum'][ coursecertificate_docker_deploy_stack_name + '_' + fsn.secret_name ] }}
-        target: {{ fsn.docker_target }}
-{% endfor %}
-{% endif %}
+{{ helper.service_configs(service='nginx') }}
+{{ helper.service_secrets(service='nginx') }}
     extra_hosts:
       - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
     deploy:
@@ -101,13 +79,5 @@ services:
       interval: 10s
       timeout: 10s
 
-configs:
-{% for fcd in ( (coursecertificate_docker_deploy_templates + coursecertificate_docker_deploy_files) | selectattr('config_name', 'defined') | list ) %}
-  {{ fcd.config_name }}_{{ hostvars[inventory_hostname]['docker_deploy_configs_checksum'][ coursecertificate_docker_deploy_stack_name + '_' + fcd.config_name ] }}:
-    file: {{ fcd.dest }}
-{% endfor %}
-secrets:
-{% for fsd in ( (coursecertificate_docker_deploy_templates + coursecertificate_docker_deploy_files) | selectattr('secret_name', 'defined') | list ) %}
-  {{ fsd.secret_name }}_{{ hostvars[inventory_hostname]['docker_deploy_secrets_checksum'][ coursecertificate_docker_deploy_stack_name + '_' + fsd.secret_name ] }}:
-    file: {{ fsd.dest }}
-{% endfor %}
+{{ helper.configs() }}
+{{ helper.secrets() }}
