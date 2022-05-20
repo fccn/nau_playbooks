@@ -329,9 +329,9 @@
     - docker_daemon
     - ansible-docker-deploy
 
-- name: Configure NAU docker swarm VMs
+- name: Install Docker and create folders used as volumes
   hosts: nau_docker_swarm_managers,nau_docker_swarm_workers
-  #serial: "{{ serial_number | default(1) }}"
+  # serial: "{{ serial_number | default(1) }}"
   become: True
   gather_facts: True
   tasks:
@@ -341,15 +341,6 @@
     - name: configures the docker daemon
       import_role:
         name: docker_daemon
-    - name: configures the swarm
-      import_role:
-        name: docker_swarm
-      vars:
-        docker_swarm_manager: "{{ groups['nau_docker_swarm_managers'] }}"
-        docker_swarm_worker: "{{ groups['nau_docker_swarm_workers'] }}"
-        # on ansible inventory each host has its IPv4 address on the `ansible_host` variable
-        docker_swarm_node_advertise_addr: "{{ hostvars[inventory_hostname].ansible_host }}"
-
     - name: Create folders used as volumes on all docker swarm nodes and not only on the 1st manager
       file:
         dest: "{{ item.dest | dirname }}"
@@ -365,7 +356,38 @@
       loop: "{{ openedx_docker_deploy_folders_additional }}"
       tags: docker_deploy
 
-- name: Deploy openedx to the first docker swarm manager
+- name: Configure 1st docker swarm manager
+  hosts: nau_docker_swarm_managers[0]
+  # serial: "{{ serial_number | default(1) }}"
+  become: True
+  gather_facts: True
+  tasks:
+    - name: configures the swarm
+      import_role:
+        name: docker_swarm
+      vars:
+        docker_swarm_manager: "{{ groups['nau_docker_swarm_managers'] }}"
+        docker_swarm_worker: "{{ groups['nau_docker_swarm_workers'] }}"
+        configure_labels: false
+        # on ansible inventory each host has its IPv4 address on the `ansible_host` variable
+        docker_swarm_node_advertise_addr: "{{ hostvars[inventory_hostname].ansible_host }}"
+
+- name: Configure other docker swarm nodes except the 1st manager
+  hosts: nau_docker_swarm_managers,nau_docker_swarm_workers
+  # serial: "{{ serial_number | default(1) }}"
+  become: True
+  gather_facts: True
+  tasks:
+    - name: configures the swarm
+      import_role:
+        name: docker_swarm
+      vars:
+        docker_swarm_manager: "{{ groups['nau_docker_swarm_managers'] }}"
+        docker_swarm_worker: "{{ groups['nau_docker_swarm_workers'] }}"
+        # on ansible inventory each host has its IPv4 address on the `ansible_host` variable
+        docker_swarm_node_advertise_addr: "{{ hostvars[inventory_hostname].ansible_host }}"
+
+- name: Deploy openedx stack to the 1st docker swarm manager
   hosts: nau_docker_swarm_managers[0]
   become: True
   gather_facts: True
@@ -401,7 +423,7 @@
 
 # Do not merge this task with the next, if we merge then it isn't possible to check urls of both tasks.
 #   --limit nau_docker_swarm_servers --tags nau_check_urls
-- name: Deploy staticproxy stacks on docker swarm manager
+- name: Deploy staticproxy stack to the 1st docker swarm manager
   hosts: nau_docker_swarm_managers[0]
   become: True
   gather_facts: True
@@ -409,7 +431,7 @@
     - name: Deploy staticproxy stack
       role: staticproxy_deploy
 
-- name: Deploy coursecertificate stacks on docker swarm manager
+- name: Deploy coursecertificate stack to the 1st docker swarm manager
   hosts: nau_docker_swarm_managers[0]
   become: True
   gather_facts: True
