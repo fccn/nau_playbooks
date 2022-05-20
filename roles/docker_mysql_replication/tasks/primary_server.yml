@@ -48,8 +48,12 @@
           and ( _mysql_databases_to_dump is iterable ) and ( _mysql_databases_to_dump is not string )
   tags: always
 
-- name: Set facts
-  include_tasks: create_additional.yml
+- name: Create additional databases
+  include_tasks: create_dbs.yml
+  tags: always
+
+- name: Create additional users and grants
+  include_tasks: create_users.yml
   tags: always
 
 - name: Create replication user

@@ -409,8 +409,8 @@
         docker_mysql_replication_template: false
         # dict with docker containers configuration
         docker_mysql_replication_containers: "{{ openedx_mysql_containers }}"
-        docker_mysql_replication_additional_databases: "{{ docker_mysql_replication_additional_databases }}"
-        docker_mysql_replication_additional_users: "{{ docker_mysql_replication_additional_users }}"
+        docker_mysql_replication_additional_databases: "{{ openedx_docker_mysql_replication_additional_databases }}"
+        docker_mysql_replication_additional_users: "{{ openedx_docker_mysql_replication_additional_users }}"
 
 - name: Configure support server
   hosts: support_server
