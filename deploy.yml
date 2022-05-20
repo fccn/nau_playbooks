@@ -51,20 +51,20 @@
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit richie_servers
 #
 #   To deploy the static proxy on the first docker swarm manager
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_manager[0] -e staticproxy_deploy=true
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_managers[0] -e staticproxy_deploy=true
 #
 #   To deploy the openedx on the first docker swarm manager
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_manager[0] -e openedx_deploy=true
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_managers[0] -e openedx_deploy=true
 #
 - name: Bootstrap instances of 16.04
-  hosts: all,!idpproxy_servers,!idpauth_servers,!richie_servers,!nau_docker_swarm_manager,!nau_docker_swarm_worker,!support_server
+  hosts: all,!idpproxy_servers,!idpauth_servers,!richie_servers,!nau_docker_swarm_managers,!nau_docker_swarm_workers,!support_server
   gather_facts: no
   become: true
   roles:
     - python_minimal
 
 - name: Bootstrap instances of 20.04
-  hosts: nau_docker_swarm_manager,nau_docker_swarm_worker
+  hosts: nau_docker_swarm_managers,nau_docker_swarm_workers
   gather_facts: no
   become: true
   roles:
@@ -330,7 +330,7 @@
     - ansible-docker-deploy
 
 - name: Configure NAU docker swarm VMs
-  hosts: nau_docker_swarm_manager,nau_docker_swarm_worker
+  hosts: nau_docker_swarm_managers,nau_docker_swarm_workers
   #serial: "{{ serial_number | default(1) }}"
   become: True
   gather_facts: True
@@ -345,8 +345,8 @@
       import_role:
         name: docker_swarm
       vars:
-        docker_swarm_manager: "{{ groups['nau_docker_swarm_manager'] }}"
-        docker_swarm_worker: "{{ groups['nau_docker_swarm_worker'] }}"
+        docker_swarm_manager: "{{ groups['nau_docker_swarm_managers'] }}"
+        docker_swarm_worker: "{{ groups['nau_docker_swarm_workers'] }}"
         # on ansible inventory each host has its IPv4 address on the `ansible_host` variable
         docker_swarm_node_advertise_addr: "{{ hostvars[inventory_hostname].ansible_host }}"
 
@@ -366,7 +366,7 @@
       tags: docker_deploy
 
 - name: Deploy openedx to the first docker swarm manager
-  hosts: nau_docker_swarm_manager[0]
+  hosts: nau_docker_swarm_managers[0]
   become: True
   gather_facts: True
   roles:
@@ -374,7 +374,7 @@
       role: openedx_deploy
 
 - name: Configure NAU OpenedX MySQL replication
-  hosts: nau_docker_swarm_manager,nau_docker_swarm_worker
+  hosts: nau_docker_swarm_managers,nau_docker_swarm_workers
   become: True
   gather_facts: True
   serial: "{{ serial_number | default(1) }}"
@@ -402,7 +402,7 @@
 # Do not merge this task with the next, if we merge then it isn't possible to check urls of both tasks.
 #   --limit nau_docker_swarm_servers --tags nau_check_urls
 - name: Deploy staticproxy stacks on docker swarm manager
-  hosts: nau_docker_swarm_manager[0]
+  hosts: nau_docker_swarm_managers[0]
   become: True
   gather_facts: True
   roles:
@@ -410,7 +410,7 @@
       role: staticproxy_deploy
 
 - name: Deploy coursecertificate stacks on docker swarm manager
-  hosts: nau_docker_swarm_manager[0]
+  hosts: nau_docker_swarm_managers[0]
   become: True
   gather_facts: True
   roles:
