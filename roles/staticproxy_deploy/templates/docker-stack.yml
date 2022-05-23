@@ -5,7 +5,6 @@ version: '3.8'
 services:
   nginx:
     image: {{ staticproxy_nginx_image }}
-    restart: always
     ports:
       - target: 80
         published: {{ staticproxy_nginx_http_ingress_port }}
