@@ -1,4 +1,9 @@
 ---
+
+- name: Install MySQL client for health check
+  package:
+    name: mysql-client
+
 - name: Run healthcheck
   shell: make status-healthcheck
   args:
