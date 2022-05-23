@@ -18,22 +18,22 @@ deploy: ## deploy docker stack
 
 status-service-ls: ## list {{ docker_deploy_stack_name }} stack services
 	docker service ls --filter name={{ docker_deploy_stack_name }}
-.PHONY: service-ls
+.PHONY: status-service-ls
 
 status-stack-ps: ## list the tasks in the {{ docker_deploy_stack_name }} stack
 	docker stack ps {{ docker_deploy_stack_name }}
-.PHONY: stack-ps
+.PHONY: status-stack-ps
 
 status-healthcheck: ## healthcheck - check if it's running the requested service replicas
 	@docker service ls --filter name={{ docker_deploy_stack_name }} --format {% raw %}'{{.Replicas}}'{% endraw %} | egrep -o '[0-9]+/[0-9]+' | awk -F/ '{ if ($$1 != $$2 && $$2 != 0) exit -1}' && echo "OK" || echo "Not ok"
-.PHONY: healthcheck
+.PHONY: status-healthcheck
 
 # View the logs of the specified service container
 _%-logs:
-	docker service logs --follow --tail=500 openedx_$*
+	docker service logs --follow --tail=500 {{ docker_deploy_stack_name }}_$*
 
 {% for _service in ( (docker_deploy_templates + docker_deploy_files) | selectattr('service', 'defined') | map(attribute='service') | unique | list ) %}
 logs-{{ _service }}: _{{ _service }}-logs ## View last 500 lines of logs of the {{ _service }} docker service
-.PHONY: {{ _service }}-logs
+.PHONY: logs-{{ _service }}
 
 {% endfor %}
