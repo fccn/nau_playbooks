@@ -43,7 +43,7 @@ openedx_mysql_docker_deploy_folders_additional:
 # example with: "127.0.0.1:3306:3306"
 openedx_mysql_containers:
   mysql_1:
-    hostname: nau_dev_openedx_mysql_1
+    hostname: "{{ openedx_mysql_1_hostname }}"
     data: "{{ openedx_mysql_data }}"
     host_fqdn: "{{ openedx_mysql_primary_server }}"
     ingress_port: 3308
@@ -59,7 +59,7 @@ openedx_mysql_containers:
     mysql_replication_password: "{{ EDXAPP_MYSQL_REPLICATION_PASSWORD }}"
     mysql_replication_init_databases: [ edxapp ]
   mysql_2:
-    hostname: nau_dev_openedx_mysql_2
+    hostname: "{{ openedx_mysql_2_hostname }}"
     data: "{{ openedx_mysql_data }}"
     host_fqdn: "{{ openedx_mysql_replica_server }}"
     ingress_port: 3309
@@ -71,7 +71,7 @@ openedx_mysql_containers:
     docker_secret_name_mysql_root_password: mysql_2_root_password
     server_id: 2
     read_only: True
-    mysql_replication_master_server_ip: nau_dev_openedx_mysql_1
+    mysql_replication_master_server_ip: "{{ openedx_mysql_1_hostname }}"
     mysql_replication_master_port: 3306
     mysql_replication_user: "{{ EDXAPP_MYSQL_REPLICATION_USER }}"
     mysql_replication_password: "{{ EDXAPP_MYSQL_REPLICATION_PASSWORD }}"
