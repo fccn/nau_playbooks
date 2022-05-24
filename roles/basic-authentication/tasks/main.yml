@@ -6,6 +6,17 @@
     state: present
   when: basic_authentication_users is defined and ( basic_authentication_users | length > 0 )
 
+- name: Create folders
+  file:
+    dest: "{{ item.path | dirname }}"
+    owner: "{{ item.dir_owner|default(omit) }}"
+    group: "{{ item.dir_group|default(omit) }}"
+    mode: "{{ item.dir_mode | default(omit) }}"
+    recurse: true
+    state: directory
+  when: item.path is defined
+  with_items: "{{ basic_authentication_users | default([]) }}"
+
 - name: Write out htpasswd file
   htpasswd:
     name: "{{ item.name }}"
@@ -15,5 +26,5 @@
     owner: "{{ item.owner | default(omit) }}"
     group: "{{ item.group | default(omit) }}"
     mode: "{{ item.mode   | default(omit) }}"
-  with_items: "{{ basic_authentication_users }}"
-  when: basic_authentication_users is defined and ( basic_authentication_users | length > 0 )
+  when: item.name is defined
+  with_items: "{{ basic_authentication_users | default([]) }}"
