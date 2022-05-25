@@ -19,13 +19,17 @@ services:
       mode: replicated
       restart_policy:
         condition: on-failure
+      update_config:
+        parallelism: 1
+        failure_action: rollback
+        order: start-first
+      placement:
+        max_replicas_per_node: 1
       resources:
         limits:
           memory: 128M
         reservations:
           memory: 5M
-      placement:
-        max_replicas_per_node: 1
 {% if staticproxy_docker_placement_constraints is defined and ( staticproxy_docker_placement_constraints | length > 0 ) %}
         constraints:
 {% for key, value in staticproxy_docker_placement_constraints.items() %}
