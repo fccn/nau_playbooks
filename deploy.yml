@@ -50,12 +50,17 @@
 #   To deploy only specific servers run:
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit richie_servers
 #
-#   To deploy the static proxy on the first docker swarm manager
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_managers[0] -e staticproxy_deploy=true
+#   To deploy the openedx docker stack
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_managers -e openedx_deploy=true
 #
-#   To deploy the openedx on the first docker swarm manager
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_managers[0] -e openedx_deploy=true
+#   To deploy the static proxy docker stack
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_managers -e staticproxy_deploy=true
 #
+#   To deploy the coursecertificate docker stack
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_managers -e coursecertificate_deploy=true
+#
+#   To deploy the richie stack
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_servers --tags docker_deploy -e richie_deploy=true
 - name: Bootstrap instances of 16.04
   hosts: all,!idpproxy_servers,!idpauth_servers,!richie_servers,!nau_docker_swarm_managers,!nau_docker_swarm_workers,!support_server
   gather_facts: no
@@ -341,7 +346,7 @@
     - name: configures the docker daemon
       import_role:
         name: docker_daemon
-    - name: Create folders used as volumes on all docker swarm nodes and not only on the 1st manager
+    - name: Create folders volumes for openedx stack
       file:
         dest: "{{ item.dest | dirname }}"
         owner: "{{ item.dir_owner|default(omit) }}"
@@ -372,7 +377,7 @@
         # on ansible inventory each host has its IPv4 address on the `ansible_host` variable
         docker_swarm_node_advertise_addr: "{{ hostvars[inventory_hostname].ansible_host }}"
 
-- name: Configure other docker swarm nodes except the 1st manager
+- name: Configure other docker swarm nodes
   hosts: nau_docker_swarm_managers,nau_docker_swarm_workers
   # serial: "{{ serial_number | default(1) }}"
   become: True
