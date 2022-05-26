@@ -46,7 +46,7 @@ status-healthcheck: ## healthcheck - check if it's running the requested service
 _%-ps:
 	docker service ps {{ docker_deploy_stack_name }}_$*
 
-{% for _service in ( (docker_deploy_templates + docker_deploy_files) | selectattr('service', 'defined') | map(attribute='service') | unique | list ) %}
+{% for _service in docker_deploy_services %}
 status-ps-{{ _service }}: _{{ _service }}-ps ## List the tasks of {{ _service }}
 .PHONY: logs-{{ _service }}
 
@@ -56,7 +56,7 @@ status-ps-{{ _service }}: _{{ _service }}-ps ## List the tasks of {{ _service }}
 _%-logs:
 	docker service logs --follow --tail=500 {{ docker_deploy_stack_name }}_$*
 
-{% for _service in ( (docker_deploy_templates + docker_deploy_files) | selectattr('service', 'defined') | map(attribute='service') | unique | list ) %}
+{% for _service in docker_deploy_services %}
 logs-{{ _service }}: _{{ _service }}-logs ## View last 500 lines of logs of the {{ _service }} docker service
 .PHONY: logs-{{ _service }}
 
