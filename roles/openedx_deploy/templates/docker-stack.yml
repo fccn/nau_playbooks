@@ -32,7 +32,7 @@ services:
         condition: on-failure
       resources:
         limits:
-          memory: 4G
+          memory: 300M
       # we can't start-first because we have statistics port using host mode
       # nevertheless because still can have this because we have at least 2 replicas 
       # and we are deploy only one each time
