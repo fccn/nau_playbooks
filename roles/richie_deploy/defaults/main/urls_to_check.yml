@@ -1,0 +1,36 @@
+---
+#
+# List of URLs to check during deployment.
+#
+richie_nau_urls_to_check:
+  - name: Marketing homepage in Portuguese
+    host: "{{ richie_site }}"
+    protocol: https
+    port: "{{ richie_alternative_nginx_https_port }}"
+    content: homepage
+    page: pt/
+    retries: 5 # first with bigger retries because server could be warming up
+    user: "{{ COMMON_HTPASSWD_USER | default(omit) }}"
+    password: "{{ COMMON_HTPASSWD_PASS | default(omit) }}"
+  - name: Marketing homepage in English
+    host: "{{ richie_site}}"
+    protocol: https
+    port: "{{ richie_alternative_nginx_https_port }}"
+    content: homepage
+    page: en/
+    user: "{{ COMMON_HTPASSWD_USER | default(omit) }}"
+    password: "{{ COMMON_HTPASSWD_PASS | default(omit) }}"
+  - name: Marketing courses page in Portuguese
+    host: "{{ richie_site }}"
+    protocol: https
+    port: "{{ richie_alternative_nginx_https_port }}"
+    page: pt/cursos/
+    user: "{{ COMMON_HTPASSWD_USER | default(omit) }}"
+    password: "{{ COMMON_HTPASSWD_PASS | default(omit) }}"
+  - name: Marketing courses page in English
+    host: "{{ richie_site }}"
+    protocol: https
+    port: "{{ richie_alternative_nginx_https_port }}"
+    page: en/courses/
+    user: "{{ COMMON_HTPASSWD_USER | default(omit) }}"
+    password: "{{ COMMON_HTPASSWD_PASS | default(omit) }}"

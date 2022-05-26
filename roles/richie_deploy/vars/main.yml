@@ -1,0 +1,13 @@
+---
+# prefix all variables of ansible-docker-deploy role with the stack name
+docker_deploy_stack_name:          "{{ richie_docker_deploy_stack_name }}"
+docker_deploy_stack_template:      "{{ richie_docker_deploy_stack_template }}"
+docker_deploy_base_folder:         "{{ richie_docker_deploy_base_folder }}"
+docker_deploy_templates:           "{{ richie_docker_deploy_templates | default([]) }}"
+docker_deploy_files:               "{{ richie_docker_deploy_files | default([]) }}"
+docker_deploy_folders_additional:  "{{ richie_docker_deploy_folders_additional | default([]) }}"
+docker_deploy_configs:             "{{ richie_docker_deploy_configs | default([]) }}"
+docker_deploy_secrets:             "{{ richie_docker_deploy_secrets | default([]) }}"
+docker_deploy_services_additional: "{{ richie_docker_deploy_services_additional | default([]) }}"
+
+nau_urls_to_check: "{{ richie_nau_urls_to_check }}"

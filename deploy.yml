@@ -360,6 +360,13 @@
         label: "{{ item.dest }} + {{ item.when }}"
       loop: "{{ openedx_docker_deploy_folders_additional }}"
       tags: docker_deploy
+    - name: Create folders volumes for richie stack
+      import_role:
+        name: richie_deploy
+      vars:
+        # only create the folders required for the docker volumes
+        richie_deploy_create_volumes: true
+      tags: docker_deploy
 
 - name: Configure 1st docker swarm manager
   hosts: nau_docker_swarm_managers[0]
@@ -400,23 +407,6 @@
     - name: Deploy openedx stack
       role: openedx_deploy
 
-- name: Configure NAU OpenedX MySQL replication
-  hosts: nau_docker_swarm_managers,nau_docker_swarm_workers
-  become: True
-  gather_facts: True
-  serial: "{{ serial_number | default(1) }}"
-  roles:
-    - name: Initialize openedx mysql database replication
-      role: docker_mysql_replication
-      when: openedx_mysql_replication_initialize | default(False)
-      vars:
-        # The replication mysql files are templated using the ansible-docker-deploy role instead of docker_mysql_replication role
-        docker_mysql_replication_template: false
-        # dict with docker containers configuration
-        docker_mysql_replication_containers: "{{ openedx_mysql_containers }}"
-        docker_mysql_replication_additional_databases: "{{ openedx_docker_mysql_replication_additional_databases }}"
-        docker_mysql_replication_additional_users: "{{ openedx_docker_mysql_replication_additional_users }}"
-
 - name: Configure support server
   hosts: support_server
   become: True
@@ -443,3 +433,43 @@
   roles:
     - name: Deploy coursecertificate stack
       role: coursecertificate_deploy
+
+- name: Deploy richie stack to the 1st docker swarm manager
+  hosts: nau_docker_swarm_managers[0]
+  become: True
+  gather_facts: True
+  roles:
+    - name: Deploy richie stack
+      role: richie_deploy
+      vars:
+        richie_deploy_run: "{{ richie_deploy | default(false) }}"
+
+- name: Configure NAU MySQL clusters replication
+  hosts: nau_docker_swarm_managers,nau_docker_swarm_workers
+  become: True
+  gather_facts: True
+  serial: "{{ serial_number | default(1) }}"
+  roles:
+    - name: Initialize openedx MySQL databases replication
+      role: docker_mysql_replication
+      when: openedx_mysql_replication_initialize | default(False)
+      vars:
+        # The replication mysql files are templated using the ansible-docker-deploy role instead of docker_mysql_replication role
+        docker_mysql_replication_template: false
+        # dict with docker containers configuration
+        docker_mysql_replication_containers: "{{ openedx_mysql_containers }}"
+        docker_mysql_replication_additional_databases: "{{ openedx_docker_mysql_replication_additional_databases }}"
+        docker_mysql_replication_additional_users: "{{ openedx_docker_mysql_replication_additional_users }}"
+        docker_mysql_replication_containers_prefix: openedx
+
+    - name: Initialize Richie MySQL databases replication
+      role: docker_mysql_replication
+      when: richie_mysql_replication_initialize | default(False)
+      vars:
+        # The replication mysql files are templated using the ansible-docker-deploy role instead of docker_mysql_replication role
+        docker_mysql_replication_template: false
+        # dict with docker containers configuration
+        docker_mysql_replication_containers: "{{ richie_mysql_containers }}"
+        docker_mysql_replication_additional_databases: "{{ richie_docker_mysql_replication_additional_databases }}"
+        docker_mysql_replication_additional_users: "{{ richie_docker_mysql_replication_additional_users }}"
+        docker_mysql_replication_containers_prefix: richie

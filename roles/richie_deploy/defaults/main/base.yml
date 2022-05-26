@@ -1,0 +1,30 @@
+---
+richie_docker_deploy_stack_name: richie
+richie_docker_deploy_stack_template: templates/docker-stack.yml
+richie_docker_deploy_base_folder: /nau/ops/richie
+
+richie_docker_deploy_templates: "{{ richie_base_docker_deploy_templates + richie_mysql_docker_deploy_templates + richie_nginx_docker_deploy_templates }}"
+# + richie_mongodb_docker_deploy_templates
+# ...
+
+richie_base_docker_deploy_templates:
+  - src:  "{{ richie_makefile_template | default('templates/Makefile') }}"
+    dest: "{{ richie_docker_deploy_base_folder }}/Makefile"
+
+richie_docker_deploy_files: "{{ richie_nginx_docker_deploy_files }}"
+
+# primary sites variable, use a`_defaults_ ` variable to be more easy extensible on the environment
+richie_sites: "{{ richie_sites_defaults }}"
+richie_sites_defaults: "{{ richie_sites_nginx | combine(richie_sites_app , recursive=True) }}"
+
+richie_docker_deploy_folders_additional: "{{ richie_mysql_docker_deploy_folders_additional + richie_elasticsearch_docker_deploy_folders_additional }}"
+
+# Declare additional docker stack services, to they can be used to generate Makefile helper targets.
+richie_docker_deploy_services_additional:
+  - nau_app
+  - elasticsearch_1
+  - elasticsearch_2
+  - redis-primary
+  - redis-replica1
+  - redis-replica2
+  - redis-sentinel

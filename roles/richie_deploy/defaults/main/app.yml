@@ -1,0 +1,18 @@
+---
+richie_sites_app:
+  nau:
+    app_image: nauedu/nau:{{ richie_nau_version }}
+    app_replicas: 1
+    app_richie_CDN_DOMAIN: "{{ RICHIE_NAU_AWS_BUCKET_NAME }}.{{ nau_ceph_host }}"
+    app_richie_DJANGO_AWS_SECRET_ACCESS_KEY: !!null
+    app_richie_DJANGO_AWS_ACCESS_KEY_ID: !!null
+    app_RICHIE_NAU_AWS_BUCKET_NAME: "{{ RICHIE_NAU_AWS_BUCKET_NAME}}"
+    app_richie_DJANGO_RICHIE_COURSE_RUN_SYNC_SECRETS: !!null
+    app_richie_MYSQL_DATABASE: richie_nau
+    app_richie_MYSQL_USER: richie_nau
+    app_richie_MYSQL_PASSWORD: !!null
+    app_richie_django_secret_key: !!null
+    app_richie_site: !!null
+    app_openedx_lms_url: !!null
+
+RICHIE_NAU_AWS_BUCKET_NAME: !!null

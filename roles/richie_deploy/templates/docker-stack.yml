@@ -1,0 +1,293 @@
+{% import '_docker_deploy_helper.j2' as helper with context %}
+version: "3.8"
+
+services:
+{% for richie_site, richie_site_config in richie_sites.items() %}
+  {{ richie_site }}_app:
+    # We tag our images with the current commit sha1 in the CI to make them
+    # unique and avoid collisions in parallel builds.
+    image: {{ richie_site_config.app_image }}
+    environment:
+      DJANGO_STATICFILES_STORAGE: django.contrib.staticfiles.storage.ManifestStaticFilesStorage
+      DJANGO_SETTINGS_MODULE: {{ richie_site }}.settings
+      DJANGO_CONFIGURATION: Production
+      RICHIE_ES_INDICES_PREFIX: richie_{{ richie_site }}
+      # Python
+      PYTHONUNBUFFERED: 1
+      # Django
+      DJANGO_SECRET_KEY: {{ richie_site_config.app_richie_django_secret_key }}
+      DJANGO_ALLOWED_HOSTS: {{ richie_site_config.app_richie_site }}
+      # Elastic search
+      RICHIE_ES_HOST: elasticsearch
+      #- discovery.type: single-node
+      # App database configuration
+      DB_ENGINE: django.db.backends.mysql
+      # use haproxy load balancer to connect to mysql db
+      DB_HOST: mysql_lb_haproxy
+      DB_NAME: {{ richie_site_config.app_richie_MYSQL_DATABASE }}
+      DB_USER: {{ richie_site_config.app_richie_MYSQL_USER }}
+      DB_PASSWORD: {{ richie_site_config.app_richie_MYSQL_PASSWORD }}
+      DB_PORT: 3306
+      DB_OPTION_CHARSET: utf8mb4
+      # Social auth
+      # DJANGO_SOCIAL_AUTH_EDX_OAUTH2_KEY: social-id
+      # DJANGO_SOCIAL_AUTH_EDX_OAUTH2_SECRET: fakesecret
+      # LMS Backend
+      EDX_BACKEND: richie.apps.courses.lms.edx.EdXLMSBackend
+      EDX_JS_BACKEND: openedx-hawthorn
+      # the double $$ is required so docker don't try to interpolate
+      EDX_COURSE_REGEX: "^{{ richie_site_config.app_openedx_lms_url }}/courses/(?P<course_id>.*)/info$$"
+      EDX_JS_COURSE_REGEX: ^.*/courses/(.*)/info/?$$
+      EDX_BASE_URL: {{ richie_site_config.app_openedx_lms_url }}
+      DJANGO_RICHIE_COURSE_RUN_SYNC_SECRETS: {{ richie_site_config.app_richie_DJANGO_RICHIE_COURSE_RUN_SYNC_SECRETS }}
+      # Authentication Backend
+      AUTHENTICATION_BASE_URL: {{ richie_site_config.app_openedx_lms_url }}
+      AUTHENTICATION_BACKEND: openedx-hawthorn
+      # S3 AWS compatible Ceph bucket for django media
+      DJANGO_AWS_S3_ENDPOINT_URL: https://{{ nau_ceph_host }}
+      DJANGO_AWS_STORAGE_BUCKET_NAME: {{ richie_site_config.app_RICHIE_NAU_AWS_BUCKET_NAME }}
+      DJANGO_AWS_ACCESS_KEY_ID: {{ richie_site_config.app_richie_DJANGO_AWS_ACCESS_KEY_ID }}
+      DJANGO_AWS_SECRET_ACCESS_KEY: {{ richie_site_config.app_richie_DJANGO_AWS_SECRET_ACCESS_KEY }}
+      DJANGO_AWS_S3_CUSTOM_DOMAIN: {{ richie_site_config.app_richie_CDN_DOMAIN }}
+      # Redis cache configuration with a single node
+      CACHE_DEFAULT_BACKEND: django_redis.cache.RedisCache
+      CACHE_DEFAULT_LOCATION: redis://redis-sentinel:26379/1
+      CACHE_DEFAULT_OPTIONS: "{'CLIENT_CLASS': 'django_redis.client.DefaultClient'}"
+      # Django Social auth for authentication from edX using OAuth2
+      DJANGO_SOCIAL_ERROR_REVERSE_ID: login-error
+      # DJANGO_SOCIAL_AUTH_EDX_OAUTH2_ENDPOINT: {{ richie_site_config.app_openedx_lms_url }}/oauth2/
+      # DJANGO_SOCIAL_AUTH_EDX_OAUTH2_KEY: OeH2jowLbfzouuOKt1WaqKlIrSAIL7kjC85Itohj
+      # DJANGO_SOCIAL_AUTH_EDX_OAUTH2_SECRET: hrHyDucMJ77khrkh95YkPPMUVQnitqn1VIpZdRm2FNsw0qR86qQ1l32KNvjEbzHCzQNbKUELuHYnPy9xp5wecU50Z0fYEka6S6jzIC1skmJOeMrxLZi4pGZm0M1NXGMp
+      # DJANGO_SOCIAL_AUTH_EDX_OAUTH2_AUTHORIZATION_URL: {{ richie_site_config.app_openedx_lms_url }}/oauth2/authorize
+      # DJANGO_SOCIAL_AUTH_EDX_OAUTH2_ACCESS_TOKEN_URL: {{ richie_site_config.app_openedx_lms_url }}/oauth2/access_token
+      # DJANGO_SOCIAL_AUTH_EDX_OAUTH2_END_SESSION_URL: {{ richie_site_config.app_openedx_lms_url }}/oauth2/logout
+      # Google Analytics
+      WEB_ANALYTICS_PROVIDER: google_analytics
+      WEB_ANALYTICS_LOCATION: head
+      WEB_ANALYTICS_ID: UA-122313510-1
+      JIRA_WIDGET_KEY: c19e6a24-a1f6-4a84-aa46-89e82b94b809
+      FACEBOOK_PIXEL_ID: "1013367026191204"
+      # DJANGO_DEBUG: True
+    deploy:
+      replicas: {{ richie_site_config.app_replicas }}
+      mode: replicated
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          memory: 2.5G
+        reservations:
+          memory: 500M
+      placement:
+        max_replicas_per_node: 1
+    # volumes:
+      # Used to increase log verbosity of the gunicorn and to add a Gunicorn worker abort handler
+      # - ./app.py:/usr/local/etc/gunicorn/app.py
+    extra_hosts:
+      - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
+    depends_on:
+      - db
+      - elasticsearch
+      #- redis-sentinel
+      - redis
+    user: "{{ richie_site_config.app_docker_user | default('1000') }}"
+    command: wait-for-it redis-sentinel:26379 -- wait-for-it mysql_lb_haproxy:3306 -- python manage.py migrate && gunicorn{{ " --workers=" + (richie_site_config.app_gunicorn_workers_count) if richie_site_config.app_gunicorn_workers_count is defined else "" }} -c /usr/local/etc/gunicorn/app.py nau.wsgi:application
+    healthcheck:
+      test: curl --silent --fail --resolve {{ richie_site }}:8000:127.0.0.1 'http://{{ richie_site }}:8000'
+      interval: 30s
+      timeout: 10s
+      retries: 30
+      start_period: 10s
+
+  {{ richie_site }}_nginx:
+    image: {{ richie_site_config.nginx_image }}
+    ports:
+      - target: 80
+        published: {{ richie_site_config.nginx_http_ingress_port }}
+        protocol: tcp
+        mode: ingress
+      - target: 443
+        published: {{ richie_site_config.nginx_https_ingress_port }}
+        protocol: tcp
+        mode: ingress
+    deploy:
+      replicas: {{ richie_site_config.nginx_replicas }}
+      mode: replicated
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 5M
+      placement:
+        max_replicas_per_node: 1
+    extra_hosts:
+      - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
+    healthcheck:
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/example.com/80", "&&", "echo", "''", ">", "/dev/tcp/example.com/443", "||", "exit", "1"]
+      start_period: 3s
+      retries: 10
+      interval: 10s
+      timeout: 10s
+{{ helper.service_configs(service='{{ richie_site }}_nginx') }}
+{{ helper.service_secrets(service='{{ richie_site }}_nginx') }}
+{% endfor %}
+
+  mysql_lb_haproxy:
+    image: {{ richie_mysql_lb_haproxy_docker_image | default('haproxy:2.4.16') }}
+    ports:
+      # statistics
+      - target:    {{ richie_mysql_lb_haproxy_statistics_port | default(1936) }}
+        published: {{ richie_mysql_lb_haproxy_statistics_port | default(1936) }}
+        protocol:  tcp
+        # each container have a statistics page but we should view only one on each host
+        mode:      host
+{{ helper.service_configs(service='mysql_lb_haproxy') }}
+{{ helper.service_secrets(service='mysql_lb_haproxy') }}
+    deploy:
+      replicas: {{ richie_mysql_lb_haproxy_deploy_replicas_count | default(2) }}
+      placement:
+        max_replicas_per_node: 1
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          memory: 300M
+      # we can't start-first because we have statistics port using host mode
+      # nevertheless because still can have this because we have at least 2 replicas 
+      # and we are deploy only one each time
+      update_config:
+        parallelism: 1
+        failure_action: rollback
+        order: stop-first
+    healthcheck:
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/example.com/{{ richie_mysql_lb_haproxy_write_port | default(3306) }}", "&&", "echo", "''", ">", "/dev/tcp/example.com/{{ richie_mysql_lb_haproxy_readonly_port | default(3306) }}", "||", "exit", "1"]
+      start_period: 3s
+      retries: 10
+      interval: 10s
+      timeout: 10s
+
+{% for mysql_container_name, mysql_container in richie_mysql_containers.items() %}
+
+  {{ mysql_container_name }}:
+    image: {{ richie_mysql_docker_image | default("docker.io/mysql:8.0.26") }}
+{% if mysql_container.hostname is defined %}
+    hostname: {{ mysql_container.hostname }}
+{% endif %}
+    environment:
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql-root-password
+    # use legacy authentication plugin to fix: 
+      # django.db.utils.OperationalError: (2059, "Authentication plugin 'caching_sha2_password' 
+      # cannot be loaded: /usr/lib/x86_64-linux-gnu/mariadb18/plugin/caching_sha2_password.so: 
+      # cannot open shared object file: No such file or directory
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping --silent -p{{ EDXAPP_MYSQL_PASSWORD_ADMIN }} || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 30
+      start_period: 10s
+    volumes:
+      - {{ mysql_container.data }}:/var/lib/mysql
+    ports:
+      # In future after the migration of everything to swarm, limit this connection to localhost
+      # example with: "127.0.0.1:3306:3306"
+      - target: 3306
+        published: {{ mysql_container.ingress_port }}
+        protocol: tcp
+        mode: ingress
+    deploy:
+      replicas: 1
+      mode: replicated
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          memory: 4G
+      placement:
+        max_replicas_per_node: 1
+        constraints:
+          - node.labels.fqdn == {{ mysql_container.host_fqdn }}
+{{ helper.service_configs(service=mysql_container_name) }}
+{{ helper.service_secrets(service=mysql_container_name) }}
+{% endfor %}
+
+{% for elasticsearch_container_name, elasticsearch_container in richie_elasticsearch_containers.items() %}
+
+  {{ elasticsearch_container_name }}:
+    image: "${ELASTICSEARCH_IMAGE:-docker.elastic.co/elasticsearch/elasticsearch:7.17.3}"
+    environment:
+      node.name: {{ elasticsearch_container_name }}
+      bootstrap.memory_lock: "true"
+      cluster.name: richie-es-cluster
+      discovery.seed_hosts: {{ richie_elasticsearch_containers.keys() | list | intersect([elasticsearch_container_name]) | list | join(',') }}
+      cluster.initial_master_nodes: {{ richie_elasticsearch_cluster_initial_master_nodes }}
+      ES_JAVA_OPTS: -Xms1g -Xmx1g -Des.enforce.bootstrap.checks=true
+    user: "1000:1000"
+    volumes:
+      - {{ elasticsearch_container.data }}:/usr/share/elasticsearch/data
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    deploy:
+      replicas: 1
+      mode: replicated
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          memory: 1.5G
+        reservations:
+          memory: 500M
+      placement:
+        max_replicas_per_node: 1
+        constraints:
+          - node.labels.fqdn == {{ elasticsearch_container.host_fqdn }}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200"]
+      interval: 30s
+      timeout: 10s
+      retries: 30
+{% endfor %}
+
+  redis-sentinel:
+    image: docker.io/bitnami/redis-sentinel:6.0-debian-10
+    environment:
+      - REDIS_MASTER_HOST={{ richie_redis_primary_container }}
+    deploy:
+      # there will be an instance of redis sentinel on each docker node
+      mode: global
+
+{% for redis_container_name, redis_container in richie_redis_containers.items() %}
+
+  {{ redis_container_name }}:
+    image: {{ richie_redis_docker_image | default('docker.io/bitnami/redis:6.0-debian-10') }}
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+      - REDIS_REPLICATION_MODE={{ redis_container.mode }}
+{% if redis_container.mode == 'slave' %}
+      - REDIS_MASTER_HOST={{ richie_redis_primary_container }}
+{% endif %}
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    deploy:
+      replicas: 1
+      mode: replicated
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          memory: 4G
+      placement:
+        max_replicas_per_node: 1
+        constraints:
+          - node.labels.fqdn == {{ redis_container.host_fqdn }}
+{% endfor %}
+
+{{ helper.configs() }}
+{{ helper.secrets() }}

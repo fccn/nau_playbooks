@@ -1,0 +1,61 @@
+---
+- name: Create folders volumes for richie stack
+  file:
+    dest: "{{ item.dest | dirname }}"
+    owner: "{{ item.dir_owner|default(omit) }}"
+    group: "{{ item.dir_group|default(omit) }}"
+    mode: "{{ item.dir_mode | default(omit) }}"
+    recurse: true
+    state: directory
+  when: (richie_deploy_create_volumes | default(false)) and (item.when | default(true) | bool)
+  loop_control:
+    label: "{{ item.dest }}"
+  loop: "{{ richie_docker_deploy_folders_additional }}"
+  tags:
+    - docker_deploy
+
+- name: Generate basic-authentication for each site
+  include_role:
+    name: basic-authentication
+  vars:
+    basic_authentication_users: "{{ item.nginx_basic_authentication_users }}"
+  when: richie_deploy_run | default(false) and item.nginx_basic_authentication_users is defined
+  with_dict: "{{ richie_sites }}"
+  tags:
+    - docker_deploy
+
+- name: Configure sysctl.conf
+  lineinfile: dest=/etc/sysctl.conf line="{{ item.key }} = {{ item.value }}" regexp="^{{ item.key }}[\s]?=" state=present
+  with_dict: "{{ richie_sysctl_conf }}"
+  notify: reload sysctl
+  tags:
+    - docker_deploy
+
+- name: Deploy
+  include_role:
+    name: ansible-docker-deploy
+  when: richie_deploy_run | default(false)
+  tags:
+    - docker_deploy
+
+- name: Check URLs
+  include_role:
+    name: nau_check_urls
+  when: (richie_deploy_run | default(false)) or (healthcheck | default(false))
+  tags:
+    - docker_deploy
+
+- name: Run healthcheck
+  shell: make status-healthcheck
+  args:
+    chdir: "{{ richie_docker_deploy_base_folder }}"
+  retries: "{{ docker_deploy_stack_verify_retries | default(3) }}"
+  delay: "{{ docker_deploy_stack_verify_delay | default(15) }}"
+  register: result
+  until: result.rc == 0
+  # run it only when deploying or when on healthcheck mode.
+  when: not ansible_check_mode and ( (richie_deploy_run | default(false)) or (healthcheck | default(false)) )
+  changed_when: False
+  tags: 
+    - healthcheck
+    - docker_deploy
