@@ -1,9 +1,9 @@
 ---
 richie_mysql_containers:
   mysql_1:
+    hostname: "{{ richie_mysql_1_hostname }}"
     data: /data/richie/mysql_1/
     host_fqdn: "{{ richie_mysql_primary_server }}"
-    hostname: "{{ richie_docker_deploy_stack_name }}_mysql_1"
     ingress_port: 24308
     primary: True
     mysql_replication_login_user: root
@@ -17,9 +17,9 @@ richie_mysql_containers:
     mysql_replication_password: "{{ richie_mysql_replication_password }}"
     mysql_replication_init_databases: [ "{{ richie_nau_MYSQL_DATABASE }}" ]
   mysql_2:
+    hostname: "{{ richie_mysql_2_hostname }}"
     data: /data/richie/mysql_2/
     host_fqdn: "{{ richie_mysql_replica_server }}"
-    hostname: "{{ richie_docker_deploy_stack_name }}_mysql_2"
     ingress_port: 24309
     primary: False
     mysql_replication_login_user: root
@@ -29,7 +29,7 @@ richie_mysql_containers:
     docker_secret_name_mysql_root_password: mysql_2_root_password
     server_id: 2
     read_only: True
-    mysql_replication_master_server_ip: richie_mysql_1
+    mysql_replication_master_server_ip: "{{ richie_mysql_1_hostname }}"
     mysql_replication_master_port: 3306
     mysql_replication_user: "{{ richie_mysql_replication_user }}"
     mysql_replication_password: "{{ richie_mysql_replication_password }}"
@@ -62,6 +62,9 @@ richie_mysql_docker_deploy_templates:
     config_name: richie_mysql_haproxy_cfg
     service: mysql_lb_haproxy
     docker_target: /usr/local/etc/haproxy/haproxy.cfg
+
+richie_mysql_1_hostname: "{{ richie_docker_deploy_stack_name }}_mysql_1"
+richie_mysql_2_hostname: "{{ richie_docker_deploy_stack_name }}_mysql_2"
 
 # Folders that need to be created on each docker swarm node
 richie_mysql_docker_deploy_folders_additional:

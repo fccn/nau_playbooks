@@ -50,9 +50,9 @@ services:
       DJANGO_AWS_SECRET_ACCESS_KEY: {{ richie_site_config.app_richie_DJANGO_AWS_SECRET_ACCESS_KEY }}
       DJANGO_AWS_S3_CUSTOM_DOMAIN: {{ richie_site_config.app_richie_CDN_DOMAIN }}
       # Redis cache configuration with a single node
-      CACHE_DEFAULT_BACKEND: django_redis.cache.RedisCache
-      CACHE_DEFAULT_LOCATION: redis://redis-sentinel:26379/1
-      CACHE_DEFAULT_OPTIONS: "{'CLIENT_CLASS': 'django_redis.client.DefaultClient'}"
+      CACHE_DEFAULT_BACKEND: base.cache.RedisCacheWithFallback
+      CACHE_DEFAULT_LOCATION: mymaster/redis-sentinel:26379,redis-sentinel:26379/0
+      CACHE_DEFAULT_OPTIONS: "{'CLIENT_CLASS': 'richie.apps.core.cache.SentinelClient'}"
       # Django Social auth for authentication from edX using OAuth2
       DJANGO_SOCIAL_ERROR_REVERSE_ID: login-error
       # DJANGO_SOCIAL_AUTH_EDX_OAUTH2_ENDPOINT: {{ richie_site_config.app_openedx_lms_url }}/oauth2/
@@ -73,6 +73,11 @@ services:
       mode: replicated
       restart_policy:
         condition: on-failure
+      update_config:
+        # start 1 container a time, so migrations run only on the new container
+        parallelism: 1
+        failure_action: rollback
+        order: start-first
       resources:
         limits:
           memory: 2.5G
@@ -91,13 +96,15 @@ services:
       #- redis-sentinel
       - redis
     user: "{{ richie_site_config.app_docker_user | default('1000') }}"
-    command: wait-for-it redis-sentinel:26379 -- wait-for-it mysql_lb_haproxy:3306 -- python manage.py migrate && gunicorn{{ " --workers=" + (richie_site_config.app_gunicorn_workers_count) if richie_site_config.app_gunicorn_workers_count is defined else "" }} -c /usr/local/etc/gunicorn/app.py nau.wsgi:application
+    command: wait-for-it redis-sentinel:26379 -- wait-for-it mysql_lb_haproxy:3306 -- /bin/bash -c "python manage.py migrate && gunicorn -c /usr/local/etc/gunicorn/app.py nau.wsgi:application"
     healthcheck:
-      test: curl --silent --fail --resolve {{ richie_site }}:8000:127.0.0.1 'http://{{ richie_site }}:8000'
+      test: curl --silent --fail --resolve {{ richie_site_config.app_richie_site }}:8000:127.0.0.1 'http://{{ richie_site_config.app_richie_site }}:8000'
       interval: 30s
       timeout: 10s
       retries: 30
       start_period: 10s
+{{ helper.service_configs(service=richie_site+'_app') }}
+{{ helper.service_secrets(service=richie_site+'_app') }}
 
   {{ richie_site }}_nginx:
     image: {{ richie_site_config.nginx_image }}
@@ -130,8 +137,8 @@ services:
       retries: 10
       interval: 10s
       timeout: 10s
-{{ helper.service_configs(service='{{ richie_site }}_nginx') }}
-{{ helper.service_secrets(service='{{ richie_site }}_nginx') }}
+{{ helper.service_configs(service=richie_site+'_nginx') }}
+{{ helper.service_secrets(service=richie_site+'_nginx') }}
 {% endfor %}
 
   mysql_lb_haproxy:

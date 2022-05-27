@@ -48,7 +48,7 @@ _%-ps:
 
 {% for _service in docker_deploy_services %}
 status-ps-{{ _service }}: _{{ _service }}-ps ## List the tasks of {{ _service }}
-.PHONY: logs-{{ _service }}
+.PHONY: status-ps-{{ _service }}
 
 {% endfor %}
 
@@ -66,18 +66,32 @@ logs-{{ _service }}: _{{ _service }}-logs ## View {{ _service }} docker service 
 ## Specific
 #
 
+status-mysql-primary: ## show primary master status on mysql_1 docker container
+	@echo "Write down the value of db user '{{ richie_mysql_containers.mysql_1.mysql_replication_login_user }}' value of 'richie_mysql_containers.mysql_1.mysql_replication_login_password'"
+	@echo 'show master status \G' | mysql -u root --host 127.0.0.1 --port {{ richie_mysql_primary.ingress_port }} -p
+.PHONY: status-mysql-primary
+
+{% for container, config in richie_mysql_containers.items() %}
+{% if not config.primary %}
+status-mysql-replica-{{ container }}: ## show replica slave status on {{ container }} docker container
+	@echo "Write down the value of db user '{{ config.mysql_replication_login_user }}' value of 'richie_mysql_containers.{{ container }}.mysql_replication_login_password'"
+	echo 'show slave status \G' | mysql -u root --host 127.0.0.1 --port {{ config.ingress_port }} -p
+.PHONY: status-mysql-replica-{{ container }}
+
+{% endif %}
+{% endfor %}
 {% for _site, config in richie_sites.items() %}
 BACKUP_FILE_{{ _site }} ?= richie-{{ _site }}-mysql-db-backup.sql.gz
 backup-mysql-{{ _site }}: ## backup mysql db of {{ _site }} site
 	@echo 'Backing up MySQL database of {{ _site }}'
 	@rm -f ${ROOT_DIR}/$(BACKUP_FILE_{{ _site }})
-	@MYSQL_PWD="{{ config.app_richie_MYSQL_PASSWORD}}" /usr/bin/mysqldump -u {{ config.app_richie_MYSQL_USER }} --host 127.0.0.1 --port {{ richie_mysql_primary.ingress_port }} --single-transaction {{ config.app_richie_MYSQL_DATABASE }} | gzip -c -9  > ${ROOT_DIR}/$(BACKUP_FILE_{{ _site }})
+	@MYSQL_PWD="{{ richie_MYSQL_ROOT_PASSWORD}}" /usr/bin/mysqldump -u root --host 127.0.0.1 --port {{ richie_mysql_primary.ingress_port }} --single-transaction {{ config.app_richie_MYSQL_DATABASE }} | gzip -c -9  > ${ROOT_DIR}/$(BACKUP_FILE_{{ _site }})
 	@echo 'Done! File: $(BACKUP_FILE_{{ _site }})'
 .PHONY: backup-mysql-{{ _site }}
 
 restore-mysql-{{ _site }}: ## restore mysql db of {{ _site }} site
 	@echo 'Loading to {{ config.app_richie_MYSQL_DATABASE }} MySQL database the backfile $(BACKUP_FILE_{{ _site }})'
-	@cat ${ROOT_DIR}/$(BACKUP_FILE_{{ _site }}) | gzip -d | MYSQL_PWD="{{ config.app_richie_MYSQL_PASSWORD }}" /usr/bin/mysql -u {{ config.app_richie_MYSQL_USER }} --host 127.0.0.1 --port {{ richie_mysql_primary.ingress_port }} {{ config.app_richie_MYSQL_DATABASE }}
+	@cat ${ROOT_DIR}/$(BACKUP_FILE_{{ _site }}) | gzip -d | MYSQL_PWD="{{ richie_MYSQL_ROOT_PASSWORD }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ richie_mysql_primary.ingress_port }} {{ config.app_richie_MYSQL_DATABASE }}
 	@echo 'Done!'
 .PHONY: restore-mysql-{{ _site }}
 

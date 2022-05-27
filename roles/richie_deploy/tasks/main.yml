@@ -19,7 +19,7 @@
     name: basic-authentication
   vars:
     basic_authentication_users: "{{ item.nginx_basic_authentication_users }}"
-  when: richie_deploy_run | default(false) and item.nginx_basic_authentication_users is defined
+  when: docker_swarm_manager_to_deploy == inventory_hostname and richie_deploy_run | default(false) and item.nginx_basic_authentication_users is defined
   with_dict: "{{ richie_sites }}"
   tags:
     - docker_deploy
@@ -34,14 +34,14 @@
 - name: Deploy
   include_role:
     name: ansible-docker-deploy
-  when: richie_deploy_run | default(false)
+  when: docker_swarm_manager_to_deploy == inventory_hostname and richie_deploy_run | default(false)
   tags:
     - docker_deploy
 
 - name: Check URLs
   include_role:
     name: nau_check_urls
-  when: (richie_deploy_run | default(false)) or (healthcheck | default(false))
+  when: docker_swarm_manager_to_deploy == inventory_hostname and (richie_deploy_run | default(false)) or (healthcheck | default(false))
   tags:
     - docker_deploy
 
@@ -54,8 +54,25 @@
   register: result
   until: result.rc == 0
   # run it only when deploying or when on healthcheck mode.
-  when: not ansible_check_mode and ( (richie_deploy_run | default(false)) or (healthcheck | default(false)) )
+  when: docker_swarm_manager_to_deploy == inventory_hostname and not ansible_check_mode and ( (richie_deploy_run | default(false)) or (healthcheck | default(false)) )
   changed_when: False
   tags: 
     - healthcheck
     - docker_deploy
+
+- name: Initialize Richie MySQL databases replication
+  include_role:
+    name: docker_mysql_replication
+  when: richie_mysql_replication_initialize | default(False)
+  vars:
+    # The replication mysql files are templated using the ansible-docker-deploy role instead of docker_mysql_replication role
+    docker_mysql_replication_template: false
+    # dict with docker containers configuration
+    docker_mysql_replication_containers: "{{ richie_mysql_containers }}"
+    docker_mysql_replication_additional_databases: "{{ richie_docker_mysql_replication_additional_databases }}"
+    docker_mysql_replication_additional_users: "{{ richie_docker_mysql_replication_additional_users }}"
+    docker_mysql_replication_containers_prefix: richie
+  tags: 
+    - docker_deploy
+    - docker_mysql_replication
+    - docker_mysql_replication_additional_users
