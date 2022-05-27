@@ -10,3 +10,5 @@ docker_mysql_replication_cnf_path: /etc/mysql/mysql.conf.d/replication.cnf
 
 docker_mysql_replication_common_pip_pkgs:
   - PyMySQL==0.9.3
+
+docker_mysql_replication_containers_prefix: !!null

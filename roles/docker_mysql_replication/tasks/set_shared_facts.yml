@@ -2,7 +2,7 @@
 
 - name: Set facts/variables
   set_fact:
-    mysql_container_name: "{{ mysql_container_dict.key }}"
+    mysql_container_name: "{{ ( docker_mysql_replication_containers_prefix + '_' ) if docker_mysql_replication_containers_prefix else '' }}{{ mysql_container_dict.key }}"
     mysql_container: "{{ mysql_container_dict.value }}"
   tags: always
 
