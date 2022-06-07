@@ -110,7 +110,7 @@ status-healthcheck-{{ container }}: ## Run elasticsearch healthcheck cluster on 
 
 status-healthcheck-elasticsearch: ## Run elastic search healthcheck cluster using load balancer
 	@echo -n "Elasticsearch"
-	@test $$(curl -s 'http://localhost:{{ richie_mysql_lb_haproxy_elasticsearch_port }}/_cluster/health?pretty' | grep 'number_of_nodes' | egrep -o '[0-9]+') -eq {{ richie_elasticsearch_containers.keys() | length }}
-	@test $$(curl -s 'http://localhost:{{ richie_mysql_lb_haproxy_elasticsearch_port }}/_cluster/health?level=shards&pretty' | egrep -o "status.*\," | sort | uniq | egrep -o "\"[^\ ]+\"") = "\"green\""
+	@test $$(curl -s 'http://localhost:{{ richie_load_balancer_haproxy_elasticsearch_port }}/_cluster/health?pretty' | grep 'number_of_nodes' | egrep -o '[0-9]+') -eq {{ richie_elasticsearch_containers.keys() | length }}
+	@test $$(curl -s 'http://localhost:{{ richie_load_balancer_haproxy_elasticsearch_port }}/_cluster/health?level=shards&pretty' | egrep -o "status.*\," | sort | uniq | egrep -o "\"[^\ ]+\"") = "\"green\""
 	@echo "OK"
 .PHONY: status-healthcheck-elasticsearch

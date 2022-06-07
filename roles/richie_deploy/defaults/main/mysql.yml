@@ -57,10 +57,10 @@ richie_mysql_docker_deploy_templates:
     mysql_container: "{{ richie_mysql_containers.mysql_2 }}"
     service: mysql_2
     docker_target: /etc/mysql/conf.d/mysql.cnf
-  - src:  templates/mysql_lb_haproxy/haproxy.cfg
-    dest: "{{ docker_deploy_base_folder }}/mysql_lb_haproxy/haproxy.cfg"
+  - src:  templates/load_balancer_haproxy/haproxy.cfg
+    dest: "{{ docker_deploy_base_folder }}/load_balancer_haproxy/haproxy.cfg"
     config_name: richie_mysql_haproxy_cfg
-    service: mysql_lb_haproxy
+    service: load_balancer_haproxy
     docker_target: /usr/local/etc/haproxy/haproxy.cfg
 
 richie_mysql_1_hostname: "{{ richie_docker_deploy_stack_name }}_mysql_1"
@@ -108,15 +108,8 @@ richie_docker_mysql_replication_additional_users:
     }
   - {
       db: "*",
-      user: "{{ richie_mysql_lb_haproxy_health_check_user }}",
-      host: "{{ richie_mysql_lb_haproxy_health_check_host | default('%') }}",
+      user: "{{ richie_load_balancer_haproxy_health_check_user }}",
+      host: "{{ richie_load_balancer_haproxy_health_check_host | default('%') }}",
     }
 
-# Health check user for HaProxy that balances MySQL
-richie_mysql_lb_haproxy_health_check_user: richie_mysql_lb_user
-
-richie_mysql_lb_haproxy_statistics_port: 24936
-
 richie_mysql_primary: "{{ richie_mysql_containers.values() | list | selectattr('primary', 'equalto', True) | first }}"
-
-richie_mysql_lb_haproxy_elasticsearch_port: 24200

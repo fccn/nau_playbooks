@@ -19,12 +19,12 @@ services:
       DJANGO_ALLOWED_HOSTS: {{ richie_site_config.app_richie_site }}
       # Elastic search
       # RICHIE_ES_HOST: {{ richie_elasticsearch_containers.keys() | list | join(',') }}
-      RICHIE_ES_HOST: mysql_lb_haproxy
+      RICHIE_ES_HOST: load_balancer_haproxy
       #- discovery.type: single-node
       # App database configuration
       DB_ENGINE: django.db.backends.mysql
       # use haproxy load balancer to connect to mysql db
-      DB_HOST: mysql_lb_haproxy
+      DB_HOST: load_balancer_haproxy
       DB_NAME: {{ richie_site_config.app_richie_MYSQL_DATABASE }}
       DB_USER: {{ richie_site_config.app_richie_MYSQL_USER }}
       DB_PASSWORD: {{ richie_site_config.app_richie_MYSQL_PASSWORD }}
@@ -97,7 +97,7 @@ services:
       #- redis-sentinel
       - redis
     user: "{{ richie_site_config.app_docker_user | default('1000') }}"
-    command: wait-for-it redis-sentinel:26379 -- wait-for-it mysql_lb_haproxy:3306 -- /bin/bash -c "python manage.py migrate && gunicorn -c /usr/local/etc/gunicorn/app.py nau.wsgi:application"
+    command: wait-for-it redis-sentinel:26379 -- wait-for-it load_balancer_haproxy:3306 -- /bin/bash -c "python manage.py migrate && gunicorn -c /usr/local/etc/gunicorn/app.py nau.wsgi:application"
     healthcheck:
       test: curl --silent --fail --resolve {{ richie_site_config.app_richie_site }}:8000:127.0.0.1 'http://{{ richie_site_config.app_richie_site }}:8000'
       interval: 30s
@@ -142,24 +142,24 @@ services:
 {{ helper.service_secrets(service=richie_site+'_nginx') }}
 {% endfor %}
 
-  mysql_lb_haproxy:
-    image: {{ richie_mysql_lb_haproxy_docker_image | default('haproxy:2.4.16') }}
+  load_balancer_haproxy:
+    image: {{ richie_load_balancer_haproxy_docker_image | default('haproxy:2.4.16') }}
     ports:
       # statistics
-      - target:    {{ richie_mysql_lb_haproxy_statistics_port }}
-        published: {{ richie_mysql_lb_haproxy_statistics_port }}
+      - target:    {{ richie_load_balancer_haproxy_statistics_port }}
+        published: {{ richie_load_balancer_haproxy_statistics_port }}
         protocol:  tcp
         # each container have a statistics page but we should view only one on each host
         mode:      host
       # Allow to connect to elasticsearch cluster outside the docker stack like so we can easily
       # monitor the cluster from the Makefile
       - target:    9200
-        published: {{ richie_mysql_lb_haproxy_elasticsearch_port }}
+        published: {{ richie_load_balancer_haproxy_elasticsearch_port }}
         protocol: tcp
-{{ helper.service_configs(service='mysql_lb_haproxy') }}
-{{ helper.service_secrets(service='mysql_lb_haproxy') }}
+{{ helper.service_configs(service='load_balancer_haproxy') }}
+{{ helper.service_secrets(service='load_balancer_haproxy') }}
     deploy:
-      replicas: {{ richie_mysql_lb_haproxy_deploy_replicas_count | default(2) }}
+      replicas: {{ richie_load_balancer_haproxy_deploy_replicas_count | default(2) }}
       placement:
         max_replicas_per_node: 1
       restart_policy:
@@ -174,7 +174,7 @@ services:
         parallelism: 1
         failure_action: rollback
     healthcheck:
-      test: ["CMD", "echo", "''", ">", "/dev/tcp/example.com/{{ richie_mysql_lb_haproxy_statistics_port }}", "||", "exit", "1"]
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/example.com/{{ richie_load_balancer_haproxy_statistics_port }}", "||", "exit", "1"]
       start_period: 3s
       retries: 10
       interval: 10s

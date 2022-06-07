@@ -2,9 +2,9 @@
 richie_sites_nginx:
   nau:
     nginx_image: nauedu/nau-nginx:{{ richie_nau_version }}
-    nginx_http_ingress_port:   "{{ richie_nau_nginx_http_ingress_port  | default(24080) }}"
-    nginx_https_ingress_port:  "{{ richie_nau_nginx_https_ingress_port | default(24443) }}"
-    nginx_replicas:            "{{ richie_nau_nginx_replicas           | default(1) }}"
+    nginx_http_ingress_port:   "{{ richie_nau_nginx_http_ingress_port   }}"
+    nginx_https_ingress_port:  "{{ richie_nau_nginx_https_ingress_port  }}"
+    nginx_replicas:            "{{ richie_nau_nginx_replicas            }}"
     nginx_ssl_certificate_key: "{{ richie_nau_nginx_ssl_certificate_key }}"
     nginx_ssl_certificate_crt: "{{ richie_nau_nginx_ssl_certificate_crt }}"
 
@@ -14,6 +14,9 @@ richie_sites_nginx:
     #     password: "{{ COMMON_HTPASSWD_PASS | default(omit) }}"
 
 richie_nau_nginx_ssl_certificate_key: !!null
+richie_nau_nginx_https_ingress_port: 24443
+richie_nau_nginx_http_ingress_port: 24080
+richie_nau_nginx_replicas: 1
 
 richie_nginx_docker_deploy_templates:  
   # one per site
