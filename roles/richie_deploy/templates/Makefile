@@ -114,3 +114,25 @@ status-healthcheck-elasticsearch: ## Run elastic search healthcheck cluster usin
 	@test $$(curl -s 'http://localhost:{{ richie_load_balancer_haproxy_elasticsearch_port }}/_cluster/health?level=shards&pretty' | egrep -o "status.*\," | sort | uniq | egrep -o "\"[^\ ]+\"") = "\"green\""
 	@echo "OK"
 .PHONY: status-healthcheck-elasticsearch
+
+status-healthcheck: | status-healthcheck-replicas status-healthcheck-load-balancer-haproxy-statistics-port status-healthcheck-load-balancer-haproxy-elasticsearch-port status-healthcheck-elasticsearch ## Overall healthcheck
+	@echo "Everything is OK"
+.PHONY: status-healthcheck
+
+{% for container, config in richie_mysql_containers.items() %}
+status-healthcheck-mysql-port-{{ container }}: ## check mysql port for {{ container }}
+	@echo '' > /dev/tcp/127.0.0.1/{{ config.ingress_port }}
+.PHONY: status-healthcheck-port-{{ container }}
+{% endfor %}
+
+status-healthcheck-load-balancer-haproxy-statistics-port: ## Check load balancer HAProxy statistics {{ richie_load_balancer_haproxy_statistics_port }} port
+	@echo -n 'Load balancer HAProxy statistics port '
+	@echo '' > /dev/tcp/127.0.0.1/{{ richie_load_balancer_haproxy_statistics_port }}
+	@echo "OK"
+.PHONY: status-healthcheck-load-balancer-haproxy-statistics-port
+
+status-healthcheck-load-balancer-haproxy-elasticsearch-port: ## Check load balancer HAProxy elasticsearch {{ richie_load_balancer_haproxy_elasticsearch_port }} port
+	@echo -n 'Load balancer HAProxy elasticsearch port '
+	@echo '' > /dev/tcp/127.0.0.1/{{ richie_load_balancer_haproxy_elasticsearch_port }}
+	@echo "OK"
+.PHONY: status-healthcheck-load-balancer-haproxy-elasticsearch-port
