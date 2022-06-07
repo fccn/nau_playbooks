@@ -39,7 +39,7 @@ services:
     extra_hosts:
       - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
     healthcheck:
-      test: ["CMD", "echo", "''", ">", "/dev/tcp/example.com/80", "&&", "echo", "''", ">", "/dev/tcp/example.com/443", "||", "exit", "1"]
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/80", "&&", "echo", "''", ">", "/dev/tcp/127.0.0.1/443", "||", "exit", "1"]
       start_period: 3s
       retries: 10
       interval: 10s

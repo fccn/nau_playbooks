@@ -133,7 +133,7 @@ services:
     extra_hosts:
       - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
     healthcheck:
-      test: ["CMD", "echo", "''", ">", "/dev/tcp/example.com/80", "&&", "echo", "''", ">", "/dev/tcp/example.com/443", "||", "exit", "1"]
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/80", "&&", "echo", "''", ">", "/dev/tcp/127.0.0.1/443", "||", "exit", "1"]
       start_period: 3s
       retries: 10
       interval: 10s
@@ -174,7 +174,7 @@ services:
         parallelism: 1
         failure_action: rollback
     healthcheck:
-      test: ["CMD", "echo", "''", ">", "/dev/tcp/example.com/{{ richie_load_balancer_haproxy_statistics_port }}", "||", "exit", "1"]
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/{{ richie_load_balancer_haproxy_statistics_port }}", "||", "exit", "1"]
       start_period: 3s
       retries: 10
       interval: 10s
@@ -279,7 +279,7 @@ services:
       # We can't run an healthcheck against the 9200 HTTP port, because it requires that this
       # node should be correctly connected to the cluster, but the other nodes only resolve this
       # node DNS when this container is on healthy state.
-      test: ["CMD", "echo", "''", ">", "/dev/tcp/example.com/9300", "||", "exit", "1"]
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/9300", "||", "exit", "1"]
       retries: 30
       interval: 10s
       timeout: 10s

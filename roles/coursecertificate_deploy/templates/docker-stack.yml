@@ -28,7 +28,7 @@ services:
         failure_action: rollback
         order: start-first
     healthcheck:
-      test: ["CMD", "echo", "''", ">", "/dev/tcp/example.com/{{ coursecertificate_mysql_lb_haproxy_write_port | default(3306) }}", "&&", "echo", "''", ">", "/dev/tcp/example.com/{{ coursecertificate_mysql_lb_haproxy_readonly_port | default(3306) }}", "||", "exit", "1"]
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/{{ coursecertificate_mysql_lb_haproxy_write_port | default(3306) }}", "&&", "echo", "''", ">", "/dev/tcp/127.0.0.1/{{ coursecertificate_mysql_lb_haproxy_readonly_port | default(3306) }}", "||", "exit", "1"]
       start_period: 3s
       retries: 10
       interval: 10s
@@ -73,7 +73,7 @@ services:
 {% endfor %}
 {% endif %}
     healthcheck:
-      test: ["CMD", "echo", "''", ">", "/dev/tcp/example.com/80", "&&", "echo", "''", ">", "/dev/tcp/example.com/443", "||", "exit", "1"]
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/80", "&&", "echo", "''", ">", "/dev/tcp/127.0.0.1/443", "||", "exit", "1"]
       start_period: 3s
       retries: 10
       interval: 10s
