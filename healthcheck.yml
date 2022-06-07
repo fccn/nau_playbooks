@@ -121,18 +121,31 @@
       vars:
         openedx_deploy: false
         healthcheck: true
+      tags: nau_check_urls
+
     - name: Check urls for staticproxy
       import_role:
         name: staticproxy_deploy
       vars:
         staticproxy_deploy: false
         healthcheck: true
+      tags: nau_check_urls
+
     - name: Check urls for coursecertificate
       import_role:
         name: coursecertificate_deploy
       vars:
         coursecertificate_deploy: false
         healthcheck: true
+      tags: nau_check_urls
+
+    - name: Check urls for richie
+      import_role:
+        name: richie_deploy
+      vars:
+        richie_deploy_run: false
+        healthcheck: true
+      tags: nau_check_urls
 
     - name: Check docker stack replicas
       shell: docker service ls --filter name={{ item }} --format {% raw %}'{{.Replicas}}'{% endraw %} | egrep -o '[0-9]+/[0-9]+' | awk -F/ '{ if ($1 != $2 && $2 != 0) exit -1}'

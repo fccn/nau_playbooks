@@ -6,31 +6,35 @@ richie_nau_urls_to_check:
   - name: Marketing homepage in Portuguese
     host: "{{ richie_sites.nau.app_richie_site }}"
     protocol: https
-    port: "{{ richie_alternative_nginx_https_port }}"
+    port: "{{ richie_nau_nginx_https_ingress_port }}"
     content: homepage
     page: pt/
-    retries: 5 # first with bigger retries because server could be warming up
-    user: "{{ COMMON_HTPASSWD_USER | default(omit) }}"
-    password: "{{ COMMON_HTPASSWD_PASS | default(omit) }}"
+    retries: 1 # first with bigger retries because server could be warming up
+    user: "{{ COMMON_HTPASSWD_USER | default(None) }}"
+    password: "{{ COMMON_HTPASSWD_PASS | default(None) }}"
+    haproxy_protocol: true
   - name: Marketing homepage in English
     host: "{{ richie_sites.nau.app_richie_site }}"
     protocol: https
-    port: "{{ richie_alternative_nginx_https_port }}"
+    port: "{{ richie_nau_nginx_https_ingress_port }}"
     content: homepage
     page: en/
-    user: "{{ COMMON_HTPASSWD_USER | default(omit) }}"
-    password: "{{ COMMON_HTPASSWD_PASS | default(omit) }}"
+    user: "{{ COMMON_HTPASSWD_USER | default(None) }}"
+    password: "{{ COMMON_HTPASSWD_PASS | default(None) }}"
+    haproxy_protocol: true
   - name: Marketing courses page in Portuguese
     host: "{{ richie_sites.nau.app_richie_site }}"
     protocol: https
-    port: "{{ richie_alternative_nginx_https_port }}"
+    port: "{{ richie_nau_nginx_https_ingress_port }}"
     page: pt/cursos/
-    user: "{{ COMMON_HTPASSWD_USER | default(omit) }}"
-    password: "{{ COMMON_HTPASSWD_PASS | default(omit) }}"
+    user: "{{ COMMON_HTPASSWD_USER | default(None) }}"
+    password: "{{ COMMON_HTPASSWD_PASS | default(None) }}"
+    haproxy_protocol: true
   - name: Marketing courses page in English
     host: "{{ richie_sites.nau.app_richie_site }}"
     protocol: https
-    port: "{{ richie_alternative_nginx_https_port }}"
+    port: "{{ richie_nau_nginx_https_ingress_port }}"
     page: en/courses/
-    user: "{{ COMMON_HTPASSWD_USER | default(omit) }}"
-    password: "{{ COMMON_HTPASSWD_PASS | default(omit) }}"
+    user: "{{ COMMON_HTPASSWD_USER | default(None) }}"
+    password: "{{ COMMON_HTPASSWD_PASS | default(None) }}"
+    haproxy_protocol: true

@@ -20,6 +20,7 @@
     force_basic_auth: "{{ config.force_basic_auth | default(config.user is defined) }}"
     user: "{{ config.user | default(omit) }}"
     password: "{{ config.password | default(omit) }}"
+  when: not ( config.haproxy_protocol | default(false))
   register: http_verify_out
   until: http_verify_out is not failed and ( config.content in http_verify_out.content if config.content is defined else True )
   retries: "{{ config.retries | default(2) }}"
@@ -33,3 +34,31 @@
     loop_var: config
   # loop: "{{ nau_urls_to_check }}"
   with_items: "{{ nau_urls_to_check }}"
+
+- name: Check if each application is ok using HAProxy protocol
+  shell: |
+    timeout {{ config.timeout | default(60) }}s \
+    curl --verbose --silent --haproxy-protocol \
+    {{ "--basic " if ( config.force_basic_auth | default(config.user is defined) ) else "" }} \
+    {{ ("--user " + config.user + ":" + config.password + " ") if config.user is defined and ( config.user | length > 0 ) and config.password is defined and ( config.password | length > 0 ) else "" }} \
+    --resolve {{ config.host }}:{{ config.port }}:127.0.0.1 \
+    {{ config.protocol if config.protocol is defined else 'https' }}://{{ config.host }}:{{ ( config.port | string ) if config.port is defined else '' }}{{ ('/' + config.page) if config.page is defined else '' }} \
+    2>&1
+  when: config.haproxy_protocol | default(false)
+  register: shell_out
+  until: |
+    shell_out is not failed and 
+    ( config.content in shell_out.stdout if config.content is defined else True ) and 
+    ( shell_out.stdout | regex_findall('^< HTTP/[0-9].[0-9] 200 OK', multiline=True) )
+  retries: "{{ config.retries | default(2) }}"
+  delay: 30
+  check_mode: no
+  tags: 
+    - nau_check_urls
+    - always
+  loop_control:
+    label: "Check if {{ config.name }} is ok"
+    loop_var: config
+  # loop: "{{ nau_urls_to_check }}"
+  with_items: "{{ nau_urls_to_check }}"
+  
