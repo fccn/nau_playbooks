@@ -118,3 +118,5 @@ richie_mysql_lb_haproxy_health_check_user: richie_mysql_lb_user
 richie_mysql_lb_haproxy_statistics_port: 24936
 
 richie_mysql_primary: "{{ richie_mysql_containers.values() | list | selectattr('primary', 'equalto', True) | first }}"
+
+richie_mysql_lb_haproxy_elasticsearch_port: 24200

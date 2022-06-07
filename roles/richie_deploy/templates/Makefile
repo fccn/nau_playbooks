@@ -39,6 +39,7 @@ status-ps: ## list the tasks in the stack
 .PHONY: status-ps
 
 status-healthcheck: ## healthcheck - check if it's running the requested service replicas
+	@echo -n 'Docker stack replicas '
 	@docker service ls --filter name={{ docker_deploy_stack_name }} --format {% raw %}'{{.Replicas}}'{% endraw %} | egrep -o '[0-9]+/[0-9]+' | awk -F/ '{ if ($$1 != $$2 && $$2 != 0) exit -1}' && echo "OK" || echo "Not ok"
 .PHONY: status-healthcheck
 
@@ -83,16 +84,33 @@ status-mysql-replica-{{ container }}: ## show replica slave status on {{ contain
 {% for _site, config in richie_sites.items() %}
 BACKUP_FILE_{{ _site }} ?= richie-{{ _site }}-mysql-db-backup.sql.gz
 backup-mysql-{{ _site }}: ## backup mysql db of {{ _site }} site
-	@echo 'Backing up MySQL database of {{ _site }}'
+	@echo -n 'Backing up MySQL database of {{ _site }}'
 	@rm -f ${ROOT_DIR}/$(BACKUP_FILE_{{ _site }})
 	@MYSQL_PWD="{{ richie_MYSQL_ROOT_PASSWORD}}" /usr/bin/mysqldump -u root --host 127.0.0.1 --port {{ richie_mysql_primary.ingress_port }} --single-transaction {{ config.app_richie_MYSQL_DATABASE }} | gzip -c -9  > ${ROOT_DIR}/$(BACKUP_FILE_{{ _site }})
 	@echo 'Done! File: $(BACKUP_FILE_{{ _site }})'
 .PHONY: backup-mysql-{{ _site }}
 
 restore-mysql-{{ _site }}: ## restore mysql db of {{ _site }} site
-	@echo 'Loading to {{ config.app_richie_MYSQL_DATABASE }} MySQL database the backfile $(BACKUP_FILE_{{ _site }})'
+	@echo -n 'Loading to {{ config.app_richie_MYSQL_DATABASE }} MySQL database the backfile $(BACKUP_FILE_{{ _site }}) '
 	@cat ${ROOT_DIR}/$(BACKUP_FILE_{{ _site }}) | gzip -d | MYSQL_PWD="{{ richie_MYSQL_ROOT_PASSWORD }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ richie_mysql_primary.ingress_port }} {{ config.app_richie_MYSQL_DATABASE }}
 	@echo 'Done!'
 .PHONY: restore-mysql-{{ _site }}
 
 {% endfor %}
+
+{% for container, config in richie_elasticsearch_containers.items() %}
+status-healthcheck-{{ container }}: ## Run elasticsearch healthcheck cluster on {{ richie_docker_deploy_stack_name }}_{{ container }} container
+	@echo -n "Elasticsearch"
+	@test $$(docker exec -u root -it $$(docker ps -q -f name={{ richie_docker_deploy_stack_name }}_{{ container }}) curl -X GET '127.0.0.1:9200/_cluster/health?pretty' | grep 'number_of_nodes' | egrep -o '[0-9]+') -eq {{ richie_elasticsearch_containers.keys() | length }}
+	@test $$(docker exec -u root -it $$(docker ps -q -f name={{ richie_docker_deploy_stack_name }}_{{ container }}) curl -X GET '127.0.0.1:9200/_cluster/health?level=shards&pretty' | egrep -o "status.*\," | sort | uniq | egrep -o "\"[^\ ]+\"") = "\"green\""
+	@echo "OK"
+.PHONY: status-healthcheck-{{ container }}
+
+{% endfor %}
+
+status-healthcheck-elasticsearch: ## Run elastic search healthcheck cluster using load balancer
+	@echo -n "Elasticsearch"
+	@test $$(curl -s 'http://localhost:{{ richie_mysql_lb_haproxy_elasticsearch_port }}/_cluster/health?pretty' | grep 'number_of_nodes' | egrep -o '[0-9]+') -eq {{ richie_elasticsearch_containers.keys() | length }}
+	@test $$(curl -s 'http://localhost:{{ richie_mysql_lb_haproxy_elasticsearch_port }}/_cluster/health?level=shards&pretty' | egrep -o "status.*\," | sort | uniq | egrep -o "\"[^\ ]+\"") = "\"green\""
+	@echo "OK"
+.PHONY: status-healthcheck-elasticsearch

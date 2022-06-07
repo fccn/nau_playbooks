@@ -24,6 +24,7 @@ richie_docker_deploy_services_additional:
   - nau_app
   - elasticsearch_1
   - elasticsearch_2
+  - elasticsearch_3
   - redis-primary
   - redis-replica1
   - redis-replica2
