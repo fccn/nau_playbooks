@@ -1,4 +1,7 @@
 ---
+# Remove old containers that this stack no longer use
+docker_deploy_stack_prune: true
+
 coursecertificate_docker_deploy_stack_name: coursecertificate
 coursecertificate_docker_deploy_stack_template: templates/docker-stack.yml
 coursecertificate_docker_deploy_base_folder: /nau/ops/coursecertificate
