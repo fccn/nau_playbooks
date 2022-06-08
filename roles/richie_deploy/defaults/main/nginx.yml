@@ -43,7 +43,7 @@ richie_nginx_docker_deploy_files:
     docker_target: /etc/nginx/nginx.htpasswd
     secret_name: nau_nginx_htpasswd
     service: nau_nginx
-    when: "{{ richie_sites_nginx.nau.nginx_basic_authentication_users is defined }}"
+    when: "{{ richie_sites.nau.nginx_basic_authentication_users is defined }}"
 
 #
 # Nginx configuration shared by all sites
