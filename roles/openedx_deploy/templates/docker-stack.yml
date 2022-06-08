@@ -3,29 +3,29 @@
 version: "3.8"
 
 services:
-  mysql_lb_haproxy:
-    image: {{ openedx_mysql_lb_haproxy_docker_image | default('haproxy:2.4.16') }}
+  load_balancer_haproxy:
+    image: {{ openedx_load_balancer_haproxy_docker_image | default('haproxy:2.4.16') }}
     ports:
       # write
-      - target:    {{ openedx_mysql_lb_haproxy_write_port | default(3306) }}
-        published: {{ openedx_mysql_lb_haproxy_write_port | default(3306) }}
+      - target:    {{ openedx_load_balancer_haproxy_write_port | default(3306) }}
+        published: {{ openedx_load_balancer_haproxy_write_port | default(3306) }}
         protocol:  tcp
         mode:      ingress
       # read
-      - target:    {{ openedx_mysql_lb_haproxy_readonly_port | default(3307) }}
-        published: {{ openedx_mysql_lb_haproxy_readonly_port | default(3307) }}
+      - target:    {{ openedx_load_balancer_haproxy_readonly_port | default(3307) }}
+        published: {{ openedx_load_balancer_haproxy_readonly_port | default(3307) }}
         protocol:  tcp
         mode:      ingress
       # statistics
-      - target:    {{ openedx_mysql_lb_haproxy_statistics_port | default(1936) }}
-        published: {{ openedx_mysql_lb_haproxy_statistics_port | default(1936) }}
+      - target:    {{ openedx_load_balancer_haproxy_statistics_port | default(1936) }}
+        published: {{ openedx_load_balancer_haproxy_statistics_port | default(1936) }}
         protocol:  tcp
         # each container have a statistics page but we should view only one on each host
         mode:      host
-{{ helper.service_configs(service='mysql_lb_haproxy') }}
-{{ helper.service_secrets(service='mysql_lb_haproxy') }}
+{{ helper.service_configs(service='load_balancer_haproxy') }}
+{{ helper.service_secrets(service='load_balancer_haproxy') }}
     deploy:
-      replicas: {{ openedx_mysql_lb_haproxy_deploy_replicas_count | default(2) }}
+      replicas: {{ openedx_load_balancer_haproxy_deploy_replicas_count | default(2) }}
       placement:
         max_replicas_per_node: 1
       restart_policy:
@@ -41,7 +41,7 @@ services:
         failure_action: rollback
         order: stop-first
     healthcheck:
-      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/{{ openedx_mysql_lb_haproxy_write_port | default(3306) }}", "&&", "echo", "''", ">", "/dev/tcp/127.0.0.1/{{ openedx_mysql_lb_haproxy_readonly_port | default(3306) }}", "||", "exit", "1"]
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/{{ openedx_load_balancer_haproxy_write_port | default(3306) }}", "&&", "echo", "''", ">", "/dev/tcp/127.0.0.1/{{ openedx_load_balancer_haproxy_readonly_port | default(3306) }}", "||", "exit", "1"]
       start_period: 3s
       retries: 10
       interval: 10s

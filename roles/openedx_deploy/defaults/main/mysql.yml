@@ -22,10 +22,10 @@ openedx_mysql_docker_deploy_templates:
     mysql_container: "{{ openedx_mysql_containers.mysql_2 }}"
     service: mysql_2
     docker_target: /etc/mysql/conf.d/mysql.cnf
-  - src:  templates/mysql_lb_haproxy/haproxy.cfg
-    dest: "{{ openedx_docker_deploy_base_folder }}/mysql_lb_haproxy/haproxy.cfg"
-    config_name: "{{ openedx_mysql_lb_haproxy_cfc_config_name }}"
-    service: mysql_lb_haproxy
+  - src:  templates/load_balancer_haproxy/haproxy.cfg
+    dest: "{{ openedx_docker_deploy_base_folder }}/load_balancer_haproxy/haproxy.cfg"
+    config_name: "{{ openedx_load_balancer_haproxy_cfc_config_name }}"
+    service: load_balancer_haproxy
     docker_target: /usr/local/etc/haproxy/haproxy.cfg
 
 # need last slash
@@ -86,7 +86,7 @@ openedx_mysql_root_host: "%"
 openedx_docker_mysql_replication_additional_databases: "{{ edxlocal_databases }}" # Used by docker_mysql_replication role
 openedx_docker_mysql_replication_additional_users: "{{ edxlocal_database_users }}" # Used by docker_mysql_replication role
 
-openedx_mysql_lb_haproxy_write_port: 3306
-openedx_mysql_lb_haproxy_readonly_port: 3307
-openedx_mysql_lb_haproxy_statistics_port: 1936
-openedx_mysql_lb_haproxy_cfc_config_name: mysql_haproxy_cfg
+openedx_load_balancer_haproxy_write_port: 3306
+openedx_load_balancer_haproxy_readonly_port: 3307
+openedx_load_balancer_haproxy_statistics_port: 1936
+openedx_load_balancer_haproxy_cfc_config_name: mysql_haproxy_cfg
