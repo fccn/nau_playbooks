@@ -39,8 +39,10 @@ status-ps: ## list the tasks in the stack
 .PHONY: status-ps
 
 status-healthcheck-replicas: ## healthcheck - check if it's running the requested service replicas
-	@docker service ls --filter name={{ docker_deploy_stack_name }} --format {% raw %}'{{.Replicas}}'{% endraw %} | egrep -o '[0-9]+/[0-9]+' | awk -F/ '{ if ($$1 != $$2 && $$2 != 0) exit -1}' && echo "OK" || echo "Not ok"
-.PHONY: status-healthcheck
+	@echo -n 'Check docker stack replicas: '
+	@docker service ls --filter name={{ docker_deploy_stack_name }} --format {% raw %}'{{.Replicas}}'{% endraw %} | egrep -o '[0-9]+/[0-9]+' | awk -F/ '{ if ($$1 != $$2 && $$2 != 0) exit -1}'
+	@echo "OK"
+.PHONY: status-healthcheck-replicas
 
 # List the tasks of a service
 _%-ps:
@@ -61,3 +63,14 @@ logs-{{ _service }}: _{{ _service }}-logs ## View last 500 lines of logs of the 
 .PHONY: logs-{{ _service }}
 
 {% endfor %}
+
+status-healthcheck: | status-healthcheck-nginx-ports status-healthcheck-replicas ## Overall healthcheck
+	@echo "Everything looks: OK"
+.PHONY: status-healthcheck
+
+status-healthcheck-nginx-ports: ## check nginx ports
+	@echo -n "Check nginx ports: "
+	@nc -z 127.0.0.1 {{ staticproxy_nginx_http_ingress_port }}
+	@nc -z 127.0.0.1 {{ staticproxy_nginx_https_ingress_port }}
+	@echo "OK"
+.PHONY: status-healthcheck-nginx-ports

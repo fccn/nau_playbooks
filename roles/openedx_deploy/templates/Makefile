@@ -39,8 +39,10 @@ status-ps: ## list the tasks in the stack
 .PHONY: status-ps
 
 status-healthcheck-replicas: ## healthcheck - check if it's running the requested service replicas
-	@docker service ls --filter name={{ docker_deploy_stack_name }} --format {% raw %}'{{.Replicas}}'{% endraw %} | egrep -o '[0-9]+/[0-9]+' | awk -F/ '{ if ($$1 != $$2 && $$2 != 0) exit -1}' && echo "OK" || echo "Not ok"
-.PHONY: status-healthcheck
+	@echo -n 'Check docker stack replicas: '
+	@docker service ls --filter name={{ docker_deploy_stack_name }} --format {% raw %}'{{.Replicas}}'{% endraw %} | egrep -o '[0-9]+/[0-9]+' | awk -F/ '{ if ($$1 != $$2 && $$2 != 0) exit -1}'
+	@echo "OK"
+.PHONY: status-healthcheck-replicas
 
 # List the tasks of a service
 _%-ps:
