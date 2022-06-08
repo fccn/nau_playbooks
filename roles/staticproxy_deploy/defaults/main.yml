@@ -1,6 +1,6 @@
 ---
 # Remove old containers that this stack no longer use
-docker_deploy_stack_prune: true
+staticproxy_docker_deploy_stack_prune: true
 
 staticproxy_docker_deploy_stack_name: staticproxy
 staticproxy_docker_deploy_stack_template: templates/docker-stack.yml

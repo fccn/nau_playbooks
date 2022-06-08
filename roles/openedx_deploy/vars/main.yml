@@ -1,12 +1,14 @@
 ---
 # prefix all variables of ansible-docker-deploy role with the stack name
-docker_deploy_stack_name:         "{{ openedx_docker_deploy_stack_name }}"
-docker_deploy_stack_template:     "{{ openedx_docker_deploy_stack_template }}"
-docker_deploy_base_folder:        "{{ openedx_docker_deploy_base_folder }}"
-docker_deploy_templates:          "{{ openedx_docker_deploy_templates | default([]) }}"
-docker_deploy_files:              "{{ openedx_docker_deploy_files | default([]) }}"
-docker_deploy_folders_additional: "{{ openedx_docker_deploy_folders_additional | default([]) }}"
-docker_deploy_configs:            "{{ openedx_docker_deploy_configs | default([]) }}"
-docker_deploy_secrets:            "{{ openedx_docker_deploy_secrets | default([]) }}"
+docker_deploy_stack_name:          "{{ openedx_docker_deploy_stack_name }}"
+docker_deploy_stack_template:      "{{ openedx_docker_deploy_stack_template }}"
+docker_deploy_base_folder:         "{{ openedx_docker_deploy_base_folder }}"
+docker_deploy_templates:           "{{ openedx_docker_deploy_templates | default([]) }}"
+docker_deploy_files:               "{{ openedx_docker_deploy_files | default([]) }}"
+docker_deploy_folders_additional:  "{{ openedx_docker_deploy_folders_additional | default([]) }}"
+docker_deploy_configs:             "{{ openedx_docker_deploy_configs | default([]) }}"
+docker_deploy_secrets:             "{{ openedx_docker_deploy_secrets | default([]) }}"
+docker_deploy_services_additional: "{{ openedx_docker_deploy_services_additional | default([]) }}"
+docker_deploy_stack_prune:         "{{ openedx_docker_deploy_stack_prune }}"
 
 nau_urls_to_check: "{{ openedx_nau_urls_to_check }}"
