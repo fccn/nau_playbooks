@@ -76,3 +76,7 @@ status-mysql_2-replica: ## show replica slave status on mysql_2 docker container
 	@echo "Write down the value of db user '{{ openedx_mysql_containers.mysql_2.mysql_replication_login_user }}' value of 'openedx_mysql_containers.mysql_2.mysql_replication_login_password' that defaults to 'EDXAPP_MYSQL_PASSWORD_ADMIN'"
 	echo 'show slave status \G' | mysql -u root --host 127.0.0.1 --port {{ openedx_mysql_containers.mysql_2.ingress_port }} -p
 .PHONY: mysql-slave-status
+
+status-healthcheck: |     status-healthcheck-replicas ## Overall healthcheck
+	@echo "Everything looks: OK"
+.PHONY: status-healthcheck
