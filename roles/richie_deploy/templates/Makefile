@@ -65,8 +65,17 @@ logs-{{ _service }}: _{{ _service }}-logs ## View {{ _service }} docker service 
 {% endfor %}
 
 #######################
-## Specific
-#
+# Specific
+#######################
+
+status-healthcheck: | {{ ['status-healthcheck-mysql-port-'] | product(richie_mysql_containers.keys()|list) | map('join') | join(' ') }} status-healthcheck-elasticsearch status-healthcheck-load-balancer-haproxy-statistics-port status-healthcheck-load-balancer-haproxy-elasticsearch-port status-healthcheck-replicas ## Overall healthcheck
+	@echo "Everything looks: OK"
+.PHONY: status-healthcheck
+
+
+#######################
+# MySQL 
+#######################
 
 status-mysql-primary: ## show primary master status on mysql_1 docker container
 	@echo "Write down the value of db user '{{ richie_mysql_containers.mysql_1.mysql_replication_login_user }}' value of 'richie_mysql_containers.mysql_1.mysql_replication_login_password'"
@@ -99,6 +108,18 @@ restore-mysql-{{ _site }}: ## restore mysql db of {{ _site }} site
 
 {% endfor %}
 
+{% for container, config in richie_mysql_containers.items() %}
+status-healthcheck-mysql-port-{{ container }}: ## check mysql port for {{ container }}
+	@echo -n "Check mysql port for {{ container }}: "
+	@nc -z 127.0.0.1 {{ config.ingress_port }}
+	@echo "OK"
+.PHONY: status-healthcheck-port-{{ container }}
+{% endfor %}
+
+#######################
+# Elasticsearch
+#######################
+
 {% for container, config in richie_elasticsearch_containers.items() %}
 status-healthcheck-{{ container }}: ## Run elasticsearch healthcheck cluster on {{ richie_docker_deploy_stack_name }}_{{ container }} container
 	@echo -n "Check Elasticsearch {{ container }}: "
@@ -116,17 +137,9 @@ status-healthcheck-elasticsearch: ## Run elastic search healthcheck cluster usin
 	@echo "OK"
 .PHONY: status-healthcheck-elasticsearch
 
-status-healthcheck: | {{ ['status-healthcheck-mysql-port-'] | product(richie_mysql_containers.keys()|list) | map('join') | join(' ') }} status-healthcheck-elasticsearch status-healthcheck-load-balancer-haproxy-statistics-port status-healthcheck-load-balancer-haproxy-elasticsearch-port status-healthcheck-replicas ## Overall healthcheck
-	@echo "Everything looks: OK"
-.PHONY: status-healthcheck
-
-{% for container, config in richie_mysql_containers.items() %}
-status-healthcheck-mysql-port-{{ container }}: ## check mysql port for {{ container }}
-	@echo -n "Check mysql port for {{ container }}: "
-	@nc -z 127.0.0.1 {{ config.ingress_port }}
-	@echo "OK"
-.PHONY: status-healthcheck-port-{{ container }}
-{% endfor %}
+#######################
+# HAProxy
+#######################
 
 status-healthcheck-load-balancer-haproxy-statistics-port: ## check load balancer HAProxy statistics {{ richie_load_balancer_haproxy_statistics_port }} port
 	@echo -n "Check load balancer HAProxy statistics port: "
