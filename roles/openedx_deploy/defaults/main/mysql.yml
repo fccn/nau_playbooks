@@ -86,7 +86,4 @@ openedx_mysql_root_host: "%"
 openedx_docker_mysql_replication_additional_databases: "{{ edxlocal_databases }}" # Used by docker_mysql_replication role
 openedx_docker_mysql_replication_additional_users: "{{ edxlocal_database_users }}" # Used by docker_mysql_replication role
 
-openedx_load_balancer_haproxy_write_port: 3306
-openedx_load_balancer_haproxy_readonly_port: 3307
-openedx_load_balancer_haproxy_statistics_port: 1936
-openedx_load_balancer_haproxy_cfc_config_name: mysql_haproxy_cfg
+openedx_mysql_primary: "{{ openedx_mysql_containers.values() | list | selectattr('primary', 'equalto', True) | first }}"

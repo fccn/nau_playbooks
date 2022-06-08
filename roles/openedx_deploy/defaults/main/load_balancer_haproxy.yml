@@ -1,0 +1,10 @@
+---
+# Open edX MySQL load balancer health check user
+openedx_load_balancer_haproxy_health_check_user: openedx_mysql_lb_user
+
+openedx_load_balancer_haproxy_write_port: 3306
+openedx_load_balancer_haproxy_readonly_port: 3307
+openedx_load_balancer_haproxy_statistics_port: 1936
+openedx_load_balancer_haproxy_cfc_config_name: mysql_haproxy_cfg
+
+openedx_load_balancer_haproxy_elasticsearch_port: 19200

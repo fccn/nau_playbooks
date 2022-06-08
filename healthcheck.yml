@@ -119,7 +119,7 @@
       import_role:
         name: openedx_deploy
       vars:
-        openedx_deploy: false
+        openedx_deploy_run: false
         healthcheck: true
       tags: nau_check_urls
 

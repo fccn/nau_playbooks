@@ -336,7 +336,8 @@
 
 - name: Install Docker and create folders used as volumes
   hosts: nau_docker_swarm_managers,nau_docker_swarm_workers
-  # serial: "{{ serial_number | default(1) }}"
+  # If you want to upgrade docker, use the next extra var so 1 node is upgraded a time
+  serial: "{{ serial_number | default(1) }}"
   become: True
   gather_facts: True
   tasks:
@@ -346,20 +347,6 @@
     - name: configures the docker daemon
       import_role:
         name: docker_daemon
-    - name: Create folders volumes for openedx stack
-      file:
-        dest: "{{ item.dest | dirname }}"
-        owner: "{{ item.dir_owner|default(omit) }}"
-        group: "{{ item.dir_group|default(omit) }}"
-        mode: "{{ item.dir_mode | default(omit) }}"
-        recurse: true
-        state: directory
-      when: (openedx_deploy | default(false)) and (item.when | default(true) | bool)
-      # Include future stacks
-      loop_control:
-        label: "{{ item.dest }} + {{ item.when }}"
-      loop: "{{ openedx_docker_deploy_folders_additional }}"
-      tags: docker_deploy
 
 - name: Configure 1st docker swarm manager
   hosts: nau_docker_swarm_managers[0]
@@ -393,12 +380,16 @@
         docker_swarm_node_advertise_addr: "{{ hostvars[inventory_hostname].ansible_host }}"
 
 - name: Deploy openedx stack to the 1st docker swarm manager
-  hosts: nau_docker_swarm_managers[0]
+  hosts: nau_docker_swarm_managers,nau_docker_swarm_workers
   become: True
   gather_facts: True
   roles:
     - name: Deploy openedx stack
       role: openedx_deploy
+      vars:
+        openedx_deploy_run: "{{ openedx_deploy | default(false) }}"
+        openedx_deploy_create_volumes: "{{ openedx_deploy | default(false) }}"
+        docker_swarm_manager_to_deploy: "{{ groups['nau_docker_swarm_managers'][0] }}"
 
 - name: Configure support server
   hosts: support_server
@@ -449,21 +440,3 @@
         src: "templates/global/Makefile"
         dest: "/nau/ops/Makefile"
       tags: global_healthcheck
-
-- name: Configure NAU MySQL clusters replication
-  hosts: nau_docker_swarm_managers,nau_docker_swarm_workers
-  become: True
-  gather_facts: True
-  serial: 1
-  roles:
-    - name: Initialize openedx MySQL databases replication
-      role: docker_mysql_replication
-      when: openedx_mysql_replication_initialize | default(False)
-      vars:
-        # The replication mysql files are templated using the ansible-docker-deploy role instead of docker_mysql_replication role
-        docker_mysql_replication_template: false
-        # dict with docker containers configuration
-        docker_mysql_replication_containers: "{{ openedx_mysql_containers }}"
-        docker_mysql_replication_additional_databases: "{{ openedx_docker_mysql_replication_additional_databases }}"
-        docker_mysql_replication_additional_users: "{{ openedx_docker_mysql_replication_additional_users }}"
-        docker_mysql_replication_containers_prefix: openedx
