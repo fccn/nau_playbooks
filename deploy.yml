@@ -429,6 +429,7 @@
         richie_deploy_run: "{{ richie_deploy | default(false) }}"
         richie_deploy_create_volumes: "{{ richie_deploy | default(false) }}"
         docker_swarm_manager_to_deploy: "{{ groups['nau_docker_swarm_managers'][0] }}"
+        docker_swarm_cluster_group_length: "{{ groups['nau_docker_swarm_servers'] | length }}"
 
 - name: Copy global healthcheck script
   hosts: nau_docker_swarm_managers[0]

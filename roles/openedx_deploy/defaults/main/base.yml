@@ -14,12 +14,9 @@ openedx_base_docker_deploy_templates:
   - src:  "{{ openedx_makefile_template | default('templates/Makefile') }}"
     dest: "{{ openedx_docker_deploy_base_folder }}/Makefile"
 
-openedx_docker_deploy_folders_additional: "{{ openedx_mysql_docker_deploy_folders_additional + openedx_elasticsearch_docker_deploy_folders_additional }}"
+openedx_docker_deploy_folders_additional: "{{ openedx_mysql_docker_deploy_folders_additional + openedx_elasticsearch_docker_deploy_folders_additional + openedx_redis_docker_deploy_folders_additional }}"
 # + openedx_mongodb_docker_deploy_folders_additional
 # ...
 
 # Declare additional docker stack services, to they can be used to generate Makefile helper targets.
-openedx_docker_deploy_services_additional:
-  - elasticsearch_1
-  - elasticsearch_2
-  - elasticsearch_3
+openedx_docker_deploy_services_additional: "{{ (openedx_elasticsearch_containers.keys() | list) + (openedx_redis_containers.keys() | list) + (openedx_redis_sentinel_containers.keys() | list) }} "
