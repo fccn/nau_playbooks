@@ -4,32 +4,28 @@ version: "3.8"
 
 services:
 
-{% for redis_sentinel_container_name, redis_sentinel_config in openedx_redis_sentinel_containers.items() %}
-  {{ redis_sentinel_container_name }}:
-    image: docker.io/bitnami/redis-sentinel:6.2.7
+  redis-sentinel:
+    image: {{ openedx_redis_sentinel_docker_image }}
     environment:
       REDIS_MASTER_HOST: {{ openedx_docker_deploy_stack_name }}_{{ openedx_redis_primary_container }}
       # Accept host names
-      REDIS_SENTINEL_RESOLVE_HOSTNAMES:  "yes"
+      REDIS_SENTINEL_RESOLVE_HOSTNAMES: "yes"
       # Enabling the announce-hostnames global configuration makes Sentinel use host names instead. 
       # This affects replies to clients, values written in configuration files, 
       # the REPLICAOF command issued to replicas, etc.
       REDIS_SENTINEL_ANNOUNCE_HOSTNAMES: "yes"
       # announce the hostname of the container
-      REDIS_SENTINEL_ANNOUNCE_IP: {{ openedx_docker_deploy_stack_name }}_{{ redis_sentinel_container_name }}
+      # REDIS_SENTINEL_ANNOUNCE_IP:
     deploy:
-      replicas: 1
+      replicas: {{ openedx_redis_sentinel_replicas }}
+      # Use DNS Round Robin to bypass the docker routing mesh and to allow HAProxy parse the DNS
+      # entries to discover all the redis sentinel instance replicas.
+      endpoint_mode: dnsrr
       mode: replicated
       restart_policy:
         condition: on-failure
       placement:
-        max_replicas_per_node: 1
-{% if redis_sentinel_config.host_fqdn is defined and redis_sentinel_config.host_fqdn is not none %}
-        constraints:
-          - node.labels.fqdn == {{ redis_sentinel_config.host_fqdn }}
-{% endif %}
-
-{% endfor %}
+        max_replicas_per_node: {{ ( openedx_redis_sentinel_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
 
 {% for redis_container_name, redis_config in openedx_redis_containers.items() %}
   {{ redis_container_name }}:
@@ -42,12 +38,6 @@ services:
       REDIS_REPLICA_IP: {{ openedx_docker_deploy_stack_name }}_{{ redis_container_name }}
     volumes:
       - {{ redis_config.data }}:/bitnami/redis/data
-    # healthcheck:
-    #   test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
-    #   interval: 5s
-    #   timeout: 3s
-    #   retries: 30
-    # user: "1001:1001"
     deploy:
       replicas: 1
       mode: replicated

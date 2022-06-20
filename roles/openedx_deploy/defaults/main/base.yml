@@ -19,4 +19,7 @@ openedx_docker_deploy_folders_additional: "{{ openedx_mysql_docker_deploy_folder
 # ...
 
 # Declare additional docker stack services, to they can be used to generate Makefile helper targets.
-openedx_docker_deploy_services_additional: "{{ (openedx_elasticsearch_containers.keys() | list) + (openedx_redis_containers.keys() | list) + (openedx_redis_sentinel_containers.keys() | list) }} "
+openedx_docker_deploy_services_additional: "{{ (openedx_elasticsearch_containers.keys() | list) + (openedx_redis_containers.keys() | list) + (openedx_docker_deploy_services_additional_list) }} "
+
+openedx_docker_deploy_services_additional_list:
+  - redis-sentinel

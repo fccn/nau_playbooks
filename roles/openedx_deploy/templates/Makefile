@@ -72,13 +72,6 @@ status-healthcheck: | {{ ['status-healthcheck-mysql-port-'] | product(openedx_my
 	@echo "Everything looks: OK"
 .PHONY: status-healthcheck
 
-restart-redis_sentinel:
-{% for container, config in openedx_redis_sentinel_containers.items() %}
-	@echo "Restarting container {{ openedx_docker_deploy_stack_name }}_{{ container }}"
-	docker service update --force {{ openedx_docker_deploy_stack_name }}_{{ container }}
-{% endfor %}
-.PHONY: restart-redis_sentinel
-
 #######################
 # MySQL
 #######################

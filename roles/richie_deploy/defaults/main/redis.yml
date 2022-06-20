@@ -2,15 +2,22 @@
 #
 # Redis configurations
 #
-richie_redis_docker_image: docker.io/bitnami/redis:6.0-debian-10
-richie_redis_primary_container: redis-primary
+richie_redis_docker_image: docker.io/bitnami/redis:6.2.7
+richie_redis_primary_container: redis_1
 richie_redis_containers:
-  redis-primary:
-    host_fqdn: "{{ richie_redis_primary_server }}"
+  redis_1:
+    host_fqdn: "{{ richie_redis_1_server }}"
     mode: master
-  redis-replica1:
-    host_fqdn: "{{ richie_redis_replica1_server }}"
+  redis_2:
+    host_fqdn: "{{ richie_redis_2_server }}"
     mode: slave
-  redis-replica2:
-    host_fqdn: "{{ richie_redis_replica2_server }}"
+  redis_3:
+    host_fqdn: "{{ richie_redis_3_server }}"
     mode: slave
+
+richie_redis_1_server: !!null
+richie_redis_2_server: !!null
+richie_redis_3_server: !!null
+
+richie_redis_sentinel_docker_image: docker.io/bitnami/redis-sentinel:6.2.7
+richie_redis_sentinel_replicas: 3

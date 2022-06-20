@@ -39,14 +39,5 @@ openedx_redis_1_server: !!null
 openedx_redis_2_server: !!null
 openedx_redis_3_server: !!null
 
-openedx_redis_sentinel_containers:
-  redis_sentinel_1:
-    host_fqdn: "{{ openedx_redis_sentinel_1_server }}"
-  redis_sentinel_2:
-    host_fqdn: "{{ openedx_redis_sentinel_2_server }}"
-  redis_sentinel_3:
-    host_fqdn: "{{ openedx_redis_sentinel_3_server }}"
-
-openedx_redis_sentinel_1_server: !!null
-openedx_redis_sentinel_2_server: !!null
-openedx_redis_sentinel_3_server: !!null
+openedx_redis_sentinel_docker_image: docker.io/bitnami/redis-sentinel:6.2.7
+openedx_redis_sentinel_replicas: 3
