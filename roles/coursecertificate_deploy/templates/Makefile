@@ -19,30 +19,30 @@ restart-services-force: ## forcelly restart all the docker stack services
 	docker stack services {{ docker_deploy_stack_name }} --format {% raw %}'{{.Name}}'{% endraw %} | xargs -rt --max-lines=1 docker service update --force
 .PHONY: restart
 
-restart-services-if-need: | status-healthcheck ## update stack services if need
+restart-services-if-need: | healthcheck ## update stack services if need
 	docker service ls --filter name={{ docker_deploy_stack_name }} --format {% raw %}'{{.Name}}/{{.Replicas}}'{% endraw %} | egrep -o '.*\/[0-9]+/[0-9]+' | awk -F/ '{ if ($$2 != $$3 && $$3 != 0) print $$1; exit -1 }' | xargs -rt --max-lines=1 docker service update --force
 .PHONY: restart-services-if-need
 
-status-ls: ## list stack services
+ls: ## list stack services
 	docker service ls --filter name={{ docker_deploy_stack_name }}
-.PHONY: status-ls
+.PHONY: ls
 
-status-ps: ## list the tasks in the stack
+ps: ## list the tasks in the stack
 	docker stack ps {{ docker_deploy_stack_name }}
-.PHONY: status-ps
+.PHONY: ps
 
-status-healthcheck-replicas: ## healthcheck - check if it's running the requested service replicas
+healthcheck-replicas: ## healthcheck - check if it's running the requested service replicas
 	@echo -n 'Check docker stack replicas: '
 	@docker service ls --filter name={{ docker_deploy_stack_name }} --format {% raw %}'{{.Replicas}}'{% endraw %} | egrep -o '[0-9]+/[0-9]+' | awk -F/ '{ if ($$1 != $$2 && $$2 != 0) exit -1}'
 	@echo "OK"
-.PHONY: status-healthcheck-replicas
+.PHONY: healthcheck-replicas
 
 # List the tasks of a service
 _%-ps:
 	docker service ps {{ docker_deploy_stack_name }}_$*
 
 {% for _service in docker_deploy_services %}
-status-ps-{{ _service }}: _{{ _service }}-ps ## List the tasks of {{ _service }}
+ps-{{ _service }}: _{{ _service }}-ps ## List the tasks of {{ _service }}
 .PHONY: logs-{{ _service }}
 
 {% endfor %}
@@ -61,13 +61,13 @@ logs-{{ _service }}: _{{ _service }}-logs ## View last 500 lines of logs of the 
 # Specific
 #######################
 
-status-healthcheck: | status-healthcheck-nginx-ports status-healthcheck-replicas ## Overall healthcheck
+healthcheck: | healthcheck-nginx-ports healthcheck-replicas ## Overall healthcheck
 	@echo "Everything looks: OK"
-.PHONY: status-healthcheck
+.PHONY: healthcheck
 
-status-healthcheck-nginx-ports: ## check nginx ports
+healthcheck-nginx-ports: ## check nginx ports
 	@echo -n "Check nginx ports: "
 	@nc -z 127.0.0.1 {{ coursecertificate_nginx_http_ingress_port }}
 	@nc -z 127.0.0.1 {{ coursecertificate_nginx_https_ingress_port }}
 	@echo "OK"
-.PHONY: status-healthcheck-nginx-ports
+.PHONY: healthcheck-nginx-ports

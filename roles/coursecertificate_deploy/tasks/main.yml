@@ -1,6 +1,6 @@
 ---
 - name: Run healthcheck
-  shell: make status-healthcheck
+  shell: make healthcheck
   args:
     chdir: "{{ coursecertificate_docker_deploy_base_folder }}"
   retries: "{{ docker_deploy_stack_verify_retries | default(3) }}"

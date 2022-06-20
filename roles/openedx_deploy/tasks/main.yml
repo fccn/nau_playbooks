@@ -54,7 +54,7 @@
     - nau_check_urls
 
 - name: Run healthcheck
-  shell: make status-healthcheck
+  shell: make healthcheck
   args:
     chdir: "{{ openedx_docker_deploy_base_folder }}"
   retries: "{{ docker_deploy_stack_verify_retries | default(3) }}"

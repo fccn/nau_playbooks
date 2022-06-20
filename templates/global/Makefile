@@ -12,18 +12,18 @@ help:
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 .PHONY: help
 
-status-healthcheck: ## All stacks healthchecks
-	@echo "Check staticproxy stack"
-	$(MAKE) -C staticproxy       status-healthcheck
-	@echo ""
-	@echo "Check coursecertificate stack"
-	$(MAKE) -C coursecertificate status-healthcheck
-	@echo ""
-	@echo "Check openedx stack"
-	$(MAKE) -C openedx           status-healthcheck
-	@echo ""
-	@echo "Check richie stack"
-	$(MAKE) -C richie            status-healthcheck
-	@echo ""
+healthcheck: ## All stacks healthchecks
+	@echo -n "Check staticproxy stack: "
+	@$(MAKE) -C staticproxy       healthcheck > /dev/null
+	@echo "ok"
+	@echo -n "Check coursecertificate stack: "
+	@$(MAKE) -C coursecertificate healthcheck > /dev/null
+	@echo "ok"
+	@echo -n "Check openedx stack: "
+	@$(MAKE) -C openedx           healthcheck > /dev/null
+	@echo "ok"
+	@echo -n "Check richie stack: "
+	@$(MAKE) -C richie            healthcheck > /dev/null
+	@echo "ok"
 	@echo "Everything looks: OK"
-.PHONY: status-healthcheck
+.PHONY: healthcheck
