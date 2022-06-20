@@ -60,7 +60,7 @@
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_managers -e coursecertificate_deploy=true
 #
 #   To deploy the richie stack
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_servers --tags docker_deploy -e richie_deploy=true
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_servers -e richie_deploy=true
 - name: Bootstrap instances of 16.04
   hosts: all,!idpproxy_servers,!idpauth_servers,!richie_servers,!nau_docker_swarm_managers,!nau_docker_swarm_workers,!support_server
   gather_facts: no

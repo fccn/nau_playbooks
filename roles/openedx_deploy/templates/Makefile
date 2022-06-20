@@ -11,23 +11,16 @@ help:
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 .PHONY: help
 
-# real deploy target
-_deploy: 
+deploy: ## deploy docker stack
 	docker stack deploy {{ docker_deploy_stack_name }} --compose-file docker-stack.yml
-.PHONY: _deploy
-
-deploy: | _deploy restart-services-if-need ## deploy docker stack
 .PHONY: deploy
 
 restart-services-force: ## forcelly restart all the docker stack services
 	docker stack services {{ docker_deploy_stack_name }} --format {% raw %}'{{.Name}}'{% endraw %} | xargs -rt --max-lines=1 docker service update --force
 .PHONY: restart
 
-_restart-services-if-need:
+restart-services-if-need: | status-healthcheck ## update stack services if need
 	docker service ls --filter name={{ docker_deploy_stack_name }} --format {% raw %}'{{.Name}}/{{.Replicas}}'{% endraw %} | egrep -o '.*\/[0-9]+/[0-9]+' | awk -F/ '{ if ($$2 != $$3 && $$3 != 0) print $$1; exit -1 }' | xargs -rt --max-lines=1 docker service update --force
-.PHONY: _restart-services-if-need
-
-restart-services-if-need: | _restart-services-if-need status-healthcheck ## update stack services if need
 .PHONY: restart-services-if-need
 
 status-ls: ## list stack services
