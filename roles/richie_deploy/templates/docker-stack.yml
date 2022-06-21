@@ -156,6 +156,9 @@ services:
       - target:    9200
         published: {{ richie_load_balancer_haproxy_elasticsearch_port }}
         protocol: tcp
+      - target:    6379
+        published: {{ richie_load_balancer_haproxy_redis_port }}
+        protocol: tcp
 {{ helper.service_configs(service='load_balancer_haproxy') }}
 {{ helper.service_secrets(service='load_balancer_haproxy') }}
     deploy:

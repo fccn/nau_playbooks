@@ -61,7 +61,7 @@ logs-{{ _service }}: _{{ _service }}-logs ## View last 500 lines of logs of the 
 # Specific
 #######################
 
-healthcheck: | {{ ['healthcheck-mysql-port-'] | product(openedx_mysql_containers.keys()|list) | map('join') | join(' ') }} healthcheck-elasticsearch healthcheck-load-balancer-haproxy-statistics-port healthcheck-load-balancer-haproxy-elasticsearch-port healthcheck-replicas ## Overall healthcheck
+healthcheck: | {{ ['healthcheck-mysql-port-'] | product(openedx_mysql_containers.keys()|list) | map('join') | join(' ') }} healthcheck-elasticsearch healthcheck-load-balancer-haproxy-statistics-port healthcheck-load-balancer-haproxy-elasticsearch-port healthcheck-load-balancer-haproxy-redis-port healthcheck-replicas ## Overall healthcheck
 	@echo "Everything looks: OK"
 .PHONY: healthcheck
 
@@ -128,3 +128,9 @@ healthcheck-load-balancer-haproxy-elasticsearch-port: ## check load balancer HAP
 	@nc -z 127.0.0.1 {{ openedx_load_balancer_haproxy_elasticsearch_port }}
 	@echo "OK"
 .PHONY: healthcheck-load-balancer-haproxy-elasticsearch-port
+
+healthcheck-load-balancer-haproxy-redis-port: ## check load balancer HAProxy redis port
+	@echo -n "Check load balancer HAProxy elasticsearch port: "
+	@nc -z 127.0.0.1 {{ openedx_load_balancer_haproxy_redis_port }}
+	@echo "OK"
+.PHONY: healthcheck-load-balancer-haproxy-redis-port

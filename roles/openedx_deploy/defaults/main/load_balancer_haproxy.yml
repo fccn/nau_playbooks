@@ -8,3 +8,4 @@ openedx_load_balancer_haproxy_statistics_port: 1936
 openedx_load_balancer_haproxy_cfc_config_name: mysql_haproxy_cfg
 
 openedx_load_balancer_haproxy_elasticsearch_port: 19200
+openedx_load_balancer_haproxy_redis_port: 6379
