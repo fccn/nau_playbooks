@@ -23,7 +23,17 @@ restart-services-if-need: | healthcheck ## update stack services if need
 	docker service ls --filter name={{ docker_deploy_stack_name }} --format {% raw %}'{{.Name}}/{{.Replicas}}'{% endraw %} | egrep -o '.*\/[0-9]+/[0-9]+' | awk -F/ '{ if ($$2 != $$3 && $$3 != 0) print $$1; exit -1 }' | xargs -rt --max-lines=1 docker service update --force
 .PHONY: restart-services-if-need
 
-ls: ## list stack services
+# Restart a service
+_%-restart:
+	docker service update --force {{ docker_deploy_stack_name }}_$*
+
+{% for _service in docker_deploy_services %}
+restart-{{ _service }}: _{{ _service }}-restart ## Restart the {{ _service }} service
+.PHONY: restart-{{ _service }}
+
+{% endfor %}
+
+ls: ## List all the {{ docker_deploy_stack_name }} stack services
 	docker service ls --filter name={{ docker_deploy_stack_name }}
 .PHONY: ls
 
@@ -61,7 +71,7 @@ logs-{{ _service }}: _{{ _service }}-logs ## View last 500 lines of logs of the 
 # Specific
 #######################
 
-healthcheck: | {{ ['healthcheck-mysql-port-'] | product(richie_mysql_containers.keys()|list) | map('join') | join(' ') }} healthcheck-elasticsearch healthcheck-load-balancer-haproxy-statistics-port healthcheck-load-balancer-haproxy-elasticsearch-port healthcheck-load-balancer-haproxy-redis-port healthcheck-replicas ## Overall healthcheck
+healthcheck: | healthcheck-replicas healthcheck-load-balancer-haproxy-statistics-port {{ ['healthcheck-mysql-port-'] | product(richie_mysql_containers.keys()|list) | map('join') | join(' ') }} healthcheck-elasticsearch healthcheck-load-balancer-haproxy-elasticsearch-port healthcheck-load-balancer-haproxy-redis-port {{ ['healthcheck-'] | product(richie_sites.keys()|list) | map('join') | product(['_app_job']) | map('join') | join(' ') }} ## Overall healthcheck
 	@echo "Everything looks: OK"
 .PHONY: healthcheck
 
@@ -152,3 +162,19 @@ healthcheck-load-balancer-haproxy-redis-port: ## check load balancer HAProxy red
 	@nc -z 127.0.0.1 {{ richie_load_balancer_haproxy_redis_port }}
 	@echo "OK"
 .PHONY: healthcheck-load-balancer-haproxy-redis-port
+
+########################
+# App job
+########################
+
+{% for _site, config in richie_sites.items() %}
+healthcheck-{{ _site }}_app_job: ## check if the migrate and bootstrap_elasticsearch django commands have finished with success for {{ _site }} site
+	@echo -n "Check {{ _site }}_app_job with django migrate and bootstrap elasticsearch commands: "
+    # check if last job run has finished with complete state
+	@docker service ps richie_nau_app_job --format {% raw %}'{{.CurrentState}}'{% endraw %} | head -n 1 | egrep -o "^Complete" | grep -q "Complete"
+    # check if last job run has finished without any error
+	@docker service ps richie_nau_app_job --format {% raw %}'{{.CurrentState}}|{{.Error}}'{% endraw %} | head -n 1 | egrep -o "\|.*" | grep -q "|"
+	@echo "OK"
+.PHONY: healthcheck-{{ _site }}_app_job
+
+{% endfor %}

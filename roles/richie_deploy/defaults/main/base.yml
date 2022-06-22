@@ -28,3 +28,4 @@ richie_docker_deploy_services_additional: "{{ (richie_elasticsearch_containers.k
 richie_docker_deploy_services_additional_list:
   #- nau_app
   - redis-sentinel
+  - nau_app_job
