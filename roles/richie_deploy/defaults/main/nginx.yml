@@ -18,7 +18,7 @@ richie_nau_nginx_https_ingress_port: 24443
 richie_nau_nginx_http_ingress_port: 24080
 richie_nau_nginx_replicas: 1
 
-richie_nginx_docker_deploy_templates:  
+richie_nginx_docker_deploy_templates:
   # one per site
   - src: "templates/sites/nau/nginx.conf"
     dest: "{{ richie_docker_deploy_base_folder }}/nau/nginx/nginx.conf"

@@ -95,7 +95,7 @@ richie_docker_mysql_replication_additional_users:
   - {
       db: "{{ richie_nau_MYSQL_DATABASE | default(None) }}",
       user: "{{ richie_nau_MYSQL_USER | default(None) }}",
-      pass: "{{ richie_nau_MYSQL_PASSWORD | default(None) }}",
+      pass: "{{ richie_nau_app_richie_MYSQL_PASSWORD | default(None) }}",
       host: "%"
     }
   - {

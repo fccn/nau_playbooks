@@ -8,67 +8,9 @@ services:
     # unique and avoid collisions in parallel builds.
     image: {{ richie_site_config.app_image }}
     environment:
-      DJANGO_STATICFILES_STORAGE: django.contrib.staticfiles.storage.ManifestStaticFilesStorage
-      DJANGO_SETTINGS_MODULE: {{ richie_site }}.settings
-      DJANGO_CONFIGURATION: Production
-      RICHIE_ES_INDICES_PREFIX: richie_{{ richie_site }}
-      # Python
-      PYTHONUNBUFFERED: 1
-      # Django
-      DJANGO_SECRET_KEY: {{ richie_site_config.app_richie_django_secret_key }}
-      DJANGO_ALLOWED_HOSTS: {{ richie_site_config.app_richie_site }}
-      # Elastic search
-      # RICHIE_ES_HOST: {{ richie_elasticsearch_containers.keys() | list | join(',') }}
-      RICHIE_ES_HOST: load_balancer_haproxy
-      #- discovery.type: single-node
-      # App database configuration
-      DB_ENGINE: django.db.backends.mysql
-      # use haproxy load balancer to connect to mysql db
-      DB_HOST: load_balancer_haproxy
-      DB_NAME: {{ richie_site_config.app_richie_MYSQL_DATABASE }}
-      DB_USER: {{ richie_site_config.app_richie_MYSQL_USER }}
-      DB_PASSWORD: {{ richie_site_config.app_richie_MYSQL_PASSWORD }}
-      DB_PORT: 3306
-      DB_OPTION_CHARSET: utf8mb4
-      # Social auth
-      # DJANGO_SOCIAL_AUTH_EDX_OAUTH2_KEY: social-id
-      # DJANGO_SOCIAL_AUTH_EDX_OAUTH2_SECRET: fakesecret
-      # LMS Backend
-      EDX_BACKEND: richie.apps.courses.lms.edx.EdXLMSBackend
-      EDX_JS_BACKEND: openedx-hawthorn
-      # the double $$ is required so docker don't try to interpolate
-      EDX_COURSE_REGEX: "^{{ richie_site_config.app_openedx_lms_url }}/courses/(?P<course_id>.*)/info$$"
-      EDX_JS_COURSE_REGEX: ^.*/courses/(.*)/info/?$$
-      EDX_BASE_URL: {{ richie_site_config.app_openedx_lms_url }}
-      DJANGO_RICHIE_COURSE_RUN_SYNC_SECRETS: {{ richie_site_config.app_richie_DJANGO_RICHIE_COURSE_RUN_SYNC_SECRETS }}
-      # Authentication Backend
-      AUTHENTICATION_BASE_URL: {{ richie_site_config.app_openedx_lms_url }}
-      AUTHENTICATION_BACKEND: openedx-hawthorn
-      # S3 AWS compatible Ceph bucket for django media
-      DJANGO_AWS_S3_ENDPOINT_URL: https://{{ nau_ceph_host }}
-      DJANGO_AWS_STORAGE_BUCKET_NAME: {{ richie_site_config.app_RICHIE_NAU_AWS_BUCKET_NAME }}
-      DJANGO_AWS_ACCESS_KEY_ID: {{ richie_site_config.app_richie_DJANGO_AWS_ACCESS_KEY_ID }}
-      DJANGO_AWS_SECRET_ACCESS_KEY: {{ richie_site_config.app_richie_DJANGO_AWS_SECRET_ACCESS_KEY }}
-      DJANGO_AWS_S3_CUSTOM_DOMAIN: {{ richie_site_config.app_richie_CDN_DOMAIN }}
-      # Redis cache configuration with a single node
-      CACHE_DEFAULT_BACKEND: base.cache.RedisCacheWithFallback
-      CACHE_DEFAULT_LOCATION: mymaster/redis-sentinel:26379,redis-sentinel:26379/0
-      CACHE_DEFAULT_OPTIONS: "{'CLIENT_CLASS': 'richie.apps.core.cache.SentinelClient'}"
-      # Django Social auth for authentication from edX using OAuth2
-      DJANGO_SOCIAL_ERROR_REVERSE_ID: login-error
-      # DJANGO_SOCIAL_AUTH_EDX_OAUTH2_ENDPOINT: {{ richie_site_config.app_openedx_lms_url }}/oauth2/
-      # DJANGO_SOCIAL_AUTH_EDX_OAUTH2_KEY: OeH2jowLbfzouuOKt1WaqKlIrSAIL7kjC85Itohj
-      # DJANGO_SOCIAL_AUTH_EDX_OAUTH2_SECRET: hrHyDucMJ77khrkh95YkPPMUVQnitqn1VIpZdRm2FNsw0qR86qQ1l32KNvjEbzHCzQNbKUELuHYnPy9xp5wecU50Z0fYEka6S6jzIC1skmJOeMrxLZi4pGZm0M1NXGMp
-      # DJANGO_SOCIAL_AUTH_EDX_OAUTH2_AUTHORIZATION_URL: {{ richie_site_config.app_openedx_lms_url }}/oauth2/authorize
-      # DJANGO_SOCIAL_AUTH_EDX_OAUTH2_ACCESS_TOKEN_URL: {{ richie_site_config.app_openedx_lms_url }}/oauth2/access_token
-      # DJANGO_SOCIAL_AUTH_EDX_OAUTH2_END_SESSION_URL: {{ richie_site_config.app_openedx_lms_url }}/oauth2/logout
-      # Google Analytics
-      WEB_ANALYTICS_PROVIDER: google_analytics
-      WEB_ANALYTICS_LOCATION: head
-      WEB_ANALYTICS_ID: UA-122313510-1
-      JIRA_WIDGET_KEY: c19e6a24-a1f6-4a84-aa46-89e82b94b809
-      FACEBOOK_PIXEL_ID: "1013367026191204"
-      # DJANGO_DEBUG: True
+{% for env_var_name, env_var_value in richie_site_config.app_environment_variables.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
     deploy:
       replicas: {{ richie_site_config.app_replicas }}
       mode: replicated
@@ -99,11 +41,47 @@ services:
     user: "{{ richie_site_config.app_docker_user | default('1000') }}"
     command: wait-for-it redis-sentinel:26379 -- wait-for-it load_balancer_haproxy:3306 -- /bin/bash -c "python manage.py migrate && gunicorn -c /usr/local/etc/gunicorn/app.py nau.wsgi:application"
     healthcheck:
-      test: curl --silent --fail --resolve {{ richie_site_config.app_richie_site }}:8000:127.0.0.1 'http://{{ richie_site_config.app_richie_site }}:8000'
+      test: curl --silent --fail --resolve {{ richie_site_config.app_environment_variables.DJANGO_ALLOWED_HOSTS }}:8000:127.0.0.1 'http://{{ richie_site_config.app_environment_variables.DJANGO_ALLOWED_HOSTS }}:8000'
       interval: 30s
       timeout: 10s
       retries: 30
       start_period: 10s
+{{ helper.service_configs(service=richie_site+'_app') }}
+{{ helper.service_secrets(service=richie_site+'_app') }}
+
+  # Job container that migrates db and reindex
+  {{ richie_site }}_app_job:
+    # We tag our images with the current commit sha1 in the CI to make them
+    # unique and avoid collisions in parallel builds.
+    image: {{ richie_site_config.app_image }}
+    # use an environment variables file so we can reuse them bellow
+    environment:
+{% for env_var_name, env_var_value in richie_site_config.app_environment_variables.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    deploy:
+      # should exist only 1 instance of this container
+      replicas: 1
+      mode: replicated # after docker 22.06.0 release change it to replicated-job
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          memory: 2.5G
+        reservations:
+          memory: 500M
+      placement:
+        max_replicas_per_node: 1
+    extra_hosts:
+      - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
+    user: "{{ richie_site_config.app_docker_user | default('1000') }}"
+    # wait for elasticsearch and mysql proxied on load balancer HAProxy
+    command: wait-for-it load_balancer_haproxy:9200 -- wait-for-it load_balancer_haproxy:3306 -- /bin/bash -c "python manage.py migrate && sleep 1m && python manage.py bootstrap_elasticsearch"
+    # apt update && apt install -y vim
+    # vim /usr/local/lib/python3.10/site-packages/richie/apps/search/__init__.py
+    # add line: 
+    # **getattr(settings, "RICHIE_ES_CLIENT_KWARGS", { 'timeout': 120 }),
+    # python manage.py bootstrap_elasticsearch
 {{ helper.service_configs(service=richie_site+'_app') }}
 {{ helper.service_secrets(service=richie_site+'_app') }}
 
@@ -186,7 +164,7 @@ services:
 {% for mysql_container_name, mysql_container in richie_mysql_containers.items() %}
 
   {{ mysql_container_name }}:
-    image: {{ richie_mysql_docker_image | default("docker.io/mysql:8.0.26") }}
+    image: {{ richie_mysql_docker_image | default("docker.io/mysql:8.0.29") }}
 {% if mysql_container.hostname is defined %}
     hostname: {{ mysql_container.hostname }}
 {% endif %}

@@ -6,7 +6,7 @@ richie_docker_deploy_stack_name: richie
 richie_docker_deploy_stack_template: templates/docker-stack.yml
 richie_docker_deploy_base_folder: /nau/ops/richie
 
-richie_docker_deploy_templates: "{{ richie_base_docker_deploy_templates + richie_mysql_docker_deploy_templates + richie_nginx_docker_deploy_templates }}"
+richie_docker_deploy_templates: "{{ richie_base_docker_deploy_templates + richie_app_docker_deploy_templates + richie_mysql_docker_deploy_templates + richie_nginx_docker_deploy_templates }}"
 # + richie_mongodb_docker_deploy_templates
 # ...
 
@@ -26,5 +26,5 @@ richie_docker_deploy_folders_additional: "{{ richie_mysql_docker_deploy_folders_
 richie_docker_deploy_services_additional: "{{ (richie_elasticsearch_containers.keys() | list) + (richie_redis_containers.keys() | list) + (richie_docker_deploy_services_additional_list) }} "
 
 richie_docker_deploy_services_additional_list:
-  - nau_app
+  #- nau_app
   - redis-sentinel

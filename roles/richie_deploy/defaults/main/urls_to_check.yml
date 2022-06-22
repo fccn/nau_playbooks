@@ -4,7 +4,7 @@
 #
 richie_nau_urls_to_check:
   - name: Marketing homepage in Portuguese
-    host: "{{ richie_sites.nau.app_richie_site }}"
+    host: "{{ richie_nau_app_richie_site }}"
     protocol: https
     port: "{{ richie_nau_nginx_https_ingress_port }}"
     content: homepage
@@ -14,7 +14,7 @@ richie_nau_urls_to_check:
     password: "{{ COMMON_HTPASSWD_PASS | default(None) }}"
     haproxy_protocol: true
   - name: Marketing homepage in English
-    host: "{{ richie_sites.nau.app_richie_site }}"
+    host: "{{ richie_nau_app_richie_site }}"
     protocol: https
     port: "{{ richie_nau_nginx_https_ingress_port }}"
     content: homepage
@@ -23,7 +23,7 @@ richie_nau_urls_to_check:
     password: "{{ COMMON_HTPASSWD_PASS | default(None) }}"
     haproxy_protocol: true
   - name: Marketing courses page in Portuguese
-    host: "{{ richie_sites.nau.app_richie_site }}"
+    host: "{{ richie_nau_app_richie_site }}"
     protocol: https
     port: "{{ richie_nau_nginx_https_ingress_port }}"
     page: pt/cursos/
@@ -31,7 +31,7 @@ richie_nau_urls_to_check:
     password: "{{ COMMON_HTPASSWD_PASS | default(None) }}"
     haproxy_protocol: true
   - name: Marketing courses page in English
-    host: "{{ richie_sites.nau.app_richie_site }}"
+    host: "{{ richie_nau_app_richie_site }}"
     protocol: https
     port: "{{ richie_nau_nginx_https_ingress_port }}"
     page: en/courses/
