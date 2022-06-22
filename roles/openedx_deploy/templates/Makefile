@@ -23,7 +23,17 @@ restart-services-if-need: | healthcheck ## update stack services if need
 	docker service ls --filter name={{ docker_deploy_stack_name }} --format {% raw %}'{{.Name}}/{{.Replicas}}'{% endraw %} | egrep -o '.*\/[0-9]+/[0-9]+' | awk -F/ '{ if ($$2 != $$3 && $$3 != 0) print $$1; exit -1 }' | xargs -rt --max-lines=1 docker service update --force
 .PHONY: restart-services-if-need
 
-ls: ## list stack services
+# Restart a service
+_%-restart:
+	docker service update --force {{ docker_deploy_stack_name }}_$*
+
+{% for _service in docker_deploy_services %}
+restart-{{ _service }}: _{{ _service }}-restart ## Restart the {{ _service }} service
+.PHONY: restart-{{ _service }}
+
+{% endfor %}
+
+ls: ## List all the {{ docker_deploy_stack_name }} stack services
 	docker service ls --filter name={{ docker_deploy_stack_name }}
 .PHONY: ls
 
@@ -33,7 +43,7 @@ ps: ## list the tasks in the stack
 
 healthcheck-replicas: ## healthcheck - check if it's running the requested service replicas
 	@echo -n 'Check docker stack replicas: '
-	@docker service ls --filter name={{ docker_deploy_stack_name }} --format {% raw %}'{{.Replicas}}'{% endraw %} | egrep -o '[0-9]+/[0-9]+' | awk -F/ '{ if ($$1 != $$2 && $$2 != 0) exit -1}'
+	@docker service ls --filter name={{ docker_deploy_stack_name }} --format {% raw %}'{{.Name}}|{{.Replicas}}'{% endraw %} | grep -v _job | egrep -o '[0-9]+/[0-9]+' | awk -F/ '{ if ($$1 != $$2 && $$2 != 0) exit -1}'
 	@echo "OK"
 .PHONY: healthcheck-replicas
 

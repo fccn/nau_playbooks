@@ -71,7 +71,15 @@ logs-{{ _service }}: _{{ _service }}-logs ## View last 500 lines of logs of the 
 # Specific
 #######################
 
-healthcheck: | healthcheck-replicas healthcheck-load-balancer-haproxy-statistics-port {{ ['healthcheck-mysql-port-'] | product(richie_mysql_containers.keys()|list) | map('join') | join(' ') }} healthcheck-elasticsearch healthcheck-load-balancer-haproxy-elasticsearch-port healthcheck-load-balancer-haproxy-redis-port {{ ['healthcheck-'] | product(richie_sites.keys()|list) | map('join') | product(['_app_job']) | map('join') | join(' ') }} ## Overall healthcheck
+healthcheck: ## Overall healthcheck
+healthcheck: \
+	healthcheck-replicas \
+	healthcheck-load-balancer-haproxy-statistics-port \
+	{{ ['healthcheck-mysql-port-'] | product(richie_mysql_containers.keys()|list) | map('join') | join(' \\\n\t') }} \
+	healthcheck-elasticsearch \
+	healthcheck-load-balancer-haproxy-elasticsearch-port \
+	healthcheck-load-balancer-haproxy-redis-port \
+	{{ ['healthcheck-'] | product(richie_sites.keys()|list) | map('join') | product(['_app_job']) | map('join') | join(' \\\n\t') }}
 	@echo "Everything looks: OK"
 .PHONY: healthcheck
 
