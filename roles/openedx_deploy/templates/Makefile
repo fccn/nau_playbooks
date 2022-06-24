@@ -166,7 +166,7 @@ stats-nginx-median_time_last_5m_in_secs: ## Median time in seconds of the last 5
 	@docker service logs --since 5m {{ docker_deploy_stack_name }}_nginx 2>&1 | \
 	awk -F' ' '{print $$15}' | \
 	grep -E "^[0-9\.]+$$" | \
-	sort -n | awk '{a[NR]=$0}END{print(NR%2==1)?a[int(NR/2)+1]:(a[NR/2]+a[NR/2+1])/2}'
+	sort -n | awk '{a[NR]=$$0}END{print(NR%2==1)?a[int(NR/2)+1]:(a[NR/2]+a[NR/2+1])/2}'
 .PHONY: stats-nginx-median_time_last_5m_in_secs
 
 stats-nginx-per_sec_last_5m: ## Number of requests per second on the last 5 minutes
