@@ -1,4 +1,11 @@
 ---
+- name: Deploy
+  include_role:
+    name: ansible-docker-deploy
+  when: docker_swarm_manager_to_deploy is defined and docker_swarm_manager_to_deploy == inventory_hostname and staticproxy_deploy_run | default(false)
+  tags:
+    - docker_deploy
+
 - name: Run healthcheck
   shell: make healthcheck
   args:
@@ -8,7 +15,15 @@
   register: result
   until: result.rc == 0
   # run it only when deploying or when on healthcheck mode.
-  when: not ansible_check_mode and ( (staticproxy_deploy | default(false)) or (healthcheck | default(false)) )
+  when: docker_swarm_manager_to_deploy is defined and docker_swarm_manager_to_deploy == inventory_hostname and not ansible_check_mode and (staticproxy_deploy_run | default(false)) or (healthcheck | default(false))
   changed_when: False
   tags: 
     - healthcheck
+
+- name: Check URLs
+  include_role:
+    name: nau_check_urls
+  when: docker_swarm_manager_to_deploy is defined and docker_swarm_manager_to_deploy == inventory_hostname and (staticproxy_deploy_run | default(false)) or (healthcheck | default(false))
+  tags:
+    - docker_deploy
+    - nau_check_urls

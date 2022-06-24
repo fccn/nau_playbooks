@@ -127,7 +127,7 @@
       import_role:
         name: staticproxy_deploy
       vars:
-        staticproxy_deploy: false
+        staticproxy_deploy_run: false
         healthcheck: true
       tags: nau_check_urls
 
@@ -135,7 +135,7 @@
       import_role:
         name: coursecertificate_deploy
       vars:
-        coursecertificate_deploy: false
+        coursecertificate_deploy_run: false
         healthcheck: true
       tags: nau_check_urls
 
@@ -147,15 +147,16 @@
         healthcheck: true
       tags: nau_check_urls
 
-    - name: Check docker stack replicas
-      shell: docker service ls --filter name={{ item }} --format {% raw %}'{{.Replicas}}'{% endraw %} | egrep -o '[0-9]+/[0-9]+' | awk -F/ '{ if ($1 != $2 && $2 != 0) exit -1}'
-      retries: "{{ docker_deploy_stack_verify_retries | default(3) }}"
-      delay: "{{ docker_deploy_stack_verify_delay | default(15) }}"
+    - name: Run healthcheck Makefile target on each stack
+      shell: make --no-print-directory -C {{ item }} healthcheck
+      retries: "{{ healthcheck_retries | default(3) }}"
+      delay: "{{ healthcheck_delay | default(15) }}"
       register: result
       until: result.rc == 0
       when: not ansible_check_mode
       changed_when: False
       with_items:
-        - openedx
-        - staticproxy
-        - coursecertificate
+        - /nau/ops/openedx
+        - /nau/ops/staticproxy
+        - /nau/ops/coursecertificate
+        - /nau/ops/richie
