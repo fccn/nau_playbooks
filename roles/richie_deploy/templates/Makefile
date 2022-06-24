@@ -191,26 +191,26 @@ healthcheck-{{ _site }}_app_job: ## check if the migrate and bootstrap_elasticse
 # Stats
 ########################
 {% for _site, config in richie_sites.items() %}
-stats-{{ _site }}_nginx-avg_time_last_5m_in_secs: ## Average time in seconds of the last 5 minutes requests
+stats-{{ _site }}_nginx-requests_avg_time_last_5m_in_secs: ## Average time in seconds of the last 5 minutes requests
 	@docker service logs --since 5m {{ docker_deploy_stack_name }}_{{ _site }}_nginx 2>&1 | \
 	awk -F' ' '{print $$15}' | \
 	grep -E "^[0-9\.]+$$" | \
 	awk '{ sum += $$1 } END { if (NR > 0) { print sum/NR } else { print 0 } }'
-.PHONY: stats-{{ _site }}_nginx-avg_time_last_5m_in_secs
+.PHONY: stats-{{ _site }}_nginx-requests_avg_time_last_5m_in_secs
 
-stats-{{ _site }}_nginx-max_time_last_5m_in_secs: ## Time in seconds of the slowest request in the last 5 minutes
+stats-{{ _site }}_nginx-requests_max_time_last_5m_in_secs: ## Time in seconds of the slowest request in the last 5 minutes
 	@docker service logs --since 5m {{ docker_deploy_stack_name }}_{{ _site }}_nginx 2>&1 | \
 	awk -F' ' '{print $$15}' | \
 	grep -E "^[0-9\.]+$$" | \
 	awk 'BEGIN {max = 0} {if ($$1>max) max=$$1} END {print max }'
-.PHONY: stats-{{ _site }}_nginx-max_time_last_5m_in_secs
+.PHONY: stats-{{ _site }}_nginx-requests_max_time_last_5m_in_secs
 
-stats-{{ _site }}_nginx-median_time_last_5m_in_secs: ## Median time in seconds of the last 5 minutes requests
+stats-{{ _site }}_nginx-requests_median_time_last_5m_in_secs: ## Median time in seconds of the last 5 minutes requests
 	@docker service logs --since 5m {{ docker_deploy_stack_name }}_{{ _site }}_nginx 2>&1 | \
 	awk -F' ' '{print $$15}' | \
 	grep -E "^[0-9\.]+$$" | \
 	sort -n | awk '{a[NR]=$$0}END{print(NR%2==1)?a[int(NR/2)+1]:(a[NR/2]+a[NR/2+1])/2}'
-.PHONY: stats-{{ _site }}_nginx-median_time_last_5m_in_secs
+.PHONY: stats-{{ _site }}_nginx-requests_median_time_last_5m_in_secs
 
 stats-{{ _site }}_nginx-requests_per_sec_last_5m: ## Number of requests per second on the last 5 minutes
 	@docker service logs --since 5m {{ docker_deploy_stack_name }}_{{ _site }}_nginx 2>&1 | \
