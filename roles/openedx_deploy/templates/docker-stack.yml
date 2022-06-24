@@ -4,6 +4,11 @@ version: "3.8"
 
 services:
 
+  # TODO: add container "nginx"
+  # nginx
+
+  # TODO: add "mongo" cluster
+
   redis-sentinel:
     image: {{ openedx_redis_sentinel_docker_image }}
     environment:

@@ -9,7 +9,7 @@ richie_nau_urls_to_check:
     port: "{{ richie_nau_nginx_https_ingress_port }}"
     content: homepage
     page: pt/
-    retries: 1 # first with bigger retries because server could be warming up
+    retries: 7 # first with bigger retries because server could be warming up
     user: "{{ COMMON_HTPASSWD_USER | default(None) }}"
     password: "{{ COMMON_HTPASSWD_PASS | default(None) }}"
     haproxy_protocol: true
