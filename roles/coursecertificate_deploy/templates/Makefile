@@ -67,6 +67,13 @@ logs-{{ _service }}: _{{ _service }}-logs ## View last 500 lines of logs of the 
 
 {% endfor %}
 
+# Silent mode other targets.
+# To run `healthcheck` target on silient mode, run it like `make silent-healthcheck`.
+# It will print "OK" if everything is fine.
+silent-%:
+	@$(MAKE) $* > /dev/null && echo "OK"
+
+
 #######################
 # Specific
 #######################

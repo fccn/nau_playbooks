@@ -156,7 +156,7 @@
       when: not ansible_check_mode
       changed_when: False
       with_items:
-        - /nau/ops/openedx
-        - /nau/ops/staticproxy
-        - /nau/ops/coursecertificate
-        - /nau/ops/richie
+        - "{{ openedx_docker_deploy_base_folder }}"
+        - "{{ staticproxy_docker_deploy_base_folder }}"
+        - "{{ coursecertificate_docker_deploy_base_folder }}"
+        - "{{ richie_docker_deploy_base_folder }}"

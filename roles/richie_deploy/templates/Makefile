@@ -67,6 +67,13 @@ logs-{{ _service }}: _{{ _service }}-logs ## View last 500 lines of logs of the 
 
 {% endfor %}
 
+# Silent mode other targets.
+# To run `healthcheck` target on silient mode, run it like `make silent-healthcheck`.
+# It will print "OK" if everything is fine.
+silent-%:
+	@$(MAKE) $* > /dev/null && echo "OK"
+
+
 #######################
 # Specific
 #######################
@@ -135,8 +142,8 @@ healthcheck-mysql-port-{{ container }}: ## check mysql port for {{ container }}
 {% for container, config in richie_elasticsearch_containers.items() %}
 healthcheck-{{ container }}: ## Run elasticsearch healthcheck cluster on {{ richie_docker_deploy_stack_name }}_{{ container }} container
 	@echo -n "Check Elasticsearch {{ container }}: "
-	@test $$(docker exec -u root -it $$(docker ps -q -f name={{ richie_docker_deploy_stack_name }}_{{ container }}) curl -X GET '127.0.0.1:9200/_cluster/health?pretty' | grep 'number_of_nodes' | egrep -o '[0-9]+') -eq {{ richie_elasticsearch_containers.keys() | length }}
-	@test $$(docker exec -u root -it $$(docker ps -q -f name={{ richie_docker_deploy_stack_name }}_{{ container }}) curl -X GET '127.0.0.1:9200/_cluster/health?level=shards&pretty' | egrep -o "status.*\," | sort | uniq | egrep -o "\"[^\ ]+\"") = "\"green\""
+	@test $$(docker exec -u root $$(docker ps -q -f name={{ richie_docker_deploy_stack_name }}_{{ container }}) curl --silent -X GET '127.0.0.1:9200/_cluster/health?pretty' | grep 'number_of_nodes' | egrep -o '[0-9]+') -eq {{ richie_elasticsearch_containers.keys() | length }}
+	@test $$(docker exec -u root $$(docker ps -q -f name={{ richie_docker_deploy_stack_name }}_{{ container }}) curl --silent -X GET '127.0.0.1:9200/_cluster/health?level=shards&pretty' | egrep -o "status.*\," | sort | uniq | egrep -o "\"[^\ ]+\"") = "\"green\""
 	@echo "OK"
 .PHONY: healthcheck-{{ container }}
 
@@ -144,8 +151,8 @@ healthcheck-{{ container }}: ## Run elasticsearch healthcheck cluster on {{ rich
 
 healthcheck-elasticsearch: ## Run elastic search healthcheck cluster using load balancer
 	@echo -n "Check Elasticsearch cluster: "
-	@test $$(curl -s 'http://localhost:{{ richie_load_balancer_haproxy_elasticsearch_port }}/_cluster/health?pretty' | grep 'number_of_nodes' | egrep -o '[0-9]+') -eq {{ richie_elasticsearch_containers.keys() | length }}
-	@test $$(curl -s 'http://localhost:{{ richie_load_balancer_haproxy_elasticsearch_port }}/_cluster/health?level=shards&pretty' | egrep -o "status.*\," | sort | uniq | egrep -o "\"[^\ ]+\"") = "\"green\""
+	@test $$(curl --silent 'http://localhost:{{ richie_load_balancer_haproxy_elasticsearch_port }}/_cluster/health?pretty' | grep 'number_of_nodes' | egrep -o '[0-9]+') -eq {{ richie_elasticsearch_containers.keys() | length }}
+	@test $$(curl --silent 'http://localhost:{{ richie_load_balancer_haproxy_elasticsearch_port }}/_cluster/health?level=shards&pretty' | egrep -o "status.*\," | sort | uniq | egrep -o "\"[^\ ]+\"") = "\"green\""
 	@echo "OK"
 .PHONY: healthcheck-elasticsearch
 
