@@ -1,10 +1,16 @@
 ---
 
-- name: Make sure we can use htpasswd module
-  apt: 
+- name: Make sure we can use htpasswd module for python2
+  apt:
     pkg: python-passlib
     state: present
-  when: basic_authentication_users is defined and ( basic_authentication_users | length > 0 )
+  when: basic_authentication_users is defined and ( basic_authentication_users | length > 0 ) and ( ansible_distribution == 'Ubuntu' and ansible_distribution_major_version <= '20' )
+
+- name: Make sure we can use htpasswd module for python3
+  apt:
+    pkg: python3-passlib
+    state: present
+  when: basic_authentication_users is defined and ( basic_authentication_users | length > 0 ) and ( ansible_distribution == 'Ubuntu' and ansible_distribution_major_version >= '20' )
 
 - name: Create folders
   file:

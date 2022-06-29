@@ -18,8 +18,8 @@
   include_role:
     name: basic-authentication
   vars:
-    basic_authentication_users: "{{ item.nginx_basic_authentication_users }}"
-  when: docker_swarm_manager_to_deploy is defined and docker_swarm_manager_to_deploy == inventory_hostname and richie_deploy_run | default(false) and item.nginx_basic_authentication_users is defined
+    basic_authentication_users: "{{ item.value.nginx_basic_authentication_users }}"
+  when: docker_swarm_manager_to_deploy is defined and docker_swarm_manager_to_deploy == inventory_hostname and richie_deploy_run | default(false) and item.value.nginx_basic_authentication_users is defined
   with_dict: "{{ richie_sites }}"
   tags:
     - docker_deploy
