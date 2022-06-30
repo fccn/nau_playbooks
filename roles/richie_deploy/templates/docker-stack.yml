@@ -137,8 +137,9 @@ services:
       - target:    6379
         published: {{ richie_load_balancer_haproxy_redis_port }}
         protocol: tcp
-{{ helper.service_configs(service='load_balancer_haproxy') }}
-{{ helper.service_secrets(service='load_balancer_haproxy') }}
+    environment:
+      # Use custom timezone
+      TZ: {{ openedx_timezone | default("Europe/Lisbon") }}
     deploy:
       replicas: {{ richie_load_balancer_haproxy_deploy_replicas_count | default(2) }}
       placement:
@@ -160,6 +161,8 @@ services:
       retries: 10
       interval: 10s
       timeout: 10s
+{{ helper.service_configs(service='load_balancer_haproxy') }}
+{{ helper.service_secrets(service='load_balancer_haproxy') }}
 
 {% for mysql_container_name, mysql_container in richie_mysql_containers.items() %}
 
@@ -169,6 +172,8 @@ services:
     hostname: {{ mysql_container.hostname }}
 {% endif %}
     environment:
+      # Use custom timezone
+      TZ: {{ openedx_timezone | default("Europe/Lisbon") }}
       MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql-root-password
     # use legacy authentication plugin to fix: 
       # django.db.utils.OperationalError: (2059, "Authentication plugin 'caching_sha2_password' 
@@ -211,6 +216,8 @@ services:
   {{ elasticsearch_container_name }}:
     image: "docker.elastic.co/elasticsearch/elasticsearch:7.17.4"
     environment:
+      # Use custom timezone
+      TZ: {{ openedx_timezone | default("Europe/Lisbon") }}
       # The elastic search node name has the same name of the container
       node.name: {{ elasticsearch_container_name }}
       # Disable the memory swapping
@@ -269,6 +276,8 @@ services:
   redis-sentinel:
     image: {{ richie_redis_sentinel_docker_image }}
     environment:
+      # Use custom timezone
+      TZ: {{ openedx_timezone | default("Europe/Lisbon") }}
       REDIS_MASTER_HOST: {{ richie_docker_deploy_stack_name }}_{{ richie_redis_primary_container }}
       # Accept host names
       REDIS_SENTINEL_RESOLVE_HOSTNAMES: "yes"
@@ -294,6 +303,8 @@ services:
   {{ redis_container_name }}:
     image: {{ richie_redis_docker_image }}
     environment:
+      # Use custom timezone
+      TZ: {{ openedx_timezone | default("Europe/Lisbon") }}
       ALLOW_EMPTY_PASSWORD: "yes"
       REDIS_MASTER_HOST: {{ richie_docker_deploy_stack_name }}_{{ richie_redis_primary_container }}
       REDIS_REPLICATION_MODE: {{ redis_container.mode }}

@@ -30,6 +30,10 @@ richie_app_docker_deploy_templates:
 
 # Environment variables to the nau_app container and its job
 richie_nau_app_environment_variables:
+
+  # Use custom timezone
+  TZ: "{{ openedx_timezone | default('Europe/Lisbon') }}"
+
   DJANGO_STATICFILES_STORAGE: django.contrib.staticfiles.storage.ManifestStaticFilesStorage
   DJANGO_SETTINGS_MODULE: nau.settings
   DJANGO_CONFIGURATION: Production

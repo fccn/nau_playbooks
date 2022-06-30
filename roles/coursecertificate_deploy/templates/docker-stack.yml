@@ -27,6 +27,9 @@ services:
         parallelism: 1
         failure_action: rollback
         order: start-first
+    environment:
+      # Use custom timezone
+      TZ: {{ coursecertificate_timezone | default("Europe/Lisbon") }}
     healthcheck:
       test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/5000", "||", "exit", "1"]
       start_period: 3s
@@ -48,6 +51,9 @@ services:
         mode: ingress
 {{ helper.service_configs(service='nginx') }}
 {{ helper.service_secrets(service='nginx') }}
+    environment:
+      # Use custom timezone
+      TZ: {{ coursecertificate_timezone | default("Europe/Lisbon") }}
     extra_hosts:
       - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
     deploy:

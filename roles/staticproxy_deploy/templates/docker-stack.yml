@@ -36,6 +36,9 @@ services:
           - {{ key }} == {{ value }}
 {% endfor %}
 {% endif %}
+    environment:
+      # Use custom timezone
+      TZ: {{ staticproxy_timezone | default("Europe/Lisbon") }}
     extra_hosts:
       - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
     healthcheck:
