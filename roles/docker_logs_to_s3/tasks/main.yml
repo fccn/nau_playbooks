@@ -1,0 +1,14 @@
+---
+
+- name: Install s3cmd
+  apt:
+    name: s3cmd
+    state: present
+  tags: docker_logs_to_s3
+
+- name: Copy send-docker-logs-to-s3.sh script
+  template:
+    src: send-docker-logs-to-s3.sh
+    dest: /nau/ops/bin/send-docker-logs-to-s3.sh
+    mode: 0755
+  tags: docker_logs_to_s3
