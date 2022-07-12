@@ -13,11 +13,7 @@ services:
 {% endfor %}
     deploy:
       replicas: {{ richie_site_config.app_replicas }}
-      mode: replicated
-      restart_policy:
-        condition: on-failure
       update_config:
-        # start 1 container a time, so migrations run only on the new container
         parallelism: 1
         failure_action: rollback
         order: start-first
@@ -98,9 +94,6 @@ services:
         mode: ingress
     deploy:
       replicas: {{ richie_site_config.nginx_replicas }}
-      mode: replicated
-      restart_policy:
-        condition: on-failure
       resources:
         limits:
           memory: 128M
@@ -144,8 +137,6 @@ services:
       replicas: {{ richie_load_balancer_haproxy_deploy_replicas_count | default(2) }}
       placement:
         max_replicas_per_node: 1
-      restart_policy:
-        condition: on-failure
       resources:
         limits:
           memory: 300M
@@ -197,9 +188,6 @@ services:
         mode: ingress
     deploy:
       replicas: 1
-      mode: replicated
-      restart_policy:
-        condition: on-failure
       resources:
         limits:
           memory: 4G
@@ -251,9 +239,6 @@ services:
         hard: -1
     deploy:
       replicas: 1
-      mode: replicated
-      restart_policy:
-        condition: on-failure
       resources:
         limits:
           memory: 1.5G
@@ -292,9 +277,6 @@ services:
       # Use DNS Round Robin to bypass the docker routing mesh and to allow HAProxy parse the DNS
       # entries to discover all the redis sentinel instance replicas.
       endpoint_mode: dnsrr
-      mode: replicated
-      restart_policy:
-        condition: on-failure
       placement:
         max_replicas_per_node: {{ ( richie_redis_sentinel_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
 
@@ -317,9 +299,6 @@ services:
       retries: 30
     deploy:
       replicas: 1
-      mode: replicated
-      restart_policy:
-        condition: on-failure
       resources:
         limits:
           memory: 4G
