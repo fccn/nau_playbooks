@@ -216,7 +216,7 @@ services:
       network.host: "0.0.0.0"
       #discovery.seed_hosts: {{ richie_elasticsearch_containers.keys() | list | difference([elasticsearch_container_name]) | list | join(',') }}
       discovery.seed_hosts: {{ richie_elasticsearch_containers.keys() | list | join(',') }}
-{% if ( richie_elasticsearch_cluster_initialization | default(false) ) %}
+{% if ( richie_elasticsearch_initialization | default(false) ) %}
       # Only define on first cluster configuration
       cluster.initial_master_nodes: {{ richie_elasticsearch_containers.keys() | first }}
 {% endif %}

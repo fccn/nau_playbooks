@@ -72,7 +72,7 @@
 - name: Initialize Richie MySQL databases replication
   include_role:
     name: docker_mysql_replication
-  when: richie_mysql_replication_initialize | default(False)
+  when: richie_mysql_initialization | default(False)
   vars:
     # The replication mysql files are templated using the ansible-docker-deploy role instead of docker_mysql_replication role
     docker_mysql_replication_template: false
