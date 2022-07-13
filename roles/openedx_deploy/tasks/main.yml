@@ -35,6 +35,7 @@
 - name: Install MySQL client for health check
   package:
     name: mysql-client
+  when: openedx_deploy_run | default(false)
   tags:
     - docker_deploy
 
