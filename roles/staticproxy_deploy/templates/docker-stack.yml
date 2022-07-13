@@ -16,9 +16,6 @@ services:
         mode: ingress
     deploy:
       replicas: {{ staticproxy_nginx_replicas }}
-      mode: replicated
-      restart_policy:
-        condition: on-failure
       update_config:
         parallelism: 1
         failure_action: rollback
