@@ -6,7 +6,7 @@
   # ansible by default run parallel for every server, but we change this to run on synchronous mode.
   serial: "{{ serial_number | default(1) }}"
   # do not stop on the first error
-  max_fail_percentage: 100
+  max_fail_percentage: "{{ max_fail_percentage | default(0) }}"
   become: True
   gather_facts: False
   roles: 
