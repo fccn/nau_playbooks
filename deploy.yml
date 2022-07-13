@@ -372,6 +372,8 @@
   tasks:
     - import_role:
         name: snmpd
+    - import_role:
+        name: snmpd_docker
     - name: configures the swarm
       import_role:
         name: docker_swarm

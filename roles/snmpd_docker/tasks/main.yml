@@ -1,0 +1,9 @@
+---
+# allow snmpd to execute docker commands, like searching on logs
+- name: Adding existing user 'Debian-snmp' to group docker
+  user:
+    name: Debian-snmp
+    groups: docker
+    append: yes
+  notify: restart snmpd
+  when: ansible_distribution_version is version('20.04', '>=')
