@@ -6,6 +6,11 @@
     state: present
   tags: docker_logs_to_s3
 
+- name: Create folder for the script
+  file:
+    state: directory
+    name: /nau/ops/bin/
+
 - name: Copy send-docker-logs-to-s3.sh script
   template:
     src: send-docker-logs-to-s3.sh
