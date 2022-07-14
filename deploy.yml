@@ -45,7 +45,7 @@
 #   To mark a server back to normal state, run the same command without the --limit.
 #
 #   To update the OpenedX MySQL database grants run:
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml -e openedx_mysql_replication_initialize=true --limit nau_docker_swarm_servers --tags docker_mysql_replication_additional_users
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml -e openedx_mysql_initialization=true --limit nau_docker_swarm_servers --tags docker_mysql_replication_additional_users
 #
 #   To deploy only specific servers run:
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit richie_servers
