@@ -14,36 +14,13 @@
     nau_db_exporter_base_directory: /tmp/nau-database-exporter-{{ _nau_db_exporter_version }}
   
   tasks:
-    - name: Create folder
-      file:
-        path: "{{ nau_db_exporter_base_directory }}"
-        state: directory
-
-    - name: Updates the repository code
-      git:
-        repo: "https://github.com/fccn/nau-database-exporter.git"
-        dest: "{{ nau_db_exporter_base_directory }}"
-        version: "{{ _nau_db_exporter_version }}"
-        accept_hostkey: yes
-        force: true 
-
-    - name: Build docker image using on {{ _nau_db_exporter_version }} version
-      shell: docker build -t nau-database-exporter:{{ _nau_db_exporter_version }} .
-      args:
-        chdir: "{{ nau_db_exporter_base_directory }}"
-
-    - name: Generates a configuration file
-      template: 
-        src: "{{ COMMON_PATH_CUSTOM_FILES }}/nau-database-exporter/config.ini.j2"
-        dest: "{{ nau_db_exporter_base_directory }}/config.ini"
-
     - name: Runs the python the report script on a docker container
       shell: |
         docker run -t --rm \
         --name nau-database-exporter-{{ _nau_db_exporter_version }} \
         --mount type=bind,source={{ nau_db_exporter_base_directory }}/config.ini,target=/usr/src/app/config.ini \
         -v {{ nau_db_exporter_base_directory }}/output:/usr/src/app/output \
-        nau-database-exporter:{{ _nau_db_exporter_version }} \
+        nauedu/nau-database-exporter:{{ _nau_db_exporter_version }} \
         python {{ nau_db_exporter_report_script | default('report.py') }} {{ nau_db_exporter_extra_params }}
       args:
         chdir: "{{ nau_db_exporter_base_directory }}"
