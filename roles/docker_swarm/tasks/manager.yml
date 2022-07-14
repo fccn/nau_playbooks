@@ -3,6 +3,8 @@
   docker_swarm:
     state: present
     advertise_addr: "{{ docker_swarm_node_advertise_addr }}"
+    # if true, force creating a new Swarm, even if already part of one
+    #force: "{{ docker_swarm_force_init | default(omit) }}"
   register: result_output
   when: inventory_hostname == docker_swarm_manager[0]
   tags:

@@ -353,7 +353,7 @@
 - name: Install Docker and create folders used as volumes
   hosts: nau_docker_swarm_managers,nau_docker_swarm_workers
   # If you want to upgrade docker, use the next extra var so 1 node is upgraded a time
-  serial: "{{ serial_number | default(1) }}"
+  serial: "{{ serial_number | default(omit) }}"
   become: True
   gather_facts: True
   tasks:
@@ -397,7 +397,6 @@
 
 - name: Configure other docker swarm nodes
   hosts: nau_docker_swarm_managers,nau_docker_swarm_workers
-  # serial: "{{ serial_number | default(1) }}"
   become: True
   gather_facts: True
   tasks:
