@@ -86,6 +86,12 @@ healthcheck: \
 	healthcheck-elasticsearch \
 	healthcheck-load-balancer-haproxy-elasticsearch-port \
 	healthcheck-load-balancer-haproxy-redis-port \
+	healthcheck-mysql-primary \
+{% for container, config in richie_mysql_containers.items() %}
+{% if not config.primary %}
+	healthcheck-mysql-replica-{{ container }} \
+{% endif %}
+{% endfor %}
 	{{ ['healthcheck-'] | product(richie_sites.keys()|list) | map('join') | product(['_app_job']) | map('join') | join(' \\\n\t') }}
 	@echo "Everything looks: OK"
 .PHONY: healthcheck
@@ -95,18 +101,20 @@ healthcheck: \
 # MySQL 
 #######################
 
-status-mysql-primary: ## show primary master status on mysql_1 docker container
-	@echo 'show master status \G' | MYSQL_PWD="{{ openark_orchestrator_client_password }}" mysql -u {{ openark_orchestrator_client_user }} --host 127.0.0.1 --port {{ richie_mysql_primary.ingress_port }}
+healthcheck-mysql-primary: ## show primary master status on mysql_1 docker container
+	@echo -n "Check mysql master status: "
+	@echo 'show master status \G' | MYSQL_PWD="{{ openark_orchestrator_client_password }}" mysql -u {{ openark_orchestrator_client_user }} --host 127.0.0.1 --port {{ richie_mysql_primary.ingress_port }} > /dev/null
 	@echo "OK"
-.PHONY: status-mysql-primary
+.PHONY: healthcheck-mysql-primary
 
 {% for container, config in richie_mysql_containers.items() %}
 {% if not config.primary %}
-status-mysql-replica-{{ container }}: ## show replica slave status on {{ container }} docker container
+healthcheck-mysql-replica-{{ container }}: ## show replica slave status on {{ container }} docker container
+	@echo -n "Check mysql replica {{ container }} seconds behind master is lower than 60 seconds: "
     # Ok if seconds behind master is lower than 60 seconds
 	@echo 'show slave status \G' | MYSQL_PWD="{{ openark_orchestrator_client_password }}" mysql -u {{ openark_orchestrator_client_user }} --host 127.0.0.1 --port {{ config.ingress_port }} | egrep "Seconds_Behind_Master: [0-5][0-9]?" > /dev/null
 	@echo "OK"
-.PHONY: status-mysql-replica-{{ container }}
+.PHONY: healthcheck-mysql-replica-{{ container }}
 
 {% endif %}
 {% endfor %}
