@@ -23,7 +23,7 @@ services:
         reservations:
           memory: 500M
       placement:
-        max_replicas_per_node: 1
+        max_replicas_per_node: {{ ( ( richie_site_config.app_replicas ) / ( docker_swarm_cluster_group_length | int ) + 1 ) | round(0, 'ceil') | int }}
     # volumes:
       # Used to increase log verbosity of the gunicorn and to add a Gunicorn worker abort handler
       # - ./app.py:/usr/local/etc/gunicorn/app.py
