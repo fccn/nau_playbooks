@@ -49,7 +49,7 @@
   until: |
     shell_out is not failed and 
     ( config.content in shell_out.stdout if config.content is defined else True ) and 
-    ( shell_out.stdout | regex_findall('^< HTTP/[0-9].[0-9] 200 OK', multiline=True) )
+    ( shell_out.stdout | regex_findall('^< HTTP/[0-9](\.[0-9])? ' + ( config.status_code | default(200) | string ), multiline=True) )
   retries: "{{ config.retries | default(2) }}"
   delay: 30
   check_mode: no
