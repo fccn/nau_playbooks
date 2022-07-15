@@ -53,6 +53,7 @@
   retries: "{{ config.retries | default(2) }}"
   delay: 30
   check_mode: no
+  changed_when: false
   tags: 
     - nau_check_urls
     - always
