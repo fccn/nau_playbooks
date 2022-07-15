@@ -78,7 +78,20 @@ silent-%:
 # Specific
 #######################
 
-healthcheck: | {{ ['healthcheck-mysql-port-'] | product(openedx_mysql_containers.keys()|list) | map('join') | join(' ') }} healthcheck-elasticsearch healthcheck-load-balancer-haproxy-statistics-port healthcheck-load-balancer-haproxy-elasticsearch-port healthcheck-load-balancer-haproxy-redis-port healthcheck-replicas ## Overall healthcheck
+healthcheck: ## Overall healthcheck
+healthcheck: \
+	healthcheck-replicas \
+	{{ ['healthcheck-mysql-port-'] | product(openedx_mysql_containers.keys()|list) | map('join') | join(' ') }} \
+	healthcheck-mysql-primary \
+{% for container, config in richie_mysql_containers.items() %}
+{% if not config.primary %}
+	healthcheck-mysql-replica-{{ container }} \
+{% endif %}
+{% endfor %}
+	healthcheck-elasticsearch \
+	healthcheck-load-balancer-haproxy-statistics-port \
+	healthcheck-load-balancer-haproxy-elasticsearch-port \
+	healthcheck-load-balancer-haproxy-redis-port
 	@echo "Everything looks: OK"
 .PHONY: healthcheck
 
@@ -86,18 +99,19 @@ healthcheck: | {{ ['healthcheck-mysql-port-'] | product(openedx_mysql_containers
 # MySQL
 #######################
 
-status-mysql-primary: ## show primary master status on mysql_1 docker container
-	@echo 'show master status \G' | MYSQL_PWD="{{ openark_orchestrator_client_password }}" mysql -u {{ openark_orchestrator_client_user }} --host 127.0.0.1 --port {{ openedx_mysql_primary.ingress_port }}
+healthcheck-mysql-primary: ## show primary master status on mysql_1 docker container
+	@echo -n "Check mysql master status: "
+	@echo 'show master status \G' | MYSQL_PWD="{{ openark_orchestrator_client_password }}" mysql -u {{ openark_orchestrator_client_user }} --host 127.0.0.1 --port {{ openedx_mysql_primary.ingress_port }} > /dev/null
 	@echo "OK"
-.PHONY: status-mysql-primary
+.PHONY: healthcheck-mysql-primary
 
 {% for container, config in openedx_mysql_containers.items() %}
 {% if not config.primary %}
-status-mysql-replica-{{ container }}: ## show replica slave status on {{ container }} docker container
-    # Ok if seconds behind master is lower than 60 seconds
+healthcheck-mysql-replica-{{ container }}: ## show replica slave status on {{ container }} docker container
+	@echo -n "Check mysql replica {{ container }} seconds behind master is lower than 60 seconds: "
 	@echo 'show slave status \G' | MYSQL_PWD="{{ openark_orchestrator_client_password }}" mysql -u {{ openark_orchestrator_client_user }} --host 127.0.0.1 --port {{ config.ingress_port }} | egrep "Seconds_Behind_Master: [0-5][0-9]?" > /dev/null
 	@echo "OK"
-.PHONY: status-mysql-replica-{{ container }}
+.PHONY: healthcheck-mysql-replica-{{ container }}
 
 {% endif %}
 {% endfor %}
@@ -124,7 +138,7 @@ healthcheck-{{ container }}: ## Run elasticsearch healthcheck cluster on {{ open
 {% endfor %}
 
 healthcheck-elasticsearch: ## Run elastic search healthcheck cluster using load balancer
-	@echo -n "Check Elasticsearch cluster: "
+	@echo -n "Check elasticsearch cluster: "
 	@test $$(curl --silent 'http://localhost:{{ openedx_load_balancer_haproxy_elasticsearch_port }}/_cluster/health?pretty' | grep 'number_of_nodes' | egrep -o '[0-9]+') -eq {{ openedx_elasticsearch_containers.keys() | length }}
 	@test $$(curl --silent 'http://localhost:{{ openedx_load_balancer_haproxy_elasticsearch_port }}/_cluster/health?level=shards&pretty' | egrep -o "status.*\," | sort | uniq | egrep -o "\"[^\ ]+\"") = "\"green\""
 	@echo "OK"
