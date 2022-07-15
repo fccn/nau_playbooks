@@ -56,7 +56,7 @@ coursecertificate_nginx_enable_s3_maintenance: "{{ NGINX_EDXAPP_ENABLE_S3_MAINTE
 coursecertificate_nginx_enable_s3_maintenance_file: "{{ NGINX_EDXAPP_S3_MAINTENANCE_FILE }}"
 coursecertificate_nginx_enable_s3_maintenance_host: "{{ NGINX_EDXAPP_S3_MAINTENANCE_HOST }}"
 coursecertificate_nginx_enable_s3_maintenance_url: "{{ NGINX_EDXAPP_S3_MAINTENANCE_URL }}"
-coursecertificate_nginx_proxy_protocol: false
+coursecertificate_nginx_proxy_protocol: true
 coursecertificate_nginx_http2: true
 
 # app configuration
@@ -72,8 +72,10 @@ coursecertificate_nau_urls_to_check:
     content: User-agent
     retries: 5
     port: "{{ coursecertificate_nginx_https_ingress_port }}"
+    haproxy_protocol: true
   - name: coursecertificate an image
     host: "{{ coursecertificate_server_name }}"
     protocol: https
     page: static/images/digital_sign/digital_signature_en.png
     port: "{{ coursecertificate_nginx_https_ingress_port }}"
+    haproxy_protocol: true
