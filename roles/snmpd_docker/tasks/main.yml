@@ -7,3 +7,6 @@
     append: yes
   notify: restart snmpd
   when: ansible_distribution_version is version('20.04', '>=')
+  tags:
+    - snmpd
+    - snmpd_docker
