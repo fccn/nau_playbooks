@@ -158,7 +158,7 @@ healthcheck-{{ container }}: ## Run elasticsearch healthcheck cluster on {{ rich
 {% endfor %}
 
 healthcheck-elasticsearch: ## Run elastic search healthcheck cluster using load balancer
-	@echo -n "Check Elasticsearch cluster: "
+	@echo -n "Check elasticsearch cluster: "
 	@test $$(curl --silent 'http://localhost:{{ richie_load_balancer_haproxy_elasticsearch_port }}/_cluster/health?pretty' | grep 'number_of_nodes' | egrep -o '[0-9]+') -eq {{ richie_elasticsearch_containers.keys() | length }}
 	@test $$(curl --silent 'http://localhost:{{ richie_load_balancer_haproxy_elasticsearch_port }}/_cluster/health?level=shards&pretty' | egrep -o "status.*\," | sort | uniq | egrep -o "\"[^\ ]+\"") = "\"green\""
 	@echo "OK"
