@@ -14,16 +14,12 @@ services:
     deploy:
       replicas: {{ richie_site_config.app_replicas }}
       update_config:
-        parallelism: 1
-        failure_action: rollback
         order: start-first
       resources:
         limits:
-          memory: 2.5G
-        reservations:
-          memory: 500M
+          memory: 600M
       placement:
-        max_replicas_per_node: {{ ( ( richie_site_config.app_replicas ) / ( docker_swarm_cluster_group_length | int ) + 1 ) | round(0, 'ceil') | int }}
+        max_replicas_per_node: {{ ( richie_site_config.app_replicas ) / ( docker_swarm_cluster_group_length | int ) | round(0, 'ceil') | int }}
     # volumes:
       # Used to increase log verbosity of the gunicorn and to add a Gunicorn worker abort handler
       # - ./app.py:/usr/local/etc/gunicorn/app.py
@@ -94,6 +90,8 @@ services:
         mode: ingress
     deploy:
       replicas: {{ richie_site_config.nginx_replicas }}
+      update_config:
+        order: start-first
       resources:
         limits:
           memory: 128M
