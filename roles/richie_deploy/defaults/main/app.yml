@@ -108,6 +108,6 @@ richie_nau_app_environment_variables:
   JIRA_WIDGET_KEY: c19e6a24-a1f6-4a84-aa46-89e82b94b809
 
   # Facebook pixel
-  FACEBOOK_PIXEL_ID: "1013367026191204"
+  # FACEBOOK_PIXEL_ID: "1013367026191204"
 
   # DJANGO_DEBUG: True
