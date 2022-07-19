@@ -65,11 +65,13 @@
   hosts: all,!idpproxy_servers,!idpauth_servers,!richie_servers,!nau_docker_swarm_managers,!nau_docker_swarm_workers,!support_server
   gather_facts: no
   become: true
-  roles:
-    - python_minimal
+  tasks:
+    - import_role:
+        name: python_minimal
+      when: ansible_python_interpreter is not defined
 
 - name: Bootstrap instances of 20.04
-  hosts: nau_docker_swarm_managers,nau_docker_swarm_workers
+  hosts: nau_docker_swarm_managers,nau_docker_swarm_workers,command_and_control_2004
   gather_facts: no
   become: true
   tasks:
@@ -81,6 +83,14 @@
     - name: On Ubuntu 20.04 or later, you need to install the acl package to becoming non privileged user.
       package:
         name: acl
+
+- name: Bootstrap cnc with Ubuntu 20.04
+  hosts: command_and_control_2004
+  become: True
+  gather_facts: True
+  roles:
+    - geerlingguy.docker
+    - docker_daemon
 
 - name: Infrastructure configuration
   hosts: all
