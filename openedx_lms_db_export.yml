@@ -14,6 +14,16 @@
     nau_db_exporter_base_directory: /tmp/nau-database-exporter-{{ _nau_db_exporter_version }}
   
   tasks:
+    - name: Create folder
+      file:
+        path: "{{ nau_db_exporter_base_directory }}"
+        state: directory
+
+    - name: Generates a configuration file
+      template: 
+        src: "{{ COMMON_PATH_CUSTOM_FILES }}/nau-database-exporter/config.ini.j2"
+        dest: "{{ nau_db_exporter_base_directory }}/config.ini"
+
     - name: Runs the python the report script on a docker container
       shell: |
         docker run -t --rm \
