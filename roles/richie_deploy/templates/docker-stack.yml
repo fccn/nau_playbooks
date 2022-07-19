@@ -118,16 +118,17 @@ services:
       - target:    {{ richie_load_balancer_haproxy_statistics_port }}
         published: {{ richie_load_balancer_haproxy_statistics_port }}
         protocol:  tcp
-        # each container have a statistics page but we should view only one on each host
-        mode:      host
+        mode:      ingress
       # Allow to connect to elasticsearch cluster outside the docker stack like so we can easily
       # monitor the cluster from the Makefile
       - target:    9200
         published: {{ richie_load_balancer_haproxy_elasticsearch_port }}
-        protocol: tcp
+        protocol:  tcp
+        mode:      ingress
       - target:    6379
         published: {{ richie_load_balancer_haproxy_redis_port }}
-        protocol: tcp
+        protocol:  tcp
+        mode:      ingress
     environment:
       # Use custom timezone
       TZ: {{ openedx_timezone | default("Europe/Lisbon") }}

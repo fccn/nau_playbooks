@@ -134,8 +134,7 @@ services:
       - target:    {{ openedx_load_balancer_haproxy_statistics_port | default(1936) }}
         published: {{ openedx_load_balancer_haproxy_statistics_port | default(1936) }}
         protocol:  tcp
-        # each container have a statistics page but we should view only one on each host
-        mode:      host
+        mode:      ingress
       # Allow to connect to elasticsearch cluster outside the docker stack like so we can easily
       # monitor the cluster from the Makefile
       - target:    9200
