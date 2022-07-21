@@ -44,9 +44,6 @@
 #   To update the OpenedX MySQL database grants run:
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml -e openedx_mysql_initialization=true --limit nau_docker_swarm_servers --tags docker_mysql_replication_additional_users
 #
-#   To deploy only specific servers run:
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit richie_servers
-#
 #   To deploy the openedx docker stack
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_managers -e openedx_deploy=true
 #
@@ -59,7 +56,7 @@
 #   To deploy the richie stack
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_servers -e richie_deploy=true
 - name: Bootstrap instances of 16.04
-  hosts: all,!idpproxy_servers,!idpauth_servers,!richie_servers,!nau_docker_swarm_managers,!nau_docker_swarm_workers,!support_server
+  hosts: all,!idpproxy_servers,!idpauth_servers,!nau_docker_swarm_managers,!nau_docker_swarm_workers,!support_server
   gather_facts: no
   become: true
   tasks:
@@ -300,31 +297,6 @@
     - role: edxlocal
     - analytics_pipeline
     - analytics_pipeline_configuration
-
-- name: Configure the richie marketing servers
-  hosts: richie_servers
-  serial: "{{ serial_number | default(1) }}"
-  become: True
-  #become_flags: "-E"
-  gather_facts: True
-  vars:
-    rolling_deploy_docker: true
-  roles: 
-    - role: rolling_deploy
-      vars:
-        rolling_deploy_starting: true
-      when: ( groups['richie_servers'] | length ) > 1
-    - role: geerlingguy.docker
-    - role: docker_daemon
-    - role: basic-authentication
-    - role: ansible-docker-deploy
-    - role: web_server_monitoring
-    - role: snmpd
-    - role: nau_check_urls
-    - role: rolling_deploy
-      vars:
-        rolling_deploy_starting: false
-      when: ( groups['richie_servers'] | length ) > 1
 
 # specific variables are configured on nau-data/envs/<env>/group_vars/idpproxy_servers.yml
 - name: Configure Shibboleth IdP

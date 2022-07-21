@@ -21,10 +21,3 @@
         backup_mysql_container_name: "{{ openedx_backup_mysql_container_name }}"
         backup_mysql_login_user: "{{ openedx_backup_mysql_login_user }}"
         backup_mysql_login_password: "{{ openedx_backup_mysql_login_password }}"
-
-- name: Backup of richie primary data
-  hosts: richie_primary
-  become: True
-  gather_facts: True
-  roles:
-    - nau_backup
