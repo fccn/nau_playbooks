@@ -88,9 +88,24 @@
   hosts: command_and_control_2004
   become: True
   gather_facts: True
-  roles:
-    - geerlingguy.docker
-    - docker_daemon
+  tasks:
+    # to run openedx-lms-db-export.yml playbook that runs a script on the a docker container
+    - name: Install docker
+      import_role:
+        name: geerlingguy.docker
+    - name: Install docker daemon config
+      import_role:
+        name: docker_daemon
+    # to run jenkins slave on the node
+    - name: Install Java
+      import_role:
+        name: geerlingguy.java
+    - name: Install virtualenv pip package
+      pip:
+        name: virtualenv
+    - name: Install package python3.8-venv
+      package:
+        name: python3.8-venv
 
 - name: Infrastructure configuration
   hosts: all

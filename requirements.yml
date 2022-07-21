@@ -11,6 +11,10 @@
 - name: geerlingguy.docker
   version: 4.2.1
 
+# Install java
+- name: geerlingguy.java
+  version: 2.1.0
+
 # Install IdP Shibboleth, fccn stuff
 - src: git+https://github.com/fccn/shibboleth-3-4-4-centos7-lite.git
   version: a6802ea65f76ceadf40605aa19a7a05721cb74e7
