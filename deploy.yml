@@ -28,9 +28,6 @@
 #   To deploy the load balancers run:
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit balancer_servers
 #
-#   To deploy static servers run:
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit statics_servers
-#
 #   To deploy IdP proxy servers run:
 #     ansible-playbook -i nau-data/:nvs/<env>/hosts.ini deploy.yml --limit idpproxy_servers
 #
@@ -142,27 +139,6 @@
         keepalived_priority_value: "{{ keepalived_priority }}"
       when: vrrp_instances is defined
   tags: load-balancer
-
-- name: Configure statics servers docker
-  hosts: statics_servers
-  serial: "{{ serial_number | default(1) }}"
-  become: True
-  gather_facts: True
-  roles:
-    - role: rolling_deploy
-      vars:
-        rolling_deploy_starting: true
-      when: ( groups['statics_servers'] | length ) > 1
-    - role: geerlingguy.docker
-    - role: docker_daemon
-    - role: ansible-docker-deploy
-    - role: web_server_monitoring
-    - role: snmpd
-    - role: nau_check_urls
-    - role: rolling_deploy
-      vars:
-        rolling_deploy_starting: false
-      when: ( groups['statics_servers'] | length ) > 1
 
 - name: Configure mysql server instance
   hosts: mysql_servers
