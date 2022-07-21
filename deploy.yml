@@ -36,10 +36,7 @@
 #
 #   To deploy IdP Auth servers run:
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit idpauth_servers
-#
-#   To deploy fam servers run:
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit fam_servers
-#
+##
 #   To mark a server for maintenance, like load balancer or mysql server, append to the shell command arguments:
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --tags keepalived --limit slave_persistence_servers -e keepalived_priority=1
 #   To mark a server back to normal state, run the same command without the --limit.
@@ -355,16 +352,6 @@
     - role: server_files
       vars: 
         server_files: "{{ server_files_after }}"
-
-- name: Configure FAM
-  hosts: fam_servers
-  become: True
-  become_flags: "-E" # Needed for jenkins deployment because ubuntu user needs to sudo and that make it lose its ssh agent forwarding env configuration.
-  gather_facts: True
-  roles:
-    - geerlingguy.docker
-    - docker_daemon
-    - ansible-docker-deploy
 
 - name: Configure support server
   hosts: support_server
