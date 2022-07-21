@@ -108,7 +108,7 @@
     - role: ansible_pakiti_client
 
 - name: Configure hosts file
-  hosts: all,!srv_local,!support_server,!command_and_control
+  hosts: all,!support_server,!command_and_control
   become: True
   gather_facts: True
   # vars defined on 02_hosts.yml
