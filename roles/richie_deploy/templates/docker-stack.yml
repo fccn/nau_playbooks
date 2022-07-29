@@ -13,11 +13,17 @@ services:
 {% endfor %}
     deploy:
       replicas: {{ richie_site_config.app_replicas }}
+      # Bypass the routing mesh, and use DNS Round Robin (DNSRR) mode.
+      # The nginx will parse the DNS entry and balance to the {{ richie_site }}_app containers directly.
+      # With this change the nginx can use sticky sessions, so each client IP is always routed to
+      # the same {{ richie_site }}_app container instance, this is important during rolling deploys.
+      endpoint_mode: dnsrr
       update_config:
         order: start-first
       resources:
         limits:
-          memory: 600M
+          # 200MB per worker
+          memory: {{ richie_site_config.app_gunicorn_workers * 200 }}M
       placement:
         max_replicas_per_node: {{ ( richie_site_config.app_replicas / docker_swarm_cluster_group_length | int ) | round(0, 'ceil') | int }}
     # volumes:
@@ -31,7 +37,7 @@ services:
       #- redis-sentinel
       - redis
     user: "{{ richie_site_config.app_docker_user | default('1000') }}"
-    command: wait-for-it redis-sentinel:26379 -- wait-for-it load_balancer_haproxy:3306 -- /bin/bash -c "python manage.py migrate && gunicorn -c /usr/local/etc/gunicorn/app.py nau.wsgi:application"
+    command: wait-for-it redis-sentinel:26379 -- wait-for-it load_balancer_haproxy:3306 -- /bin/bash -c "python manage.py migrate && gunicorn --workers={{ richie_site_config.app_gunicorn_workers | default(3) }} -c /usr/local/etc/gunicorn/app.py nau.wsgi:application"
     healthcheck:
       test: curl --silent --fail --resolve {{ richie_site_config.app_environment_variables.DJANGO_ALLOWED_HOSTS }}:8000:127.0.0.1 'http://{{ richie_site_config.app_environment_variables.DJANGO_ALLOWED_HOSTS }}:8000'
       interval: 30s

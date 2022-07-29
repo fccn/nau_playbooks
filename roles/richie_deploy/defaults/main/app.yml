@@ -4,6 +4,7 @@ richie_sites_app:
     app_image: nauedu/nau:{{ richie_nau_version }}
     app_replicas: 1
     app_environment_variables: "{{ richie_nau_app_environment_variables }}"
+    app_gunicorn_workers: 3 # the same default upstream workers
 
 # variables with a default value
 richie_nau_app_richie_CDN_DOMAIN: "{{ RICHIE_NAU_AWS_BUCKET_NAME }}.{{ nau_ceph_host }}"
@@ -84,6 +85,11 @@ richie_nau_app_environment_variables:
   DJANGO_AWS_ACCESS_KEY_ID: "{{ richie_nau_app_richie_DJANGO_AWS_ACCESS_KEY_ID }}"
   DJANGO_AWS_SECRET_ACCESS_KEY: "{{ richie_nau_app_richie_DJANGO_AWS_SECRET_ACCESS_KEY }}"
   DJANGO_AWS_S3_CUSTOM_DOMAIN: "{{ richie_nau_app_richie_CDN_DOMAIN }}"
+
+  # Enable the deliver of the static asset files like css, images, fonts, etc.
+  # nginx will also deliver this files, but during rolling deploy, the nginx could have one
+  # version of the files and the app still running a different version.
+  DJANGO_STATIC_FILES_URL_ENABLE: True
 
   # Redis cache configuration
   CACHE_DEFAULT_BACKEND: base.cache.RedisCacheWithFallback

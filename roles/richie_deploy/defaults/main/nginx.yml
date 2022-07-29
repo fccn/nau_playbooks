@@ -4,15 +4,17 @@ richie_sites_nginx:
     nginx_image: nauedu/nau-nginx:{{ richie_nau_version }}
     nginx_http_ingress_port:   "{{ richie_nau_nginx_http_ingress_port   }}"
     nginx_https_ingress_port:  "{{ richie_nau_nginx_https_ingress_port  }}"
-    nginx_replicas:            "{{ richie_nau_nginx_replicas            }}"
+    nginx_replicas:            1
     nginx_ssl_certificate_key: "{{ richie_nau_nginx_ssl_certificate_key }}"
     nginx_ssl_certificate_crt: "{{ richie_nau_nginx_ssl_certificate_crt }}"
 
+    # Configuration to protect your site using basic authentication.
     # nginx_basic_authentication_users:
     #   - path: "{{ docker_deploy_base_folder }}/nginx/nginx.htpasswd"
     #     name: "{{ COMMON_HTPASSWD_USER | default(omit) }}"
     #     password: "{{ COMMON_HTPASSWD_PASS | default(omit) }}"
 
+    # Default configuration to protect the django-cms admin pages
     nginx_admin_access_locations:
       # to match /pt/admin... /en/admin... or other new language added in future
       - path: '"^(/[a-zA-Z0-9]{2})?/admin"'
@@ -21,7 +23,6 @@ richie_sites_nginx:
 richie_nau_nginx_ssl_certificate_key: !!null
 richie_nau_nginx_https_ingress_port: 24443
 richie_nau_nginx_http_ingress_port: 24080
-richie_nau_nginx_replicas: 1
 
 richie_nginx_docker_deploy_templates:
   # one per site
