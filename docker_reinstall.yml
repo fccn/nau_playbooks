@@ -2,6 +2,10 @@
 ---
 - hosts: all
   serial: 1
+  vars:
+    docker_daemon_config_enabled: true
+    docker_install_enabled: true
+    rolling_deploy_enabled: true
   tasks:
     - import_role: 
         name: keepalived
@@ -12,12 +16,15 @@
       meta: flush_handlers
     - import_role:
         name: rolling_deploy
+      when: rolling_deploy_enabled | bool
       vars:
         rolling_deploy_starting: true
     - import_role:
         name: geerlingguy.docker
+      when: docker_install_enabled | bool
     - import_role:
         name: docker_daemon
+      when: docker_daemon_config_enabled | bool
     - name: force all notified handlers to run at this point
       meta: flush_handlers
     - import_role:
@@ -26,6 +33,7 @@
         name: rolling_deploy
       vars:
         rolling_deploy_starting: false
+      when: rolling_deploy_enabled | bool
     - import_role: 
         name: keepalived
       when: vrrp_instances is defined
