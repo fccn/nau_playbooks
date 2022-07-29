@@ -16,7 +16,7 @@ BUCKET_AWS_SECRET_ACCESS_KEY: {{ coursecertificate_app_bucket_aws_secret_access_
 BUCKET_ENDPOINT_URL: http://{{ nau_ceph_host }}
 BUCKET_CERTIFICATE_NO_VERSION_KEY: no-version
 DIGITAL_SIGNATURE:
-  CERTIFICATE_P12_PATH: {{ coursecertificate_digital_signature_certificate_p12_path }}
+  CERTIFICATE_P12_PATH: /app/digital_signature/sign-pdf.p12
   CERTIFICATE_P12_PASSWORD: "{{ coursecertificate_digital_signature_certificate_p12_password }}"
   signaturebox: 742,30,810,60
   contact: ajuda@nau.edu.pt
