@@ -30,8 +30,10 @@ richie_app_docker_deploy_templates:
     service: nau_app
 
 # Environment variables to the nau_app container and its job
-richie_nau_app_environment_variables:
-
+# the normal config, the overrides variable and the default variables.
+richie_nau_app_environment_variables: "{{ richie_nau_app_environment_variables_default | combine(richie_nau_app_environment_variables_overrides, recursive=True) }}"
+richie_nau_app_environment_variables_overrides: {}
+richie_nau_app_environment_variables_default:
   # Use custom timezone
   TZ: "{{ openedx_timezone | default('Europe/Lisbon') }}"
 
