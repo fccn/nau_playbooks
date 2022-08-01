@@ -1,4 +1,15 @@
 ---
+# - debug:
+#     var: "{{item}}"
+#   with_items:
+#     - openedx_app_docker_deploy_templates
+#     - openedx_lms_env_var
+#     - openedx_cms_env_var
+#     - openedx_lms_env_file
+#     - openedx_cms_env_file
+#   tags:
+#     - debug
+
 - name: Create folders volumes for openedx stack
   file:
     dest: "{{ item.dest | dirname }}"

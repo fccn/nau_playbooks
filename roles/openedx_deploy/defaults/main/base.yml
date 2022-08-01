@@ -6,7 +6,7 @@ openedx_docker_deploy_stack_name: openedx
 openedx_docker_deploy_stack_template: templates/docker-stack.yml
 openedx_docker_deploy_base_folder: /nau/ops/openedx
 
-openedx_docker_deploy_templates: "{{ openedx_base_docker_deploy_templates + openedx_mysql_docker_deploy_templates }}"
+openedx_docker_deploy_templates: "{{ openedx_base_docker_deploy_templates + openedx_app_docker_deploy_templates + openedx_mysql_docker_deploy_templates }}"
 # + openedx_mongodb_docker_deploy_templates
 # ...
 
@@ -23,3 +23,10 @@ openedx_docker_deploy_services_additional: "{{ (openedx_elasticsearch_containers
 
 openedx_docker_deploy_services_additional_list:
   - redis-sentinel
+  - lms
+  - lms-worker
+  - cms
+  - cms-worker
+  - smtp
+
+openedx_smtp_docker_image: "docker.io/devture/exim-relay:4.95-r0-2"
