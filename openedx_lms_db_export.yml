@@ -31,7 +31,7 @@
         --mount type=bind,source={{ nau_db_exporter_base_directory }}/config.ini,target=/usr/src/app/config.ini \
         -v {{ nau_db_exporter_base_directory }}/output:/usr/src/app/output \
         nauedu/nau-database-exporter:{{ _nau_db_exporter_version }} \
-        python {{ nau_db_exporter_report_script | default('report.py') }} {{ nau_db_exporter_extra_params }}
+        timeout 8h python {{ nau_db_exporter_report_script | default('report.py') }} {{ nau_db_exporter_extra_params }}
       args:
         chdir: "{{ nau_db_exporter_base_directory }}"
       register: sync_output
