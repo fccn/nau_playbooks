@@ -29,7 +29,7 @@ services:
         #    3 --> 1
         #    4 --> 2
         #    5 --> 2
-        parallelism: {{ [ 1, ( richie_site_config.app_replicas / 2 | int ) ] | min | round(0, 'floor') | int }}
+        parallelism: {{ [ 1, ( richie_site_config.app_replicas / 2 | int ) ] | max | round(0, 'floor') | int }}
       placement:
         max_replicas_per_node: {{ ( richie_site_config.app_replicas / docker_swarm_cluster_group_length | int ) | round(0, 'ceil') | int }}
       resources:
@@ -117,7 +117,7 @@ services:
         #    3 --> 1
         #    4 --> 2
         #    5 --> 2
-        parallelism: {{ [ 1, ( richie_site_config.nginx_replicas / 2 | int ) ] | min | round(0, 'floor') | int }}
+        parallelism: {{ [ 1, ( richie_site_config.nginx_replicas / 2 | int ) ] | max | round(0, 'floor') | int }}
       placement:
         max_replicas_per_node: {{ ( richie_site_config.nginx_replicas / docker_swarm_cluster_group_length | int ) | round(0, 'ceil') | int }}
       resources:
