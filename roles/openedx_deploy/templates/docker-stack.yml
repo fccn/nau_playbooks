@@ -4,10 +4,50 @@ version: "3.8"
 
 services:
 
-  # TODO: add container "nginx"
-  # nginx
-
   # TODO: add "mongo" cluster
+
+  nginx:
+    image: {{ openedx_nginx_image }}
+    ports:
+      - target: 80
+        published: {{ openedx_nginx_http_ingress_port }}
+        protocol: tcp
+        mode: ingress
+      - target: 443
+        published: {{ openedx_nginx_https_ingress_port }}
+        protocol: tcp
+        mode: ingress
+    deploy:
+      replicas: {{ openedx_nginx_replicas }}
+      update_config:
+        # use the default 'stop-first' so we can detect on replicas health check that something is still not converged.
+        order: stop-first
+        # rolling deploy with half the replicas, if replicas has an odd number, when round to a lower number,
+        # so in the limit we have 3 update batches, 2 bigger half batches and +1 at the end.
+        # Example:
+        #    #replicas -> #parallelism
+        #    2 --> 1
+        #    3 --> 1
+        #    4 --> 2
+        #    5 --> 2
+        parallelism: {{ [ 1, ( openedx_nginx_replicas / 2 | int ) ] | max | round(0, 'floor') | int }}
+      placement:
+        max_replicas_per_node: {{ ( openedx_nginx_replicas / docker_swarm_cluster_group_length | int ) | round(0, 'ceil') | int }}
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 5M
+    extra_hosts:
+      - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
+    healthcheck:
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/80", "&&", "echo", "''", ">", "/dev/tcp/127.0.0.1/443", "||", "exit", "1"]
+      start_period: 3s
+      retries: 10
+      interval: 10s
+      timeout: 10s
+{{ helper.service_configs(service='nginx') }}
+{{ helper.service_secrets(service='nginx') }}
 
   lms:
     image: {{ openedx_app_image }}

@@ -1,0 +1,59 @@
+---
+openedx_nginx_docker_deploy_templates:
+  # nginx.conf
+  - src: templates/nginx/nginx.conf
+    dest: "{{ openedx_docker_deploy_base_folder }}/nginx/nginx.conf"
+    docker_target: /etc/nginx/nginx.conf
+    config_name: nginx_conf
+    service: nginx
+
+  # default lms site
+  - src: templates/nginx/sites-available/lms.j2
+    dest: "{{ openedx_docker_deploy_base_folder }}/nginx/sites-available/lms"
+    config_name: nginx_site_lms
+    service: nginx
+    docker_target: /etc/nginx/sites-available/lms
+
+  # studio site
+  - src: templates/nginx/sites-available/cms.j2
+    dest: "{{ openedx_docker_deploy_base_folder }}/nginx/sites-available/cms"
+    config_name: nginx_site_cms
+    service: nginx
+    docker_target: /etc/nginx/sites-available/cms
+
+openedx_nginx_docker_deploy_files:
+  # ssl crt
+  - src: "{{ openedx_nginx_ssl_certificate }}"
+    dest: "{{ openedx_docker_deploy_base_folder }}/nginx/ssl/certificate.crt.pem"
+    secret_name: nginx_certificate_crt
+    service: nginx
+    docker_target: /etc/ssl/certs/certificate.crt.pem
+    when: "{{ openedx_nginx_ssl_certificate is defined }}"
+  # ssl key
+  - src: "{{ openedx_nginx_ssl_certificate_key }}"
+    dest: "{{ openedx_docker_deploy_base_folder }}/nginx/ssl/certificate.key.pem"
+    secret_name: nginx_certificate_key
+    service: nginx
+    docker_target: /etc/ssl/certs/certificate.key.pem
+    when: "{{ openedx_nginx_ssl_certificate_key is defined }}"
+
+# a default site
+openedx_nginx_lms_servers:
+  - server_name: _
+    default_server: true
+    ssl_certificate: "{{ openedx_nginx_ssl_certificate }}"
+    ssl_certificate_key: "{{ openedx_nginx_ssl_certificate_key }}"
+
+openedx_nginx_cms_servers:
+  - server_name: https://{{ EDXAPP_CMS_BASE }}
+    ssl_certificate: "{{ openedx_nginx_ssl_certificate }}"
+    ssl_certificate_key: "{{ openedx_nginx_ssl_certificate_key }}"
+
+# from the old ansible configuration repository
+COMMON_ENABLE_BASIC_AUTH: False
+EDXAPP_LMS_ENABLE_BASIC_AUTH: "{{ COMMON_ENABLE_BASIC_AUTH }}"
+
+openedx_nginx_image: nginx:1.22.0
+openedx_nginx_http_ingress_port: 80
+openedx_nginx_https_ingress_port: 443
+openedx_nginx_replicas: 1

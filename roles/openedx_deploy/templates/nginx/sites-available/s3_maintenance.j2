@@ -1,0 +1,16 @@
+
+{% if NGINX_EDXAPP_ENABLE_S3_MAINTENANCE %}
+  location @maintenance {
+    rewrite  ^(.*) {{ NGINX_EDXAPP_S3_MAINTENANCE_FILE }} break;
+    proxy_http_version     1.1;
+    proxy_set_header       Host {{ NGINX_EDXAPP_S3_MAINTENANCE_HOST if NGINX_EDXAPP_S3_MAINTENANCE_HOST is defined or 's3.amazonaws.com' }} ;
+    proxy_set_header       Authorization '';
+    proxy_hide_header      x-amz-id-2;
+    proxy_hide_header      x-amz-request-id;
+    proxy_hide_header      Set-Cookie;
+    proxy_ignore_headers   "Set-Cookie";
+    proxy_buffering        off;
+    proxy_intercept_errors on;
+    proxy_pass {{ NGINX_EDXAPP_S3_MAINTENANCE_URL if NGINX_EDXAPP_S3_MAINTENANCE_URL is defined or 'https://s3.amazonaws.com' }};
+  }
+{% endif %}

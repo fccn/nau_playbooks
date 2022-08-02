@@ -83,7 +83,7 @@ healthcheck: \
 	healthcheck-replicas \
 	{{ ['healthcheck-mysql-port-'] | product(openedx_mysql_containers.keys()|list) | map('join') | join(' ') }} \
 	healthcheck-mysql-primary \
-{% for container, config in richie_mysql_containers.items() %}
+{% for container, config in openedx_mysql_containers.items() %}
 {% if not config.primary %}
 	healthcheck-mysql-replica-{{ container }} \
 {% endif %}
