@@ -17,7 +17,7 @@ openedx_base_docker_deploy_templates_default:
     dest: "{{ openedx_docker_deploy_base_folder }}/Makefile"
 
 openedx_docker_deploy_files: "{{ openedx_docker_deploy_files_default }}"
-openedx_docker_deploy_files_default: "{{ openedx_nginx_docker_deploy_files }}"
+openedx_docker_deploy_files_default: "{{ openedx_nginx_docker_deploy_files + openedx_app_docker_deploy_files }}"
 
 openedx_docker_deploy_folders_additional: "{{ openedx_mysql_docker_deploy_folders_additional + openedx_elasticsearch_docker_deploy_folders_additional + openedx_redis_docker_deploy_folders_additional }}"
 # + openedx_mongodb_docker_deploy_folders_additional

@@ -25,6 +25,18 @@ openedx_app_docker_deploy_templates:
     config_name: studio_env
     docker_target: /openedx/config/cms.env.yml
 
+openedx_app_docker_deploy_files:
+  - src: files/app/nau_production.py
+    dest: "{{ openedx_docker_deploy_base_folder }}/app/lms/envs/nau_production.py"
+    service: edxapp
+    config_name: lms_envs_nau_production
+    docker_target: /openedx/edx-platform/lms/envs/nau_production.py
+  - src: files/app/nau_production.py
+    dest: "{{ openedx_docker_deploy_base_folder }}/app/cms/envs/nau_production.py"
+    service: edxapp
+    config_name: cms_envs_nau_production
+    docker_target: /openedx/edx-platform/cms/envs/nau_production.py
+
 # OPENEDX_TOP_DOMAIN:
 OPENEDX_JWT_COMMON_ISSUER: "https://{{ OPENEDX_LMS_HOST }}/oauth2"
 OPENEDX_LMS_HOST: "lms.{{ OPENEDX_TOP_DOMAIN }}"
@@ -505,7 +517,7 @@ openedx_lms_env_var: "{{ openedx_lms_env_var_default | combine(openedx_lms_env_v
 openedx_lms_env_var_overrides: {}
 openedx_lms_env_var_default:
   SERVICE_VARIANT: lms
-  SETTINGS: production
+  SETTINGS: nau_production
   LMS_CFG: /openedx/config/lms.env.yml
   UWSGI_WORKERS: "{{ OPENEDX_LMS_UWSGI_WORKERS }}"
   # Use custom timezone
@@ -592,7 +604,7 @@ openedx_cms_env_var: "{{ openedx_cms_env_var_default | combine(openedx_cms_env_v
 openedx_cms_env_var_overrides: {}
 openedx_cms_env_var_default:
   SERVICE_VARIANT: cms
-  SETTINGS: production
+  SETTINGS: nau_production
   STUDIO_CFG: /openedx/config/cms.env.yml
   UWSGI_WORKERS: "{{ OPENEDX_CMS_UWSGI_WORKERS }}"
   # Use custom timezone
