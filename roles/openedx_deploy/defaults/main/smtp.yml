@@ -1,0 +1,12 @@
+---
+openedx_smtp_replicas: 1
+openedx_smtp_docker_image: docker.io/namshi/smtp:latest
+
+openedx_smtp_docker_environment_variables:
+  SMARTHOST_ADDRESS: "{{ POSTFIX_QUEUE_EXTERNAL_SMTP_HOST }}"
+  SMARTHOST_PORT: ""
+  SMARTHOST_USER: ""
+  SMARTHOST_PASSWORD: ""
+  SMARTHOST_ALIASES: "*.fccn.pt"
+  RELAY_NETWORKS: ":*"
+  DISABLE_IPV6: "1"

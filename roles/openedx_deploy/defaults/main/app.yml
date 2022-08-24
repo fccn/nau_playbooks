@@ -7,7 +7,6 @@ openedx_lms_replicas: 1
 openedx_cms_replicas: 1
 openedx_lms_worker_replicas: 1
 openedx_cms_worker_replicas: 1
-openedx_smtp_replicas: 1
 
 # number of workers that uwsgi has within each docker service
 OPENEDX_LMS_UWSGI_WORKERS: 2
@@ -244,22 +243,22 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
   #   - richie_openedx_sync
   AUTH_PASSWORD_VALIDATORS:
     - NAME: django.contrib.auth.password_validation.UserAttributeSimilarityValidator
-    - NAME: util.password_policy_validators.MinimumLengthValidator
+    - NAME: common.djangoapps.util.password_policy_validators.MinimumLengthValidator
       OPTIONS:
           min_length: 8
-    - NAME: util.password_policy_validators.MaximumLengthValidator
+    - NAME: common.djangoapps.util.password_policy_validators.MaximumLengthValidator
       OPTIONS:
           max_length: 75
-    - NAME: util.password_policy_validators.UppercaseValidator
+    - NAME: common.djangoapps.util.password_policy_validators.UppercaseValidator
       OPTIONS:
           min_upper: 1
-    - NAME: util.password_policy_validators.LowercaseValidator
+    - NAME: common.djangoapps.util.password_policy_validators.LowercaseValidator
       OPTIONS:
           min_lower: 1
-    - NAME: util.password_policy_validators.NumericValidator
+    - NAME: common.djangoapps.util.password_policy_validators.NumericValidator
       OPTIONS:
           min_numeric: 1
-    - NAME: util.password_policy_validators.PunctuationValidator
+    - NAME: common.djangoapps.util.password_policy_validators.PunctuationValidator
       OPTIONS:
           min_punctuation: 1
   CERTIFICATE_TEMPLATE_LANGUAGES:
@@ -295,7 +294,7 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
   ECOMMERCE_API_SIGNING_KEY: "{{ EDXAPP_JWT_SECRET_KEY }}"
   ECOMMERCE_API_URL: "{{ EDXAPP_ECOMMERCE_API_URL }}"
   ECOMMERCE_PUBLIC_URL_ROOT: "{{ EDXAPP_ECOMMERCE_PUBLIC_URL_ROOT }}"
-  EDXNOTES_INTERNAL_API: "{{ EDXAPP_EDXNOTES_INTERNAL_API }}"
+  EDXNOTES_INTERNAL_API: "{{ EDXAPP_EDXNOTES_INTERNAL_API }}" # "http://notes:8000/api/v1"
   EDXNOTES_PUBLIC_API: "{{ EDXAPP_EDXNOTES_PUBLIC_API }}"
   EDX_API_KEY: "{{ EDXAPP_EDX_API_KEY }}"
   ENTERPRISE_API_URL: https://{{ OPENEDX_LMS_HOST }}/enterprise/api/v1

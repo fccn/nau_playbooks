@@ -115,14 +115,64 @@ services:
 {{ helper.service_configs(service='edxapp') }}
 {{ helper.service_secrets(service='edxapp') }}
 
+  forum:
+    image: {{ openedx_forum_docker_image }}
+    entrypoint: {{ openedx_forum_docker_entrypoint }}
+    environment:
+{% for env_var_name, env_var_value in openedx_forum_docker_environment_variables.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    deploy:
+      replicas: {{ openedx_forum_replicas }}
+      placement:
+        max_replicas_per_node: {{ ( openedx_forum_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
+
+{% if openedx_forum_job %}
+  forum-job:
+    image: {{ openedx_forum_docker_image }}
+    entrypoint: {{ openedx_forum_job_docker_entrypoint }}
+    environment:
+{% for env_var_name, env_var_value in openedx_forum_docker_environment_variables.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    # From https://github.com/overhangio/tutor-forum/blob/d03cb74eecd8397a728be32e1737e3edb9e13a35/tutorforum/templates/forum/hooks/forum/init
+    deploy:
+      replicas: 1
+{% endif %}
+
+  notes:
+    image: {{ openedx_notes_docker_image }}
+    environment:
+{% for env_var_name, env_var_value in openedx_notes_docker_environment_variables.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    deploy:
+      replicas: {{ openedx_notes_replicas }}
+      placement:
+        max_replicas_per_node: {{ ( openedx_notes_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
+{{ helper.service_configs(service='notes') }}
+{{ helper.service_secrets(service='notes') }}
+
+{% if openedx_notes_job %}
+  notes-job:
+    image: {{ openedx_notes_docker_image }}
+    environment:
+{% for env_var_name, env_var_value in openedx_notes_docker_environment_variables.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    command: {{ openedx_notes_job_command }}
+    deploy:
+      replicas: 1
+{{ helper.service_configs(service='notes') }}
+{{ helper.service_secrets(service='notes') }}
+{% endif %}
+
   smtp:
     image: "{{ openedx_smtp_docker_image }}"
-    user: "100:101"
     environment:
-      HOSTNAME: "{{ OPENEDX_LMS_HOST }}"
-      SMARTHOST: "{{ openedx_smtp_external_host }}"
-      SMTP_USERNAME: "{{ openedx_smtp_external_username }}"
-      SMTP_PASSWORD: "{{ openedx_smtp_external_password }}"
+{% for env_var_name, env_var_value in openedx_smtp_docker_environment_variables.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
     deploy:
       replicas: {{ openedx_smtp_replicas }}
       placement:

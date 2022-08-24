@@ -43,7 +43,7 @@ ps: ## list the tasks in the stack
 
 healthcheck-replicas: ## healthcheck - check if it's running the requested service replicas
 	@echo -n 'Check docker stack replicas: '
-	@docker service ls --filter name={{ docker_deploy_stack_name }} --format {% raw %}'{{.Name}}|{{.Replicas}}'{% endraw %} | grep -v _job | egrep -o '[0-9]+/[0-9]+' | awk -F/ '{ if ($$1 != $$2 && $$2 != 0) exit -1}'
+	@docker service ls --filter name={{ docker_deploy_stack_name }} --format {% raw %}'{{.Name}}|{{.Replicas}}'{% endraw %} | grep -v _job | grep -v -job | egrep -o '[0-9]+/[0-9]+' | awk -F/ '{ if ($$1 != $$2 && $$2 != 0) exit -1}'
 	@echo "OK"
 .PHONY: healthcheck-replicas
 

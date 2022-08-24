@@ -1,0 +1,37 @@
+---
+openedx_forum_replicas: 1
+openedx_forum_job: false
+openedx_forum_docker_image: overhangio/openedx-forum:12.2.0
+openedx_forum_docker_wait_for: dockerize -wait tcp://{{ FORUM_MONGO_HOSTS[0] }}:{{ FORUM_MONGO_PORT }} -wait {{ FORUM_ELASTICSEARCH_URL }} -wait-retry-interval 5s -timeout 600s
+openedx_forum_docker_entrypoint:     bash -c "{{ openedx_forum_docker_wait_for }} && ./bin/unicorn -c config/unicorn_tcp.rb -I '.' "
+openedx_forum_job_docker_entrypoint: bash -c "{{ openedx_forum_docker_wait_for }} && bundle exec rake search:initialize && bundle exec rake search:rebuild_indices"
+
+FORUM_MONGO_USER: "cs_comments_service"
+FORUM_MONGO_PASSWORD: "password"
+FORUM_MONGO_HOSTS:
+  - "localhost"
+FORUM_MONGO_TAGS: !!null
+FORUM_MONGO_PORT: "27017"
+FORUM_MONGO_DATABASE: "cs_comments_service"
+FORUM_MONGO_AUTH_MECH: ":scram"
+
+FORUM_API_KEY: !!null
+FORUM_SINATRA_ENV: production
+
+FORUM_MONGO_URL: "mongodb://{{ FORUM_MONGO_USER }}:{{ FORUM_MONGO_PASSWORD }}@{%- for host in FORUM_MONGO_HOSTS -%}{{ host }}:{{ FORUM_MONGO_PORT }}{%- if not loop.last -%},{%- endif -%}{%- endfor -%}/{{ FORUM_MONGO_DATABASE }}{%- if FORUM_MONGO_TAGS -%}?tags={{ FORUM_MONGO_TAGS }}{%- endif -%}"
+
+FORUM_ELASTICSEARCH_PORT: "9200"
+FORUM_ELASTICSEARCH_PROTOCOL: "http"
+FORUM_ELASTICSEARCH_HOST: load_balancer_haproxy # "localhost"
+FORUM_ELASTICSEARCH_URL: "{{ FORUM_ELASTICSEARCH_PROTOCOL }}://{{ FORUM_ELASTICSEARCH_HOST }}:{{ FORUM_ELASTICSEARCH_PORT }}"
+
+openedx_forum_docker_environment_variables: "{{ openedx_forum_docker_environment_variables_default }}"
+openedx_forum_docker_environment_variables_default:
+  SINATRA_ENV: "{{ FORUM_SINATRA_ENV }}"
+  API_KEY: "{{ FORUM_API_KEY }}"
+  # do not use `SEARCH_SERVER` because we are also changing the default docker entrypoint.
+  SEARCH_SERVER_ES7: "{{ FORUM_ELASTICSEARCH_URL }}"
+  MONGOHQ_URL: "{{ FORUM_MONGO_URL }}"
+  MONGOID_AUTH_MECH: "{{ FORUM_MONGO_AUTH_MECH }}"
+  # WORKER_PROCESSES # by default it uses 4 workers
+

@@ -17,7 +17,7 @@ openedx_base_docker_deploy_templates_default:
     dest: "{{ openedx_docker_deploy_base_folder }}/Makefile"
 
 openedx_docker_deploy_files: "{{ openedx_docker_deploy_files_default }}"
-openedx_docker_deploy_files_default: "{{ openedx_nginx_docker_deploy_files + openedx_app_docker_deploy_files }}"
+openedx_docker_deploy_files_default: "{{ openedx_nginx_docker_deploy_files + openedx_app_docker_deploy_files + openedx_notes_docker_deploy_files }}"
 
 openedx_docker_deploy_folders_additional: "{{ openedx_mysql_docker_deploy_folders_additional + openedx_elasticsearch_docker_deploy_folders_additional + openedx_redis_docker_deploy_folders_additional }}"
 # + openedx_mongodb_docker_deploy_folders_additional
@@ -32,6 +32,9 @@ openedx_docker_deploy_services_additional_list:
   - lms-worker
   - cms
   - cms-worker
+  - forum
+  - forum-job
+  - notes
+  - notes-job
   - smtp
 
-openedx_smtp_docker_image: "docker.io/devture/exim-relay:4.95-r0-2"
