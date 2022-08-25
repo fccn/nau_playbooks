@@ -49,7 +49,7 @@ healthcheck-replicas: ## healthcheck - check if it's running the requested servi
 
 # List the tasks of a service
 _%-ps:
-	docker service ps {{ docker_deploy_stack_name }}_$*
+	docker service ps {{ docker_deploy_stack_name }}_$* --no-trunc
 
 {% for _service in docker_deploy_services %}
 ps-{{ _service }}: _{{ _service }}-ps ## List the tasks of {{ _service }}
