@@ -137,7 +137,10 @@ services:
 {% endfor %}
     # From https://github.com/overhangio/tutor-forum/blob/d03cb74eecd8397a728be32e1737e3edb9e13a35/tutorforum/templates/forum/hooks/forum/init
     deploy:
-      replicas: 1
+      replicas: 1 # should exist only 1 instance of this container
+      mode: replicated # after docker 22.06.0 release change it to replicated-job
+      restart_policy:
+        condition: on-failure # restart this container only if it fails to run
 {% endif %}
 
   notes:
@@ -162,7 +165,10 @@ services:
 {% endfor %}
     command: {{ openedx_notes_job_command }}
     deploy:
-      replicas: 1
+      replicas: 1 # should exist only 1 instance of this container
+      mode: replicated # after docker 22.06.0 release change it to replicated-job
+      restart_policy:
+        condition: on-failure # restart this container only if it fails to run
 {{ helper.service_configs(service='notes') }}
 {{ helper.service_secrets(service='notes') }}
 {% endif %}
