@@ -308,6 +308,13 @@
   roles:
     - role: geerlingguy.docker
     - role: docker_daemon
+    - role: geerlingguy.java # used by jenkins and its nodes
+
+- name: Configure orchestrator on 1st support server
+  hosts: support_server[0]
+  become: True
+  gather_facts: True
+  roles:
     - role: openark_orchestrator
 
 - name: Install Docker and create folders used as volumes on docker swarm nodes
