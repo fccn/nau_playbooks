@@ -309,6 +309,7 @@
     - role: geerlingguy.docker
     - role: docker_daemon
     - role: geerlingguy.java # used by jenkins and its nodes
+    - role: geerlingguy.pip # used on build
 
 - name: Configure orchestrator on 1st support server
   hosts: support_server[0]
