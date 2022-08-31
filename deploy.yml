@@ -53,7 +53,7 @@
 #   To deploy the richie stack
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_servers -e richie_deploy=true
 - name: Bootstrap instances of 16.04
-  hosts: all,!idpproxy_servers,!idpauth_servers,!nau_docker_swarm_managers,!nau_docker_swarm_workers,!support_server
+  hosts: all,!idpproxy_servers,!idpauth_servers,!nau_docker_swarm_managers,!nau_docker_swarm_workers,!support_server,!build_server
   gather_facts: no
   become: true
   tasks:
@@ -87,16 +87,6 @@
     - name: Install docker daemon config
       import_role:
         name: docker_daemon
-    # to run jenkins slave on the node
-    - name: Install Java
-      import_role:
-        name: geerlingguy.java
-    - name: Install virtualenv pip package
-      pip:
-        name: virtualenv
-    - name: Install package python3.8-venv
-      package:
-        name: python3.8-venv
 
 - name: Infrastructure configuration
   hosts: all
@@ -108,7 +98,7 @@
     - role: ansible_pakiti_client
 
 - name: Configure hosts file
-  hosts: all,!support_server,!command_and_control
+  hosts: all,!support_server,!command_and_control,!build_server
   become: True
   gather_facts: True
   # vars defined on 02_hosts.yml
@@ -308,15 +298,28 @@
   roles:
     - role: geerlingguy.docker
     - role: docker_daemon
-    - role: geerlingguy.java # used by jenkins and its nodes
-    - role: geerlingguy.pip # used on build
-
-- name: Configure orchestrator on 1st support server
-  hosts: support_server[0]
-  become: True
-  gather_facts: True
-  roles:
     - role: openark_orchestrator
+
+- name: Configure build server
+  hosts: build_server
+  tasks:
+    - name: Install Java to run a Jenkins node
+      import_role:
+        name: geerlingguy.java
+    - name: Install pip to build python based software
+      import_role:
+        name: geerlingguy.pip
+    - name: Install virtualenv pip package to build python based software
+      pip:
+        name: virtualenv
+    - name: Install python3.8-venv package to build python based software
+      package:
+        name: python3.8-venv
+    - name: Allow ubuntu user to run docker builds
+      user:
+        name: ubuntu
+        groups: docker
+        append: yes
 
 - name: Install Docker and create folders used as volumes on docker swarm nodes
   hosts: nau_docker_swarm_managers,nau_docker_swarm_workers
