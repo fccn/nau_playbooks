@@ -35,3 +35,6 @@ openedx_forum_docker_environment_variables_default:
   MONGOID_AUTH_MECH: "{{ FORUM_MONGO_AUTH_MECH }}"
   # WORKER_PROCESSES # by default it uses 4 workers
 
+FORUM_NGINX_PORT: 18080
+FORUM_PORT: 4567
+openedx_forum_port: 4567

@@ -12,6 +12,9 @@ openedx_cms_worker_replicas: 1
 OPENEDX_LMS_UWSGI_WORKERS: 2
 OPENEDX_CMS_UWSGI_WORKERS: 2
 
+openedx_app_job: false
+openedx_app_job_command: bash -c "python manage.py lms migrate && python manage.py cms migrate"
+
 openedx_app_docker_deploy_templates:
   - src_data:  "{{ openedx_lms_env_file | to_nice_yaml(indent=2, width=1337) }}" # default_flow_style=False didn't work
     dest: "{{ openedx_docker_deploy_base_folder }}/app/lms.env.yml"
@@ -36,18 +39,16 @@ openedx_app_docker_deploy_files:
     config_name: cms_envs_nau_production
     docker_target: /openedx/edx-platform/cms/envs/nau_production.py
 
-# OPENEDX_TOP_DOMAIN:
 OPENEDX_JWT_COMMON_ISSUER: "https://{{ OPENEDX_LMS_HOST }}/oauth2"
-OPENEDX_LMS_HOST: "lms.{{ OPENEDX_TOP_DOMAIN }}"
 
 # smtp ??
 OPENEDX_SMTP_USER: ""
-OPENEDX_SMTP_HOST: localhost
+OPENEDX_SMTP_HOST: smtp
 OPENEDX_SMTP_PORT: 25
 OPENEDX_EMAIL_HOST_PASSWORD: ""
 OPENEDX_SMTP_USE_TLS: false
 
-openedx_smtp_external_host: ""
+openedx_smtp_external_host: "{{ POSTFIX_QUEUE_EXTERNAL_SMTP_HOST }}"
 openedx_smtp_external_username: ""
 openedx_smtp_external_password: "" # leave this blank to disable authentication
 
@@ -141,6 +142,8 @@ EDXAPP_MONGO_AUTH_DB: ''
 
 EDXAPP_PLATFORM_DESCRIPTION: NAU Sempre a Aprender
 
+EDXAPP_EDXNOTES_INTERNAL_API: "http://notes:8000/api/v1"
+
 ###########################################
 # bridge from OPENEDX to EDXAPP variables #
 ###########################################
@@ -153,9 +156,8 @@ OPENEDX_SITE_NAME: "{{ EDXAPP_SITE_NAME }}"
 OPENEDX_PLATFORM_NAME: "{{ EDXAPP_PLATFORM_NAME }}"
 OPENEDX_PREVIEW_LMS_HOST: " {{ EDXAPP_PREVIEW_LMS_BASE }}"
 OPENEDX_CONTACT_EMAIL: "{{ EDXAPP_CONTACT_EMAIL }}"
-OPENEDX_EMAIL_HOST_PASSWORD: "{{ EDXAPP_EMAIL_HOST_PASSWORD }}"
+#OPENEDX_EMAIL_HOST_PASSWORD: "{{ EDXAPP_EMAIL_HOST_PASSWORD }}"
 
-openedx_smtp_external_host: "{{ POSTFIX_QUEUE_EXTERNAL_SMTP_HOST }}"
 OPENEDX_CUSTOM_S3_HOST: "{{ nau_ceph_host }}"
 
 OPENEDX_COURSE_CATALOG_API_URL: "{{ EDXAPP_COURSE_CATALOG_API_URL }}"
@@ -210,7 +212,7 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
   CONTACT_MAILING_ADDRESS: "{{ OPENEDX_CONTACT_EMAIL }}"
   DEFAULT_FEEDBACK_EMAIL: "{{ OPENEDX_CONTACT_EMAIL }}"
   DEFAULT_FROM_EMAIL: "{{ OPENEDX_CONTACT_EMAIL }}"
-  FEEDBACK_SUBMISSION_EMAIL: "{{ OPENEDX_CONTACT_EMAIL }}"
+  FEEDBACK_SUBMISSION_EMAIL: "{{ EDXAPP_FEEDBACK_SUBMISSION_EMAIL }}" # OPENEDX_CONTACT_EMAIL
   TECH_SUPPORT_EMAIL: "{{ OPENEDX_CONTACT_EMAIL }}"
   UNIVERSITY_EMAIL: "{{ OPENEDX_CONTACT_EMAIL }}"
   PAYMENT_SUPPORT_EMAIL: "{{ OPENEDX_CONTACT_EMAIL }}"
@@ -264,6 +266,7 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
   CERTIFICATE_TEMPLATE_LANGUAGES:
       en: English
       pt: Português
+  COMMENTS_SERVICE_URL: "http://forum:{{ FORUM_PORT }}" # access directly to forum docker service
   COMMENTS_SERVICE_KEY: "{{ FORUM_API_KEY }}"
   
   # env var ?
@@ -395,7 +398,6 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
     STUDIO_REQUEST_EMAIL: ''
     USE_DJANGO_PIPELINE: true
     USE_MICROSITES: false
-  FEEDBACK_SUBMISSION_EMAIL: "{{ EDXAPP_FEEDBACK_SUBMISSION_EMAIL }}"
   FILE_UPLOAD_STORAGE_BUCKET_NAME: "{{ EDXAPP_FILE_UPLOAD_STORAGE_BUCKET_NAME | default(EDXAPP_AWS_STORAGE_BUCKET_NAME) }}"
   GRADES_DOWNLOAD:
     STORAGE_CLASS: "{{ EDXAPP_GRADE_STORAGE_CLASS | default(None) }}"

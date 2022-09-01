@@ -26,3 +26,5 @@ openedx_notes_docker_environment_variables_default:
   NOTES_OAUTH2_SECRET: "{{ EDX_NOTES_API_CLIENT_SECRET }}"
   NOTES_OAUTH2_ID: "{{ EDX_NOTES_API_CLIENT_ID }}"
 
+EDX_NOTES_API_HOSTNAME: '~^((stage|prod)-)?notes.*'
+openedx_notes_port: 8000

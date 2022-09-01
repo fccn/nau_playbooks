@@ -9,10 +9,11 @@ from django.core.exceptions import ImproperlyConfigured
 
 
 def get_env_value(env_variable, default=None):
+    """Get the environment variable value or return its default value."""
     try:
         return os.environ[env_variable]
     except KeyError:
-        if default:
+        if isinstance(default, str):
             return default
         else:
             error_msg = 'Set the {} environment variable'.format(env_variable)
@@ -41,7 +42,7 @@ DATABASES = {
 CLIENT_ID = get_env_value("NOTES_OAUTH2_ID", "notes")
 CLIENT_SECRET = get_env_value("NOTES_OAUTH2_SECRET")
 
-ELASTICSEARCH_DSL = {'default': {'hosts': get_env_value("ELASTICSEARCH_HOST_PORT") }}
+ELASTICSEARCH_DSL['default'].update({ 'hosts': get_env_value("ELASTICSEARCH_HOST_PORT") })
 
 LOGGING = {
     "version": 1,

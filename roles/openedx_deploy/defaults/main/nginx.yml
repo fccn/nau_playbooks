@@ -21,6 +21,27 @@ openedx_nginx_docker_deploy_templates:
     service: nginx
     docker_target: /etc/nginx/sites-available/cms
 
+  # forum site
+  - src: templates/nginx/sites-available/forum.j2
+    dest: "{{ openedx_docker_deploy_base_folder }}/nginx/sites-available/forum"
+    config_name: nginx_site_forum
+    service: nginx
+    docker_target: /etc/nginx/sites-available/forum
+
+  # discovery site
+  - src: templates/nginx/sites-available/discovery.j2
+    dest: "{{ openedx_docker_deploy_base_folder }}/nginx/sites-available/discovery"
+    config_name: nginx_site_discovery
+    service: nginx
+    docker_target: /etc/nginx/sites-available/discovery
+
+  # notes site
+  - src: templates/nginx/sites-available/notes.j2
+    dest: "{{ openedx_docker_deploy_base_folder }}/nginx/sites-available/notes"
+    config_name: nginx_site_notes
+    service: nginx
+    docker_target: /etc/nginx/sites-available/notes
+
 openedx_nginx_docker_deploy_files:
   # ssl crt
   - src: "{{ openedx_nginx_ssl_certificate }}"
@@ -52,6 +73,8 @@ openedx_nginx_cms_servers:
 # from the old ansible configuration repository
 COMMON_ENABLE_BASIC_AUTH: False
 EDXAPP_LMS_ENABLE_BASIC_AUTH: "{{ COMMON_ENABLE_BASIC_AUTH }}"
+NGINX_HSTS_MAX_AGE: 31536000
+NGINX_P3P_MESSAGE: 'CP="Open edX does not have a P3P policy."'
 
 openedx_nginx_image: nginx:1.22.0
 openedx_nginx_http_ingress_port: 80

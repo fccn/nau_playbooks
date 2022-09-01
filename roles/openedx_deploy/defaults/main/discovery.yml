@@ -1,0 +1,55 @@
+---
+openedx_discovery_replicas: 1
+openedx_discovery_job: false
+openedx_discovery_docker_image: overhangio/openedx-discovery:12.0.4
+openedx_discovery_job_command: bash -c "python manage.py migrate --noinput && python manage.py install_es_indexes"
+
+openedx_discovery_docker_deploy_files:
+  - src: files/discovery/nau_production.py
+    dest: "{{ openedx_docker_deploy_base_folder }}/discovery/nau_production.py"
+    service: discovery
+    config_name: discovery_envs_nau_production
+    docker_target: /openedx/discovery/course_discovery/settings/nau_production.py
+
+openedx_discovery_docker_environment_variables: "{{ openedx_discovery_docker_environment_variables_default }}"
+openedx_discovery_docker_environment_variables_default:
+  DJANGO_SETTINGS_MODULE: course_discovery.settings.nau_production
+  # this env variables are loaded by roles/openedx_deploy/files/discovery/nau_production.py
+  DISCOVERY_SECRET_KEY: "{{ DISCOVERY_SECRET_KEY }}"
+  DISCOVERY_HOST: "{{ DISCOVERY_HOST }}"
+  PLATFORM_NAME: "{{ DISCOVERY_PLATFORM_NAME }}"
+  MYSQL_DATABASE: "{{ DISCOVERY_MYSQL }}"
+  MYSQL_USERNAME: "{{ DISCOVERY_MYSQL_USER }}"
+  MYSQL_PASSWORD: "{{ DISCOVERY_MYSQL_PASSWORD }}"
+  MYSQL_HOST: load_balancer_haproxy
+  MYSQL_PORT: 3306
+  MYSQL_READ_REPLICA_HOST: load_balancer_haproxy
+  MYSQL_READ_REPLICA_PORT: 3307
+  MYSQL_READ_REPLICA_USERNAME: "{{ COMMON_MYSQL_READ_ONLY_USER }}"
+  MYSQL_READ_REPLICA_PASSWORD: "{{ COMMON_MYSQL_READ_ONLY_PASS }}"
+  ELASTICSEARCH_HOST_PORT: load_balancer_haproxy:9200
+  CACHE_LOCATION: "redis://{% if OPENEDX_REDIS_USERNAME and OPENEDX_REDIS_PASSWORD %}{{ OPENEDX_REDIS_USERNAME }}:{{ OPENEDX_REDIS_PASSWORD }}{% endif %}@{{ OPENEDX_REDIS_HOST }}:{{ OPENEDX_REDIS_PORT }}/{{ DISCOVERY_CACHE_REDIS_DB }}"
+  LANGUAGE_CODE: "{{ OPENEDX_LANGUAGE_CODE }}"
+  SMTP_HOST: "{{ DISCOVERY_EMAIL_HOST }}"
+  SMTP_PORT: "{{ DISCOVERY_EMAIL_PORT }}"
+  BACKEND_SERVICE_EDX_OAUTH2_KEY: "{{ DISCOVERY_BACKEND_SERVICE_EDX_OAUTH2_KEY }}"
+  BACKEND_SERVICE_EDX_OAUTH2_SECRET: "{{ DISCOVERY_BACKEND_SERVICE_EDX_OAUTH2_SECRET }}"
+  SOCIAL_AUTH_EDX_OAUTH2_KEY: "{{ DISCOVERY_SOCIAL_AUTH_EDX_OAUTH2_KEY }}"
+  SOCIAL_AUTH_EDX_OAUTH2_SECRET: "{{ DISCOVERY_SOCIAL_AUTH_EDX_OAUTH2_SECRET }}"
+  JWT_COMMON_ISSUER: "{{ COMMON_JWT_ISSUER }}"
+  JWT_COMMON_AUDIENCE: "{{ COMMON_JWT_AUDIENCE | default('SET-ME-PLEASE') }}"
+  JWT_COMMON_SECRET_KEY: "{{ COMMON_JWT_SECRET_KEY }}"
+  JWT_PUBLIC_SIGNING_JWK_SET: "{{ COMMON_JWT_PUBLIC_SIGNING_JWK_SET }}"  
+  LMS_BASE_URL: "{{ COMMON_LMS_BASE_URL }}"
+  OPENEDX_SECRET_KEY: "{{ COMMON_JWT_SECRET_KEY }}"
+  SMTP_USERNAME: ""
+  SMTP_PASSWORD: ""
+  SOCIAL_AUTH_REDIRECT_IS_HTTPS: "True"
+
+COMMON_JWT_ISSUER: '{{ COMMON_OAUTH_URL_ROOT }}'
+COMMON_OAUTH_URL_ROOT: '{{ COMMON_OAUTH_PUBLIC_URL_ROOT }}'
+COMMON_OAUTH_BASE_URL: '{{ COMMON_LMS_BASE_URL }}'
+COMMON_OAUTH_PUBLIC_URL_ROOT: '{{ COMMON_OAUTH_BASE_URL }}/oauth2'
+DISCOVERY_CACHE_REDIS_DB: 2
+
+openedx_discovery_port: 8381

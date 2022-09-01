@@ -68,6 +68,23 @@ services:
 {{ helper.service_configs(service='edxapp') }}
 {{ helper.service_secrets(service='edxapp') }}
 
+{% if openedx_app_job %}
+  app-job:
+    image: {{ openedx_app_image }}
+    environment:
+{% for env_var_name, env_var_value in openedx_lms_env_var.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    command: {{ openedx_app_job_command }}
+    deploy:
+      replicas: 1 # should exist only 1 instance of this container
+      mode: replicated # after docker 22.06.0 release change it to replicated-job
+      restart_policy:
+        condition: on-failure # restart this container only if it fails to run
+{{ helper.service_configs(service='edxapp') }}
+{{ helper.service_secrets(service='edxapp') }}
+{% endif %}
+
   cms:
     image: {{ openedx_app_image }}
     environment:
@@ -171,6 +188,36 @@ services:
         condition: on-failure # restart this container only if it fails to run
 {{ helper.service_configs(service='notes') }}
 {{ helper.service_secrets(service='notes') }}
+{% endif %}
+
+  discovery:
+    image: {{ openedx_discovery_docker_image }}
+    environment:
+{% for env_var_name, env_var_value in openedx_discovery_docker_environment_variables.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    deploy:
+      replicas: {{ openedx_discovery_replicas }}
+      placement:
+        max_replicas_per_node: {{ ( openedx_discovery_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
+{{ helper.service_configs(service='discovery') }}
+{{ helper.service_secrets(service='discovery') }}
+
+{% if openedx_discovery_job %}
+  discovery-job:
+    image: {{ openedx_discovery_docker_image }}
+    environment:
+{% for env_var_name, env_var_value in openedx_discovery_docker_environment_variables.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    command: {{ openedx_discovery_job_command }}
+    deploy:
+      replicas: 1 # should exist only 1 instance of this container
+      mode: replicated # after docker 22.06.0 release change it to replicated-job
+      restart_policy:
+        condition: on-failure # restart this container only if it fails to run
+{{ helper.service_configs(service='discovery') }}
+{{ helper.service_secrets(service='discovery') }}
 {% endif %}
 
   smtp:
