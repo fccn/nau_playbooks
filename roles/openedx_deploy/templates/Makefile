@@ -43,9 +43,19 @@ ps: ## list the tasks in the stack
 
 healthcheck-replicas: ## healthcheck - check if it's running the requested service replicas
 	@echo -n 'Check docker stack replicas: '
-	@docker service ls --filter name={{ docker_deploy_stack_name }} --format {% raw %}'{{.Name}}|{{.Replicas}}'{% endraw %} | grep -v _job | grep -v -job | egrep -o '[0-9]+/[0-9]+' | awk -F/ '{ if ($$1 != $$2 && $$2 != 0) exit -1}'
+	@docker service ls --filter name={{ docker_deploy_stack_name }} --format {% raw %}'{{.Name}}|{{.Replicas}}'{% endraw %} | egrep -v "[_-]job" | egrep -o '[0-9]+/[0-9]+' | awk -F/ '{ if ($$1 != $$2 && $$2 != 0) exit -1}'
 	@echo "OK"
 .PHONY: healthcheck-replicas
+
+tasks: ## list the latest docker tasks
+	@docker stack ps {{ docker_deploy_stack_name }} $@ | grep -v " \\\\_ "
+.PHONY: tasks
+
+healthcheck-tasks: ## check if all latest docker tasks are working ok
+	@echo -n 'Check docker tasks: '
+	@docker stack ps {{ docker_deploy_stack_name }} | tail -n +2 | grep -v " \\\\_ " | egrep -v "[_-]job" | awk '{ if ( $$5 != $$6 ) {exit -1} }'
+	@echo "OK"
+.PHONY: healthcheck-tasks
 
 # List the tasks of a service
 _%-ps:
@@ -81,6 +91,7 @@ silent-%:
 healthcheck: ## Overall healthcheck
 healthcheck: \
 	healthcheck-replicas \
+	healthcheck-tasks \
 	{{ ['healthcheck-mysql-port-'] | product(openedx_mysql_containers.keys()|list) | map('join') | join(' ') }} \
 	healthcheck-mysql-primary \
 {% for container, config in openedx_mysql_containers.items() %}
