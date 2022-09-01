@@ -9,3 +9,4 @@ solita_jenkins
 venv_ops/
 venv/
 mysql_dumb.sql
+.vscode
