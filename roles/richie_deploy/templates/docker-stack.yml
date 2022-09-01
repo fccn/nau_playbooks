@@ -130,7 +130,7 @@ services:
     healthcheck:
       test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/80", "&&", "echo", "''", ">", "/dev/tcp/127.0.0.1/443", "||", "exit", "1"]
       start_period: 3s
-      retries: 10
+      retries: 3
       interval: 10s
       timeout: 10s
 {{ helper.service_configs(service=richie_site+'_nginx') }}
