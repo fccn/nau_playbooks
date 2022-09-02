@@ -48,7 +48,7 @@ healthcheck-replicas: ## healthcheck - check if it's running the requested servi
 .PHONY: healthcheck-replicas
 
 tasks: ## list the latest docker tasks
-	@docker stack ps {{ docker_deploy_stack_name }} $@ | grep -v " \\\\_ "
+	@docker stack ps {{ docker_deploy_stack_name }} | grep -v " \\\\_ "
 .PHONY: tasks
 
 healthcheck-tasks: ## check if all latest docker tasks are working ok
