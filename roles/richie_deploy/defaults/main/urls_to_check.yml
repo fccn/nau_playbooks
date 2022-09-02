@@ -38,3 +38,19 @@ richie_nau_urls_to_check:
     user: "{{ COMMON_HTPASSWD_USER | default(None) }}"
     password: "{{ COMMON_HTPASSWD_PASS | default(None) }}"
     haproxy_protocol: true
+  - name: Marketing specific course page in English
+    host: "{{ richie_nau_app_richie_site }}"
+    protocol: https
+    port: "{{ richie_nau_nginx_https_ingress_port }}"
+    page: en/course/cidadao-ciberseguro/
+    user: "{{ COMMON_HTPASSWD_USER | default(None) }}"
+    password: "{{ COMMON_HTPASSWD_PASS | default(None) }}"
+    haproxy_protocol: true
+  - name: Marketing specific course page in Portuguese
+    host: "{{ richie_nau_app_richie_site }}"
+    protocol: https
+    port: "{{ richie_nau_nginx_https_ingress_port }}"
+    page: pt/curso/cidadao-ciberseguro/
+    user: "{{ COMMON_HTPASSWD_USER | default(None) }}"
+    password: "{{ COMMON_HTPASSWD_PASS | default(None) }}"
+    haproxy_protocol: true
