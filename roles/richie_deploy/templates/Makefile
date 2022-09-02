@@ -119,10 +119,16 @@ healthcheck-mysql-primary: ## show primary master status on mysql_1 docker conta
 .PHONY: healthcheck-mysql-primary
 
 {% for container, config in richie_mysql_containers.items() %}
+{{ container }}-showprocess-list: ## show the mysql processes inside the {{ container }} database instance
+	@MYSQL_PWD="{{ richie_MYSQL_ROOT_PASSWORD }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ config.ingress_port }} --execute="show processlist;"
+.PHONY: {{ container }}-showprocess-list
+{% endfor %}
+
+{% for container, config in richie_mysql_containers.items() %}
 {% if not config.primary %}
+# Ok if seconds behind master is lower than 60 seconds
 healthcheck-mysql-replica-{{ container }}: ## show replica slave status on {{ container }} docker container
 	@echo -n "Check mysql replica {{ container }} seconds behind master is lower than 60 seconds: "
-    # Ok if seconds behind master is lower than 60 seconds
 	@echo 'show slave status \G' | MYSQL_PWD="{{ openark_orchestrator_client_password }}" mysql -u {{ openark_orchestrator_client_user }} --host 127.0.0.1 --port {{ config.ingress_port }} | egrep "Seconds_Behind_Master: [0-5][0-9]?" > /dev/null
 	@echo "OK"
 .PHONY: healthcheck-mysql-replica-{{ container }}
@@ -138,8 +144,21 @@ backup-mysql-{{ _site }}: ## backup mysql db of {{ _site }} site
 	@echo 'Done! File: $(BACKUP_FILE_{{ _site }})'
 .PHONY: backup-mysql-{{ _site }}
 
+_restore-mysql-{{ _site }}-change-environment:
+	@test -n "${FROM_ENV}" || ( echo "Missing argument 'FROM_ENV', FROM_ENV='www.example.com'" && exit 1)
+	@test -n "${TO_ENV}"   || ( echo "Missing argument 'TO_ENV', FROM_ENV='dev.example.com'"   && exit 1)
+	@cat ${ROOT_DIR}/$(BACKUP_FILE_{{ _site }}) | gzip -d > ${ROOT_DIR}/$(BACKUP_FILE_{{ _site }})_temp
+	@sed -in "s/${FROM_ENV}/${TO_ENV}/g" ${ROOT_DIR}/$(BACKUP_FILE_{{ _site }})_temp
+	@cat ${ROOT_DIR}/$(BACKUP_FILE_{{ _site }})_temp | gzip -c -9  > ${ROOT_DIR}/$(BACKUP_FILE_{{ _site }})
+	@rm ${ROOT_DIR}/$(BACKUP_FILE_{{ _site }})_temp
+	@echo "Successfully change the mysql backup from '${FROM_ENV}' to '${TO_ENV}'."
+.PHONY: _restore-mysql-{{ _site }}-change-environment
+
+restore-mysql-{{ _site }}-change-environment: | _restore-mysql-{{ _site }}-change-environment restore-mysql-{{ _site }} ## restore mysql db of {{ _site }} from a different environment, use: make restore-mysql-{{ _site }}-change-environment FROM_ENV="stage.nau.fccn.pt" TO_ENV="nau.edu.pt"
+.PHONY: restore-mysql-{{ _site }}-change-environment
+
 restore-mysql-{{ _site }}: ## restore mysql db of {{ _site }} site
-	@echo -n 'Loading to {{ config.app_environment_variables.DB_NAME }} MySQL database the backfile $(BACKUP_FILE_{{ _site }}) '
+	@echo -n "Loading to '{{ config.app_environment_variables.DB_NAME }}' MySQL database the backfile '$(BACKUP_FILE_{{ _site }})'. You can monitor the progress running 'make mysql_1-showprocess-list'."
 	@cat ${ROOT_DIR}/$(BACKUP_FILE_{{ _site }}) | gzip -d | MYSQL_PWD="{{ richie_MYSQL_ROOT_PASSWORD }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ richie_mysql_primary.ingress_port }} {{ config.app_environment_variables.DB_NAME }}
 	@echo 'Done!'
 .PHONY: restore-mysql-{{ _site }}
@@ -202,11 +221,10 @@ healthcheck-load-balancer-haproxy-redis-port: ## check load balancer HAProxy red
 ########################
 
 {% for _site, config in richie_sites.items() %}
+# check if last job run has finished with complete stateand without any error
 healthcheck-{{ _site }}_app_job: ## check if the migrate and bootstrap_elasticsearch django commands have finished with success for {{ _site }} site
 	@echo -n "Check {{ _site }}_app_job with django migrate and bootstrap elasticsearch commands: "
-    # check if last job run has finished with complete state
 	@docker service ps richie_nau_app_job --format {% raw %}'{{.CurrentState}}'{% endraw %} | head -n 1 | egrep -o "^Complete" | grep -q "Complete"
-    # check if last job run has finished without any error
 	@docker service ps richie_nau_app_job --format {% raw %}'{{.CurrentState}}|{{.Error}}'{% endraw %} | head -n 1 | egrep -o "\|.*" | grep -q "|"
 	@echo "OK"
 .PHONY: healthcheck-{{ _site }}_app_job
