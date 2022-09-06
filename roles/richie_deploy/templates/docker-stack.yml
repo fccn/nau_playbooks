@@ -52,7 +52,7 @@ services:
       test: curl --silent --fail --resolve {{ richie_site_config.app_environment_variables.DJANGO_ALLOWED_HOSTS }}:8000:127.0.0.1 'http://{{ richie_site_config.app_environment_variables.DJANGO_ALLOWED_HOSTS }}:8000'
       interval: 30s
       timeout: 10s
-      retries: 30
+      retries: 3
       start_period: 10s
 {{ helper.service_configs(service=richie_site+'_app') }}
 {{ helper.service_secrets(service=richie_site+'_app') }}
