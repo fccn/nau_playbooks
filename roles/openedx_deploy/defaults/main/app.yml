@@ -13,6 +13,10 @@ OPENEDX_LMS_UWSGI_WORKERS: 2
 OPENEDX_CMS_UWSGI_WORKERS: 2
 
 openedx_app_job: false
+
+# To manually run the migrations or other command:
+#   docker exec -it $(docker ps --filter "name=openedx_lms\." -q) bash
+#   ./manage.py lms migrate --settings nau_production
 openedx_app_job_command: bash -c "python manage.py lms migrate && python manage.py cms migrate"
 
 openedx_app_docker_deploy_templates:
