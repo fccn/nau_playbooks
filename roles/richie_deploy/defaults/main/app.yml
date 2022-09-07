@@ -108,12 +108,12 @@ richie_nau_app_environment_variables_default:
   # DJANGO_SOCIAL_AUTH_EDX_OAUTH2_END_SESSION_URL: {{ richie_nau_app_openedx_lms_url }}/oauth2/logout
 
   # Google Analytics
-  WEB_ANALYTICS_PROVIDER: google_analytics
-  WEB_ANALYTICS_LOCATION: head
-  WEB_ANALYTICS_ID: UA-122313510-1
+  # WEB_ANALYTICS_PROVIDER: google_analytics
+  # WEB_ANALYTICS_LOCATION: head
+  # WEB_ANALYTICS_ID: UA-122313510-1
 
   # Jira service desk
-  JIRA_WIDGET_KEY: c19e6a24-a1f6-4a84-aa46-89e82b94b809
+  # JIRA_WIDGET_KEY: c19e6a24-a1f6-4a84-aa46-89e82b94b809
 
   # Facebook pixel
   # FACEBOOK_PIXEL_ID: "1013367026191204"
