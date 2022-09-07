@@ -112,7 +112,7 @@ healthcheck: \
 
 healthcheck-mysql-primary: ## show primary master status on mysql_1 docker container
 	@echo -n "Check mysql master status: "
-	@echo 'show master status \G' | MYSQL_PWD="{{ openark_orchestrator_client_password }}" mysql -u {{ openark_orchestrator_client_user }} --host 127.0.0.1 --port {{ openedx_mysql_primary.ingress_port }} > /dev/null
+	@echo 'show master status \G' | MYSQL_PWD="{{ openark_orchestrator_client_password }}" mysql -u {{ openark_orchestrator_client_user }} --host 127.0.0.1 --port {{ openedx_mysql_primary.outside_port }} > /dev/null
 	@echo "OK"
 .PHONY: healthcheck-mysql-primary
 
@@ -120,7 +120,7 @@ healthcheck-mysql-primary: ## show primary master status on mysql_1 docker conta
 {% if not config.primary %}
 healthcheck-mysql-replica-{{ container }}: ## show replica slave status on {{ container }} docker container
 	@echo -n "Check mysql replica {{ container }} seconds behind master is lower than 60 seconds: "
-	@echo 'show slave status \G' | MYSQL_PWD="{{ openark_orchestrator_client_password }}" mysql -u {{ openark_orchestrator_client_user }} --host 127.0.0.1 --port {{ config.ingress_port }} | egrep "Seconds_Behind_Master: [0-5][0-9]?" > /dev/null
+	@echo 'show slave status \G' | MYSQL_PWD="{{ openark_orchestrator_client_password }}" mysql -u {{ openark_orchestrator_client_user }} --host 127.0.0.1 --port {{ config.outside_port }} | egrep "Seconds_Behind_Master: [0-5][0-9]?" > /dev/null
 	@echo "OK"
 .PHONY: healthcheck-mysql-replica-{{ container }}
 
@@ -129,7 +129,7 @@ healthcheck-mysql-replica-{{ container }}: ## show replica slave status on {{ co
 {% for container, config in openedx_mysql_containers.items() %}
 healthcheck-mysql-port-{{ container }}: ## check mysql port for {{ container }}
 	@echo -n "Check mysql port for {{ container }}: "
-	@nc -z 127.0.0.1 {{ config.ingress_port }}
+	@nc -z 127.0.0.1 {{ config.outside_port }}
 	@echo "OK"
 .PHONY: healthcheck-port-{{ container }}
 {% endfor %}

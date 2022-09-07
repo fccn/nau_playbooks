@@ -46,7 +46,7 @@ openedx_mysql_containers:
     hostname: "{{ openedx_mysql_1_hostname }}"
     data: "{{ openedx_mysql_data }}"
     host_fqdn: "{{ openedx_mysql_primary_server }}"
-    ingress_port: 3308
+    outside_port: 3308
     primary: True
     mysql_replication_login_user: "{{ COMMON_MYSQL_ADMIN_USER }}"
     mysql_replication_login_password: "{{ EDXAPP_MYSQL_PASSWORD_ADMIN }}"
@@ -62,7 +62,7 @@ openedx_mysql_containers:
     hostname: "{{ openedx_mysql_2_hostname }}"
     data: "{{ openedx_mysql_data }}"
     host_fqdn: "{{ openedx_mysql_replica_server }}"
-    ingress_port: 3309
+    outside_port: 3309
     primary: False
     mysql_replication_login_user: "{{ COMMON_MYSQL_ADMIN_USER }}"
     mysql_replication_login_password: "{{ EDXAPP_MYSQL_PASSWORD_ADMIN }}"
