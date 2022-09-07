@@ -1,0 +1,71 @@
+# Run discovery refresh django scripts: 
+# - Refresh course metadata
+# - Remove unused indexes
+# - Update index
+# 
+# And, also run LMS cache programs data.
+#
+# It finds the docker swarm node where it is run the discovery and lms containers
+# and then executes the django manage command inside the container.
+#
+# Ansible optional parameters:
+# - discovery_exec : 
+# - lms_exec
+#
+#
+---
+- name: Run django commands on discovery and lms containers
+  hosts: "nau_docker_swarm_managers[0]"
+  vars:
+    discovery_exec: true
+    lms_exec: true
+    
+    # Configuration of discovery and lms django commands with docker service and its shell command to execute.
+    commands_to_execute:
+      - name: discovery refresh course metadata
+        docker_service_to_exec: openedx_discovery
+        docker_exec_command: python manage.py refresh_course_metadata --no-color
+        docker_exec_output_fact: discovery_refresh_course_metadata_output
+        when: "{{ discovery_exec | bool }}"
+      - name: discovery remove unused indexes
+        docker_service_to_exec: openedx_discovery
+        docker_exec_command: python manage.py remove_unused_indexes --no-color
+        docker_exec_output_fact: discovery_remove_unused_indexes_output
+        when: "{{ discovery_exec | bool }}"
+      - name: discovery update index
+        docker_service_to_exec: openedx_discovery
+        docker_exec_command: python manage.py update_index --disable-change-limit --no-color
+        docker_exec_output_fact: discovery_update_index_output
+        when: "{{ discovery_exec | bool }}"
+      - name: lms cache programs
+        docker_service_to_exec: openedx_lms
+        docker_exec_command: python manage.py lms cache_programs --settings nau_production
+        docker_exec_output_fact: lms_cache_programs_output
+        when: "{{ lms_exec | bool }}"
+
+  tasks:
+    - name: Execute discovery and lms refresh jobs
+      include_role:
+        name: docker_exec_in_swarm
+      vars:
+        docker_service_to_exec: "{{ exec.docker_service_to_exec }}"
+        docker_exec_command: "{{ exec.docker_exec_command }}"
+        docker_exec_ignore_errors: "{{ exec.docker_exec_ignore_errors | default(True) }}"
+        docker_exec_output_fact: "{{ exec.docker_exec_output_fact | default(None) }}"
+      when: exec.when | default(true)
+      loop_control:
+        loop_var: exec
+        label: "Execute {{ exec.name }}"
+      loop: "{{ commands_to_execute }}"
+
+    # needed only because we are ignoring the errors on previous task and now we are checking if
+    # each has finished with success.
+    - name: Check if above commands have finished with success
+      assert:
+        that: hostvars[inventory_hostname][check_cmd.docker_exec_output_fact].rc == 0 and "ERROR" not in hostvars[inventory_hostname][check_cmd.docker_exec_output_fact].stdout
+        quiet: true
+      when: check_cmd.when | default(true)
+      loop_control:
+        loop_var: check_cmd
+        label: Check if {{ check_cmd.name }} have finished with success
+      loop: "{{ commands_to_execute }}"
