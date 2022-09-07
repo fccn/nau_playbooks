@@ -1,0 +1,74 @@
+---
+- name: Check if 'docker_service_to_exec' is defined
+  assert:
+    that: docker_service_to_exec is defined
+    fail_msg: You need to define the 'docker_service_to_exec' variable
+    success_msg: The 'docker_service_to_exec' is defined, with {{ docker_service_to_exec }}
+    quiet: true
+
+- name: Check if 'docker_exec_command' is defined
+  assert:
+    that: docker_exec_command is defined
+    fail_msg: You need to define the 'docker_exec_command' variable
+    success_msg: The 'docker_exec_command' is defined
+    quiet: true
+
+- name: Set variable 'docker_service_to_exec_with_slot'
+  set_fact:
+    docker_service_to_exec_with_slot: "{{ docker_service_to_exec }}\\.1"
+
+- name: Find the node where it's running the first discovery container
+  shell: docker stack ps openedx | grep -v " \\\\_ " | grep "{{ docker_service_to_exec_with_slot }}" | awk '{print $4}'
+  check_mode: no # execute even when ansible is run with --check
+  changed_when: false
+  register: node_output
+
+- name: Check if docker swarm node has been found
+  assert:
+    that: >
+      node_output.stdout in groups['all']
+    fail_msg: The node '{{ node_output.stdout }}' has not been found in the inventory list.
+    success_msg: Found the 1st container on the node '{{ node_output.stdout }}'
+    quiet: true
+
+- name: Find if the container is on the running state
+  shell: docker stack ps openedx | grep -v " \\\\_ " | grep "{{ docker_service_to_exec_with_slot }}" | awk '{print $5}'
+  check_mode: no # execute even when ansible is run with --check
+  changed_when: false
+  register: state_output
+
+- name: Check if container is on Running state
+  assert:
+    that: state_output.stdout == "Running"
+    fail_msg: The container isn't on the Running state.
+    success_msg: The 1st container is on the 'Running' state.
+    quiet: true
+
+- name: Execute command in docker container
+  shell: docker exec -it $(docker ps --filter "name={{ docker_service_to_exec_with_slot }}" -q) {{ docker_exec_command }}
+  ignore_errors: True
+  delegate_to: "{{ node_output.stdout }}"
+  register: exec_output
+  no_log: true # don't print the log, because it isn't formatted, we print it on the next tasks
+  
+- name: Print stdout of refresh course metadata output
+  debug:
+    msg: "{{ exec_output.stdout_lines }}"
+  when: exec_output is defined
+
+- name: Print stderr of refresh course metadata output
+  debug:
+    msg: "{{ exec_output.stderr_lines }}"
+  when: exec_output is defined
+
+- name: Check that command has finished with success if we need to check its return status
+  assert:
+    that: exec_output.rc == 0 and 'ERROR' not in exec_output.stdout
+    fail_msg: The command has finished with error or has an ERROR on its output
+    success_msg: "{{ }}"
+  when: not ( docker_exec_ignore_errors | default(False) )
+
+- name: Dynamic define fact based on 'docker_exec_output_fact'
+  set_fact: 
+     "{{ docker_exec_output_fact }}": "{{ exec_output }}"
+  when: docker_exec_output_fact is defined and exec_output is defined
