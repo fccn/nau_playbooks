@@ -396,6 +396,7 @@ services:
   {{ mysql_container_name }}:
     image: {{ openedx_mysql_docker_image | default("docker.io/mysql:5.7.37-debian") }}
     hostname: {{ mysql_container.hostname }}
+    command: mysqld --character-set-server=utf8 --collation-server=utf8_general_ci
     environment:
       # Use custom timezone
       TZ: {{ openedx_timezone | default("Europe/Lisbon") }}
