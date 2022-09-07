@@ -13,9 +13,10 @@ It assumes that all the docker swarm nodes are configured on the ansible invento
 
 Example, replace `stack_service` with something like `openedx_lms` for a stack name `openedx` with a docker service named `lms`.
 ```yaml
-  - include_role:
+- name: Print all django commands available for a service that runs on a stack
+  include_role:
     name: docker_exec_in_swarm
-    vars:
+  vars:
     docker_service_to_exec: stack_service
     docker_exec_command: python manage.py --help
 ```
