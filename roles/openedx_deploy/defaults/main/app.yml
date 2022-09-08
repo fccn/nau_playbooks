@@ -75,7 +75,7 @@ OPENEDX_SESSION_COOKIE_DOMAIN: ".{{ OPENEDX_LMS_HOST }}"
 # Generic cache configuration so it can be reused bellow on both lms and studio
 openedx_generic_cache_config: &default_openedx_generic_cache_config
   BACKEND: "django_redis.cache.RedisCache"
-  LOCATION: "redis://{% if OPENEDX_REDIS_USERNAME and OPENEDX_REDIS_PASSWORD %}{{ OPENEDX_REDIS_USERNAME }}:{{ OPENEDX_REDIS_PASSWORD }}{% endif %}@{{ OPENEDX_REDIS_HOST }}:{{ OPENEDX_REDIS_PORT }}/{{ OPENEDX_CACHE_REDIS_DB }}"
+  LOCATION: "redis://{% if OPENEDX_REDIS_USERNAME and OPENEDX_REDIS_PASSWORD %}{{ OPENEDX_REDIS_USERNAME }}:{{ OPENEDX_REDIS_PASSWORD }}@{% endif %}{{ OPENEDX_REDIS_HOST }}:{{ OPENEDX_REDIS_PORT }}/{{ OPENEDX_CACHE_REDIS_DB }}"
 
 edxapp_generic_contentstore_config: &edxapp_generic_default_contentstore
   ENGINE:  'xmodule.contentstore.mongo.MongoContentStore'
@@ -238,6 +238,7 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
   CELERY_BROKER_PASSWORD: "{{ OPENEDX_REDIS_PASSWORD }}"
   ENABLE_COMPREHENSIVE_THEMING: true
   COMPREHENSIVE_THEME_DIRS: ["/openedx/themes"]
+  DEFAULT_SITE_THEME: "{{ EDXAPP_DEFAULT_SITE_THEME }}"
   STATIC_ROOT_BASE: "/openedx/staticfiles"
   ACE_ROUTING_KEY: "edx.lms.core.default"
   HTTPS: "on"
@@ -430,6 +431,7 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
   LEARNER_PORTAL_URL_ROOT: "https://learner-portal-{{ EDXAPP_LMS_BASE }}"
   LEARNING_MICROFRONTEND_URL: "{{ EDXAPP_LEARNING_MICROFRONTEND_URL }}"
   LMS_INTERNAL_ROOT_URL: "https://{{ OPENEDX_LMS_HOST }}"
+  CORS_ORIGIN_WHITELIST: "{{ EDXAPP_CORS_ORIGIN_WHITELIST }}"
   LOGIN_REDIRECT_WHITELIST: "{{ EDXAPP_LOGIN_REDIRECT_WHITELIST }}"
   MAINTENANCE_BANNER_TEXT: "{{ EDXAPP_MAINTENANCE_BANNER_TEXT }}"
   MKTG_URLS: "{{ EDXAPP_MKTG_URLS }}"

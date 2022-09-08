@@ -5,10 +5,11 @@
 server {
 
   server_name forum.*;
-  listen {{ FORUM_NGINX_PORT | default("18080") }}
-  {% if NGINX_ENABLE_IPV6 | default(False) %}
+  listen {{ FORUM_NGINX_PORT | default("18080") }};
+{% if NGINX_ENABLE_IPV6 | default(False) %}
   listen [::]:{{ FORUM_NGINX_PORT }};
-  {% endif %}
+{% endif %}
+
   client_max_body_size {{ NGINX_FORUM_CLIENT_MAX_BODY_SIZE | default("1M") }};
   proxy_read_timeout {{ NGINX_FORUM_PROXY_READ_TIMEOUT | default("60s") }};
   keepalive_timeout 5;

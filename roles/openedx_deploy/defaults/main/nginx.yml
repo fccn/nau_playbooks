@@ -12,44 +12,51 @@ openedx_nginx_docker_deploy_templates:
   # nginx.conf
   - src: templates/nginx/nginx.conf
     dest: "{{ openedx_docker_deploy_base_folder }}/nginx/nginx.conf"
-    docker_target: /etc/nginx/nginx.conf
     config_name: nginx_conf
     service: nginx
+    docker_target: /etc/nginx/nginx.conf
+
+  # maps, additional configuration for nginx
+  - src: templates/nginx/sites/maps.j2
+    dest: "{{ openedx_docker_deploy_base_folder }}/nginx/sites/maps"
+    config_name: nginx_site_maps
+    service: nginx
+    docker_target: /etc/nginx/sites-enabled/maps
 
   # default lms site
-  - src: templates/nginx/sites-available/lms.j2
-    dest: "{{ openedx_docker_deploy_base_folder }}/nginx/sites-available/lms"
+  - src: templates/nginx/sites/lms.j2
+    dest: "{{ openedx_docker_deploy_base_folder }}/nginx/sites/lms"
     config_name: nginx_site_lms
     service: nginx
-    docker_target: /etc/nginx/sites-available/lms
+    docker_target: /etc/nginx/sites-enabled/lms
 
   # studio site
-  - src: templates/nginx/sites-available/cms.j2
-    dest: "{{ openedx_docker_deploy_base_folder }}/nginx/sites-available/cms"
+  - src: templates/nginx/sites/cms.j2
+    dest: "{{ openedx_docker_deploy_base_folder }}/nginx/sites/cms"
     config_name: nginx_site_cms
     service: nginx
-    docker_target: /etc/nginx/sites-available/cms
+    docker_target: /etc/nginx/sites-enabled/cms
 
   # forum site
-  - src: templates/nginx/sites-available/forum.j2
-    dest: "{{ openedx_docker_deploy_base_folder }}/nginx/sites-available/forum"
+  - src: templates/nginx/sites/forum.j2
+    dest: "{{ openedx_docker_deploy_base_folder }}/nginx/sites/forum"
     config_name: nginx_site_forum
     service: nginx
-    docker_target: /etc/nginx/sites-available/forum
+    docker_target: /etc/nginx/sites-enabled/forum
 
   # discovery site
-  - src: templates/nginx/sites-available/discovery.j2
-    dest: "{{ openedx_docker_deploy_base_folder }}/nginx/sites-available/discovery"
+  - src: templates/nginx/sites/discovery.j2
+    dest: "{{ openedx_docker_deploy_base_folder }}/nginx/sites/discovery"
     config_name: nginx_site_discovery
     service: nginx
-    docker_target: /etc/nginx/sites-available/discovery
+    docker_target: /etc/nginx/sites-enabled/discovery
 
   # notes site
-  - src: templates/nginx/sites-available/notes.j2
-    dest: "{{ openedx_docker_deploy_base_folder }}/nginx/sites-available/notes"
+  - src: templates/nginx/sites/notes.j2
+    dest: "{{ openedx_docker_deploy_base_folder }}/nginx/sites/notes"
     config_name: nginx_site_notes
     service: nginx
-    docker_target: /etc/nginx/sites-available/notes
+    docker_target: /etc/nginx/sites-enabled/notes
 
 openedx_nginx_docker_deploy_files:
   # ssl crt
@@ -64,11 +71,11 @@ openedx_nginx_docker_deploy_files:
     dest: "{{ openedx_docker_deploy_base_folder }}/nginx/ssl/certificate.key.pem"
     secret_name: nginx_certificate_key
     service: nginx
-    docker_target: /etc/ssl/certs/certificate.key.pem
+    docker_target: "{{ openedx_nginx_ssl_certificate_key_docker_target }}"
     when: "{{ openedx_nginx_ssl_certificate_key is defined }}"
 
 openedx_nginx_ssl_certificate_docker_target: /etc/ssl/certs/certificate.crt.pem
-openedx_nginx_ssl_certificate_key_docker_target: /etc/ssl/certs/certificate.key.pem
+openedx_nginx_ssl_certificate_key_docker_target: /etc/ssl/private/certificate.key.pem
 
 # a default site
 openedx_nginx_lms_servers:
@@ -78,7 +85,7 @@ openedx_nginx_lms_servers:
     ssl_certificate_key: "{{ openedx_nginx_ssl_certificate_key_docker_target }}"
 
 openedx_nginx_cms_servers:
-  - server_name: https://{{ EDXAPP_CMS_BASE }}
+  - server_name: "{{ EDXAPP_CMS_BASE }}"
     ssl_certificate: "{{ openedx_nginx_ssl_certificate_docker_target }}"
     ssl_certificate_key: "{{ openedx_nginx_ssl_certificate_key_docker_target }}"
 
