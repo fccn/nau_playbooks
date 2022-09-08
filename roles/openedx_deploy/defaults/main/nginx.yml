@@ -1,4 +1,13 @@
 ---
+openedx_nginx_image: nginx:1.22.0
+openedx_nginx_replicas: 1
+
+openedx_nginx_http: 80
+openedx_nginx_http_ingress_port: 80
+
+openedx_nginx_https: 443
+openedx_nginx_https_ingress_port: 443
+
 openedx_nginx_docker_deploy_templates:
   # nginx.conf
   - src: templates/nginx/nginx.conf
@@ -48,7 +57,7 @@ openedx_nginx_docker_deploy_files:
     dest: "{{ openedx_docker_deploy_base_folder }}/nginx/ssl/certificate.crt.pem"
     secret_name: nginx_certificate_crt
     service: nginx
-    docker_target: /etc/ssl/certs/certificate.crt.pem
+    docker_target: "{{ openedx_nginx_ssl_certificate_docker_target }}"
     when: "{{ openedx_nginx_ssl_certificate is defined }}"
   # ssl key
   - src: "{{ openedx_nginx_ssl_certificate_key }}"
@@ -58,25 +67,23 @@ openedx_nginx_docker_deploy_files:
     docker_target: /etc/ssl/certs/certificate.key.pem
     when: "{{ openedx_nginx_ssl_certificate_key is defined }}"
 
+openedx_nginx_ssl_certificate_docker_target: /etc/ssl/certs/certificate.crt.pem
+openedx_nginx_ssl_certificate_key_docker_target: /etc/ssl/certs/certificate.key.pem
+
 # a default site
 openedx_nginx_lms_servers:
   - server_name: _
     default_server: true
-    ssl_certificate: "{{ openedx_nginx_ssl_certificate }}"
-    ssl_certificate_key: "{{ openedx_nginx_ssl_certificate_key }}"
+    ssl_certificate: "{{ openedx_nginx_ssl_certificate_docker_target }}"
+    ssl_certificate_key: "{{ openedx_nginx_ssl_certificate_key_docker_target }}"
 
 openedx_nginx_cms_servers:
   - server_name: https://{{ EDXAPP_CMS_BASE }}
-    ssl_certificate: "{{ openedx_nginx_ssl_certificate }}"
-    ssl_certificate_key: "{{ openedx_nginx_ssl_certificate_key }}"
+    ssl_certificate: "{{ openedx_nginx_ssl_certificate_docker_target }}"
+    ssl_certificate_key: "{{ openedx_nginx_ssl_certificate_key_docker_target }}"
 
 # from the old ansible configuration repository
 COMMON_ENABLE_BASIC_AUTH: False
 EDXAPP_LMS_ENABLE_BASIC_AUTH: "{{ COMMON_ENABLE_BASIC_AUTH }}"
 NGINX_HSTS_MAX_AGE: 31536000
 NGINX_P3P_MESSAGE: 'CP="Open edX does not have a P3P policy."'
-
-openedx_nginx_image: nginx:1.22.0
-openedx_nginx_http_ingress_port: 80
-openedx_nginx_https_ingress_port: 443
-openedx_nginx_replicas: 1

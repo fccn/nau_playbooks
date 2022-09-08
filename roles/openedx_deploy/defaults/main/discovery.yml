@@ -4,6 +4,11 @@ openedx_discovery_job: false
 openedx_discovery_docker_image: overhangio/openedx-discovery:12.0.4
 openedx_discovery_job_command: bash -c "python manage.py migrate --noinput && python manage.py install_es_indexes"
 
+openedx_discovery_port: 8381
+
+openedx_discovery_nginx_ssl_certificate_docker_target: "{{ openedx_nginx_ssl_certificate_docker_target }}"
+openedx_discovery_nginx_ssl_certificate_key_docker_target: "{{ openedx_nginx_ssl_certificate_key_docker_target }}"
+
 openedx_discovery_docker_deploy_files:
   - src: files/discovery/nau_production.py
     dest: "{{ openedx_docker_deploy_base_folder }}/discovery/nau_production.py"
@@ -51,5 +56,3 @@ COMMON_OAUTH_URL_ROOT: '{{ COMMON_OAUTH_PUBLIC_URL_ROOT }}'
 COMMON_OAUTH_BASE_URL: '{{ COMMON_LMS_BASE_URL }}'
 COMMON_OAUTH_PUBLIC_URL_ROOT: '{{ COMMON_OAUTH_BASE_URL }}/oauth2'
 DISCOVERY_CACHE_REDIS_DB: 2
-
-openedx_discovery_port: 8381

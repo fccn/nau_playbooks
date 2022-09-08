@@ -3,10 +3,6 @@
 # Studio (CMS) nginx site configuration
 #
 
-upstream cms-backend {
-    server cms:8000 fail_timeout=0;
-}
-
 {% if EDXAPP_CORS_ORIGIN_WHITELIST|length > 0 %}
   # The Origin request header indicates where a fetch originates from. It doesn't include any path information,
   # but only the server name (e.g. https://www.example.com).

@@ -4,6 +4,11 @@ openedx_notes_job: false
 openedx_notes_docker_image: overhangio/openedx-notes:12.0.0
 openedx_notes_job_command: ./manage.py migrate
 
+openedx_notes_port: 8000
+
+openedx_notes_nginx_ssl_certificate_docker_target: "{{ openedx_nginx_ssl_certificate_docker_target }}"
+openedx_notes_nginx_ssl_certificate_key_docker_target: "{{ openedx_nginx_ssl_certificate_key_docker_target }}"
+
 openedx_notes_docker_deploy_files:
   - src: files/notes/nau_production.py
     dest: "{{ openedx_docker_deploy_base_folder }}/notes/nau_production.py"
@@ -27,4 +32,3 @@ openedx_notes_docker_environment_variables_default:
   NOTES_OAUTH2_ID: "{{ EDX_NOTES_API_CLIENT_ID }}"
 
 EDX_NOTES_API_HOSTNAME: '~^((stage|prod)-)?notes.*'
-openedx_notes_port: 8000

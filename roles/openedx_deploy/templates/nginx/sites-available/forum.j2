@@ -2,11 +2,6 @@
 #
 # Open edx Forum nginx configuration
 
-{# Connects to forum on port 4567 typically. #}
-upstream forum_app_server {
-  server forum:{{ openedx_forum_port }} fail_timeout=0;
-}
-
 server {
 
   server_name forum.*;
@@ -24,7 +19,7 @@ server {
 
   {% include "robots.j2" %}
 
-location @proxy_to_app {
+  location @proxy_to_app {
     {% if NGINX_SET_X_FORWARDED_HEADERS %}
     proxy_set_header X-Forwarded-Proto $scheme;
     proxy_set_header X-Forwarded-Port $server_port;
@@ -41,6 +36,14 @@ location @proxy_to_app {
     proxy_set_header Host $http_host;
 
     proxy_redirect off;
-    proxy_pass http://forum_app_server;
+
+    # When using a variable to specify the domain name in the proxy_pass directive.
+    # NGINX re‑resolves the domain name when its TTL expires.
+    # Nevertheless, when we are using the resolver directive and its valid parameter,
+    # you can tell NGINX to ignore the TTL and re‑resolve names at a specified 
+    # frequency instead.
+    # https://www.nginx.com/blog/dns-service-discovery-nginx-plus/
+    set $backend_servers forum;
+    proxy_pass http://$backend_servers:{{ openedx_forum_port }} ;
   }
 }

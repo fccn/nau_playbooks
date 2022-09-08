@@ -2,52 +2,56 @@
 #
 # Open edx discovery nginx configuration
 
-upstream discovery_app_server {
-    server discovery:{{ openedx_discovery_port }} fail_timeout=0;
-}
-
 server {
-    server_name discovery.*;
+  server_name discovery.*;
+  listen 80{{ ' http2' if NGINX_HTTP2 is defined and NGINX_HTTP2 else ''}};
 
-    {% if NGINX_ENABLE_SSL %}
+{% if NGINX_ENABLE_SSL %}
+  listen 443 ssl{{ ' http2' if NGINX_HTTP2 is defined and NGINX_HTTP2 else ''}};  
+  ssl_certificate /etc/ssl/certs/{{ openedx_discovery_nginx_ssl_certificate_docker_target | basename }};
+  ssl_certificate_key /etc/ssl/private/{{ openedx_discovery_nginx_ssl_certificate_key_docker_target | basename }};
+{% endif %}
 
-    listen 443 ssl;
-    ssl_certificate /etc/ssl/certs/{{ openedx_discovery_nginx_ssl_certificate | default(openedx_nginx_ssl_certificate) | basename }};
-    ssl_certificate_key /etc/ssl/private/{{ openedx_discovery_nginx_ssl_certificate_key | default(openedx_nginx_ssl_certificate_key) | basename }};
-    {% endif %}
+{% if NGINX_ENABLE_SSL or NGINX_REDIRECT_TO_HTTPS %}
+  # request the browser to use SSL for all connections
+  add_header Strict-Transport-Security "max-age={{ NGINX_HSTS_MAX_AGE }}; includeSubDomains";
+{% endif %}
+  add_header X-Backend-Server $hostname always;
 
-    {% if NGINX_ENABLE_SSL or NGINX_REDIRECT_TO_HTTPS %}
-    # request the browser to use SSL for all connections
-    add_header Strict-Transport-Security "max-age={{ NGINX_HSTS_MAX_AGE }}; includeSubDomains";
-    {% endif %}
-    add_header X-Backend-Server $hostname always;
+  # Disables server version feedback on pages and in headers
+  server_tokens off;
 
-    # Disables server version feedback on pages and in headers
-    server_tokens off;
+  # Prevent invalid display courseware in IE 10+ with high privacy settings
+  add_header P3P '{{ NGINX_P3P_MESSAGE }}';
 
-    # Prevent invalid display courseware in IE 10+ with high privacy settings
-    add_header P3P '{{ NGINX_P3P_MESSAGE }}';
+{% if NGINX_REDIRECT_TO_HTTPS %}
+  if ($scheme != "https") 
+  { 
+    return 301 https://$host$request_uri;
+  }
+{% endif %}
 
-    {% if NGINX_REDIRECT_TO_HTTPS %}
-    if ($scheme != "https") 
-    { 
-        return 301 https://$host$request_uri;
-    }
-    {% endif %}
+  location / {
+    try_files $uri @proxy_to_app;
+  }
 
-    location / {
-        try_files $uri @proxy_to_app;
-    }
+  location @proxy_to_app {
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Port $server_port;
+    proxy_set_header X-Forwarded-For $remote_addr;
 
-    location @proxy_to_app {
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header X-Forwarded-Port $server_port;
-        proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_set_header Host $http_host;
 
-        proxy_set_header Host $http_host;
+    proxy_redirect off;
 
-        proxy_redirect off;
-        proxy_pass http://discovery_app_server;
-    }  
-    client_max_body_size 10M;
+    # When using a variable to specify the domain name in the proxy_pass directive.
+    # NGINX re‑resolves the domain name when its TTL expires.
+    # Nevertheless, when we are using the resolver directive and its valid parameter,
+    # you can tell NGINX to ignore the TTL and re‑resolve names at a specified 
+    # frequency instead.
+    # https://www.nginx.com/blog/dns-service-discovery-nginx-plus/
+    set $backend_servers discovery;
+    proxy_pass http://$backend_servers:{{ openedx_discovery_port }};
+  }  
+  client_max_body_size 10M;
 }
