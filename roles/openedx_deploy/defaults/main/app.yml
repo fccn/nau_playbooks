@@ -17,7 +17,9 @@ openedx_app_job: false
 # To manually run the migrations or other command:
 #   docker exec -it $(docker ps --filter "name=openedx_lms\." -q) bash
 #   ./manage.py lms migrate --settings nau_production
-openedx_app_job_command: bash -c "python manage.py lms migrate && python manage.py cms migrate"
+openedx_app_job_command: bash -c "python manage.py lms migrate && python manage.py cms migrate {{ openedx_app_job_reindex_command }}"
+openedx_app_job_reindex_command: "{{ 'python manage.py cms reindex_course --all' if openedx_cms_reindex_all_courses else '' }}"
+openedx_cms_reindex_all_courses: false
 
 openedx_app_docker_deploy_templates:
   - src_data:  "{{ openedx_lms_env_file | to_nice_yaml(indent=2, width=1337) }}" # default_flow_style=False didn't work
@@ -147,6 +149,20 @@ EDXAPP_MONGO_AUTH_DB: ''
 EDXAPP_PLATFORM_DESCRIPTION: NAU Sempre a Aprender
 
 EDXAPP_EDXNOTES_INTERNAL_API: "http://notes:8000/api/v1"
+
+EDXAPP_LMS_ISSUER: "{{ COMMON_JWT_ISSUER }}"
+COMMON_JWT_ISSUER: '{{ COMMON_OAUTH_URL_ROOT }}'
+COMMON_OAUTH_BASE_URL: '{{ COMMON_LMS_BASE_URL }}'
+COMMON_OAUTH_PUBLIC_URL_ROOT: '{{ COMMON_OAUTH_BASE_URL }}/oauth2'
+COMMON_OAUTH_URL_ROOT: '{{ COMMON_OAUTH_PUBLIC_URL_ROOT }}'
+COMMON_OAUTH_LOGOUT_URL: '{{ COMMON_OAUTH_BASE_URL }}/logout'
+EDXAPP_JWT_PUBLIC_SIGNING_JWK_SET: "{{ COMMON_JWT_PUBLIC_SIGNING_JWK_SET|string }}"
+EDXAPP_JWT_AUTH_COOKIE_HEADER_PAYLOAD: '{{ COMMON_JWT_AUTH_COOKIE_HEADER_PAYLOAD }}'
+COMMON_JWT_AUTH_COOKIE_HEADER_PAYLOAD: 'edx-jwt-cookie-header-payload'
+EDXAPP_JWT_AUTH_COOKIE_SIGNATURE: '{{ COMMON_JWT_AUTH_COOKIE_SIGNATURE }}'
+COMMON_JWT_AUTH_COOKIE_SIGNATURE: 'edx-jwt-cookie-signature'
+EDXAPP_JWT_AUTH_REFRESH_COOKIE: '{{ COMMON_JWT_AUTH_REFRESH_COOKIE }}'
+COMMON_JWT_AUTH_REFRESH_COOKIE: 'edx-jwt-refresh-cookie'
 
 ###########################################
 # bridge from OPENEDX to EDXAPP variables #
@@ -295,10 +311,6 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
   CSRF_TRUSTED_ORIGINS: "{{ OPENEDX_CSRF_TRUSTED_ORIGINS }}"
   DEFAULT_COURSE_LANGUAGE: pt
   DEFAULT_FILE_STORAGE: storages.backends.s3boto.S3BotoStorage
-  DEFAULT_JWT_ISSUER:
-    AUDIENCE: SET-ME-PLEASE
-    ISSUER: https://{{ OPENEDX_LMS_HOST }}/oauth2
-    SECRET_KEY: "{{ EDXAPP_JWT_SECRET_KEY }}"
   ECOMMERCE_API_SIGNING_KEY: "{{ EDXAPP_JWT_SECRET_KEY }}"
   ECOMMERCE_API_URL: "{{ EDXAPP_ECOMMERCE_API_URL }}"
   ECOMMERCE_PUBLIC_URL_ROOT: "{{ EDXAPP_ECOMMERCE_PUBLIC_URL_ROOT }}"
@@ -412,11 +424,29 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
     ROOT_PATH: "{{ EDXAPP_GRADE_ROOT_PATH | default(None) }}"
   # HTTPS: 'on'
 
-  # env var ?
-  JWT_COMMON_ISSUER: "{{ OPENEDX_JWT_COMMON_ISSUER }}"
-  JWT_COMMON_SECRET_KEY: "{{ EDXAPP_JWT_SECRET_KEY }}"
-  JWT_RSA_PRIVATE_KEY: "{{ EDXAPP_JWT_PRIVATE_SIGNING_JWK }}"
-  
+  # Json Web Tokens configuration
+  JWT_ISSUER: "{{ EDXAPP_LMS_ISSUER }}"
+  DEFAULT_JWT_ISSUER:
+    ISSUER: "{{ OPENEDX_JWT_COMMON_ISSUER }}"
+    AUDIENCE: SET-ME-PLEASE
+    SECRET_KEY: "{{ EDXAPP_JWT_SECRET_KEY }}"
+  JWT_EXPIRATION: 30 # Number of seconds until expiration
+  JWT_PRIVATE_SIGNING_KEY: !!null
+  JWT_AUTH:
+    JWT_ISSUER: "{{ EDXAPP_LMS_ISSUER }}"
+    JWT_AUDIENCE: 'SET-ME-PLEASE'
+    JWT_SECRET_KEY: "{{ EDXAPP_JWT_SECRET_KEY }}"
+    JWT_ISSUERS:
+      - ISSUER: "{{ EDXAPP_LMS_ISSUER }}"
+        AUDIENCE: 'SET-ME-PLEASE'
+        SECRET_KEY: "{{ EDXAPP_JWT_SECRET_KEY }}"
+    JWT_PUBLIC_SIGNING_JWK_SET: "{{ EDXAPP_JWT_PUBLIC_SIGNING_JWK_SET|string }}"
+    JWT_SIGNING_ALGORITHM: "{{ EDXAPP_JWT_SIGNING_ALGORITHM }}"
+    JWT_PRIVATE_SIGNING_JWK: "{{ EDXAPP_JWT_PRIVATE_SIGNING_JWK|string }}"
+    JWT_AUTH_COOKIE_HEADER_PAYLOAD: "{{ EDXAPP_JWT_AUTH_COOKIE_HEADER_PAYLOAD }}"
+    JWT_AUTH_COOKIE_SIGNATURE: "{{ EDXAPP_JWT_AUTH_COOKIE_SIGNATURE }}"
+    JWT_AUTH_REFRESH_COOKIE: "{{ EDXAPP_JWT_AUTH_REFRESH_COOKIE }}"
+    
   # env var ?
   ELASTIC_SEARCH_CONFIG:
     - host: elasticsearch_1
