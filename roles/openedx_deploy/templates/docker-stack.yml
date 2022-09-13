@@ -60,8 +60,8 @@ services:
       placement:
         max_replicas_per_node: {{ ( openedx_lms_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
     healthcheck:
-      # Check if 8000 port is accepting tcp connections
-      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/8000", "||", "exit", "1"]
+      # Check if heartbeat is ok
+      test: curl --silent --fail --head --resolve lms:8000:127.0.0.1 http://lms:8000/heartbeat | egrep "HTTP/.*200 OK"
       retries: 30
       interval: 10s
       timeout: 10s
@@ -96,8 +96,8 @@ services:
       placement:
         max_replicas_per_node: {{ ( openedx_cms_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
     healthcheck:
-      # Check if 8000 port is accepting tcp connections
-      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/8000", "||", "exit", "1"]
+      # Check if heartbeat is ok
+      test: curl --silent --fail --head --resolve cms:8000:127.0.0.1 http://cms:8000/heartbeat | egrep "HTTP/.*200 OK"
       retries: 30
       interval: 10s
       timeout: 10s
@@ -139,6 +139,12 @@ services:
 {% for env_var_name, env_var_value in openedx_forum_docker_environment_variables.items() %}
       {{ env_var_name }}: "{{ env_var_value }}"
 {% endfor %}
+    healthcheck:
+      # Check if forum heartbeat returns ok
+      test: wget -qSO- 127.0.0.1:{{ openedx_forum_port }}/heartbeat 2>&1 | egrep "HTTP/.*200 OK"
+      retries: 30
+      interval: 10s
+      timeout: 10s
     deploy:
       replicas: {{ openedx_forum_replicas }}
       placement:
@@ -170,6 +176,13 @@ services:
       replicas: {{ openedx_notes_replicas }}
       placement:
         max_replicas_per_node: {{ ( openedx_notes_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
+    healthcheck:
+      # Check if forum heartbeat returns ok
+      test: |
+        bash -c 'exec 3<>/dev/tcp/127.0.0.1/{{ openedx_notes_port }} && echo -e "GET /heartbeat/ HTTP/1.1\r\nHost: notes\r\nConnection: close\r\n\r\n" >&3 && cat <&3 | grep "HTTP/1.1 200 OK"'
+      retries: 30
+      interval: 10s
+      timeout: 10s
 {{ helper.service_configs(service='notes') }}
 {{ helper.service_secrets(service='notes') }}
 
