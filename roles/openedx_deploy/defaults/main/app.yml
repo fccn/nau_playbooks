@@ -12,15 +12,6 @@ openedx_cms_worker_replicas: 1
 OPENEDX_LMS_UWSGI_WORKERS: 2
 OPENEDX_CMS_UWSGI_WORKERS: 2
 
-openedx_app_job: false
-
-# To manually run the migrations or other command:
-#   docker exec -it $(docker ps --filter "name=openedx_lms\." -q) bash
-#   ./manage.py lms migrate --settings nau_production
-openedx_app_job_command: bash -c "python manage.py lms migrate && python manage.py cms migrate {{ openedx_app_job_reindex_command }}"
-openedx_app_job_reindex_command: "{{ 'python manage.py cms reindex_course --all' if openedx_cms_reindex_all_courses else '' }}"
-openedx_cms_reindex_all_courses: false
-
 openedx_app_docker_deploy_templates:
   - src_data:  "{{ openedx_lms_env_file | to_nice_yaml(indent=2, width=1337) }}" # default_flow_style=False didn't work
     dest: "{{ openedx_docker_deploy_base_folder }}/app/lms.env.yml"
@@ -730,3 +721,37 @@ openedx_cms_worker_env_var_default:
 
 # per environment cms-worker environment variables
 openedx_cms_worker_env_var_overrides: {}
+
+
+######################################
+# Open edx app job
+######################################
+# To manually run the migrations or other command:
+#   docker exec -it $(docker ps --filter "name=openedx_lms\." -q) bash
+#   ./manage.py lms migrate --settings nau_production
+openedx_app_job_command: bash -c "{{ openedx_app_job_commands | join(' && ') }}"
+
+# merge all commands that need to be executed on app-job container, but remove the empty commands.
+openedx_app_job_commands: "{{ openedx_app_job_commands_list | reject('equalto', '') }}"
+
+# By default we don't execute anything inside the app-job container.
+# If you need to execute one of it, then you need to add this extra variable has true
+# when running ansible-playbook executable.
+openedx_lms_migrate: false
+openedx_cms_migrate: false
+openedx_cms_reindex_all_courses: false
+
+# The list of commands that need to be executed on app-job container. 
+openedx_app_job_commands_list:
+  - "{{ 'SERVICE_VARIANT=lms python manage.py lms migrate --settings nau_production' if openedx_lms_migrate else '' }}"
+  - "{{ 'SERVICE_VARIANT=cms python manage.py cms migrate --settings nau_production' if openedx_cms_migrate else '' }}"
+  - "{{ 'SERVICE_VARIANT=cms python manage.py cms reindex_course --setup --all --settings nau_production' if openedx_cms_reindex_all_courses else '' }}"
+
+# run app_job container if there is a command to execute
+openedx_app_job: "{{ openedx_app_job_commands|length >0 }}"
+
+# The app-job container environment variables are a merge of both lms and cms environment variables.
+openedx_app_env_var:
+  STUDIO_CFG: /openedx/config/cms.env.yml
+  LMS_CFG: /openedx/config/lms.env.yml
+  TZ: "{{ openedx_timezone | default('Europe/Lisbon') }}"

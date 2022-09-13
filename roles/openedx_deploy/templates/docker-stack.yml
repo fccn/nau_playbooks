@@ -72,7 +72,7 @@ services:
   app-job:
     image: {{ openedx_app_image }}
     environment:
-{% for env_var_name, env_var_value in openedx_lms_env_var.items() %}
+{% for env_var_name, env_var_value in openedx_app_env_var.items() %}
       {{ env_var_name }}: "{{ env_var_value }}"
 {% endfor %}
     command: {{ openedx_app_job_command }}
