@@ -123,13 +123,14 @@ EDXAPP_RETIREMENT_STATES:
 
 EDXAPP_VIDEO_IMAGE_SETTINGS:
     DIRECTORY_PREFIX: video-images/
-    STORAGE_CLASS: storages.backends.s3boto.S3BotoStorage
+    STORAGE_CLASS: storages.backends.s3boto3.S3Boto3Storage
     STORAGE_KWARGS:
-        bucket: "{{ EDXAPP_AWS_STORAGE_BUCKET_NAME }}"
-        host: "{{ nau_ceph_host }}"
-        use_ssl: false
-    VIDEO_IMAGE_MAX_BYTES: 2097152
-    VIDEO_IMAGE_MIN_BYTES: 2048
+      bucket: "{{ EDXAPP_AWS_STORAGE_BUCKET_NAME }}"
+      custom_domain: !!null
+      default_acl: public-read
+      endpoint_url: https://{{ nau_ceph_host }}
+    VIDEO_IMAGE_MAX_BYTES: 2097152 # 2MB
+    VIDEO_IMAGE_MIN_BYTES: 2048    # 2KB
 
 EDXAPP_LMS_DRAFT_DOC_STORE_CONFIG:
   <<: *edxapp_generic_default_docstore
@@ -192,11 +193,15 @@ OPENEDX_CSRF_TRUSTED_ORIGINS: "{{ EDXAPP_CSRF_TRUSTED_ORIGINS }}"
 #############################
 openedx_app_common_env_file: &openedx_app_common_env_file_reuse
   SECRET_KEY: "{{ EDXAPP_EDXAPP_SECRET_KEY }}"
+  DEFAULT_FILE_STORAGE: "{{ EDXAPP_DEFAULT_FILE_STORAGE }}"
   AWS_ACCESS_KEY_ID: "{{ OPENEDX_AWS_ACCESS_KEY }}"
-  AWS_QUERYSTRING_AUTH: false
-  AWS_S3_CUSTOM_DOMAIN: null
-  AWS_S3_HOST: "{{ OPENEDX_CUSTOM_S3_HOST }}"
   AWS_SECRET_ACCESS_KEY: "{{ OPENEDX_AWS_SECRET_ACCESS_KEY }}"
+  AWS_QUERYSTRING_AUTH: false
+  AWS_STORAGE_BUCKET_NAME: "{{ EDXAPP_AWS_STORAGE_BUCKET_NAME }}"
+  AWS_S3_CUSTOM_DOMAIN: "{{ EDXAPP_AWS_S3_CUSTOM_DOMAIN }}"
+  #AWS_S3_HOST: "{{ OPENEDX_CUSTOM_S3_HOST }}"
+  AWS_S3_ENDPOINT_URL: http://{{ nau_ceph_host }}
+  AWS_DEFAULT_ACL: public-read
   XQUEUE_INTERFACE:
     django_auth: null
     url: null
@@ -312,7 +317,6 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
   CROSS_DOMAIN_CSRF_COOKIE_NAME: "{{ OPENEDX_CROSS_DOMAIN_CSRF_COOKIE_NAME }}"
   CSRF_TRUSTED_ORIGINS: "{{ OPENEDX_CSRF_TRUSTED_ORIGINS }}"
   DEFAULT_COURSE_LANGUAGE: pt
-  DEFAULT_FILE_STORAGE: storages.backends.s3boto.S3BotoStorage
   ECOMMERCE_API_SIGNING_KEY: "{{ EDXAPP_JWT_SECRET_KEY }}"
   ECOMMERCE_API_URL: "{{ EDXAPP_ECOMMERCE_API_URL }}"
   ECOMMERCE_PUBLIC_URL_ROOT: "{{ EDXAPP_ECOMMERCE_PUBLIC_URL_ROOT }}"
