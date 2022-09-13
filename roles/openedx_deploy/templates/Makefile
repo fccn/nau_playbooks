@@ -63,7 +63,7 @@ _%-ps:
 
 {% for _service in docker_deploy_services %}
 ps-{{ _service }}: _{{ _service }}-ps ## List the tasks of {{ _service }}
-.PHONY: logs-{{ _service }}
+.PHONY: ps-{{ _service }}
 
 {% endfor %}
 
