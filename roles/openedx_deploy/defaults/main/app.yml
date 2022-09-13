@@ -732,7 +732,7 @@ openedx_cms_worker_env_var_overrides: {}
 openedx_app_job_command: bash -c "{{ openedx_app_job_commands | join(' && ') }}"
 
 # merge all commands that need to be executed on app-job container, but remove the empty commands.
-openedx_app_job_commands: "{{ openedx_app_job_commands_list | reject('equalto', '') }}"
+openedx_app_job_commands: "{{ openedx_app_job_commands_list | reject('equalto', '') | list }}"
 
 # By default we don't execute anything inside the app-job container.
 # If you need to execute one of it, then you need to add this extra variable has true
