@@ -68,7 +68,6 @@ OPENEDX_CELERY_REDIS_DB: 0
 OPENEDX_CACHE_REDIS_DB: 1
 
 OPENEDX_LANGUAGE_CODE: pt-PT
-OPENEDX_SESSION_COOKIE_DOMAIN: ".{{ OPENEDX_LMS_HOST }}"
 
 ###################################
 # Yaml reusable blocks
@@ -163,6 +162,9 @@ EDXAPP_JWT_AUTH_COOKIE_SIGNATURE: '{{ COMMON_JWT_AUTH_COOKIE_SIGNATURE }}'
 COMMON_JWT_AUTH_COOKIE_SIGNATURE: 'edx-jwt-cookie-signature'
 EDXAPP_JWT_AUTH_REFRESH_COOKIE: '{{ COMMON_JWT_AUTH_REFRESH_COOKIE }}'
 COMMON_JWT_AUTH_REFRESH_COOKIE: 'edx-jwt-refresh-cookie'
+
+# configure with top domain of the platform, if lms domain is lms.example.com, configure it with `.example.com`
+EDXAPP_SESSION_COOKIE_DOMAIN: ".{{ EDXAPP_LMS_BASE }}"
 
 ###########################################
 # bridge from OPENEDX to EDXAPP variables #
@@ -259,7 +261,7 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
   ACE_ROUTING_KEY: "edx.lms.core.default"
   HTTPS: "on"
   LANGUAGE_CODE: "{{ OPENEDX_LANGUAGE_CODE }}"
-  SESSION_COOKIE_DOMAIN: "{{ OPENEDX_SESSION_COOKIE_DOMAIN }}"
+  SESSION_COOKIE_DOMAIN: "{{ EDXAPP_SESSION_COOKIE_DOMAIN }}"
 
   # Temporary remove this until the image contains this requirement
   # ADDL_INSTALLED_APPS:
@@ -340,7 +342,6 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
     CERTIFICATES_HTML_VIEW: true
     CERTIFICATES_INSTRUCTOR_GENERATION: true
     COURSES_ARE_BROWSEABLE: true
-    CSRF_COOKIE_SECURE: true
     CUSTOM_CERTIFICATE_TEMPLATES_ENABLED: true
     CUSTOM_COURSES_EDX: true
     DISABLE_LOGIN_BUTTON: false
@@ -447,6 +448,8 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
     JWT_AUTH_COOKIE_SIGNATURE: "{{ EDXAPP_JWT_AUTH_COOKIE_SIGNATURE }}"
     JWT_AUTH_REFRESH_COOKIE: "{{ EDXAPP_JWT_AUTH_REFRESH_COOKIE }}"
     
+  CSRF_COOKIE_SECURE: true
+  
   # Elastic search connection configuration
   #ELASTIC_SEARCH_CONFIG:
   ELASTIC_SEARCH_CONFIG_ES7:
