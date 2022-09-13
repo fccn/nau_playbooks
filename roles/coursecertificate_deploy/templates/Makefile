@@ -69,7 +69,7 @@ ps-{{ _service }}: _{{ _service }}-ps ## List the tasks of {{ _service }}
 
 # View the logs of the specified service container
 _%-logs:
-	docker service logs --follow --tail=500 {{ docker_deploy_stack_name }}_$*
+	docker service logs --timestamps --follow --tail=500 {{ docker_deploy_stack_name }}_$*
 
 {% for _service in docker_deploy_services %}
 logs-{{ _service }}: _{{ _service }}-logs ## View last 500 lines of logs of the {{ _service }} docker service
