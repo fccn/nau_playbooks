@@ -447,14 +447,18 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
     JWT_AUTH_COOKIE_SIGNATURE: "{{ EDXAPP_JWT_AUTH_COOKIE_SIGNATURE }}"
     JWT_AUTH_REFRESH_COOKIE: "{{ EDXAPP_JWT_AUTH_REFRESH_COOKIE }}"
     
-  # env var ?
-  ELASTIC_SEARCH_CONFIG:
+  # Elastic search connection configuration
+  #ELASTIC_SEARCH_CONFIG:
+  ELASTIC_SEARCH_CONFIG_ES7:
     - host: elasticsearch_1
       port: 9200
+      use_ssl: False
     - host: elasticsearch_2
       port: 9200
+      use_ssl: False
     - host: elasticsearch_3
       port: 9200
+      use_ssl: False
   
   LANGUAGES: "{{ EDXAPP_LANGUAGES }}"
   #LANGUAGE_COOKIE: "{{ EDXAPP_LANGUAGE_COOKIE }}"
