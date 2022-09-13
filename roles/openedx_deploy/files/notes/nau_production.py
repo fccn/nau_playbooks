@@ -39,7 +39,7 @@ DATABASES = {
     }
 }
 
-CLIENT_ID = get_env_value("NOTES_OAUTH2_ID", "notes")
+CLIENT_ID = get_env_value("NOTES_OAUTH2_ID", default="notes")
 CLIENT_SECRET = get_env_value("NOTES_OAUTH2_SECRET")
 
 ELASTICSEARCH_DSL['default'].update({ 'hosts': get_env_value("ELASTICSEARCH_HOST_PORT") })
