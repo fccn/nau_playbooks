@@ -289,7 +289,7 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
   CERTIFICATE_TEMPLATE_LANGUAGES:
       en: English
       pt: Português
-  COMMENTS_SERVICE_URL: "http://forum:{{ FORUM_PORT }}" # access directly to forum docker service
+  COMMENTS_SERVICE_URL: "http://forum:{{ openedx_forum_port }}" # access directly to forum docker service
   COMMENTS_SERVICE_KEY: "{{ FORUM_API_KEY }}"
   
   # env var ?

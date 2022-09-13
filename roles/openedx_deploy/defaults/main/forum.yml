@@ -36,5 +36,4 @@ openedx_forum_docker_environment_variables_default:
   # WORKER_PROCESSES # by default it uses 4 workers
 
 FORUM_NGINX_PORT: 80
-FORUM_PORT: 4567
 openedx_forum_port: 4567
