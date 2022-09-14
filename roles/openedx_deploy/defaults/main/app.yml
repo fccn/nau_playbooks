@@ -214,6 +214,16 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
       ATOMIC_REQUESTS: true
       OPTIONS:
         init_command: "SET sql_mode='STRICT_TRANS_TABLES'"
+    # student_module_history:
+    #   ENGINE: django.db.backends.mysql
+    #   HOST: mysql_1
+    #   PORT: 3306
+    #   NAME: "{{ EDXAPP_MYSQL_CSMH_DB_NAME }}"
+    #   USER: "{{ EDXAPP_MYSQL_CSMH_USER }}"
+    #   PASSWORD: "{{ EDXAPP_MYSQL_CSMH_PASSWORD }}"
+      # CONN_MAX_AGE: "{{ EDXAPP_MYSQL_CONN_MAX_AGE }}"
+      # OPTIONS: "{{ EDXAPP_MYSQL_CSMH_OPTIONS }}"
+
   # smtp to send email configuration
   EMAIL_BACKEND: "django.core.mail.backends.smtp.EmailBackend"
   EMAIL_HOST: "{{ OPENEDX_SMTP_HOST }}"
@@ -356,7 +366,7 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
     ENABLE_CREDIT_API: false
     ENABLE_CREDIT_ELIGIBILITY: false
     ENABLE_CROSS_DOMAIN_CSRF_COOKIE: true
-    ENABLE_CSMH_EXTENDED: false
+    ENABLE_CSMH_EXTENDED: false # if true need `student_module_history` configuration on `DATABASES`
     ENABLE_DASHBOARD_SEARCH: true
     ENABLE_DISABLING_XBLOCK_TYPES: true
     ENABLE_DISCUSSION_EMAIL_DIGEST: false
