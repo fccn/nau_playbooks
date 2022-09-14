@@ -38,12 +38,13 @@ openedx_app_docker_deploy_files:
 
 OPENEDX_JWT_COMMON_ISSUER: "https://{{ OPENEDX_LMS_HOST }}/oauth2"
 
-# smtp ??
-OPENEDX_SMTP_USER: ""
+# app smtp configuration, that forwards emails to smtp container that relays emails.
 OPENEDX_SMTP_HOST: smtp
-OPENEDX_SMTP_PORT: 25
-OPENEDX_EMAIL_HOST_PASSWORD: ""
+OPENEDX_SMTP_PORT: 8025
+OPENEDX_SMTP_HOST_USER: ""
+OPENEDX_SMTP_HOST_PASSWORD: ""
 OPENEDX_SMTP_USE_TLS: false
+OPENEDX_SMTP_USE_SSL: false
 
 openedx_smtp_external_host: "{{ POSTFIX_QUEUE_EXTERNAL_SMTP_HOST }}"
 openedx_smtp_external_username: ""
@@ -167,7 +168,6 @@ OPENEDX_AWS_SECRET_ACCESS_KEY: "{{ EDXAPP_AWS_SECRET_ACCESS_KEY }}"
 OPENEDX_LMS_HOST: "{{ EDXAPP_LMS_BASE }}"
 OPENEDX_CMS_HOST: "{{ EDXAPP_CMS_BASE }}"
 OPENEDX_SITE_NAME: "{{ EDXAPP_SITE_NAME }}"
-#OPENEDX_EMAIL_HOST_PASSWORD: "{{ EDXAPP_EMAIL_HOST_PASSWORD }}"
 
 OPENEDX_CUSTOM_S3_HOST: "{{ nau_ceph_host }}"
 
@@ -217,11 +217,14 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
   # smtp to send email configuration
   EMAIL_BACKEND: "django.core.mail.backends.smtp.EmailBackend"
   EMAIL_HOST: "{{ OPENEDX_SMTP_HOST }}"
-  EMAIL_HOST_PASSWORD: "{{ OPENEDX_EMAIL_HOST_PASSWORD }}"
+  EMAIL_HOST_PASSWORD: "{{ OPENEDX_SMTP_HOST_PASSWORD }}"
+  EMAIL_HOST_USER: "{{ OPENEDX_SMTP_HOST_USER }}"
   EMAIL_PORT: "{{ OPENEDX_SMTP_PORT }}"
-  EMAIL_USE_TLS: "{{ 'true' if OPENEDX_SMTP_USE_TLS else 'false' }}"
+  # EMAIL_USE_TLS: "{{ OPENEDX_SMTP_USE_TLS | string }}"
+  EMAIL_USE_SSL: "{{ OPENEDX_SMTP_USE_SSL }}"
   
   # Application contact email
+  SERVER_EMAIL: "{{ EDXAPP_SERVER_EMAIL }}"
   CONTACT_EMAIL: "{{ EDXAPP_CONTACT_EMAIL }}"
   BUGS_EMAIL: "{{ EDXAPP_CONTACT_EMAIL }}"
   CONTACT_MAILING_ADDRESS: "{{ EDXAPP_CONTACT_EMAIL }}"
@@ -230,6 +233,7 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
   FEEDBACK_SUBMISSION_EMAIL: "{{ EDXAPP_CONTACT_EMAIL }}"
   TECH_SUPPORT_EMAIL: "{{ EDXAPP_CONTACT_EMAIL }}"
   UNIVERSITY_EMAIL: "{{ EDXAPP_CONTACT_EMAIL }}"
+  PRESS_EMAIL: "{{ EDXAPP_CONTACT_EMAIL }}"
   PAYMENT_SUPPORT_EMAIL: "{{ EDXAPP_CONTACT_EMAIL }}"
   BULK_EMAIL_DEFAULT_FROM_EMAIL: "{{ EDXAPP_BULK_EMAIL_DEFAULT_FROM_EMAIL }}"
 

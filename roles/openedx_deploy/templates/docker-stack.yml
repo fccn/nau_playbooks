@@ -234,7 +234,7 @@ services:
 {% endif %}
 
   smtp:
-    image: "{{ openedx_smtp_docker_image }}"
+    image: {{ openedx_smtp_docker_image }}
     environment:
 {% for env_var_name, env_var_value in openedx_smtp_docker_environment_variables.items() %}
       {{ env_var_name }}: "{{ env_var_value }}"
