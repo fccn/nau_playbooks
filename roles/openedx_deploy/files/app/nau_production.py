@@ -1,5 +1,5 @@
 """
-Specific overrides to the base prod settings to NAU.
+Specific overrides to the base, lms and cms, production settings to NAU.
 """
 import sys
 
@@ -29,6 +29,13 @@ import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="newrelic.console")
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="lms.djangoapps.course_wiki.plugins.markdownedx.wiki_plugin")
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="wiki.plugins.links.wiki_plugin")
+
+
+# Language/locales
+# Tutor builds docker image with an extra locale path and translations from github.com/openedx/openedx-i18n repository.
+# https://github.com/overhangio/tutor/blob/b4f905c2aab1bb7ee7adbb25cff659bb029e7eb5/tutor/templates/build/openedx/Dockerfile#L62
+LOCALE_PATHS.append("/openedx/locale/contrib/locale")
+LOCALE_PATHS.append("/openedx/locale/user/locale")
 
 
 # When we disable this feature, `FEATURES['ENABLE_CSMH_EXTENDED']`, 
