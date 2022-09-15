@@ -263,6 +263,7 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
   CELERY_BROKER_PASSWORD: "{{ OPENEDX_REDIS_PASSWORD }}"
   ENABLE_COMPREHENSIVE_THEMING: true
   COMPREHENSIVE_THEME_DIRS: ["/openedx/themes"]
+  COMPREHENSIVE_THEME_LOCALE_PATHS: ["/openedx/themes/nau-basic/conf/locale"]
   DEFAULT_SITE_THEME: "{{ EDXAPP_DEFAULT_SITE_THEME }}"
   STATIC_ROOT_BASE: "/openedx/staticfiles"
   ACE_ROUTING_KEY: "edx.lms.core.default"
