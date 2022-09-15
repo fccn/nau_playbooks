@@ -549,6 +549,7 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
     - nau_user_extended_model_employment_situation
   SUPPORT_SITE_LINK: "{{ EDXAPP_SUPPORT_SITE_LINK }}"
   TIME_ZONE: "{{ EDXAPP_TIME_ZONE }}"
+  CELERY_TIMEZONE: "{{ EDXAPP_TIME_ZONE }}"
   VIDEO_TRANSCRIPTS_SETTINGS: "{{ EDXAPP_VIDEO_TRANSCRIPTS_SETTINGS }}"
 
   # Django media url configuration
