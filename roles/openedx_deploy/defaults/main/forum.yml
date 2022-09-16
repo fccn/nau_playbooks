@@ -22,7 +22,7 @@ FORUM_MONGO_URL: "mongodb://{{ FORUM_MONGO_USER }}:{{ FORUM_MONGO_PASSWORD }}@{%
 
 FORUM_ELASTICSEARCH_PORT: "9200"
 FORUM_ELASTICSEARCH_PROTOCOL: "http"
-FORUM_ELASTICSEARCH_HOST: load_balancer_haproxy # "localhost"
+FORUM_ELASTICSEARCH_HOST: haproxy # "localhost"
 FORUM_ELASTICSEARCH_URL: "{{ FORUM_ELASTICSEARCH_PROTOCOL }}://{{ FORUM_ELASTICSEARCH_HOST }}:{{ FORUM_ELASTICSEARCH_PORT }}"
 
 openedx_forum_docker_environment_variables: "{{ openedx_forum_docker_environment_variables_default }}"

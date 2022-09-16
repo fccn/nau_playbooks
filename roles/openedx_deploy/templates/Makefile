@@ -150,8 +150,8 @@ healthcheck-{{ container }}: ## Run elasticsearch healthcheck cluster on {{ open
 
 healthcheck-elasticsearch: ## Run elastic search healthcheck cluster using load balancer
 	@echo -n "Check elasticsearch cluster: "
-	@test $$(curl --silent 'http://localhost:{{ openedx_load_balancer_haproxy_elasticsearch_port }}/_cluster/health?pretty' | grep 'number_of_nodes' | egrep -o '[0-9]+') -eq {{ openedx_elasticsearch_containers.keys() | length }}
-	@test $$(curl --silent 'http://localhost:{{ openedx_load_balancer_haproxy_elasticsearch_port }}/_cluster/health?level=shards&pretty' | egrep -o "status.*\," | sort | uniq | egrep -o "\"[^\ ]+\"") = "\"green\""
+	@test $$(curl --silent 'http://localhost:{{ openedx_haproxy_elasticsearch_port }}/_cluster/health?pretty' | grep 'number_of_nodes' | egrep -o '[0-9]+') -eq {{ openedx_elasticsearch_containers.keys() | length }}
+	@test $$(curl --silent 'http://localhost:{{ openedx_haproxy_elasticsearch_port }}/_cluster/health?level=shards&pretty' | egrep -o "status.*\," | sort | uniq | egrep -o "\"[^\ ]+\"") = "\"green\""
 	@echo "OK"
 .PHONY: healthcheck-elasticsearch
 
@@ -159,21 +159,21 @@ healthcheck-elasticsearch: ## Run elastic search healthcheck cluster using load 
 # HAProxy
 #######################
 
-healthcheck-load-balancer-haproxy-statistics-port: ## check load balancer HAProxy statistics {{ openedx_load_balancer_haproxy_statistics_port }} port
+healthcheck-load-balancer-haproxy-statistics-port: ## check load balancer HAProxy statistics {{ openedx_haproxy_statistics_port }} port
 	@echo -n "Check load balancer HAProxy statistics port: "
-	@nc -z 127.0.0.1 {{ openedx_load_balancer_haproxy_statistics_port }}
+	@nc -z 127.0.0.1 {{ openedx_haproxy_statistics_port }}
 	@echo "OK"
 .PHONY: healthcheck-load-balancer-haproxy-statistics-port
 
-healthcheck-load-balancer-haproxy-elasticsearch-port: ## check load balancer HAProxy elasticsearch {{ openedx_load_balancer_haproxy_elasticsearch_port }} port
+healthcheck-load-balancer-haproxy-elasticsearch-port: ## check load balancer HAProxy elasticsearch {{ openedx_haproxy_elasticsearch_port }} port
 	@echo -n "Check load balancer HAProxy elasticsearch port: "
-	@nc -z 127.0.0.1 {{ openedx_load_balancer_haproxy_elasticsearch_port }}
+	@nc -z 127.0.0.1 {{ openedx_haproxy_elasticsearch_port }}
 	@echo "OK"
 .PHONY: healthcheck-load-balancer-haproxy-elasticsearch-port
 
 healthcheck-load-balancer-haproxy-redis-port: ## check load balancer HAProxy redis port
 	@echo -n "Check load balancer HAProxy elasticsearch port: "
-	@nc -z 127.0.0.1 {{ openedx_load_balancer_haproxy_redis_port }}
+	@nc -z 127.0.0.1 {{ openedx_haproxy_redis_port }}
 	@echo "OK"
 .PHONY: healthcheck-load-balancer-haproxy-redis-port
 

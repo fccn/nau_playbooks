@@ -1,0 +1,21 @@
+---
+openedx_haproxy_deploy_replicas_count: 2
+openedx_haproxy_docker_image: haproxy:2.4.16
+
+# Open edX MySQL load balancer health check user
+openedx_haproxy_health_check_user: openedx_mysql_lb_user
+
+openedx_haproxy_write_port: 3306
+openedx_haproxy_readonly_port: 3307
+openedx_haproxy_statistics_port: 1936
+openedx_haproxy_cfc_config_name: haproxy_cfg
+
+openedx_haproxy_elasticsearch_port: 19200
+openedx_haproxy_redis_port: 6379
+
+openedx_haproxy_docker_deploy_templates:
+  - src:  templates/haproxy/haproxy.cfg
+    dest: "{{ openedx_docker_deploy_base_folder }}/haproxy/haproxy.cfg"
+    config_name: "{{ openedx_haproxy_cfc_config_name }}"
+    service: haproxy
+    docker_target: /usr/local/etc/haproxy/haproxy.cfg

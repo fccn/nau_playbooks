@@ -281,6 +281,7 @@ services:
       - {{ redis_config.data }}:/bitnami/redis/data
     deploy:
       replicas: 1
+      endpoint_mode: dnsrr
       resources:
         limits:
           memory: 4G
@@ -353,50 +354,56 @@ services:
       timeout: 10s
 {% endfor %}
 
-  load_balancer_haproxy:
-    image: {{ openedx_load_balancer_haproxy_docker_image | default('haproxy:2.4.16') }}
+  # HAProxy services
+  # Because of a docker swarm limitation, we need to have 2 similar haproxy services.
+  # Both have an exactly equal configuration, `haproxy.cfg` file.
+  # The difference are the published ports and the `endpoint_mode`.
+  # The inside has an `endpoint_mode` of `dns_rr`, so clients can have a longer connection
+  # and don't receive a connection timeout.
+  # The outside has the default `vip` value on `endpoint_mode` and published ports using
+  haproxy:
+    image: {{ openedx_haproxy_docker_image }}
     ports:
+      # HaProxy statistics http
+      - target:    {{ openedx_haproxy_statistics_port }}
+        published: {{ openedx_haproxy_statistics_port }}
+        protocol:  tcp
+        mode:      ingress
       # MySQL write port, that returns connections to primary MySQL node,
       # but falls back to the secondary cluster container
-      - target:    {{ openedx_load_balancer_haproxy_write_port | default(3306) }}
-        published: {{ openedx_load_balancer_haproxy_write_port | default(3306) }}
+      - target:    {{ openedx_haproxy_write_port }}
+        published: {{ openedx_haproxy_write_port }}
         protocol:  tcp
         mode:      ingress
       # MySQL read port, that returns connections to secondary MySQL node,
       # but falls back to the primary cluster container
-      - target:    {{ openedx_load_balancer_haproxy_readonly_port | default(3307) }}
-        published: {{ openedx_load_balancer_haproxy_readonly_port | default(3307) }}
+      - target:    {{ openedx_haproxy_readonly_port }}
+        published: {{ openedx_haproxy_readonly_port }}
         protocol:  tcp
         mode:      ingress
-      # HaProxy statistics http
-      - target:    {{ openedx_load_balancer_haproxy_statistics_port | default(1936) }}
-        published: {{ openedx_load_balancer_haproxy_statistics_port | default(1936) }}
-        protocol:  tcp
-        mode:      ingress
-      # Balanced elasticsearch
+      # Balanced elasticsearch port, used to monitoring, it resolves to one of the elasticsearch containers
       - target:    9200
-        published: {{ openedx_load_balancer_haproxy_elasticsearch_port }}
+        published: {{ openedx_haproxy_elasticsearch_port }}
         protocol:  tcp
       # Redis DB primary node
       - target:    6379
-        published: {{ openedx_load_balancer_haproxy_redis_port }}
+        published: {{ openedx_haproxy_redis_port }}
         protocol:  tcp
 {% for mysql_container_name, mysql_container in openedx_mysql_containers.items() %}
-      # Allow connections to {{ mysql_container_name }} even it uses `dnsrr`.
+      # Allow connections to {{ mysql_container_name }}
       - target:    {{ mysql_container.outside_port }}
         published: {{ mysql_container.outside_port }}
         protocol:  tcp
         mode:      ingress
 {% endfor %}
-{{ helper.service_configs(service='load_balancer_haproxy') }}
-{{ helper.service_secrets(service='load_balancer_haproxy') }}
     environment:
       # Use custom timezone
       TZ: {{ openedx_timezone | default("Europe/Lisbon") }}
     deploy:
-      replicas: {{ openedx_load_balancer_haproxy_deploy_replicas_count | default(2) }}
+      replicas: {{ openedx_haproxy_deploy_replicas_count | default(2) }}
+      endpoint_mode: vip # the haproxy outside we use the default vip
       placement:
-        max_replicas_per_node: 1
+        max_replicas_per_node: {{ ( openedx_haproxy_deploy_replicas_count / docker_swarm_cluster_group_length | int ) | round(0, 'ceil') | int }}
       resources:
         limits:
           memory: 300M
@@ -408,11 +415,13 @@ services:
         failure_action: rollback
         order: stop-first
     healthcheck:
-      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/{{ openedx_load_balancer_haproxy_write_port | default(3306) }}", "&&", "echo", "''", ">", "/dev/tcp/127.0.0.1/{{ openedx_load_balancer_haproxy_readonly_port | default(3306) }}", "||", "exit", "1"]
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/{{ openedx_haproxy_write_port | default(3306) }}", "&&", "echo", "''", ">", "/dev/tcp/127.0.0.1/{{ openedx_haproxy_readonly_port | default(3306) }}", "||", "exit", "1"]
       start_period: 3s
       retries: 10
       interval: 10s
       timeout: 10s
+{{ helper.service_configs(service='haproxy') }}
+{{ helper.service_secrets(service='haproxy') }}
 
 {% for mysql_container_name, mysql_container in openedx_mysql_containers.items() %}
 

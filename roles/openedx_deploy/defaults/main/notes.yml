@@ -22,12 +22,12 @@ openedx_notes_docker_environment_variables_default:
   # this env variables are loaded by roles/openedx_deploy/files/notes/nau_production.py
   NOTES_SECRET_KEY: "{{ EDX_NOTES_API_SECRET_KEY }}"
   NOTES_HOST: "{{ EDXNOTES_HOSTNAME }}"
-  MYSQL_HOST: load_balancer_haproxy
-  MYSQL_PORT: "{{ openedx_load_balancer_haproxy_write_port }}"
+  MYSQL_HOST: haproxy
+  MYSQL_PORT: "{{ openedx_haproxy_write_port }}"
   NOTES_MYSQL_DATABASE: "{{ EDX_NOTES_API_MYSQL_DB_NAME }}"
   NOTES_MYSQL_USERNAME: "{{ EDX_NOTES_API_MYSQL_DB_USER }}"
   NOTES_MYSQL_PASSWORD: "{{ EDX_NOTES_API_MYSQL_DB_PASS }}"
-  ELASTICSEARCH_HOST_PORT: load_balancer_haproxy:9200
+  ELASTICSEARCH_HOST_PORT: haproxy:9200
   NOTES_OAUTH2_SECRET: "{{ EDX_NOTES_API_CLIENT_SECRET }}"
   NOTES_OAUTH2_ID: "{{ EDX_NOTES_API_CLIENT_ID }}"
 

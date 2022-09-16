@@ -22,11 +22,6 @@ openedx_mysql_docker_deploy_templates:
     mysql_container: "{{ openedx_mysql_containers.mysql_2 }}"
     service: mysql_2
     docker_target: /etc/mysql/conf.d/mysql.cnf
-  - src:  templates/load_balancer_haproxy/haproxy.cfg
-    dest: "{{ openedx_docker_deploy_base_folder }}/load_balancer_haproxy/haproxy.cfg"
-    config_name: "{{ openedx_load_balancer_haproxy_cfc_config_name }}"
-    service: load_balancer_haproxy
-    docker_target: /usr/local/etc/haproxy/haproxy.cfg
 
 # need last slash
 openedx_mysql_data: /data/openedx/mysql/
