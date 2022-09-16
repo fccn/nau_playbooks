@@ -215,6 +215,12 @@ services:
         max_replicas_per_node: {{ ( openedx_discovery_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
 {{ helper.service_configs(service='discovery') }}
 {{ helper.service_secrets(service='discovery') }}
+    healthcheck:
+      # Check if /health/ returns a HTTP status 200, meaning the service is ok
+      test: curl --silent --fail --head --resolve discovery:8000:127.0.0.1 http://discovery:8000/health/ | egrep "HTTP/.*200 OK"
+      retries: 30
+      interval: 10s
+      timeout: 10s
 
 {% if openedx_discovery_job %}
   discovery-job:
