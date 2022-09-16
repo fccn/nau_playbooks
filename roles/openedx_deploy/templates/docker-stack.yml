@@ -243,6 +243,8 @@ services:
       replicas: {{ openedx_smtp_replicas }}
       placement:
         max_replicas_per_node: {{ ( openedx_smtp_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
+    healthcheck:
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/8025", "||", "exit", "1"]
 
   redis-sentinel:
     image: {{ openedx_redis_sentinel_docker_image }}
