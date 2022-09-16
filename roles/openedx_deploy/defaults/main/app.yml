@@ -370,6 +370,7 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
     ENABLE_COSMETIC_DISPLAY_PRICE: false
     ENABLE_COUNTRY_ACCESS: false
     ENABLE_COURSEWARE_INDEX: true
+    ENABLE_LIBRARY_INDEX: true
     ENABLE_COURSEWARE_SEARCH: true
     ENABLE_COURSE_DISCOVERY: true
     ENABLE_CREATOR_GROUP: true
@@ -768,6 +769,9 @@ openedx_app_job_commands_list:
   - "{{ 'SERVICE_VARIANT=lms python manage.py lms migrate --settings nau_production' if openedx_lms_migrate else '' }}"
   - "{{ 'SERVICE_VARIANT=cms python manage.py cms migrate --settings nau_production' if openedx_cms_migrate else '' }}"
   - "{{ 'SERVICE_VARIANT=cms python manage.py cms reindex_course --setup --all --settings nau_production' if openedx_cms_reindex_all_courses else '' }}"
+# additional reindex tasks
+# python manage.py cms reindex_content_library --all --force --settings nau_production
+# python manage.py cms reindex_library --all
 
 # run app_job container if there is a command to execute
 openedx_app_job: "{{ openedx_app_job_commands|length >0 }}"
