@@ -69,7 +69,15 @@ OPENEDX_LANGUAGE_CODE: pt-PT
 # Generic cache configuration so it can be reused bellow on both lms and studio
 openedx_generic_cache_config: &default_openedx_generic_cache_config
   BACKEND: "django_redis.cache.RedisCache"
-  LOCATION: "redis://{% if OPENEDX_REDIS_USERNAME and OPENEDX_REDIS_PASSWORD %}{{ OPENEDX_REDIS_USERNAME }}:{{ OPENEDX_REDIS_PASSWORD }}@{% endif %}{{ OPENEDX_REDIS_HOST }}:{{ OPENEDX_REDIS_PORT }}/{{ OPENEDX_CACHE_REDIS_DB }}"
+  # Use the `django-sentinel` package to connect to Redis.
+  # This allows to use the Redis sentinel instance that sends writes to the Redis master and
+  # reads to a random Redis container instance.
+  # https://github.com/fccn/nau-tutor-configs/commit/bfd251b6b3cd7440c22aa47fbda536eeddec6a8e
+  LOCATION: mymaster/redis-sentinel:26379,redis-sentinel:26379/0
+  OPTIONS:
+    CLIENT_CLASS: "django_sentinel.SentinelClient"
+  # If the `django-sentinel` package isn't available use this configuration instead:
+  # LOCATION: "redis://{% if OPENEDX_REDIS_USERNAME and OPENEDX_REDIS_PASSWORD %}{{ OPENEDX_REDIS_USERNAME }}:{{ OPENEDX_REDIS_PASSWORD }}@{% endif %}{{ OPENEDX_REDIS_HOST }}:{{ OPENEDX_REDIS_PORT }}/{{ OPENEDX_CACHE_REDIS_DB }}"
 
 edxapp_generic_contentstore_config: &edxapp_generic_default_contentstore
   ENGINE:  'xmodule.contentstore.mongo.MongoContentStore'
