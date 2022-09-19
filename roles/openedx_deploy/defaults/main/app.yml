@@ -763,6 +763,8 @@ openedx_app_job_commands: "{{ openedx_app_job_commands_list | reject('equalto', 
 openedx_lms_migrate: false
 openedx_cms_migrate: false
 openedx_cms_reindex_all_courses: false
+openedx_cms_reindex_content_library: false
+openedx_cms_reindex_library: false
 
 # The list of commands that need to be executed on app-job container. 
 openedx_app_job_commands_list:
@@ -770,8 +772,8 @@ openedx_app_job_commands_list:
   - "{{ 'SERVICE_VARIANT=cms python manage.py cms migrate --settings nau_production' if openedx_cms_migrate else '' }}"
   - "{{ 'SERVICE_VARIANT=cms python manage.py cms reindex_course --setup --all --settings nau_production' if openedx_cms_reindex_all_courses else '' }}"
 # additional reindex tasks
-# python manage.py cms reindex_content_library --all --force --settings nau_production
-# python manage.py cms reindex_library --all
+  - "{{ 'SERVICE_VARIANT=cms python manage.py cms reindex_content_library --all --force --settings nau_production' if openedx_cms_reindex_content_library else '' }}"
+  - "{{ 'SERVICE_VARIANT=cms python manage.py cms reindex_library --all --settings nau_production' if openedx_cms_reindex_library else '' }}"
 
 # run app_job container if there is a command to execute
 openedx_app_job: "{{ openedx_app_job_commands|length >0 }}"
