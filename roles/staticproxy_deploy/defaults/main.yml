@@ -25,17 +25,24 @@ staticproxy_nginx_replicas: 1
 
 staticproxy_nginx_admin_access_trusted_ip_cidrs: "{{ NGINX_TRUSTED_IP_CIDRS }}"
 
-staticproxy_docker_deploy_files:
+staticproxy_docker_deploy_files: "{{ staticproxy_docker_deploy_files_default + staticproxy_docker_deploy_files_additional }}"
+staticproxy_docker_deploy_files_additional: []
+staticproxy_docker_deploy_files_default:
   - src: "{{ staticproxy_nginx_ssl_certificate_key }}"
     dest: "{{ staticproxy_docker_deploy_base_folder }}/nginx/ssl/certificate.key.pem"
-    docker_target: /etc/ssl/certs/certificate.key.pem
+    docker_target: "{{ staticproxy_nginx_docker_ssl_certificate_key }}"
     secret_name: certificate_key
     service: nginx
   - src: "{{ staticproxy_nginx_ssl_certificate_crt }}"
     dest: "{{ staticproxy_docker_deploy_base_folder }}/nginx/ssl/certificate.crt.pem"
-    docker_target: /etc/ssl/certs/certificate.crt.pem
+    docker_target: "{{ staticproxy_nginx_docker_ssl_certificate_crt }}"
     secret_name: certificate_crt
     service: nginx
+
+staticproxy_nginx_ssl_certificate_key: !!null
+staticproxy_nginx_ssl_certificate_crt: !!null
+staticproxy_nginx_docker_ssl_certificate_key: /etc/ssl/certs/certificate.key.pem
+staticproxy_nginx_docker_ssl_certificate_crt: /etc/ssl/certs/certificate.crt.pem
 
 # Nginx is only a reverse proxy to reach the buckets that need public access with or without signature
 staticproxy_nginx_servers: "{{ staticproxy_nginx_servers_default }}"
