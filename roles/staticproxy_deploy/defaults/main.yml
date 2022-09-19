@@ -15,7 +15,7 @@ staticproxy_docker_deploy_templates:
     config_name: nginx_conf
     service: nginx
 
-staticproxy_nginx_ssl_certificate_folder: "{{ COMMON_PATH_CUSTOM_FILES }}/static/nginx/ssl"
+staticproxy_nginx_ssl_certificate_folder: "{{ COMMON_PATH_CUSTOM_FILES }}/static/ssl"
 staticproxy_nginx_proxy_protocol: true
 staticproxy_nginx_http2: true
 staticproxy_nginx_image: nginx:1.22.0
