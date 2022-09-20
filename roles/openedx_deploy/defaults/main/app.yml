@@ -205,8 +205,8 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
   DATABASES:
     default:
       ENGINE: "django.db.backends.mysql"
-      HOST: mysql_1
-      PORT: 3306
+      HOST: haproxy
+      PORT: "{{ openedx_haproxy_write_port }}"
       NAME: "{{ EDXAPP_MYSQL_DB_NAME }}"
       USER: "{{ EDXAPP_MYSQL_USER }}"
       PASSWORD: "{{ EDXAPP_MYSQL_PASSWORD }}"
@@ -215,8 +215,8 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
         init_command: "SET sql_mode='STRICT_TRANS_TABLES'"
     read_replica:
       ENGINE: "django.db.backends.mysql"
-      HOST: mysql_2
-      PORT: 3306
+      HOST: haproxy
+      PORT: "{{ openedx_haproxy_readonly_port }}"
       NAME: "{{ EDXAPP_MYSQL_DB_NAME }}"
       USER: "{{ EDXAPP_MYSQL_USER }}"
       PASSWORD: "{{ EDXAPP_MYSQL_PASSWORD }}"
