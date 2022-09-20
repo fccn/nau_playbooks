@@ -59,6 +59,8 @@ services:
       replicas: {{ openedx_lms_replicas }}
       placement:
         max_replicas_per_node: {{ ( openedx_lms_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
+    extra_hosts:
+      - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"    
     healthcheck:
       # Check if heartbeat is ok
       test: curl --silent --fail --head --resolve lms:8000:127.0.0.1 http://lms:8000/heartbeat | egrep "HTTP/.*200 OK"
@@ -76,6 +78,8 @@ services:
       {{ env_var_name }}: "{{ env_var_value }}"
 {% endfor %}
     command: {{ openedx_app_job_command }}
+    extra_hosts:
+      - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
     deploy:
       replicas: 1 # should exist only 1 instance of this container
       mode: replicated # after docker 22.06.0 release change it to replicated-job
@@ -91,6 +95,8 @@ services:
 {% for env_var_name, env_var_value in openedx_cms_env_var.items() %}
       {{ env_var_name }}: "{{ env_var_value }}"
 {% endfor %}
+    extra_hosts:
+      - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
     deploy:
       replicas: {{ openedx_cms_replicas }}
       placement:
@@ -111,6 +117,8 @@ services:
       {{ env_var_name }}: "{{ env_var_value }}"
 {% endfor %}
     command: celery --app=lms.celery worker --loglevel=info --hostname=edx.lms.core.default.%%h --max-tasks-per-child=100 --exclude-queues=edx.cms.core.default
+    extra_hosts:
+      - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
     deploy:
       replicas: {{ openedx_lms_worker_replicas }}
       placement:
@@ -125,6 +133,8 @@ services:
       {{ env_var_name }}: "{{ env_var_value }}"
 {% endfor %}
     command: celery --app=cms.celery worker --loglevel=info --hostname=edx.cms.core.default.%%h --max-tasks-per-child 100 --exclude-queues=edx.lms.core.default
+    extra_hosts:
+      - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
     deploy:
       replicas: {{ openedx_cms_worker_replicas }}
       placement:
