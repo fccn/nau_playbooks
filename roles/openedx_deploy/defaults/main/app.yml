@@ -773,7 +773,8 @@ openedx_app_job_commands_list:
   - "{{ 'SERVICE_VARIANT=cms python manage.py cms reindex_course --setup --all --settings nau_production' if openedx_cms_reindex_all_courses else '' }}"
 # additional reindex tasks
   - "{{ 'SERVICE_VARIANT=cms python manage.py cms reindex_content_library --all --force --settings nau_production' if openedx_cms_reindex_content_library else '' }}"
-  - "{{ 'SERVICE_VARIANT=cms python manage.py cms reindex_library --all --settings nau_production' if openedx_cms_reindex_library else '' }}"
+# this task needs to be run manually, because of the confirmation prompt
+  # - "{{ 'SERVICE_VARIANT=cms python manage.py cms reindex_library --all --settings nau_production' if openedx_cms_reindex_library else '' }}"
 
 # run app_job container if there is a command to execute
 openedx_app_job: "{{ openedx_app_job_commands|length >0 }}"
