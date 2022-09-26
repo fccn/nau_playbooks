@@ -6,9 +6,8 @@
     priv: "{{ item.db }}{{ item.permissions | default('.*:ALL')}}"
     host: "{{ item.host | default(ip_app_server) }}"
     append_privs: yes
-  when: item.db != None and item.db != '' and item.user != None and item.user != ''
+  when: install_mysql and item.db != None and item.db != '' and item.user != None and item.user != ''
   with_items: "{{ edxremote_database_users }}"
-  when: install_mysql
 
 - name: Change mysql bind address
   template: src=mysqld.cnf.j2 dest=/etc/mysql/mysql.conf.d/mysqld.cnf
