@@ -1,0 +1,33 @@
+---
+# Remove old containers that this stack no longer use
+observability_docker_deploy_stack_prune: true
+
+observability_docker_deploy_stack_name: observability
+observability_docker_deploy_stack_template: templates/docker-stack.yml
+observability_docker_deploy_base_folder: /nau/ops/observability
+
+observability_docker_deploy_templates:
+  - src: "{{ observability_makefile_template | default('templates/Makefile') }}"
+    dest: "{{ observability_docker_deploy_base_folder }}/Makefile"
+  - src: templates/fluent-bit.conf
+    dest: "{{ observability_docker_deploy_base_folder }}/fluent-bit.conf"
+    docker_target: /fluent-bit/etc/fluent-bit.conf
+    config_name: fluent_bit_conf
+    service: fluentbit
+  - src: templates/extra-parsers.conf
+    dest: "{{ observability_docker_deploy_base_folder }}/extra-parsers.conf"
+    docker_target: /fluent-bit/etc/extra-parsers.conf
+    config_name: extra_parsers_conf
+    service: fluentbit
+
+observability_docker_deploy_folders_additional:
+  - dest: "{{ fluentbit_data }}"
+    dir_owner: 999
+    dir_group: root
+    dir_mode: "0755"
+    # We don't define `when`, because we really want to create this folder on all the docker nodes
+    # This container is defined on `global` mode.
+
+# By convention we use /data/<stack name>/<container>
+# that is why we have a strange double fluentbit value.
+fluentbit_data: /data/fluentbit/fluentbit/

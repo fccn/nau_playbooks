@@ -25,5 +25,8 @@ healthcheck: ## All stacks healthchecks
 	@echo -n "Check richie stack: "
 	@$(MAKE) -C richie            healthcheck > /dev/null
 	@echo "ok"
+	@echo -n "Check observability stack: "
+	@$(MAKE) -C observability     healthcheck > /dev/null
+	@echo "ok"
 	@echo "Everything looks: OK"
 .PHONY: healthcheck

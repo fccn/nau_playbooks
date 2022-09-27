@@ -1,0 +1,56 @@
+{% import '_docker_deploy_helper.j2' as helper with context %}
+# {{ ansible_managed }}
+version: "3.8"
+
+services:
+
+  fluentbit:
+    image: fluent/fluent-bit:1.9.8-debug 
+    # image: fluent/fluent-bit:latest-debug
+    # image: fluent/fluent-bit:latest
+    extra_hosts:
+      - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
+    deploy:
+      mode: global
+    # used to collect node metrics
+    environment:
+      # Define an environment variable with the docker node hostname,
+      # The fluentbit then appends that value to all log records.
+      # https://forums.docker.com/t/example-usage-of-docker-swarm-template-placeholders/73859
+      DOCKER_NODE_HOSTNAME: "{% raw %}{{.Node.Hostname}}{% endraw %}"
+      # Ceph S3 credentials to store some log files.
+      AWS_ACCESS_KEY_ID: "{{ EDXAPP_AWS_ACCESS_KEY_ID }}"
+      AWS_SECRET_ACCESS_KEY: "{{ EDXAPP_AWS_SECRET_ACCESS_KEY }}"
+    volumes:
+      # Mount relevant OS folders to collect OS log files
+      - /var/log/:/var/log/:ro
+      # Docker metrics and events
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Docker container metrics
+      - /var/lib/docker/containers/:/var/lib/docker/containers/:ro
+      - /sys/fs/cgroup/:/sys/fs/cgroup/:ro
+      # Prometheus Node Exporter
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      # Store data in the filesystem so we don't lose data on restarts
+      - {{ fluentbit_data }}:/fluent-bit/data
+    # Use specific logging driver to prevent circular logging messages from the host docker daemon
+    # and the fluentbit container.
+    logging:
+      driver: local
+    ports:
+      # fluentbit http server
+      - target: 2020
+        published: 2020
+        protocol: tcp
+        mode: host
+      # default forward port to receive logging message from the docker daemon
+      - target: 24224
+        published: 24224
+        protocol: tcp
+        mode: host
+{{ helper.service_configs(service='fluentbit') }}
+{{ helper.service_secrets(service='fluentbit') }}
+
+{{ helper.configs() }}
+{{ helper.secrets() }}
