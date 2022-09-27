@@ -114,6 +114,8 @@
   hosts: nau_docker_swarm_managers[0]
   become: True
   gather_facts: True
+  vars:
+    _docker_stacks: "{{ docker_stacks | default([]) }}"
   tasks:
     - name: Check urls for openedx
       import_role:
@@ -155,8 +157,4 @@
       until: result.rc == 0
       when: not ansible_check_mode
       changed_when: False
-      with_items:
-        - "{{ openedx_docker_deploy_base_folder }}"
-        - "{{ staticproxy_docker_deploy_base_folder }}"
-        - "{{ coursecertificate_docker_deploy_base_folder }}"
-        - "{{ richie_docker_deploy_base_folder }}"
+      with_items: "{{ _docker_stacks }}"

@@ -52,6 +52,16 @@
 #
 #   To deploy the richie stack
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_servers -e richie_deploy=true
+#
+#   To deploy the observability stack
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_servers -e observability_deploy=true
+#
+#   To install/upgrade or configure docker daemon on docker swarm nodes on a rolling deploy approach exec stack's health check
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_servers -e docker_install=true
+#
+#   To install/upgrade or configure docker daemon without health check
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_servers -e docker_install=true -e docker_install_healthcheck=false
+
 - name: Bootstrap instances of 16.04
   hosts: all,!idpproxy_servers,!idpauth_servers,!nau_docker_swarm_managers,!nau_docker_swarm_workers,!support_server,!build_server
   gather_facts: no
@@ -84,9 +94,6 @@
     - name: Install docker
       import_role:
         name: geerlingguy.docker
-    - name: Install docker daemon config
-      import_role:
-        name: docker_daemon
 
 - name: Infrastructure configuration
   hosts: all
@@ -119,7 +126,6 @@
       when: vrrp_instances is defined
     - role: geerlingguy.docker
     - role: ansible-firewall
-    - role: docker_daemon
     - role: ansible-docker-deploy
     - role: haproxy-netsnmp-perl
     - role: snmpd
@@ -297,7 +303,6 @@
   gather_facts: True
   roles:
     - role: geerlingguy.docker
-    - role: docker_daemon
     - role: openark_orchestrator
 
 - name: Configure build server
@@ -321,19 +326,34 @@
         groups: docker
         append: yes
 
-- name: Install Docker and create folders used as volumes on docker swarm nodes
+# We need to install/upgrade/configure docker service, one docker swarm node at a time and
+# executing all docker stacks health checks before we upgrade the next docker node. Using this
+# approach we can upgrade all the cluster with minimal service unavailability.
+- name: Install Docker on docker swarm nodes using a rolling approach executing health check on each stack
   hosts: nau_docker_swarm_managers,nau_docker_swarm_workers
-  # If you want to upgrade docker, use the next extra var so 1 node is upgraded a time
-  serial: "{{ serial_number | default(omit) }}"
+  serial: 1
   become: True
   gather_facts: True
+  vars:
+    _docker_install: "{{ docker_install | default(false) | bool }}"
+    _docker_install_healthcheck: "{{ docker_install_healthcheck | default(true) | bool }}"
   tasks:
     - name: installs docker software
       import_role:
-        name: geerlingguy.docker 
-    - name: configures the docker daemon
-      import_role:
-        name: docker_daemon
+        name: geerlingguy.docker
+      when: _docker_install
+
+    - name: Run healthcheck Makefile target on each stack
+      shell: make --no-print-directory -C {{ item }} healthcheck
+      retries: "{{ healthcheck_retries | default(50) }}"
+      delay: "{{ healthcheck_delay | default(15) }}"
+      register: result
+      until: result.rc == 0
+      when: _docker_install and _docker_install_healthcheck and not ansible_check_mode
+      changed_when: False
+      with_items: "{{ docker_stacks }}"
+      # Run only on the first primary manager
+      delegate_to: "{{ groups['nau_docker_swarm_managers'][0] }}"
 
 - name: Configure 1st docker swarm manager
   hosts: nau_docker_swarm_managers[0]
@@ -412,3 +432,8 @@
         richie_deploy_run: "{{ richie_deploy | default(false) }}"
         richie_deploy_create_volumes: "{{ richie_deploy | default(false) }}"
 
+    - name: Deploy observability stack
+      role: observability_deploy
+      vars:
+        observability_deploy_run: "{{ observability_deploy | default(false) }}"
+        observability_deploy_create_volumes: "{{ observability_deploy | default(false) }}"
