@@ -50,7 +50,18 @@ It has a couple of filters that parses the messages.
 edx tracking log.
 3. parse_as_json - a basic parser that extracts all the tracking json to be available on fluent
 bit for further processing.
+4. different parsers, one for each other docker stack (staticproxy, coursecertificate, richie and
+openedx), it parses the nginx logs and extract different keys, like the `code` (http status code).
+
+#### Streams
+The stream use a special syntax, similar to SQL, but not so expressive.
+We use a window of 5 minutes to aggregate the data and capture metrics.
+It permits to count the total log lines on 5 minutes blocks,
+or to calculate the average time of all requests on 5 minutes block per docker stack and service.
+Each metric is storaged on a local file that is available on the first docker swarm manager.
+The stack's `Makefile` has different targets that expose some of the streams metric values.
 
 #### Outputs
 1. open edx tracking logs to s3
 2. docker container logs to s3 - different s3 folder to different containers.
+3. file output where all the aggregated metrics are stored, use the `Makefile` to view them.
