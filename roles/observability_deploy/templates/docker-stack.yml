@@ -4,14 +4,17 @@ version: "3.8"
 
 services:
 
-  fluentbit:
-    image: fluent/fluent-bit:1.9.8-debug 
-    # image: fluent/fluent-bit:latest-debug
-    # image: fluent/fluent-bit:latest
+  fluentbit-aggregator:
+    image: {{ observability_fluentbit_docker_image }}
     extra_hosts:
       - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
     deploy:
-      mode: global
+      # mode: global
+      replicas: 1
+      placement:
+        max_replicas_per_node: 1
+        constraints:
+          - node.labels.fqdn == {{ observability_fluentbit_aggregator_host_fqdn }}
     # used to collect node metrics
     environment:
       # Define an environment variable with the docker node hostname,
@@ -21,6 +24,37 @@ services:
       # Ceph S3 credentials to store some log files.
       AWS_ACCESS_KEY_ID: "{{ EDXAPP_AWS_ACCESS_KEY_ID }}"
       AWS_SECRET_ACCESS_KEY: "{{ EDXAPP_AWS_SECRET_ACCESS_KEY }}"
+    volumes:
+      # Store data in the filesystem so we don't lose data on restarts
+      - {{ observability_fluentbit_aggregator_data }}:/fluent-bit/data
+    # Use specific logging driver to prevent circular logging messages from the host docker daemon
+    # and the fluentbit container.
+    logging:
+      driver: local
+    ports:
+      # fluentbit http server important to debug
+      - target: {{ observability_fluentbit_aggregator_http_port }}
+        published: {{ observability_fluentbit_aggregator_http_port }}
+        protocol: tcp
+        mode: host
+      # default forward port to receive logging messages from the fluentbit relay
+      # - target: {{ observability_fluentbit_aggregator_forward_port }}
+      #   published: {{ observability_fluentbit_aggregator_forward_port }}
+      #   protocol: tcp
+      #   mode: host
+{{ helper.service_configs(service='fluentbit-aggregator') }}
+{{ helper.service_secrets(service='fluentbit-aggregator') }}
+
+  fluentbit-relay:
+    image: {{ observability_fluentbit_docker_image }}
+    deploy:
+      mode: global
+    # used to collect node metrics
+    environment:
+      # Define an environment variable with the docker node hostname,
+      # The fluentbit then appends that value to all log records.
+      # https://forums.docker.com/t/example-usage-of-docker-swarm-template-placeholders/73859
+      DOCKER_NODE_HOSTNAME: "{% raw %}{{.Node.Hostname}}{% endraw %}"
     volumes:
       # Mount relevant OS folders to collect OS log files
       - /var/log/:/var/log/:ro
@@ -33,24 +67,24 @@ services:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       # Store data in the filesystem so we don't lose data on restarts
-      - {{ fluentbit_data }}:/fluent-bit/data
+      - {{ observability_fluentbit_relay_data }}:/fluent-bit/data
     # Use specific logging driver to prevent circular logging messages from the host docker daemon
     # and the fluentbit container.
     logging:
       driver: local
     ports:
-      # fluentbit http server
-      - target: 2020
-        published: 2020
+      # fluentbit http server important to debug
+      - target: {{ observability_fluentbit_relay_http_port }}
+        published: {{ observability_fluentbit_relay_http_port }}
         protocol: tcp
         mode: host
       # default forward port to receive logging message from the docker daemon
-      - target: 24224
-        published: 24224
+      - target: {{ observability_fluentbit_relay_forward_port }}
+        published: {{ observability_fluentbit_relay_forward_port }}
         protocol: tcp
         mode: host
-{{ helper.service_configs(service='fluentbit') }}
-{{ helper.service_secrets(service='fluentbit') }}
+{{ helper.service_configs(service='fluentbit-relay') }}
+{{ helper.service_secrets(service='fluentbit-relay') }}
 
 {{ helper.configs() }}
 {{ helper.secrets() }}
