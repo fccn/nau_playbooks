@@ -70,3 +70,18 @@ observability_fluentbit_output_docker_service_s3:
   - openedx_nginx
   # - openedx_lms
   # - openedx_cms
+
+observability_fluentbit_metrics: "{{ observability_fluentbit_metrics_functions + observability_fluentbit_metrics_total }}"
+
+observability_fluentbit_metrics_functions:
+  - metrics.requests.last5m.time.max
+  - metrics.requests.last5m.time.avg
+
+observability_fluentbit_metrics_total:
+  - metrics.log.last5m.count.total
+  - metrics.requests.last5m.count.total
+  - metrics.requests.last5m.code.1xx
+  - metrics.requests.last5m.code.2xx
+  - metrics.requests.last5m.code.3xx
+  - metrics.requests.last5m.code.4xx
+  - metrics.requests.last5m.code.5xx
