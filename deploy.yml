@@ -346,7 +346,7 @@
     - name: Run healthcheck Makefile target on each stack
       shell: make --no-print-directory -C {{ item }} healthcheck
       retries: "{{ healthcheck_retries | default(50) }}"
-      delay: "{{ healthcheck_delay | default(15) }}"
+      delay: "{{ healthcheck_delay | default(30) }}"
       register: result
       until: result.rc == 0
       when: _docker_install and _docker_install_healthcheck and not ansible_check_mode
