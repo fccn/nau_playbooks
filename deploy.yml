@@ -57,10 +57,10 @@
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_servers -e observability_deploy=true
 #
 #   To install/upgrade or configure docker daemon on docker swarm nodes on a rolling deploy approach exec stack's health check
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_servers -e docker_install=true
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_servers -e docker_deploy=true
 #
 #   To install/upgrade or configure docker daemon without health check
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_servers -e docker_install=true -e docker_install_healthcheck=false
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_servers -e docker_deploy=true -e docker_deploy_healthcheck=false
 
 - name: Bootstrap instances of 16.04
   hosts: all,!idpproxy_servers,!idpauth_servers,!nau_docker_swarm_managers,!nau_docker_swarm_workers,!support_server,!build_server
@@ -335,13 +335,13 @@
   become: True
   gather_facts: True
   vars:
-    _docker_install: "{{ docker_install | default(false) | bool }}"
-    _docker_install_healthcheck: "{{ docker_install_healthcheck | default(true) | bool }}"
+    _docker_deploy: "{{ docker_deploy | default(false) | bool }}"
+    _docker_deploy_healthcheck: "{{ docker_deploy_healthcheck | default(true) | bool }}"
   tasks:
     - name: installs docker software
       import_role:
         name: geerlingguy.docker
-      when: _docker_install
+      when: _docker_deploy
 
     - name: Run healthcheck Makefile target on each stack
       shell: make --no-print-directory -C {{ item }} healthcheck
@@ -349,7 +349,7 @@
       delay: "{{ healthcheck_delay | default(30) }}"
       register: result
       until: result.rc == 0
-      when: _docker_install and _docker_install_healthcheck and not ansible_check_mode
+      when: _docker_deploy and _docker_deploy_healthcheck and not ansible_check_mode
       changed_when: False
       with_items: "{{ docker_stacks }}"
       # Run only on the first primary manager
