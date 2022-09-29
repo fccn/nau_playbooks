@@ -71,7 +71,7 @@
       
     - name: Fail if MongoDB secondary nodes replication isn't ok
       fail:
-        msg: Fail the number of healthy secundary nodes
+        msg: Fail the number of healthy secondary nodes
       when: mongo_db_secoundary_nodes_result.stdout != ( (( groups['mongo_servers'] | length) -1) | string )
 
     - name: Get Elasticsearch cluster health
@@ -84,7 +84,7 @@
       
     - name: Fail if Elasticsearch secondary nodes replication isn't ok
       fail:
-        msg: Fail the number of healthy secundary nodes
+        msg: Fail the number of healthy secondary nodes
       when: es_nodes_result.stdout != (( groups['mongo_servers'] | length) | string )
     
     - name: Check Elasticsearch cluster, indexes and shards health
