@@ -73,9 +73,17 @@ openedx_nginx_docker_deploy_files:
     service: nginx
     docker_target: "{{ openedx_nginx_ssl_certificate_key_docker_target }}"
     when: "{{ openedx_nginx_ssl_certificate_key is defined }}"
+  - dest: "{{ openedx_docker_deploy_base_folder }}/nginx/nginx.htpasswd"
+    # don't copy the file because it is already there.
+    docker_target: "{{ openedx_nginx_htpasswd_file }}"
+    secret_name: nginx_htpasswd
+    service: nginx
+    when: "{{ openedx_nginx_basic_authentication_users is defined }}"
 
+openedx_nginx_basic_authentication_users: !!null
 openedx_nginx_ssl_certificate_docker_target: /etc/ssl/certs/certificate.crt.pem
 openedx_nginx_ssl_certificate_key_docker_target: /etc/ssl/private/certificate.key.pem
+openedx_nginx_htpasswd_file: /etc/nginx/nginx.htpasswd
 
 # a default site
 openedx_nginx_lms_servers:
