@@ -85,6 +85,9 @@ openedx_nginx_ssl_certificate_docker_target: /etc/ssl/certs/certificate.crt.pem
 openedx_nginx_ssl_certificate_key_docker_target: /etc/ssl/private/certificate.key.pem
 openedx_nginx_htpasswd_file: /etc/nginx/nginx.htpasswd
 
+openedx_notes_nginx_ssl_certificate_docker_target: /etc/ssl/certs/certificate_notes.crt.pem
+openedx_notes_nginx_ssl_certificate_key_docker_target: /etc/ssl/private/certificate_notes.key.pem
+
 # a default site
 openedx_nginx_lms_servers:
   - server_name: _
