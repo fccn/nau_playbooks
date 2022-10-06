@@ -734,6 +734,8 @@ openedx_cms_env_file_default:
                 default_class: 'xmodule.hidden_module.HiddenDescriptor'
                 fs_root:  "{{ edxapp_course_data_dir }}"
                 render_template: 'common.djangoapps.edxmako.shortcuts.render_to_string'
+  STUDIO_NAME: "{{ EDXAPP_STUDIO_NAME | default('NAU Studio') }}"
+  STUDIO_SHORT_NAME: "{{ EDXAPP_STUDIO_SHORT_NAME | default('Studio') }}"
 
 #######################################
 # CMS Worker - that run Celery tasks
