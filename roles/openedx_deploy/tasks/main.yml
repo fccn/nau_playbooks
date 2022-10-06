@@ -25,15 +25,14 @@
   tags:
     - docker_deploy
 
-# - name: Generate basic-authentication for each site
-#   include_role:
-#     name: basic-authentication
-#   vars:
-#     basic_authentication_users: "{{ item.nginx_basic_authentication_users }}"
-#   when: docker_swarm_manager_to_deploy is defined and docker_swarm_manager_to_deploy == inventory_hostname and openedx_deploy_run | default(false) and item.nginx_basic_authentication_users is defined
-#   with_dict: "{{ openedx_sites }}"
-#   tags:
-#     - docker_deploy
+- name: Generate basic-authentication
+  include_role:
+    name: basic-authentication
+  vars:
+    basic_authentication_users: "{{ openedx_nginx_basic_authentication_users }}"
+  when: docker_swarm_manager_to_deploy is defined and docker_swarm_manager_to_deploy == inventory_hostname and openedx_deploy_run | default(false) and openedx_nginx_basic_authentication_users is defined
+  tags:
+    - docker_deploy
 
 - name: Configure sysctl.conf
   lineinfile: dest=/etc/sysctl.conf line="{{ item.key }} = {{ item.value }}" regexp="^{{ item.key }}[\s]?=" state=present
