@@ -17,6 +17,7 @@ Example, replace `stack_service` with something like `openedx_lms` for a stack n
   include_role:
     name: docker_exec_in_swarm
   vars:
-    docker_service_to_exec: stack_service
+    docker_stack: <stack_name>
+    docker_service_to_exec: <stack_service>
     docker_exec_command: python manage.py --help
 ```

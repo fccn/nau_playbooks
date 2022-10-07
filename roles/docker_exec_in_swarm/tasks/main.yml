@@ -6,6 +6,13 @@
     success_msg: The 'docker_service_to_exec' is defined, with {{ docker_service_to_exec }}
     quiet: true
 
+- name: Check if 'docker_stack' is defined
+  assert:
+    that: docker_stack is defined
+    fail_msg: You need to define the 'docker_stack' variable
+    success_msg: The 'docker_stack' is defined
+    quiet: true
+
 - name: Check if 'docker_exec_command' is defined
   assert:
     that: docker_exec_command is defined
@@ -18,7 +25,7 @@
     docker_service_to_exec_with_slot: "{{ docker_service_to_exec }}\\.1"
 
 - name: Find the node where it's running the first container
-  shell: docker stack ps openedx | grep -v " \\\\_ " | grep "{{ docker_service_to_exec_with_slot }}" | awk '{print $4}'
+  shell: docker stack ps {{ docker_stack }} | grep -v " \\\\_ " | grep "{{ docker_service_to_exec_with_slot }}" | awk '{print $4}'
   check_mode: no # execute even when ansible is run with --check
   changed_when: false
   register: node_output
@@ -32,7 +39,7 @@
     quiet: true
 
 - name: Find if the container is on the running state
-  shell: docker stack ps openedx | grep -v " \\\\_ " | grep "{{ docker_service_to_exec_with_slot }}" | awk '{print $5}'
+  shell: docker stack ps {{ docker_stack }} | grep -v " \\\\_ " | grep "{{ docker_service_to_exec_with_slot }}" | awk '{print $5}'
   check_mode: no # execute even when ansible is run with --check
   changed_when: false
   register: state_output
