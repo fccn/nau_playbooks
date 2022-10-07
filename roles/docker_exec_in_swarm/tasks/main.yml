@@ -25,7 +25,7 @@
     docker_service_to_exec_with_slot: "{{ docker_service_to_exec }}\\.1"
 
 - name: Find the node where it's running the first container
-  shell: docker stack ps {{ docker_stack }} | grep -v " \\\\_ " | grep "{{ docker_service_to_exec_with_slot }}" | awk '{print $4}'
+  shell: "{% raw %}docker stack ps {{ docker_stack }} | grep -v " \\\\_ " | grep "{{ docker_service_to_exec_with_slot }}" | awk '{print $4}'{% endraw %}"
   check_mode: no # execute even when ansible is run with --check
   changed_when: false
   register: node_output
@@ -39,7 +39,7 @@
     quiet: true
 
 - name: Find if the container is on the running state
-  shell: docker stack ps {{ docker_stack }} | grep -v " \\\\_ " | grep "{{ docker_service_to_exec_with_slot }}" | awk '{print $5}'
+  shell: "{% raw %}docker stack ps {{ docker_stack }} | grep -v " \\\\_ " | grep "{{ docker_service_to_exec_with_slot }}" | awk '{print $5}'{% endraw %}"
   check_mode: no # execute even when ansible is run with --check
   changed_when: false
   register: state_output
