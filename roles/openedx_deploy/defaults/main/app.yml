@@ -571,6 +571,12 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
 
   DJFS: "{{ EDXAPP_DJFS }}"
 
+  OPEN_EDX_FILTERS_CONFIG: 
+    # Also ENABLE_OTHER_COURSE_SETTINGS
+    org.openedx.learning.course.enrollment.started.v1:
+      fail_silently: False
+      pipeline:
+        - nau_openedx_extensions.filters.pipeline.FilterEnrollmentByDomain
 
 ##################
 # LMS
