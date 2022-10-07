@@ -15,6 +15,8 @@
 ---
 - name: Run django commands on discovery and lms containers
   hosts: "nau_docker_swarm_managers[0]"
+  become: True
+  gather_facts: True
   vars:
     discovery_exec: true
     lms_exec: true
