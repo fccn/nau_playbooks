@@ -7,13 +7,14 @@ openedx_docker_deploy_stack_template: templates/docker-stack.yml
 openedx_docker_deploy_base_folder: /nau/ops/openedx
 
 openedx_docker_deploy_templates: "{{ openedx_docker_deploy_templates_default }}"
-openedx_docker_deploy_templates_default: "{{ 
-  openedx_base_docker_deploy_templates + 
-  openedx_app_docker_deploy_templates + 
-  openedx_mysql_docker_deploy_templates + 
-  openedx_nginx_docker_deploy_templates + 
-  openedx_haproxy_docker_deploy_templates + 
-  openedx_docker_deploy_templates_additional 
+openedx_docker_deploy_templates_default: "{{
+  openedx_base_docker_deploy_templates +
+  openedx_app_docker_deploy_templates +
+  openedx_mysql_docker_deploy_templates +
+  openedx_nginx_docker_deploy_templates +
+  openedx_haproxy_docker_deploy_templates +
+  openedx_discovery_docker_deploy_templates +
+  openedx_docker_deploy_templates_additional
 }}"
 openedx_base_docker_deploy_templates: "{{ openedx_base_docker_deploy_templates_default }}"
 openedx_base_docker_deploy_templates_default:
