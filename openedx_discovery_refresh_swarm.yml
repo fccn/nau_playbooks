@@ -9,9 +9,8 @@
 # and then executes the django manage command inside the container.
 #
 # Ansible optional parameters:
-# - discovery_exec : 
+# - discovery_exec
 # - lms_exec
-#
 #
 ---
 - name: Run django commands on discovery and lms containers
