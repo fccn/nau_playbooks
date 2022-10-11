@@ -166,11 +166,8 @@ services:
         limits:
           memory: 300M
       update_config:
-        # We can't start-first because we have statistics port using host mode
-        order: stop-first
-        # Nevertheless we have a multi node docker swarm cluster and we are updating 1 container a time
+        # We are updating 1 container a time
         parallelism: 1
-        failure_action: rollback
     healthcheck:
       test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/{{ richie_load_balancer_haproxy_statistics_port }}", "||", "exit", "1"]
       start_period: 3s

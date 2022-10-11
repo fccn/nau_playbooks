@@ -10,8 +10,6 @@ services:
         published: {{ coursecertificate_app_docker_port_published | default(5000) }}
         protocol:  tcp
         mode:      ingress
-{{ helper.service_configs(service='app') }}
-{{ helper.service_secrets(service='app') }}
     deploy:
       replicas: {{ coursecertificate_app_replicas }}
       placement:
@@ -22,9 +20,8 @@ services:
         reservations:
           memory: 100M
       update_config:
+        # We are updating 1 container a time
         parallelism: 1
-        failure_action: rollback
-        order: start-first
     environment:
       # Use custom timezone
       TZ: {{ coursecertificate_timezone | default("Europe/Lisbon") }}
@@ -32,10 +29,12 @@ services:
       - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
     healthcheck:
       test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/5000", "||", "exit", "1"]
-      start_period: 3s
+      start_period: 30s
       retries: 10
-      interval: 10s
-      timeout: 10s
+      interval: 30s
+      timeout: 30s
+{{ helper.service_configs(service='app') }}
+{{ helper.service_secrets(service='app') }}
 
   nginx:
     image: {{ coursecertificate_nginx_image }}
@@ -49,8 +48,6 @@ services:
         published: {{ coursecertificate_nginx_https_ingress_port }}
         protocol: tcp
         mode: ingress
-{{ helper.service_configs(service='nginx') }}
-{{ helper.service_secrets(service='nginx') }}
     environment:
       # Use custom timezone
       TZ: {{ coursecertificate_timezone | default("Europe/Lisbon") }}
@@ -62,9 +59,8 @@ services:
         reservations:
           memory: 5M
       update_config:
+        # We are updating 1 container a time
         parallelism: 1
-        failure_action: rollback
-        order: start-first
       placement:
         max_replicas_per_node: 1
 {% if coursecertificate_docker_placement_constraints is defined and ( coursecertificate_docker_placement_constraints | length > 0 ) %}
@@ -75,10 +71,12 @@ services:
 {% endif %}
     healthcheck:
       test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/80", "&&", "echo", "''", ">", "/dev/tcp/127.0.0.1/443", "||", "exit", "1"]
-      start_period: 3s
+      start_period: 30s
       retries: 10
-      interval: 10s
-      timeout: 10s
+      interval: 30s
+      timeout: 30s
+{{ helper.service_configs(service='nginx') }}
+{{ helper.service_secrets(service='nginx') }}
 
 {{ helper.configs() }}
 {{ helper.secrets() }}

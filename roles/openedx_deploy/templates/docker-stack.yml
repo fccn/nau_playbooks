@@ -42,10 +42,10 @@ services:
       - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
     healthcheck:
       test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/80", "&&", "echo", "''", ">", "/dev/tcp/127.0.0.1/443", "||", "exit", "1"]
-      start_period: 3s
+      start_period: 30s
       retries: 10
-      interval: 10s
-      timeout: 10s
+      interval: 30s
+      timeout: 30s
 {{ helper.service_configs(service='nginx') }}
 {{ helper.service_secrets(service='nginx') }}
 
@@ -64,9 +64,10 @@ services:
     healthcheck:
       # Check if heartbeat is ok
       test: curl --silent --fail --head --resolve lms:8000:127.0.0.1 http://lms:8000/heartbeat | egrep "HTTP/.*200 OK"
-      retries: 30
-      interval: 10s
-      timeout: 10s
+      start_period: 30s
+      retries: 10
+      interval: 30s
+      timeout: 30s
 {{ helper.service_configs(service='edxapp') }}
 {{ helper.service_secrets(service='edxapp') }}
 
@@ -104,9 +105,10 @@ services:
     healthcheck:
       # Check if heartbeat is ok
       test: curl --silent --fail --head --resolve cms:8000:127.0.0.1 http://cms:8000/heartbeat | egrep "HTTP/.*200 OK"
-      retries: 30
-      interval: 10s
-      timeout: 10s
+      start_period: 30s
+      retries: 10
+      interval: 30s
+      timeout: 30s
 {{ helper.service_configs(service='edxapp') }}
 {{ helper.service_secrets(service='edxapp') }}
 
@@ -149,16 +151,17 @@ services:
 {% for env_var_name, env_var_value in openedx_forum_docker_environment_variables.items() %}
       {{ env_var_name }}: "{{ env_var_value }}"
 {% endfor %}
-    healthcheck:
-      # Check if forum heartbeat returns ok
-      test: wget -qSO- 127.0.0.1:{{ openedx_forum_port }}/heartbeat 2>&1 | egrep "HTTP/.*200 OK"
-      retries: 30
-      interval: 10s
-      timeout: 10s
     deploy:
       replicas: {{ openedx_forum_replicas }}
       placement:
         max_replicas_per_node: {{ ( openedx_forum_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
+    healthcheck:
+      # Check if forum heartbeat returns ok
+      test: wget -qSO- 127.0.0.1:{{ openedx_forum_port }}/heartbeat 2>&1 | egrep "HTTP/.*200 OK"
+      start_period: 30s
+      retries: 10
+      interval: 30s
+      timeout: 30s
 
 {% if openedx_forum_job %}
   forum-job:
@@ -190,9 +193,10 @@ services:
       # Check if forum heartbeat returns ok
       test: |
         bash -c 'exec 3<>/dev/tcp/127.0.0.1/{{ openedx_notes_port }} && echo -e "GET /heartbeat/ HTTP/1.1\r\nHost: notes\r\nConnection: close\r\n\r\n" >&3 && cat <&3 | grep "HTTP/1.1 200 OK"'
-      retries: 30
-      interval: 10s
-      timeout: 10s
+      start_period: 30s
+      retries: 10
+      interval: 30s
+      timeout: 30s
 {{ helper.service_configs(service='notes') }}
 {{ helper.service_secrets(service='notes') }}
 
@@ -223,14 +227,15 @@ services:
       replicas: {{ openedx_discovery_replicas }}
       placement:
         max_replicas_per_node: {{ ( openedx_discovery_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
-{{ helper.service_configs(service='discovery') }}
-{{ helper.service_secrets(service='discovery') }}
     healthcheck:
       # Check if /health/ returns a HTTP status 200, meaning the service is ok
       test: curl --silent --fail --head --resolve discovery:8000:127.0.0.1 http://discovery:8000/health/ | egrep "HTTP/.*200 OK"
-      retries: 30
-      interval: 10s
-      timeout: 10s
+      start_period: 30s
+      retries: 10
+      interval: 30s
+      timeout: 30s
+{{ helper.service_configs(service='discovery') }}
+{{ helper.service_secrets(service='discovery') }}
 
 {% if openedx_discovery_job %}
   discovery-job:
@@ -367,9 +372,10 @@ services:
       # node should be correctly connected to the cluster, but the other nodes only resolve this
       # node DNS when this container is on healthy state.
       test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/9300", "||", "exit", "1"]
-      retries: 30
-      interval: 10s
-      timeout: 10s
+      start_period: 30s
+      retries: 10
+      interval: 30s
+      timeout: 30s
 {% endfor %}
 
   # HAProxy services
@@ -425,19 +431,15 @@ services:
       resources:
         limits:
           memory: 300M
-      # we can't start-first because we have statistics port using host mode
-      # nevertheless because still can have this because we have at least 2 replicas 
-      # and we are deploy only one each time
       update_config:
+        # We are updating 1 container a time
         parallelism: 1
-        failure_action: rollback
-        order: stop-first
     healthcheck:
       test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/{{ openedx_haproxy_write_port | default(3306) }}", "&&", "echo", "''", ">", "/dev/tcp/127.0.0.1/{{ openedx_haproxy_readonly_port | default(3306) }}", "||", "exit", "1"]
-      start_period: 3s
+      start_period: 30s
       retries: 10
-      interval: 10s
-      timeout: 10s
+      interval: 30s
+      timeout: 30s
 {{ helper.service_configs(service='haproxy') }}
 {{ helper.service_secrets(service='haproxy') }}
 
@@ -452,14 +454,12 @@ services:
       TZ: {{ openedx_timezone | default("Europe/Lisbon") }}
       MYSQL_DATABASE: "{{ EDXAPP_MYSQL_DB_NAME }}"
       MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql-root-password
-{{ helper.service_configs(service=mysql_container_name) }}
-{{ helper.service_secrets(service=mysql_container_name) }}
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping --silent -p{{ EDXAPP_MYSQL_PASSWORD_ADMIN }} || exit 1"]
+      start_period: 30s
+      retries: 10
       interval: 30s
-      timeout: 10s
-      retries: 30
-      start_period: 10s
+      timeout: 30s
     volumes:
       - {{ mysql_container.data }}:/var/lib/mysql
     deploy:
@@ -472,6 +472,8 @@ services:
         max_replicas_per_node: 1
         constraints:
           - node.labels.fqdn == {{ mysql_container.host_fqdn }}
+{{ helper.service_configs(service=mysql_container_name) }}
+{{ helper.service_secrets(service=mysql_container_name) }}
 {% endfor %}
 
 {{ helper.configs() }}

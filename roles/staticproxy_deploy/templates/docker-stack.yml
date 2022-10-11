@@ -18,8 +18,6 @@ services:
       replicas: {{ staticproxy_nginx_replicas }}
       update_config:
         parallelism: 1
-        failure_action: rollback
-        order: start-first
       placement:
         max_replicas_per_node: 1
       resources:
@@ -40,10 +38,10 @@ services:
       - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
     healthcheck:
       test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/80", "&&", "echo", "''", ">", "/dev/tcp/127.0.0.1/443", "||", "exit", "1"]
-      start_period: 3s
+      start_period: 30s
       retries: 10
-      interval: 10s
-      timeout: 10s
+      interval: 30s
+      timeout: 30s
 {{ helper.service_configs() }}
 {{ helper.service_secrets() }}
 
