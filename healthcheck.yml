@@ -62,6 +62,8 @@
   hosts: "mongo_servers:&{{ target_mongo_server | default('mongo_servers') }}[0]"
   become: True
   gather_facts: True
+  vars: 
+    elasticsearch_healthcheck: true
   tasks:
     - name: Get MongoDB secondary nodes replication information
       shell: |
@@ -81,11 +83,12 @@
         warn: false
       register: es_nodes_result
       changed_when: false
+      when: (elasticsearch_healthcheck|bool)
       
     - name: Fail if Elasticsearch secondary nodes replication isn't ok
       fail:
         msg: Fail the number of healthy secondary nodes
-      when: es_nodes_result.stdout != (( groups['mongo_servers'] | length) | string )
+      when: (elasticsearch_healthcheck|bool) and es_nodes_result.stdout != (( groups['mongo_servers'] | length) | string )
     
     - name: Check Elasticsearch cluster, indexes and shards health
       shell: curl -s -X GET 'localhost:9200/_cluster/health?level=shards&pretty' | egrep -o "status.*\," | sort | uniq | egrep -o "\"[^\ ]+\""
@@ -93,15 +96,17 @@
         warn: false
       register: es_shards_result
       changed_when: false
+      when: (elasticsearch_healthcheck|bool)
 
     - set_fact:
         # if its a single server there isn't the number of replicas to be on green status
         expected_status: "{{ 'green' if ( groups['mongo_servers'] | length) > 1 else 'yellow' }}"
+      when: (elasticsearch_healthcheck|bool)
       
     - name: Fail if Elasticsearch cluster, indexes and shards health isn't ok
       fail:
         msg: Fail the Elasticsearch cluster, indexes and shards health
-      when: es_shards_result.stdout != ( '"' + expected_status + '"' )
+      when: (elasticsearch_healthcheck|bool) and ( es_shards_result.stdout != ( '"' + expected_status + '"' ) )
 
 - name: Check URLs
   hosts: all
