@@ -1,52 +1,74 @@
-# Run discovery refresh django scripts: 
+# Run multiple tasks on openedx stack.
+#
+# It finds the docker swarm node where it is run each container (discovery or lms) and executes 
+# the django manage command inside the container.
+#
+# Discovery:
 # - Refresh course metadata
 # - Remove unused indexes
 # - Update index
-# 
-# And, also run LMS cache programs data.
 #
-# It finds the docker swarm node where it is run the discovery and lms containers
-# and then executes the django manage command inside the container.
+# LMS:
+# - cache programs data.
+# - pull SAML configuration.
 #
-# Ansible optional parameters:
-# - discovery_exec
-# - lms_exec
+# Examples:
+# To run all run the playbook with:
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_commands_every_8hours.yml -e run_all=true
+#
+# To run specific step use:
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_commands_every_8hours.yml -e discovery_refresh_course_metadata=true
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_commands_every_8hours.yml -e discovery_remove_unused_indexes=true
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_commands_every_8hours.yml -e discovery_update_index=true
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_commands_every_8hours.yml -e lms_cache_programs=true
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_commands_every_8hours.yml -e lms_saml_pull=true
 #
 ---
-- name: Run django commands on discovery and lms containers
+- name: Run openedx django commands on different containers
   hosts: "nau_docker_swarm_managers[0]"
   become: True
   gather_facts: True
   vars:
-    discovery_exec: true
-    lms_exec: true
-    
+    _discovery_refresh_course_metadata: "{{ run_all | default(discovery_refresh_course_metadata) | default(false) | bool }}"
+    _discovery_remove_unused_indexes: "{{ run_all | default(discovery_remove_unused_indexes) | default(false) | bool }}"
+    _discovery_update_index: "{{ run_all | default(discovery_update_index) | default(false) | bool }}"
+    _lms_cache_programs: "{{ run_all | default(lms_cache_programs) | default(false) | bool }}"
+    _lms_saml_pull: "{{ run_all | default(lms_saml_pull) | default(false) | bool }}"
+
     # Configuration of discovery and lms django commands with docker service and its shell command to execute.
     commands_to_execute:
+      # discovery tasks
       - name: discovery refresh course metadata
         docker_stack: openedx
         docker_service_to_exec: discovery
         docker_exec_command: python manage.py refresh_course_metadata --no-color
         docker_exec_output_fact: discovery_refresh_course_metadata_output
-        when: "{{ discovery_exec | bool }}"
+        when: "{{ _discovery_refresh_course_metadata }}"
       - name: discovery remove unused indexes
         docker_stack: openedx
         docker_service_to_exec: discovery
         docker_exec_command: python manage.py remove_unused_indexes --no-color
         docker_exec_output_fact: discovery_remove_unused_indexes_output
-        when: "{{ discovery_exec | bool }}"
+        when: "{{ _discovery_remove_unused_indexes }}"
       - name: discovery update index
         docker_stack: openedx
         docker_service_to_exec: discovery
         docker_exec_command: python manage.py update_index --disable-change-limit --no-color
         docker_exec_output_fact: discovery_update_index_output
-        when: "{{ discovery_exec | bool }}"
+        when: "{{ _discovery_update_index }}"
+      # lms tasks
       - name: lms cache programs
         docker_stack: openedx
         docker_service_to_exec: lms
         docker_exec_command: python manage.py lms cache_programs --settings nau_production
         docker_exec_output_fact: lms_cache_programs_output
-        when: "{{ lms_exec | bool }}"
+        when: "{{ _lms_cache_programs }}"
+      - name: lms saml pull
+        docker_stack: openedx
+        docker_service_to_exec: lms
+        docker_exec_command: python manage.py lms saml --pull --settings nau_production
+        docker_exec_output_fact: lms_saml_pull_output
+        when: "{{ _lms_saml_pull }}"
 
   tasks:
     - name: Execute discovery and lms refresh jobs
