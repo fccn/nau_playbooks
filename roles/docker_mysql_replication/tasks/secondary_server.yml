@@ -68,7 +68,6 @@
 
 - name: Restore database
   shell: docker exec -i -e MYSQL_PWD={{ _login_password }} {{ mysql_container_id.stdout }} mysql --user={{ _login_user }} < {{ docker_mysql_replication_dump_file }}
-  tags: docker_mysql_replication
   register: restore_db_out
   tags: docker_mysql_replication
 
