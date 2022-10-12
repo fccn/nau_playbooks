@@ -6,6 +6,47 @@ services:
 
   # TODO: add "mongo" cluster
 
+  analyticsapi:
+    image: {{ openedx_analyticsapi_image }}
+    environment:
+{% for env_var_name, env_var_value in openedx_analyticsapi_docker_environment_variables.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    deploy:
+      replicas: {{ openedx_analyticsapi_replicas }}
+      update_config:
+        # We are updating 1 container a time
+        parallelism: 1
+        parallelism: {{ [ 1, ( openedx_analyticsapi_replicas / 2 | int ) ] | max | round(0, 'floor') | int }}
+      placement:
+        max_replicas_per_node: {{ ( openedx_analyticsapi_replicas / docker_swarm_cluster_group_length | int ) | round(0, 'ceil') | int }}
+    healthcheck:
+      # Check if /health/ returns a HTTP status 200, meaning the service is ok
+      test: curl --silent --fail --head --resolve analyticsapi:8100:127.0.0.1 http://analyticsapi:8100/health/ | egrep "HTTP/.*200 OK"
+      start_period: 30s
+      retries: 10
+      interval: 30s
+      timeout: 30s
+{{ helper.service_configs(service='analyticsapi') }}
+{{ helper.service_secrets(service='analyticsapi') }}
+
+{% if openedx_analyticsapi_job %}
+  analyticsapi-job:
+    image: {{ openedx_analyticsapi_image }}
+    command: {{ openedx_analyticsapi_job_command }}
+    environment:
+{% for env_var_name, env_var_value in openedx_analyticsapi_docker_environment_variables.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    deploy:
+      replicas: 1 # should exist only 1 instance of this container
+      mode: replicated # after docker 22.06.0 release change it to replicated-job
+      restart_policy:
+        condition: on-failure # restart this container only if it fails to run
+{{ helper.service_configs(service='analyticsapi') }}
+{{ helper.service_secrets(service='analyticsapi') }}
+
+{% endif %}
   nginx:
     image: {{ openedx_nginx_image }}
     ports:
@@ -266,6 +307,10 @@ services:
         max_replicas_per_node: {{ ( openedx_smtp_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
     healthcheck:
       test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/8025", "||", "exit", "1"]
+      start_period: 30s
+      retries: 10
+      interval: 30s
+      timeout: 30s
 
   redis-sentinel:
     image: {{ openedx_redis_sentinel_docker_image }}

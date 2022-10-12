@@ -9,34 +9,22 @@ To initialize the mysql cluster use the `openedx_mysql_initialization` parameter
 Run ansible with `-e openedx_deploy=true -e openedx_mysql_initialization=true --tags docker_mysql_replication`
 
 ## Database Migrations
+The database migrations are configured per application using the next ansible extra variables:
+- openedx_lms_migrate
+- openedx_cms_migrate
+- openedx_forum_job
+- openedx_notes_job
+- openedx_discovery_job
+- openedx_analyticsapi_job
 
-If you want to run database migrations for the LMS, add the next parameters when running ansible:
+Example to run the lms migrations:
 ```bash
 -e openedx_deploy=true -e openedx_lms_migrate=true
 ```
-
-To run DB migrations for the Studio/cms application:
+If you need to run multiple database migrations on multiple containers, then add each variable.
+For example to run on lms and studio migrations use:
 ```bash
--e openedx_deploy=true -e openedx_cms_migrate=true
-```
-
-The same thing for forum:
-```bash
--e openedx_deploy=true -e openedx_forum_job=true 
-```
-
-Notes
-```bash
--e openedx_deploy=true -e openedx_notes_job=true 
-```
-And discovery:
-```bash
--e openedx_deploy=true -e openedx_discovery_job=true
-```
-
-To run all database migrations on every application, run:
-```bash
--e openedx_deploy=true -e openedx_lms_migrate=true -e openedx_cms_migrate=true -e openedx_forum_job=true -e openedx_notes_job=true -e openedx_discovery_job=true
+-e openedx_deploy=true -e openedx_lms_migrate=true -e openedx_cms_migrate=true
 ```
 
 ## Re-index

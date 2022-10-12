@@ -1,0 +1,110 @@
+---
+openedx_analyticsapi_replicas: 1
+openedx_analyticsapi_job: false
+# last commit on open-release/lilac.master that the docker build has been executed
+openedx_analyticsapi_image: docker.io/openedx/analytics-data-api:d5f12d33d86cfcc57e1f6662890dbe784cfdce23
+openedx_analyticsapi_job_command: python manage.py migrate --settings nau_production
+
+openedx_analyticsapi_docker_deploy_files:
+  - src: files/analyticsapi/nau_production.py
+    dest: "{{ openedx_docker_deploy_base_folder }}/analyticsapi/nau_production.py"
+    service: analyticsapi
+    config_name: analyticsapi_envs_nau_production
+    docker_target: /edx/app/analytics_api/analyticsdataserver/settings/nau_production.py
+
+openedx_analyticsapi_docker_deploy_templates:
+  - src_data:  "{{ openedx_analyticsapi_cfg_settings | to_nice_yaml(indent=2, width=1337) }}" # default_flow_style=False didn't work
+    dest: "{{ openedx_docker_deploy_base_folder }}/analyticsapi/analyticsapi.yml"
+    service: analyticsapi
+    config_name: analyticsapi_cfg_yml
+    docker_target: "{{ ANALYTICS_API_CFG }}"
+
+ANALYTICS_API_CFG: /edx/etc/analytics_api.yml
+
+openedx_analyticsapi_docker_environment_variables: "{{ openedx_analyticsapi_docker_environment_variables_default | combine(openedx_analyticsapi_docker_environment_variables_overrides, recursive=True) }}"
+openedx_analyticsapi_docker_environment_variables_overrides: {}
+openedx_analyticsapi_docker_environment_variables_default:
+  DJANGO_SETTINGS_MODULE: analyticsdataserver.settings.nau_production
+  ANALYTICS_API_CFG: "{{ ANALYTICS_API_CFG }}"
+
+openedx_analyticsapi_cfg_settings: "{{ openedx_analyticsapi_cfg_settings_default | combine(openedx_analyticsapi_cfg_settings_overrides, recursive=True) }}"
+openedx_analyticsapi_cfg_settings_overrides: {}
+openedx_analyticsapi_cfg_settings_default:
+  AGGREGATE_PAGE_SIZE: 10
+  ANALYTICS_DATABASE: reports
+  API_AUTH_TOKEN: "{{ ANALYTICS_API_AUTH_TOKEN }}"
+  API_ROOT: null
+  BACKEND_SERVICE_EDX_OAUTH2_KEY: analyticsapi-backend-service-key
+  BACKEND_SERVICE_EDX_OAUTH2_PROVIDER_URL: "{{ COMMON_OAUTH_PUBLIC_URL_ROOT }}"
+  BACKEND_SERVICE_EDX_OAUTH2_SECRET: analyticsapi-backend-service-secret
+  CACHES:
+    default:
+      BACKEND: django_redis.cache.RedisCache
+      KEY_PREFIX: analyticsapi
+      LOCATION: redis://{% if OPENEDX_REDIS_USERNAME and OPENEDX_REDIS_PASSWORD %}{{ OPENEDX_REDIS_USERNAME }}:{{ OPENEDX_REDIS_PASSWORD }}{% endif %}@{{ OPENEDX_REDIS_HOST }}:{{ OPENEDX_REDIS_PORT }}/{{ ANALYTICS_API_CACHE_REDIS_DB }}
+  CSRF_COOKIE_SECURE: false
+  DATABASES:
+    # rw user
+    default:
+      ENGINE: 'django.db.backends.mysql'
+      NAME: '{{ ANALYTICS_API_DEFAULT_DB_NAME }}'
+      USER: '{{ ANALYTICS_API_DEFAULT_USER }}'
+      PASSWORD: '{{ ANALYTICS_API_DEFAULT_PASSWORD }}'
+      HOST: haproxy
+      PORT: 3306
+      OPTIONS: "{{ ANALYTICS_API_DEFAULT_MYSQL_OPTIONS }}"
+    # read-only user
+    reports:
+      ENGINE: 'django.db.backends.mysql'
+      NAME: '{{ ANALYTICS_API_REPORTS_DB_NAME }}'
+      USER: '{{ ANALYTICS_API_REPORTS_USER }}'
+      PASSWORD: '{{ ANALYTICS_API_REPORTS_PASSWORD }}'
+      HOST: haproxy
+      PORT: 3307
+      OPTIONS: "{{ ANALYTICS_API_REPORTS_MYSQL_OPTIONS }}"
+  DATETIME_FORMAT: '%Y-%m-%dT%H%M%S'
+  DATE_FORMAT: '%Y-%m-%d'
+  DEFAULT_PAGE_SIZE: 25
+  EDX_DRF_EXTENSIONS:
+    OAUTH2_USER_INFO_URL: "{{ COMMON_LMS_BASE_URL }}/user_info"
+  ELASTICSEARCH_LEARNERS_HOST:  http://haproxy:9200
+  ELASTICSEARCH_LEARNERS_INDEX: "{{ ANALYTICS_API_ELASTICSEARCH_LEARNERS_INDEX }}"
+  ELASTICSEARCH_LEARNERS_UPDATE_INDEX: "{{ ANALYTICS_API_ELASTICSEARCH_LEARNERS_UPDATE_INDEX }}"
+  JWT_AUTH:
+    JWT_AUTH_COOKIE_HEADER_PAYLOAD: "{{ EDXAPP_JWT_AUTH_COOKIE_HEADER_PAYLOAD }}"
+    JWT_AUTH_COOKIE_SIGNATURE: "{{ EDXAPP_JWT_AUTH_COOKIE_SIGNATURE }}"
+    JWT_AUTH_REFRESH_COOKIE: "{{ EDXAPP_JWT_AUTH_REFRESH_COOKIE }}"
+    JWT_ISSUERS:
+      - ISSUER: "{{ EDXAPP_LMS_ISSUER }}"
+        AUDIENCE: 'SET-ME-PLEASE'
+        SECRET_KEY: "{{ EDXAPP_JWT_SECRET_KEY }}"
+    JWT_PUBLIC_SIGNING_JWK_SET: "{{ EDXAPP_JWT_PUBLIC_SIGNING_JWK_SET|string }}"
+  # LANGUAGE_CODE: en-us
+  LMS_BASE_URL: "{{ COMMON_LMS_BASE_URL }}"
+  #MAX_PAGE_SIZE: 100
+  # needed to change the default `COURSE_REPORT_FILE_LOCATION_TEMPLATE` value
+  REPORT_DOWNLOAD_BACKEND:
+    COURSE_REPORT_FILE_LOCATION_TEMPLATE: '{course_id}_{report_name}.csv'
+    DEFAULT_FILE_STORAGE: django.core.files.storage.FileSystemStorage
+    MEDIA_ROOT: /edx/var/analyticsapi/static/reports
+    MEDIA_URL: http://localhost:8100/static/reports/
+  SECRET_KEY: "{{ ANALYTICS_API_SECRET_KEY }}"
+  SESSION_EXPIRE_AT_BROWSER_CLOSE: false
+  SOCIAL_AUTH_EDX_OAUTH2_ISSUER: "{{ COMMON_LMS_BASE_URL }}"
+  SOCIAL_AUTH_EDX_OAUTH2_KEY: analyticsapi-sso-key # needs to be reissued
+  SOCIAL_AUTH_EDX_OAUTH2_LOGOUT_URL: "{{ COMMON_LMS_BASE_URL }}/logout"
+  SOCIAL_AUTH_EDX_OAUTH2_SECRET: analyticsapi-sso-secret # needs to be reissued
+  SOCIAL_AUTH_EDX_OAUTH2_URL_ROOT: "{{ COMMON_LMS_BASE_URL }}"
+
+ANALYTICS_API_DEFAULT_DB_NAME: analyticsapi
+ANALYTICS_API_DEFAULT_USER: 'api001'
+ANALYTICS_API_DEFAULT_MYSQL_OPTIONS:
+  connect_timeout: 10
+  init_command: "SET sql_mode='STRICT_TRANS_TABLES'"
+ANALYTICS_API_REPORTS_DB_NAME: 'reports'
+ANALYTICS_API_REPORTS_USER: 'reports001'
+ANALYTICS_API_REPORTS_MYSQL_OPTIONS:
+  connect_timeout: 10
+  init_command: "SET sql_mode='STRICT_TRANS_TABLES'"
+
+ANALYTICS_API_CACHE_REDIS_DB: 7

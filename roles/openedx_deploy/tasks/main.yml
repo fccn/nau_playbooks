@@ -91,7 +91,7 @@
     docker_mysql_replication_additional_databases: "{{ openedx_docker_mysql_replication_additional_databases }}"
     docker_mysql_replication_additional_users: "{{ openedx_docker_mysql_replication_additional_users }}"
     docker_mysql_replication_containers_prefix: openedx
-  tags: 
+  tags:
     - docker_deploy
     - docker_mysql_replication
     - docker_mysql_replication_additional_users
