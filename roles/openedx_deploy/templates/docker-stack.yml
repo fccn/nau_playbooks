@@ -6,6 +6,7 @@ services:
 
   # TODO: add "mongo" cluster
 
+{% if openedx_analyticsapi %}
   analyticsapi:
     image: {{ openedx_analyticsapi_image }}
     environment:
@@ -46,7 +47,8 @@ services:
 {{ helper.service_configs(service='analyticsapi') }}
 {{ helper.service_secrets(service='analyticsapi') }}
 
-{% endif %}
+{% endif %}{# comment if openedx_analyticsapi_job #}
+{% endif %}{# comment if openedx_analyticsapi #}
   nginx:
     image: {{ openedx_nginx_image }}
     ports:

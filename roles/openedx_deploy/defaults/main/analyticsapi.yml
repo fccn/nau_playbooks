@@ -1,9 +1,33 @@
 ---
+# By default do not deploy analyticsapi
+openedx_analyticsapi: false
+
 openedx_analyticsapi_replicas: 1
+
 openedx_analyticsapi_job: false
-# last commit on open-release/lilac.master that the docker build has been executed
-openedx_analyticsapi_image: docker.io/openedx/analytics-data-api:d5f12d33d86cfcc57e1f6662890dbe784cfdce23
-openedx_analyticsapi_job_command: python manage.py migrate --settings nau_production
+# last commit on open-release/lilac.master that the docker build has been executed: d5f12d33d86cfcc57e1f6662890dbe784cfdce23
+# last commit on open-release/maple.master that the docker build has been executed: e0c4aa3f20f869ad7d680ef90b62f7800acaa844 
+openedx_analyticsapi_image: docker.io/openedx/analytics-data-api:e0c4aa3f20f869ad7d680ef90b62f7800acaa844 
+openedx_analyticsapi_job_command: bash -c "{{ openedx_analyticsapi_job_commands | join(' && ') }}"
+
+# merge all commands that need to be executed on analyticsapi-job container, but remove the empty commands.
+openedx_analyticsapi_job_commands: "{{ openedx_analyticsapi_job_commands_list | reject('equalto', '') | list }}"
+
+# By default we don't execute anything inside the analyticsapi-job container.
+# If you need to execute one of it, then you need to add this extra variable has true
+# when running ansible-playbook executable.
+openedx_analyticsapi_migrate: false
+openedx_analyticsapi_delete_elasticsearch_learners_indices: false
+openedx_analyticsapi_create_elasticsearch_learners_indices: false
+
+# The list of commands that need to be executed on analyticsapi-job container. 
+openedx_analyticsapi_job_commands_list: #  --settings nau_production
+  - "{{ 'python manage.py migrate' if openedx_analyticsapi_migrate else '' }}"
+  - "{{ 'python manage.py delete_elasticsearch_learners_indices' if openedx_analyticsapi_delete_elasticsearch_learners_indices else '' }}"
+  - "{{ 'python manage.py create_elasticsearch_learners_indices' if openedx_analyticsapi_create_elasticsearch_learners_indices else '' }}"
+
+# run analyticsapi-job container if there is a command to execute
+openedx_analyticsapi_job: "{{ openedx_analyticsapi_job_commands|length >0 }}"
 
 openedx_analyticsapi_docker_deploy_files:
   - src: files/analyticsapi/nau_production.py

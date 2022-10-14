@@ -15,7 +15,9 @@ The database migrations are configured per application using the next ansible ex
 - openedx_forum_job
 - openedx_notes_job
 - openedx_discovery_job
-- openedx_analyticsapi_job
+- openedx_analyticsapi_migrate
+- openedx_analyticsapi_delete_elasticsearch_learners_indices
+- openedx_analyticsapi_create_elasticsearch_learners_indices
 
 Example to run the lms migrations:
 ```bash
