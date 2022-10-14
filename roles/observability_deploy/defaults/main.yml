@@ -5,6 +5,11 @@
 # Remove old containers that this stack no longer use
 observability_docker_deploy_stack_prune: true
 
+# Variable to enable or disable the use of debug information, like increase logging verbosity and
+# to use the debug fluentbit docker image.
+observability_fluentbit_debug: true
+observability_fluentbit_log_level: "{{ 'debug' if (observability_fluentbit_debug|bool) else 'info' }}"
+
 observability_docker_deploy_stack_name: observability
 observability_docker_deploy_stack_template: templates/docker-stack.yml
 observability_docker_deploy_base_folder: /nau/ops/observability
@@ -48,7 +53,7 @@ observability_docker_deploy_folders_additional:
     # We don't define `when`, because we really want to create this folder on all the docker nodes
     # This container is defined on `global` mode.
 
-observability_fluentbit_docker_image: fluent/fluent-bit:1.9.8-debug
+observability_fluentbit_docker_image: fluent/fluent-bit:1.9.8{{ '-debug' if (observability_fluentbit_debug|bool) else '' }}
 # image: fluent/fluent-bit:latest-debug
 # image: fluent/fluent-bit:latest
 
