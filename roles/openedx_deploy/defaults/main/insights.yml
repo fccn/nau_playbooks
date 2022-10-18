@@ -1,0 +1,140 @@
+---
+openedx_insights: true
+openedx_insights_replicas: 1
+openedx_insights_image: nauedu/openedx-insights:nau-lilac.master-4795b38e3c87a092584336b1dbbb52535a00acc1-build-4
+
+openedx_insights_port: 8000
+openedx_insights_nginx_ssl_certificate_docker_target: "{{ openedx_nginx_ssl_certificate_docker_target }}"
+openedx_insights_nginx_ssl_certificate_key_docker_target: "{{ openedx_nginx_ssl_certificate_key_docker_target }}"
+
+openedx_insights_job: false
+openedx_insights_job_command: python manage.py migrate
+
+openedx_insights_docker_deploy_files:
+  - src: files/insights/nau_production.py
+    dest: "{{ openedx_docker_deploy_base_folder }}/insights/nau_production.py"
+    service: insights
+    config_name: insights_envs_nau_production
+    docker_target: /openedx/insights/analytics_dashboard/settings/nau_production.py
+
+openedx_insights_docker_deploy_templates:
+  - src_data:  "{{ openedx_insights_cfg_settings | to_nice_yaml(indent=2, width=1337) }}" # default_flow_style=False didn't work
+    dest: "{{ openedx_docker_deploy_base_folder }}/insights/insights.yml"
+    service: insights
+    config_name: insights_cfg_yml
+    docker_target: "{{ ANALYTICS_DASHBOARD_CFG }}"
+
+ANALYTICS_DASHBOARD_CFG: /openedx/config.yml
+
+openedx_insights_docker_environment_variables: "{{ openedx_insights_docker_environment_variables_default | combine(openedx_insights_docker_environment_variables_overrides, recursive=True) }}"
+openedx_insights_docker_environment_variables_overrides: {}
+openedx_insights_docker_environment_variables_default:
+  DJANGO_SETTINGS_MODULE: analytics_dashboard.settings.docker_production
+  ANALYTICS_DASHBOARD_CFG: "{{ ANALYTICS_DASHBOARD_CFG }}"
+
+openedx_insights_cfg_settings: "{{ openedx_insights_cfg_settings_default | combine(openedx_insights_cfg_settings_overrides, recursive=True) }}"
+openedx_insights_cfg_settings_overrides: {}
+openedx_insights_cfg_settings_default:
+  APPLICATION_NAME: Insights
+  BACKEND_SERVICE_EDX_OAUTH2_KEY: "{{ INSIGHTS_BACKEND_SERVICE_EDX_OAUTH2_KEY }}"
+  BACKEND_SERVICE_EDX_OAUTH2_PROVIDER_URL: "{{ COMMON_OAUTH_PUBLIC_URL_ROOT }}"
+  BACKEND_SERVICE_EDX_OAUTH2_SECRET: "{{ INSIGHTS_BACKEND_SERVICE_EDX_OAUTH2_SECRET }}"
+  CACHES:
+    default:
+      BACKEND: django_redis.cache.RedisCache
+      KEY_PREFIX: insights
+      LOCATION: redis://{% if OPENEDX_REDIS_USERNAME and OPENEDX_REDIS_PASSWORD %}{{ OPENEDX_REDIS_USERNAME }}:{{ OPENEDX_REDIS_PASSWORD }}{% endif %}@{{ OPENEDX_REDIS_HOST }}:{{ OPENEDX_REDIS_PORT }}/{{ INSIGHTS_CACHE_REDIS_DB }}
+  CMS_COURSE_SHORTCUT_BASE_URL: "{{ INSIGHTS_CMS_BASE }}/course"
+  COURSE_API_URL: "{{ INSIGHTS_CMS_BASE }}/api/courses/v1/"
+  CSRF_COOKIE_NAME: "{{ INSIGHTS_CSRF_COOKIE_NAME | default('insights_csrftoken') }}"
+  CSRF_COOKIE_SECURE: "{{ INSIGHTS_CSRF_COOKIE_SECURE }}"
+  DATABASES: "{{ INSIGHTS_DATABASES }}"
+  DATA_API_AUTH_TOKEN: "{{ INSIGHTS_DATA_API_AUTH_TOKEN }}"
+  DATA_API_URL: '{{ ANALYTICS_API_ENDPOINT }}'
+  DOCUMENTATION_LOAD_ERROR_URL: "{{ INSIGHTS_DOC_BASE }}/Reference.html#error-conditions"
+  EMAIL_HOST: "{{ OPENEDX_SMTP_HOST }}"
+  EMAIL_HOST_PASSWORD: "{{ OPENEDX_SMTP_HOST_PASSWORD }}"
+  EMAIL_HOST_USER: "{{ OPENEDX_SMTP_HOST_USER }}"
+  EMAIL_PORT: "{{ OPENEDX_SMTP_PORT }}"
+  # EMAIL_USE_TLS: "{{ OPENEDX_SMTP_USE_TLS | string }}"
+  EMAIL_USE_SSL: "{{ OPENEDX_SMTP_USE_SSL }}"
+  ENABLE_AUTO_AUTH: "{{ INSIGHTS_ENABLE_AUTO_AUTH }}"
+  GRADING_POLICY_API_URL: "{{ INSIGHTS_GRADING_POLICY_API_URL }}"
+  HELP_URL: "{{ INSIGHTS_DOC_BASE }}"
+  LANGUAGE_CODE: '{{ INSIGHTS_LANGUAGE_CODE }}'
+  LANGUAGE_COOKIE_NAME: "{{ INSIGHTS_LANGUAGE_COOKIE_NAME | default('insights_language') }}"
+  LEARNER_API_LIST_DOWNLOAD_FIELDS: "{{ INSIGHTS_LEARNER_API_LIST_DOWNLOAD_FIELDS }}"
+  LMS_COURSE_SHORTCUT_BASE_URL: "{{ INSIGHTS_LMS_COURSE_SHORTCUT_BASE_URL }}"
+  MODULE_PREVIEW_URL: "{{ INSIGHTS_MODULE_PREVIEW_URL }}"
+  OPEN_SOURCE_URL: '{{ INSIGHTS_OPEN_SOURCE_URL }}'
+  PLATFORM_NAME: '{{ INSIGHTS_PLATFORM_NAME }}'
+  PRIVACY_POLICY_URL: '{{ INSIGHTS_PRIVACY_POLICY_URL }}'
+  RESEARCH_URL: '{{ INSIGHTS_RESEARCH_URL }}'
+  SECRET_KEY: "{{ INSIGHTS_SECRET_KEY }}"
+  SEGMENT_IGNORE_EMAIL_REGEX: '{{ INSIGHTS_SEGMENT_IGNORE_EMAIL_REGEX }}'
+  SEGMENT_IO_KEY: '{{ INSIGHTS_SEGMENT_IO_KEY }}'
+  # When insights is co-located with other django services, we need to ensure they don't all
+  # use the same cookie names.
+  SESSION_COOKIE_NAME:  "{{ INSIGHTS_SESSION_COOKIE_NAME | default('insights_sessionid') }}"
+  SESSION_EXPIRE_AT_BROWSER_CLOSE: "{{ INSIGHTS_SESSION_EXPIRE_AT_BROWSER_CLOSE }}"
+  SOCIAL_AUTH_EDX_OAUTH2_KEY: '{{ INSIGHTS_SOCIAL_AUTH_EDX_OAUTH2_KEY }}'
+  SOCIAL_AUTH_EDX_OAUTH2_SECRET: '{{ INSIGHTS_SOCIAL_AUTH_EDX_OAUTH2_SECRET }}'
+  SOCIAL_AUTH_EDX_OAUTH2_ISSUER: '{{ INSIGHTS_LMS_BASE }}'
+  SOCIAL_AUTH_EDX_OAUTH2_URL_ROOT: '{{ INSIGHTS_LMS_BASE }}'
+  SOCIAL_AUTH_EDX_OAUTH2_LOGOUT_URL: '{{ INSIGHTS_OAUTH2_URL_LOGOUT }}'
+  SOCIAL_AUTH_REDIRECT_IS_HTTPS: '{{ INSIGHTS_SOCIAL_AUTH_REDIRECT_IS_HTTPS }}'
+  SUPPORT_EMAIL: '{{ INSIGHTS_SUPPORT_EMAIL }}'
+  TERMS_OF_SERVICE_URL: '{{ INSIGHTS_TERMS_OF_SERVICE_URL }}'
+  TIME_ZONE: '{{ INSIGHTS_TIME_ZONE }}'
+  # FOOTER_LINKS:
+  #   - url: text: data_role: tos
+  #   privacy-policy
+
+INSIGHTS_CACHE_REDIS_DB: 6
+INSIGHTS_CMS_BASE: !!null
+INSIGHTS_CSRF_COOKIE_SECURE: false
+
+INSIGHTS_DATABASE_NAME: 'dashboard'
+INSIGHTS_DATABASE_USER: rosencrantz
+INSIGHTS_DATABASE_PASSWORD: secret
+INSIGHTS_DATABASE_HOST: haproxy
+INSIGHTS_DATABASE_PORT: 3306
+INSIGHTS_MYSQL_OPTIONS:
+  connect_timeout: 10
+  init_command: "SET sql_mode='STRICT_TRANS_TABLES'"
+
+INSIGHTS_DATABASES:
+  # rw user
+  default:
+    ENGINE: 'django.db.backends.mysql'
+    NAME: '{{ INSIGHTS_DATABASE_NAME }}'
+    USER: '{{ INSIGHTS_DATABASE_USER }}'
+    PASSWORD: '{{ INSIGHTS_DATABASE_PASSWORD }}'
+    HOST: "{{ INSIGHTS_DATABASE_HOST }}"
+    PORT: '{{ INSIGHTS_DATABASE_PORT }}'
+    OPTIONS: "{{ INSIGHTS_MYSQL_OPTIONS }}"
+
+INSIGHTS_LMS_BASE: "https://{{ OPENEDX_LMS_HOST }}"
+
+ANALYTICS_API_ENDPOINT: http://analyticsapi:8100/api/v0
+INSIGHTS_DOC_BASE: 'http://edx.readthedocs.io/projects/edx-insights/en/latest'
+INSIGHTS_ENABLE_AUTO_AUTH: false
+INSIGHTS_GRADING_POLICY_API_URL: "{{ INSIGHTS_LMS_BASE }}/api/grades/v1/"
+
+# Comma-delimited list of field names to include in the Learner List CSV download
+# e.g., "username,segments,cohort,engagements.videos_viewed,last_updated"
+# Default (null) includes all available fields, in alphabetical order
+INSIGHTS_LEARNER_API_LIST_DOWNLOAD_FIELDS: !!null
+
+INSIGHTS_LMS_COURSE_SHORTCUT_BASE_URL: "{{ INSIGHTS_LMS_BASE}}/courses"
+INSIGHTS_MODULE_PREVIEW_URL: "{{ INSIGHTS_LMS_BASE }}/xblock"
+INSIGHTS_PRIVACY_POLICY_URL: '{{ INSIGHTS_MKTG_BASE }}/privacy-policy'
+INSIGHTS_RESEARCH_URL: 'https://www.edx.org/research-pedagogy'
+INSIGHTS_SEGMENT_IGNORE_EMAIL_REGEX: !!null
+INSIGHTS_SESSION_EXPIRE_AT_BROWSER_CLOSE: false
+INSIGHTS_SOCIAL_AUTH_REDIRECT_IS_HTTPS: true
+INSIGHTS_OAUTH2_URL_ROOT: '{{ INSIGHTS_LMS_BASE }}/oauth2'
+INSIGHTS_OAUTH2_URL_LOGOUT: '{{ INSIGHTS_LMS_BASE }}/logout'
+INSIGHTS_OPEN_SOURCE_URL: https://github.com/fccn/edx-analytics-dashboard
+INSIGHTS_SEGMENT_IO_KEY: 'YOUR_KEY'
+INSIGHTS_TIME_ZONE: 'Europe/Lisbon'

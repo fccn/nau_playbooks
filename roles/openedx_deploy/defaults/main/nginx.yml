@@ -58,6 +58,13 @@ openedx_nginx_docker_deploy_templates:
     service: nginx
     docker_target: /etc/nginx/sites-enabled/notes
 
+  # insights site
+  - src: templates/nginx/sites/insights.j2
+    dest: "{{ openedx_docker_deploy_base_folder }}/nginx/sites/insights"
+    config_name: nginx_site_insights
+    service: nginx
+    docker_target: /etc/nginx/sites-enabled/insights
+
 openedx_nginx_docker_deploy_files:
   # ssl crt
   - src: "{{ openedx_nginx_ssl_certificate }}"

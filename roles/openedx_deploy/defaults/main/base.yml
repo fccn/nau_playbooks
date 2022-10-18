@@ -15,6 +15,7 @@ openedx_docker_deploy_templates_default: "{{
   openedx_haproxy_docker_deploy_templates +
   openedx_discovery_docker_deploy_templates +
   openedx_analyticsapi_docker_deploy_templates +
+  openedx_insights_docker_deploy_templates +
   openedx_docker_deploy_templates_additional
 }}"
 openedx_base_docker_deploy_templates: "{{ openedx_base_docker_deploy_templates_default }}"
@@ -30,6 +31,7 @@ openedx_docker_deploy_files_default: "{{
   openedx_notes_docker_deploy_files +
   openedx_discovery_docker_deploy_files +
   openedx_analyticsapi_docker_deploy_files +
+  openedx_insights_docker_deploy_files +
   openedx_docker_deploy_files_additional
 }}"
 openedx_docker_deploy_files_additional: []
