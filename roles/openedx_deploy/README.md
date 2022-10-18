@@ -16,8 +16,6 @@ The database migrations are configured per application using the next ansible ex
 - openedx_notes_job
 - openedx_discovery_job
 - openedx_analyticsapi_migrate
-- openedx_analyticsapi_delete_elasticsearch_learners_indices
-- openedx_analyticsapi_create_elasticsearch_learners_indices
 
 Example to run the lms migrations:
 ```bash
@@ -45,4 +43,9 @@ To re-index the content library:
 To re-index the library you need to run this command directly on the cms container.
 ```bash
 SERVICE_VARIANT=cms python manage.py cms reindex_library --all --settings nau_production
+```
+
+To create the index on analytics api:
+```bash
+-e openedx_analyticsapi_create_elasticsearch_learners_indices=true
 ```

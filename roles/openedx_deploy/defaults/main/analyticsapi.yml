@@ -7,7 +7,11 @@ openedx_analyticsapi_replicas: 1
 openedx_analyticsapi_job: false
 # last commit on open-release/lilac.master that the docker build has been executed: d5f12d33d86cfcc57e1f6662890dbe784cfdce23
 # last commit on open-release/maple.master that the docker build has been executed: e0c4aa3f20f869ad7d680ef90b62f7800acaa844 
-openedx_analyticsapi_image: docker.io/openedx/analytics-data-api:e0c4aa3f20f869ad7d680ef90b62f7800acaa844 
+#openedx_analyticsapi_image: docker.io/openedx/analytics-data-api:d5f12d33d86cfcc57e1f6662890dbe784cfdce23 
+openedx_analyticsapi_image: nauedu/openedx-analytics-data-api:nau-lilac.master-d6833bb03a5a7275c0a529878760cd1947e9b538-build-5
+
+openedx_analyticsapi_port: 8100
+
 openedx_analyticsapi_job_command: bash -c "{{ openedx_analyticsapi_job_commands | join(' && ') }}"
 
 # merge all commands that need to be executed on analyticsapi-job container, but remove the empty commands.
@@ -34,7 +38,7 @@ openedx_analyticsapi_docker_deploy_files:
     dest: "{{ openedx_docker_deploy_base_folder }}/analyticsapi/nau_production.py"
     service: analyticsapi
     config_name: analyticsapi_envs_nau_production
-    docker_target: /edx/app/analytics_api/analyticsdataserver/settings/nau_production.py
+    docker_target: /openedx/analyticsapi/analyticsdataserver/settings/nau_production.py
 
 openedx_analyticsapi_docker_deploy_templates:
   - src_data:  "{{ openedx_analyticsapi_cfg_settings | to_nice_yaml(indent=2, width=1337) }}" # default_flow_style=False didn't work
@@ -43,7 +47,7 @@ openedx_analyticsapi_docker_deploy_templates:
     config_name: analyticsapi_cfg_yml
     docker_target: "{{ ANALYTICS_API_CFG }}"
 
-ANALYTICS_API_CFG: /edx/etc/analytics_api.yml
+ANALYTICS_API_CFG: /openedx/config.yml
 
 openedx_analyticsapi_docker_environment_variables: "{{ openedx_analyticsapi_docker_environment_variables_default | combine(openedx_analyticsapi_docker_environment_variables_overrides, recursive=True) }}"
 openedx_analyticsapi_docker_environment_variables_overrides: {}
@@ -91,7 +95,7 @@ openedx_analyticsapi_cfg_settings_default:
   DEFAULT_PAGE_SIZE: 25
   EDX_DRF_EXTENSIONS:
     OAUTH2_USER_INFO_URL: "{{ COMMON_LMS_BASE_URL }}/user_info"
-  ELASTICSEARCH_LEARNERS_HOST:  http://haproxy:9200
+  ELASTICSEARCH_LEARNERS_HOST: "{{ ANALYTICS_API_ELASTICSEARCH_LEARNERS_HOST }}"
   ELASTICSEARCH_LEARNERS_INDEX: "{{ ANALYTICS_API_ELASTICSEARCH_LEARNERS_INDEX }}"
   ELASTICSEARCH_LEARNERS_UPDATE_INDEX: "{{ ANALYTICS_API_ELASTICSEARCH_LEARNERS_UPDATE_INDEX }}"
   JWT_AUTH:
@@ -132,3 +136,6 @@ ANALYTICS_API_REPORTS_MYSQL_OPTIONS:
   init_command: "SET sql_mode='STRICT_TRANS_TABLES'"
 
 ANALYTICS_API_CACHE_REDIS_DB: 7
+
+# analytics api on lilac is still using elasticsearch v6
+ANALYTICS_API_ELASTICSEARCH_LEARNERS_HOST: http://elasticsearch6:9200
