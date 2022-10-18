@@ -24,6 +24,9 @@
         src: "{{ COMMON_PATH_CUSTOM_FILES }}/nau-database-exporter/config.ini.j2"
         dest: "{{ nau_db_exporter_base_directory }}/config.ini"
 
+    - name: Update docker image
+      shell: docker pull nauedu/nau-database-exporter:{{ _nau_db_exporter_version }}
+
     - name: Runs the python the report script on a docker container
       shell: |
         docker run -t --rm \
