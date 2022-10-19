@@ -7,8 +7,8 @@ openedx_analyticsapi_replicas: 1
 openedx_analyticsapi_job: false
 # last commit on open-release/lilac.master that the docker build has been executed: d5f12d33d86cfcc57e1f6662890dbe784cfdce23
 # last commit on open-release/maple.master that the docker build has been executed: e0c4aa3f20f869ad7d680ef90b62f7800acaa844 
-#openedx_analyticsapi_image: docker.io/openedx/analytics-data-api:d5f12d33d86cfcc57e1f6662890dbe784cfdce23 
-openedx_analyticsapi_image: nauedu/openedx-analytics-data-api:nau-lilac.master-d6833bb03a5a7275c0a529878760cd1947e9b538-build-5
+# openedx_analyticsapi_image: nauedu/openedx-analytics-data-api:nau-lilac.master-d6833bb03a5a7275c0a529878760cd1947e9b538-build-5
+openedx_analyticsapi_image: nauedu/openedx-analytics-data-api:nau-maple.master-fb37ebc8d99124ae87867148fc53120800a12b10-build-8
 
 openedx_analyticsapi_port: 8100
 
@@ -97,6 +97,7 @@ openedx_analyticsapi_cfg_settings_default:
     OAUTH2_USER_INFO_URL: "{{ COMMON_LMS_BASE_URL }}/user_info"
   ELASTICSEARCH_LEARNERS_HOST: "{{ ANALYTICS_API_ELASTICSEARCH_LEARNERS_HOST }}"
   ELASTICSEARCH_LEARNERS_INDEX: "{{ ANALYTICS_API_ELASTICSEARCH_LEARNERS_INDEX }}"
+  ELASTICSEARCH_LEARNERS_INDEX_ALIAS: "{{ ANALYTICS_API_ELASTICSEARCH_LEARNERS_INDEX_ALIAS }}"
   ELASTICSEARCH_LEARNERS_UPDATE_INDEX: "{{ ANALYTICS_API_ELASTICSEARCH_LEARNERS_UPDATE_INDEX }}"
   JWT_AUTH:
     JWT_AUTH_COOKIE_HEADER_PAYLOAD: "{{ EDXAPP_JWT_AUTH_COOKIE_HEADER_PAYLOAD }}"
@@ -138,4 +139,7 @@ ANALYTICS_API_REPORTS_MYSQL_OPTIONS:
 ANALYTICS_API_CACHE_REDIS_DB: 7
 
 # analytics api on lilac is still using elasticsearch v6
-ANALYTICS_API_ELASTICSEARCH_LEARNERS_HOST: http://elasticsearch6:9200
+ANALYTICS_API_ELASTICSEARCH_LEARNERS_HOST: http://haproxy:9200
+ANALYTICS_API_ELASTICSEARCH_LEARNERS_INDEX: 'roster'
+ANALYTICS_API_ELASTICSEARCH_LEARNERS_INDEX_ALIAS: roster_alias
+ANALYTICS_API_ELASTICSEARCH_LEARNERS_UPDATE_INDEX: 'index_updates'
