@@ -2,7 +2,7 @@
 #
 # Redis configurations
 #
-richie_redis_docker_image: docker.io/bitnami/redis:6.2.7
+richie_redis_docker_image: docker.io/bitnami/redis-sentinel:6.2.7-debian-11-r49
 richie_redis_primary_container: redis_1
 richie_redis_containers:
   redis_1:
@@ -19,5 +19,5 @@ richie_redis_1_server: !!null
 richie_redis_2_server: !!null
 richie_redis_3_server: !!null
 
-richie_redis_sentinel_docker_image: docker.io/bitnami/redis-sentinel:6.2.7
+richie_redis_sentinel_docker_image: docker.io/bitnami/redis-sentinel:6.2.7-debian-11-r49
 richie_redis_sentinel_replicas: 3

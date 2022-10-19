@@ -405,6 +405,12 @@ services:
         constraints:
           - node.labels.fqdn == {{ redis_config.host_fqdn }}
 {% endif %}
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      start_period: 30s
+      retries: 10
+      interval: 30s
+      timeout: 30s
 
 {% endfor %}
 

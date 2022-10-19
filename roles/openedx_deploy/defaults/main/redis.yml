@@ -2,7 +2,7 @@
 #
 # Redis configurations
 #
-openedx_redis_docker_image: docker.io/bitnami/redis:6.2.7
+openedx_redis_docker_image: docker.io/bitnami/redis-sentinel:6.2.7-debian-11-r49
 openedx_redis_primary_container: redis_1
 openedx_redis_containers:
   redis_1:
@@ -39,5 +39,5 @@ openedx_redis_1_server: !!null
 openedx_redis_2_server: !!null
 openedx_redis_3_server: !!null
 
-openedx_redis_sentinel_docker_image: docker.io/bitnami/redis-sentinel:6.2.7
+openedx_redis_sentinel_docker_image: docker.io/bitnami/redis-sentinel:6.2.7-debian-11-r49
 openedx_redis_sentinel_replicas: 3

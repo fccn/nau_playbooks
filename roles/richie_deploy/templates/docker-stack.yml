@@ -41,11 +41,6 @@ services:
       # - ./app.py:/usr/local/etc/gunicorn/app.py
     extra_hosts:
       - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
-    depends_on:
-      - db
-      - elasticsearch
-      #- redis-sentinel
-      - redis
     user: "{{ richie_site_config.app_docker_user | default('1000') }}"
     command: wait-for-it redis-sentinel:26379 -- wait-for-it load_balancer_haproxy:3306 -- /bin/bash -c "python manage.py migrate && gunicorn --workers={{ richie_site_config.app_gunicorn_workers | default(3) }} -c /usr/local/etc/gunicorn/app.py nau.wsgi:application"
     healthcheck:
@@ -319,9 +314,10 @@ services:
       REDIS_REPLICA_IP: {{ richie_docker_deploy_stack_name }}_{{ redis_container_name }}
     healthcheck:
       test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
-      interval: 5s
-      timeout: 3s
-      retries: 30
+      start_period: 30s
+      retries: 10
+      interval: 30s
+      timeout: 30s
     deploy:
       replicas: 1
       resources:
