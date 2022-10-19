@@ -414,52 +414,6 @@ services:
 
 {% endfor %}
 
-{% if openedx_elasticsearch6 %}
-  elasticsearch6:
-    image: {{ openedx_elasticsearch6_docker_image }}
-    environment:
-      # Use custom timezone
-      TZ: {{ openedx_timezone | default("Europe/Lisbon") }}
-      # Disable the memory swapping
-      bootstrap.memory_lock: "true"
-      # The name of the cluster. A node can only join a cluster when it shares its cluster.name with all the other nodes in the cluster.
-      cluster.name: openedx-es6-cluster
-      # By default only binds to loopback addresses, this binds to any network
-      network.host: "0.0.0.0"
-      ES_JAVA_OPTS: -Xms1g -Xmx1g -Des.enforce.bootstrap.checks=true
-    # Some useful ulimits
-    ulimits:
-      nproc: 65536
-      nofile:
-        soft: 65536
-        hard: 65536
-      memlock:
-        soft: -1
-        hard: -1
-    ports:
-      - target:    {{ openedx_elasticsearch6_port }}
-        published: {{ openedx_elasticsearch6_ingress_port }}
-        protocol:  tcp
-        mode:      ingress
-    deploy:
-      replicas: 1
-      resources:
-        limits:
-          memory: 1.5G
-        reservations:
-          memory: 500M
-      placement:
-        max_replicas_per_node: 1
-        constraints:
-          - node.labels.fqdn == {{ openedx_elasticsearch6_host_fqdn }}
-    healthcheck:
-      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/9200", "||", "exit", "1"]
-      start_period: 30s
-      retries: 10
-      interval: 30s
-      timeout: 30s
-{% endif %}
-
 {% for elasticsearch_container_name, elasticsearch_container in openedx_elasticsearch_containers.items() %}
 
   {{ elasticsearch_container_name }}:
