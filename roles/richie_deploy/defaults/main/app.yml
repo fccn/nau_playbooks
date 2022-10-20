@@ -107,6 +107,9 @@ richie_nau_app_environment_variables_default:
   # DJANGO_SOCIAL_AUTH_EDX_OAUTH2_ACCESS_TOKEN_URL: {{ richie_nau_app_openedx_lms_url }}/oauth2/access_token
   # DJANGO_SOCIAL_AUTH_EDX_OAUTH2_END_SESSION_URL: {{ richie_nau_app_openedx_lms_url }}/oauth2/logout
 
+  # Add help desk link to header
+  HELP_DESK_URL: "{{ EDXAPP_SUPPORT_SITE_LINK | default('') }}"
+
   # Google Analytics
   # WEB_ANALYTICS_PROVIDER: google_analytics
   # WEB_ANALYTICS_LOCATION: head
