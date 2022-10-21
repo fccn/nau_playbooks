@@ -201,7 +201,7 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
   AWS_STORAGE_BUCKET_NAME: "{{ EDXAPP_AWS_STORAGE_BUCKET_NAME }}"
   AWS_S3_CUSTOM_DOMAIN: "{{ EDXAPP_AWS_S3_CUSTOM_DOMAIN }}"
   #AWS_S3_HOST: "{{ OPENEDX_CUSTOM_S3_HOST }}"
-  AWS_S3_ENDPOINT_URL: http://{{ nau_ceph_host }}
+  AWS_S3_ENDPOINT_URL: https://{{ nau_ceph_host }}
   AWS_DEFAULT_ACL: public-read
   XQUEUE_INTERFACE:
     django_auth: null
