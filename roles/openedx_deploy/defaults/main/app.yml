@@ -587,6 +587,7 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
   # that is receiving too much requests.
   # DJANGO_REDIS_LOG_IGNORED_EXCEPTIONS: true
 
+  X_FRAME_OPTIONS: "{{ EDXAPP_X_FRAME_OPTIONS | default('DENY') }}"
 
 ##################
 # LMS
