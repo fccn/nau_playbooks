@@ -73,11 +73,15 @@ openedx_generic_cache_config: &default_openedx_generic_cache_config
   # This allows to use the Redis sentinel instance that sends writes to the Redis master and
   # reads to a random Redis container instance.
   # https://github.com/fccn/nau-tutor-configs/commit/bfd251b6b3cd7440c22aa47fbda536eeddec6a8e
+  # If the `django-sentinel` package isn't available use this configuration instead:
+  # LOCATION: "redis://{% if OPENEDX_REDIS_USERNAME and OPENEDX_REDIS_PASSWORD %}{{ OPENEDX_REDIS_USERNAME }}:{{ OPENEDX_REDIS_PASSWORD }}@{% endif %}{{ OPENEDX_REDIS_HOST }}:{{ OPENEDX_REDIS_PORT }}/{{ OPENEDX_CACHE_REDIS_DB }}"
   LOCATION: mymaster/redis-sentinel:26379,redis-sentinel:26379/0
   OPTIONS:
     CLIENT_CLASS: "django_sentinel.SentinelClient"
-  # If the `django-sentinel` package isn't available use this configuration instead:
-  # LOCATION: "redis://{% if OPENEDX_REDIS_USERNAME and OPENEDX_REDIS_PASSWORD %}{{ OPENEDX_REDIS_USERNAME }}:{{ OPENEDX_REDIS_PASSWORD }}@{% endif %}{{ OPENEDX_REDIS_HOST }}:{{ OPENEDX_REDIS_PORT }}/{{ OPENEDX_CACHE_REDIS_DB }}"
+    # Ignore exceptions when redis is down, this is default behavior in the memcached backend.
+    # In reality can't be included because if redis is down, the LMS shows a message to the user
+    # that is receiving too much requests.
+    # IGNORE_EXCEPTIONS: true
 
 edxapp_generic_contentstore_config: &edxapp_generic_default_contentstore
   ENGINE:  'xmodule.contentstore.mongo.MongoContentStore'
@@ -577,6 +581,12 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
       fail_silently: False
       pipeline:
         - nau_openedx_extensions.filters.pipeline.FilterEnrollmentByDomain
+
+  # Log exceptions when ignoring exceptions with IGNORE_EXCEPTIONS or DJANGO_REDIS_IGNORE_EXCEPTIONS
+  # In reality can't be included because if redis is down, the LMS shows a message to the user
+  # that is receiving too much requests.
+  # DJANGO_REDIS_LOG_IGNORED_EXCEPTIONS: true
+
 
 ##################
 # LMS
