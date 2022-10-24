@@ -171,6 +171,7 @@ COMMON_JWT_AUTH_REFRESH_COOKIE: 'edx-jwt-refresh-cookie'
 
 # configure with top domain of the platform, if lms domain is lms.example.com, configure it with `.example.com`
 EDXAPP_SESSION_COOKIE_DOMAIN: ".{{ EDXAPP_LMS_BASE }}"
+EDXAPP_AWS_S3_CUSTOM_DOMAIN: ""
 
 ###########################################
 # bridge from OPENEDX to EDXAPP variables #
