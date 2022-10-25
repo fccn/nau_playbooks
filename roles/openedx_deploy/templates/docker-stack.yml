@@ -57,6 +57,11 @@ services:
 {% for env_var_name, env_var_value in openedx_analyticsapi_docker_environment_variables.items() %}
       {{ env_var_name }}: "{{ env_var_value }}"
 {% endfor %}
+    networks:
+      default:
+        aliases:
+          # alias configured on discovery user interface https://discovery.<environment>/admin/core/partner/1/change/
+          - openedx.analyticsapi
     deploy:
       replicas: {{ openedx_analyticsapi_replicas }}
       update_config:
