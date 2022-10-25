@@ -1,4 +1,8 @@
 ---
+- name: Printing name
+  debug:
+    msg: "Running '{{ docker_exec_name }}'..."
+
 - name: Check if 'docker_service_to_exec' is defined
   assert:
     that: docker_service_to_exec is defined
@@ -58,12 +62,12 @@
   register: exec_output
   no_log: true # don't print the log, because it isn't formatted, we print it on the next tasks
 
-- name: Print stdout of refresh course metadata output
+- name: Print stdout of command output
   debug:
     msg: "{{ exec_output.stdout_lines }}"
   when: exec_output is defined
 
-- name: Print stderr of refresh course metadata output
+- name: Print stderr of command output
   debug:
     msg: "{{ exec_output.stderr_lines }}"
   when: exec_output is defined
