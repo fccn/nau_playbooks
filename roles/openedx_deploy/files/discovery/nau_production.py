@@ -47,7 +47,7 @@ for logger in LOGGING["loggers"].values():
 LOGGING["loggers"]["algoliasearch_django"] = {"level": "WARNING"}
 
 # Overwrite elasticsearch configuration that allow to increase the default 10 seconds timeout.
-ELASTICSEARCH_TIMEOUT=int(get_env_value("ELASTICSEARCH_TIMEOUT", default=10))
+ELASTICSEARCH_TIMEOUT=int(get_env_value("ELASTICSEARCH_TIMEOUT", default="10"))
 ELASTICSEARCH_DSL['default'].update({
     'hosts': ELASTICSEARCH_CLUSTER_URL,
     'timeout': ELASTICSEARCH_TIMEOUT,
