@@ -45,3 +45,10 @@ for logger in LOGGING["loggers"].values():
         logger["handlers"].remove("local")
 # Decrease verbosity of algolia logger
 LOGGING["loggers"]["algoliasearch_django"] = {"level": "WARNING"}
+
+# Overwrite elasticsearch configuration that allow to increase the default 10 seconds timeout.
+ELASTICSEARCH_TIMEOUT=10
+ELASTICSEARCH_DSL['default'].update({
+    'hosts': ELASTICSEARCH_CLUSTER_URL,
+    'timeout': ELASTICSEARCH_TIMEOUT,
+})
