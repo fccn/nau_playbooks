@@ -62,10 +62,12 @@ analytics_pipeline_configuration_dbs:
     username: "{{ ANALYTICS_PIPELINE_INPUT_DATABASE.username | default(None) }}"
     password: "{{ ANALYTICS_PIPELINE_INPUT_DATABASE.password | default(None) }}"
     host: "{{ ANALYTICS_PIPELINE_INPUT_DATABASE.host | default(None) }}"
+    port: "{{ ANALYTICS_PIPELINE_INPUT_DATABASE.port | default(3306) }}"
   output_db:
     username: "{{ ANALYTICS_PIPELINE_OUTPUT_DATABASE_USER | default(None) }}"
     password: "{{ ANALYTICS_PIPELINE_OUTPUT_DATABASE_PASSWORD | default(None) }}"
     host: "{{ ANALYTICS_PIPELINE_OUTPUT_DATABASE_HOST | default(None) }}"
+    port: "{{ ANALYTICS_PIPELINE_OUTPUT_DATABASE_PORT | default(3306) }}"
 
 analytics_pipeline_configuration_geo_data_link: "https://s3-us-west-2.amazonaws.com/edunextpublic/resources/insights/geo.dat"
 analytics_pipeline_configuration_hadoop_conf_dir: "{{ HADOOP_COMMON_CONF_DIR | default('/edx/app/hadoop/hadoop/etc/hadoop') }}"
