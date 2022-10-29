@@ -1,0 +1,120 @@
+# Update operating system packages.
+# If need reboot the server.
+#
+# On docker swarm cluster, run health check on each docker stack before continue on the next server.
+#
+# Inspired by:
+# - https://luktom.net/en/e1497-how-to-update-centos-rhel-using-ansible
+# - https://www.cyberciti.biz/faq/ansible-apt-update-all-packages-on-ubuntu-debian-linux/
+# 
+---
+- hosts: all
+  serial: 1 # run update in sequence
+  become: True
+  gather_facts: True
+  vars:
+    docker_install_enabled: true
+    rolling_deploy_enabled: true
+  tasks:
+    - import_role: 
+        name: keepalived
+      vars: 
+        keepalived_priority: 1
+      when: vrrp_instances is defined
+    - name: force all notified handlers to run at this point
+      meta: flush_handlers
+    - import_role:
+        name: rolling_deploy
+      when: rolling_deploy_enabled | bool
+      vars:
+        rolling_deploy_starting: true
+
+    # CentOS 7
+    - when: ansible_distribution == 'CentOS' and ansible_distribution_major_version|int >= 7
+      block:
+        - name: check packages for updates
+          shell: yum list updates | awk 'f;/Updated Packages/{f=1;}' | awk '{ print $1 }'
+          changed_when: updates.stdout_lines | length > 0
+          args:
+            warn: false
+          register: updates
+        - name: display count
+          debug:
+            msg: "Found {{ updates.stdout_lines | length }} packages to be updated:\n\n{{ updates.stdout }}"
+        - when: updates.stdout_lines | length > 0
+          block:
+            - name: install updates using yum
+              yum:
+                name: "*"
+                state: latest
+            - name: install yum-utils
+              package:
+                name: yum-utils
+            - name: check if reboot is required
+              shell: needs-restarting -r
+              failed_when: false
+              register: reboot_required
+              changed_when: false
+        - when: updates.stdout_lines | length > 0 and reboot_required.rc != 0
+          block:
+            - name: reboot the server if required
+              shell: sleep 3; reboot
+              ignore_errors: true
+              changed_when: false
+              async: 1
+              poll: 0
+            - name: wait for server to come back after reboot
+              wait_for_connection:
+                timeout: 600
+                delay: 20
+              register: reboot_result
+            - name: reboot time
+              debug:
+                msg: "The system rebooted in {{ reboot_result.elapsed }} seconds."
+
+    - when: ansible_distribution == 'Ubuntu'
+      block:
+        - name: Update apt-get repo and cache
+          apt:
+            update_cache: yes
+            force_apt_get: yes
+            cache_valid_time: 3600
+
+        - name: Check if a reboot is needed for Debian and Ubuntu boxes
+          register: reboot_required_file
+          stat:
+            path: /var/run/reboot-required 
+            get_md5: no
+
+        - name: Reboot the Debian or Ubuntu server
+          reboot:
+            msg: "Reboot initiated by Ansible due to kernel updates"
+            connect_timeout: 5
+            reboot_timeout: 300
+            pre_reboot_delay: 0
+            post_reboot_delay: 30
+            test_command: uptime
+          when: reboot_required_file.stat.exists
+
+    - import_role:
+        name: nau_check_urls
+    - import_role:
+        name: rolling_deploy
+      vars:
+        rolling_deploy_starting: false
+      when: rolling_deploy_enabled | bool
+    - import_role: 
+        name: keepalived
+      when: vrrp_instances is defined
+
+    - name: Run healthcheck Makefile target on each stack
+      shell: make --no-print-directory -C {{ item }} healthcheck
+      retries: "{{ healthcheck_retries | default(50) }}"
+      delay: "{{ healthcheck_delay | default(30) }}"
+      register: result
+      until: result.rc == 0
+      when: inventory_hostname in groups['nau_docker_swarm_servers']
+      changed_when: False
+      with_items: "{{ docker_stacks }}"
+      # Run only on the first primary manager
+      delegate_to: "{{ groups['nau_docker_swarm_managers'][0] }}"
