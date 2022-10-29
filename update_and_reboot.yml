@@ -13,7 +13,7 @@
   become: True
   gather_facts: True
   vars:
-    docker_install_enabled: true
+    reboot_enabled: true
     rolling_deploy_enabled: true
   tasks:
     - import_role: 
@@ -55,7 +55,7 @@
               failed_when: false
               register: reboot_required
               changed_when: false
-        - when: updates.stdout_lines | length > 0 and reboot_required.rc != 0
+        - when: reboot_enabled and ( updates.stdout_lines | length > 0 and reboot_required.rc != 0 )
           block:
             - name: reboot the server if required
               shell: sleep 3; reboot
@@ -89,12 +89,12 @@
         - name: Reboot the Debian or Ubuntu server
           reboot:
             msg: "Reboot initiated by Ansible due to kernel updates"
-            connect_timeout: 5
-            reboot_timeout: 300
+            connect_timeout: 10
+            reboot_timeout: 600 # in seconds
             pre_reboot_delay: 0
-            post_reboot_delay: 30
+            post_reboot_delay: 60
             test_command: uptime
-          when: reboot_required_file.stat.exists
+          when: reboot_enabled and reboot_required_file.stat.exists
 
     - import_role:
         name: nau_check_urls
