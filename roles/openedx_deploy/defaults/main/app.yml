@@ -286,8 +286,8 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
   SESSION_COOKIE_DOMAIN: "{{ EDXAPP_SESSION_COOKIE_DOMAIN }}"
 
   # Temporary remove this until the image contains this requirement
-  # ADDL_INSTALLED_APPS:
-  #   - richie_openedx_sync
+  ADDL_INSTALLED_APPS:
+    - richie_openedx_sync
   AUTH_PASSWORD_VALIDATORS:
     - NAME: django.contrib.auth.password_validation.UserAttributeSimilarityValidator
     - NAME: common.djangoapps.util.password_policy_validators.MinimumLengthValidator
