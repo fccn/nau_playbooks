@@ -138,7 +138,7 @@ healthcheck-mysql-replica-{{ container }}: ## show replica slave status on {{ co
 {% for _site, config in richie_sites.items() %}
 BACKUP_FILE_{{ _site }} ?= richie-{{ _site }}-mysql-db-backup.sql.gz
 backup-mysql-{{ _site }}: ## backup mysql db of {{ _site }} site
-	@echo -n 'Backing up MySQL database of {{ _site }}'
+	@echo -n "Backing up MySQL database of '{{ _site }}'... "
 	@rm -f ${ROOT_DIR}/$(BACKUP_FILE_{{ _site }})
 	@MYSQL_PWD="{{ richie_MYSQL_ROOT_PASSWORD}}" /usr/bin/mysqldump -u root --host 127.0.0.1 --port {{ richie_mysql_primary.ingress_port }} --single-transaction {{ config.app_environment_variables.DB_NAME }} | gzip -c -9  > ${ROOT_DIR}/$(BACKUP_FILE_{{ _site }})
 	@echo 'Done! File: $(BACKUP_FILE_{{ _site }})'
