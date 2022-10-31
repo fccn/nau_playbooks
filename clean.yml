@@ -5,6 +5,7 @@
 ---
 - name: Autoremove 'apt' package for Debian, Ubuntu
   hosts: all,!command_and_control
+  serial: 1 # execute in sequence so we don't stress the same environment in parallel
 
   pre_tasks:
     - name: check storage space - before
@@ -34,6 +35,26 @@
       changed_when: "'The following packages will be REMOVED' in apt_autoremove_output.stdout"
       when: ansible_distribution == 'Ubuntu'
 
+    - name: Check If Docker Is Installed
+      command: docker --version
+      register: docker_valid
+      ignore_errors: yes
+
+    - name: Debug Docker Output
+      debug:
+        var: docker_valid
+
+    - name: Docker prune
+      command: "{{ item }}"
+      vars:
+        docker_prune_until_in_hours: 168 # 168 hours == 7 days
+      with_items:
+        - docker image prune -a --force --filter "until={{ docker_prune_until_in_hours }}h"
+        - docker container prune --force --filter "until={{ docker_prune_until_in_hours }}h"
+        - docker network prune --force --filter "until={{ docker_prune_until_in_hours }}h"
+        - docker volume prune --force
+      when: not docker_valid.failed
+
   post_tasks:
     - name: check storage space - after
       shell: df -h
@@ -44,5 +65,3 @@
       debug:
         msg: "{{ check_storage_space_after.stdout_lines }}"
       when: ansible_distribution == 'Ubuntu'
-
-# vim: ft=ansible :

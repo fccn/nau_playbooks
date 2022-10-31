@@ -154,7 +154,7 @@ _restore-mysql-{{ _site }}-change-environment:
 	@echo "Successfully change the mysql backup from '${FROM_ENV}' to '${TO_ENV}'."
 .PHONY: _restore-mysql-{{ _site }}-change-environment
 
-restore-mysql-{{ _site }}-change-environment: | _restore-mysql-{{ _site }}-change-environment restore-mysql-{{ _site }} ## restore mysql db of {{ _site }} from a different environment, use: make restore-mysql-{{ _site }}-change-environment FROM_ENV="stage.nau.fccn.pt" TO_ENV="nau.edu.pt"
+restore-mysql-{{ _site }}-change-environment: | _restore-mysql-{{ _site }}-change-environment restore-mysql-{{ _site }} ## restore mysql db of {{ _site }} from a different environment, use: make restore-mysql-{{ _site }}-change-environment FROM_ENV="nau.edu.pt" TO_ENV="stage.nau.fccn.pt"
 .PHONY: restore-mysql-{{ _site }}-change-environment
 
 restore-mysql-{{ _site }}: ## restore mysql db of {{ _site }} site
