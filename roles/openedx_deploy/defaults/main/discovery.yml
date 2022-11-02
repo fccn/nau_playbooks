@@ -61,7 +61,6 @@ openedx_discovery_cfg_settings_default:
   EDX_DRF_EXTENSIONS:
     OAUTH2_USER_INFO_URL: "{{ COMMON_LMS_BASE_URL }}/user_info"
   ELASTICSEARCH_CLUSTER_URL: "{{ openedx_elasticsearch_containers.keys() | list }}"
-  ELASTICSEARCH_TIMEOUT: 60 # NAU custom configuration
   EMAIL_BACKEND: django.core.mail.backends.smtp.EmailBackend
   EMAIL_HOST: "{{ OPENEDX_SMTP_HOST }}"
   EMAIL_HOST_PASSWORD: "{{ OPENEDX_SMTP_HOST_PASSWORD }}"
@@ -101,6 +100,7 @@ openedx_discovery_docker_environment_variables: "{{ openedx_discovery_docker_env
 openedx_discovery_docker_environment_variables_default:
   DJANGO_SETTINGS_MODULE: course_discovery.settings.nau_production
   DISCOVERY_CFG: "{{ DISCOVERY_CFG }}"
+  ELASTICSEARCH_TIMEOUT: 60 # NAU custom configuration
 
 DISCOVERY_CFG: /openedx/config.yml
 
