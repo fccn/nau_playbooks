@@ -285,9 +285,14 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
   LANGUAGE_CODE: "{{ OPENEDX_LANGUAGE_CODE }}"
   SESSION_COOKIE_DOMAIN: "{{ EDXAPP_SESSION_COOKIE_DOMAIN }}"
 
-  # Temporary remove this until the image contains this requirement
+  # Install richie synchronization package
   ADDL_INSTALLED_APPS:
     - richie_openedx_sync
+  # Configure `richie_openedx_sync`
+  RICHIE_OPENEDX_SYNC_COURSE_HOOKS: 
+    - url: "{{ nau_marketing_site_root }}/api/v1.0/course-runs-sync/"
+      secret: "{{ richie_DJANGO_RICHIE_COURSE_RUN_SYNC_SECRETS }}"
+
   AUTH_PASSWORD_VALIDATORS:
     - NAME: django.contrib.auth.password_validation.UserAttributeSimilarityValidator
     - NAME: common.djangoapps.util.password_policy_validators.MinimumLengthValidator
