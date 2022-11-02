@@ -5,6 +5,8 @@
 ---
 - name: Autoremove 'apt' package for Debian, Ubuntu
   hosts: all,!command_and_control
+  become: True
+  gather_facts: True
   serial: 1 # execute in sequence so we don't stress the same environment in parallel
 
   pre_tasks:
