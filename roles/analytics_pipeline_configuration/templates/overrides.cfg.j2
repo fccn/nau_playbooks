@@ -15,7 +15,7 @@ destination = {{ analytics_pipeline_configuration_source }}/edx-analytics-pipeli
 
 [elasticsearch]
 # Point to the vagrant host's port 9201 where we assume elasticsearch is running
-host = ["{{ analytics_pipeline_configuration_elasticsearch_url }}"]
+host = [{{ analytics_pipeline_configuration_elasticsearch_url }}]
 
 [enrollments]
 interval_start = 2018-08-01
