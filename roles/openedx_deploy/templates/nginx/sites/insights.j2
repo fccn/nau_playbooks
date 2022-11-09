@@ -26,18 +26,11 @@ server {
   {% endif %}
   add_header X-Backend-Server $hostname always;
 
-  location ~ ^/static/(?P<file>.*) {
-    add_header Cache-Control "max-age=31536000";
-    add_header 'Access-Control-Allow-Origin' $cors_origin;
-    add_header 'Access-Control-Allow-Methods' 'HEAD, GET, OPTIONS';
+  rewrite ^(.*)/favicon.ico$ /static/images/favicon.ico last;
 
-    # Inform downstream caches to take certain headers into account when reading/writing to cache.
-    add_header 'Vary' 'Accept-Encoding,Origin';
-
-    # try_files /staticfiles/$file =404;
-    try_files $uri @proxy_to_app;
-  }
-
+  {% import 'static-files.j2' as static_files with context %}
+  {{ static_files.generate_static_files(openedx_nginx_insights_staticfiles_folders) }}
+  
   location / {
     try_files $uri @proxy_to_app;
   }

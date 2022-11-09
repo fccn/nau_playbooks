@@ -61,7 +61,10 @@
 #
 #   To install/upgrade or configure docker daemon without health check
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_servers -e docker_deploy=true -e docker_deploy_healthcheck=false
-
+#
+#   To deploy the openedx docker stack and build the web server docker image
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_managers -e openedx_deploy=true -e openedx_nginx_build=true
+#
 - name: Bootstrap instances of 16.04
   hosts: all,!idpproxy_servers,!idpauth_servers,!nau_docker_swarm_managers,!nau_docker_swarm_workers,!support_server,!build_server
   gather_facts: no
@@ -327,6 +330,9 @@
         name: ubuntu
         groups: docker
         append: yes
+    - name: Install docker_image ansible module dependencies
+      pip:
+        name: docker-py
 
 # We need to install/upgrade/configure docker service, one docker swarm node at a time and
 # executing all docker stacks health checks before we upgrade the next docker node. Using this
@@ -415,6 +421,7 @@
       vars:
         openedx_deploy_run: "{{ openedx_deploy | default(false) }}"
         openedx_deploy_create_volumes: "{{ openedx_deploy | default(false) }}"
+        docker_swarm_build_node: "{{ hostvars[groups['build_server'][0]].ansible_host }}"
 
     - name: Deploy staticproxy stack
       role: staticproxy_deploy

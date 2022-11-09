@@ -1,15 +1,4 @@
 ---
-# - debug:
-#     var: "{{item}}"
-#   with_items:
-#     - openedx_app_docker_deploy_templates
-#     - openedx_lms_env_var
-#     - openedx_cms_env_var
-#     - openedx_lms_env_file
-#     - openedx_cms_env_file
-#   tags:
-#     - debug
-
 - name: Create folders volumes for openedx stack
   file:
     dest: "{{ item.dest | dirname }}"
@@ -49,9 +38,36 @@
   tags:
     - docker_deploy
 
+- name: Build web server nginx docker image with all previous(current) and next release static assets
+  include_role:
+    name: docker_swarm_build_web_server
+  vars:
+    docker_swarm_build_web_server_docker_repository: "{{ openedx_docker_swarm_build_web_server_docker_repository }}"
+    docker_swarm_build_web_server_docker_image: "{{ openedx_docker_swarm_build_web_server_docker_image }}"
+    docker_swarm_build_web_server_docker_swarm_service: "{{ openedx_docker_swarm_build_web_server_docker_swarm_service }}"
+    docker_swarm_build_web_server_docker_image_with_hash_fact_name: "{{ openedx_docker_swarm_build_web_server_docker_image_with_hash_fact_name }}"
+    docker_swarm_build_web_server_services: "{{ openedx_docker_swarm_build_web_server_services }}"
+    docker_swarm_build_web_server_deploy: "{{ openedx_deploy_run | default(false) | bool }}"
+    docker_swarm_build_web_server_build: "{{ openedx_nginx_build | bool }}"
+  when: docker_swarm_manager_to_deploy is defined and docker_swarm_manager_to_deploy == inventory_hostname
+  tags:
+    - docker_swarm_build_web_server
+    - docker_deploy
+
 - name: Deploy
   include_role:
     name: ansible-docker-deploy
+  vars:
+    docker_deploy_stack_name:          "{{ openedx_docker_deploy_stack_name }}"
+    docker_deploy_stack_template:      "{{ openedx_docker_deploy_stack_template }}"
+    docker_deploy_base_folder:         "{{ openedx_docker_deploy_base_folder }}"
+    docker_deploy_templates:           "{{ openedx_docker_deploy_templates | default([]) }}"
+    docker_deploy_files:               "{{ openedx_docker_deploy_files | default([]) }}"
+    docker_deploy_folders_additional:  "{{ openedx_docker_deploy_folders_additional | default([]) }}"
+    docker_deploy_configs:             "{{ openedx_docker_deploy_configs | default([]) }}"
+    docker_deploy_secrets:             "{{ openedx_docker_deploy_secrets | default([]) }}"
+    docker_deploy_services_additional: "{{ openedx_docker_deploy_services_additional | default([]) }}"
+    docker_deploy_stack_prune:         "{{ openedx_docker_deploy_stack_prune }}"
   when: docker_swarm_manager_to_deploy is defined and docker_swarm_manager_to_deploy == inventory_hostname and openedx_deploy_run | default(false)
   tags:
     - docker_deploy
@@ -74,6 +90,8 @@
 - name: Check URLs
   include_role:
     name: nau_check_urls
+  vars:
+    nau_urls_to_check: "{{ openedx_nau_urls_to_check }}"
   when: docker_swarm_manager_to_deploy is defined and docker_swarm_manager_to_deploy == inventory_hostname and (openedx_deploy_run | default(false)) or (healthcheck | default(false))
   tags:
     - docker_deploy

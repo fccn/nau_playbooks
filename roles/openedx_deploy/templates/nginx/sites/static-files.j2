@@ -1,7 +1,9 @@
+{% macro generate_static_files(staticfiles_roots) %}
+
   location ~ ^/static/(?P<file>.*) {
-    root /openedx;
+    root {{ openedx_docker_swarm_build_web_server_services_root }};
     # nginx deliver the file directly, or if not found still proxy to the app.
-    try_files /staticfiles/$file /course_static/$file @proxy_to_app;
+    try_files {% for sf in staticfiles_roots %}/{{ sf }}/$file {% endfor %} @proxy_to_app;
 
 {% if EDXAPP_CORS_ORIGIN_WHITELIST|length > 0 %}
     add_header Access-Control-Allow-Origin $cors_origin;
@@ -23,7 +25,7 @@
 {% if EDXAPP_CORS_ORIGIN_WHITELIST|length > 0 %}
         add_header Access-Control-Allow-Origin $cors_origin;
 {% endif %}
-        try_files /staticfiles/$collected /course_static/$collected @proxy_to_app;
+        try_files {% for sf in staticfiles_roots %}/{{ sf }}/$collected {% endfor %} @proxy_to_app;
     }
 
     # Set django-pipelined files to maximum cache time
@@ -31,7 +33,7 @@
         add_header "Cache-Control" $cache_header_long_lived always;
         # Without this try_files, files that have been run through
         # django-pipeline return 404s
-        try_files /staticfiles/$collected /course_static/$collected @proxy_to_app;
+        try_files {% for sf in staticfiles_roots %}/{{ sf }}/$collected {% endfor %} @proxy_to_app;
     }
 
     # Set django-pipelined files for studio to maximum cache time
@@ -40,7 +42,7 @@
 
         # Without this try_files, files that have been run through
         # django-pipeline return 404s
-        try_files /staticfiles/$collected /course_static/$collected @proxy_to_app;
+        try_files {% for sf in staticfiles_roots %}/{{ sf }}/$collected {% endfor %} @proxy_to_app;
     }
 
     {% include "static-files-extra.j2" ignore missing %}
@@ -49,4 +51,4 @@
     add_header "Cache-Control" $cache_header_short_lived always;
   }
 
-
+{% endmacro %}

@@ -15,6 +15,7 @@ The database migrations are configured per application using the next ansible ex
 - openedx_forum_job
 - openedx_notes_job
 - openedx_discovery_job
+- openedx_insights_job
 - openedx_analyticsapi_migrate
 
 Example to run the lms migrations:
@@ -31,12 +32,12 @@ For example to run on lms and studio migrations use:
 
 To re-index the courses on the new elastic search cluster instance, deploy with this extra ansible parameters:
 
-```python
+```bash
 -e openedx_deploy=true -e openedx_cms_reindex_all_courses=true
 ```
 
 To re-index the content library:
-```python
+```bash
 -e openedx_deploy=true -e openedx_cms_reindex_content_library=true
 ```
 
@@ -49,3 +50,19 @@ To create the index on analytics api:
 ```bash
 -e openedx_analyticsapi_create_elasticsearch_learners_indices=true
 ```
+
+## Build web server nginx docker image
+
+To build the web server nginx docker image add this extra ansible parameter:
+```bash
+-e openedx_nginx_build=true
+```
+If you don't pass this variable it will be used the docker image `nauedu/openedx-nginx:<env>` or other if you change the default variables.
+
+Motivation:
+
+The motivation is to have a rolling deploy and the user don't view any missing asset, like a missing css or logo.
+
+This build will create a docker image based on nginx with current/previous and next release static assets.
+The nginx sites will use `try_files` to get the static assets from both next and previous releases.
+With this configuration, it's possible to accomplish a rolling deploy of a stack without any perceptive downtime, because the static assets will always load.

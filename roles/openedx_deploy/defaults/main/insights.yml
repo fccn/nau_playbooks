@@ -16,16 +16,6 @@ openedx_insights_docker_deploy_files:
     service: insights
     config_name: insights_envs_nau_production
     docker_target: /openedx/insights/analytics_dashboard/settings/nau_production.py
-  - src: files/insights/logo_nau_short_w557.png
-    dest: "{{ openedx_docker_deploy_base_folder }}/insights/logo_nau_short_w557.png"
-    service: insights
-    config_name: insights_logo_nau
-    docker_target: /openedx/insights/assets/images/openedx-logo-v2.png
-  - src: files/insights/favicon.ico
-    dest: "{{ openedx_docker_deploy_base_folder }}/insights/favicon.ico"
-    service: insights
-    config_name: insights_favicon
-    docker_target: /openedx/insights/assets/images/favicon.ico
 
 openedx_insights_docker_deploy_templates:
   - src_data:  "{{ openedx_insights_cfg_settings | to_nice_yaml(indent=2, width=1337) }}" # default_flow_style=False didn't work

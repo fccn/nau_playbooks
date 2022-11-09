@@ -1,0 +1,114 @@
+---
+- name: Find which docker image version each service is running
+  # Retrieves information about docker services from a Swarm Manager
+  docker_swarm_service_info:
+    name: "{{ item.service }}"
+  register: docker_swarm_service_info_result
+  when: docker_swarm_build_web_server_build
+  with_items: "{{ docker_swarm_build_web_server_services }}"
+  tags:
+    - docker_swarm_build_web_server
+    - docker_deploy
+
+- name: Check if image is running
+  assert: 
+    that:
+      - running_service.service.Spec is defined
+      - running_service.service.Spec.TaskTemplate.ContainerSpec.Image is defined
+  when: docker_swarm_build_web_server_build
+  loop: "{{ docker_swarm_service_info_result.results }}"
+  loop_control:
+    label: "Check if {{ running_service.item.service }} is found"
+    loop_var: running_service
+  ignore_errors: yes # even if the container is not running we still need to build a newer one, this could happen on 1st deployment.
+  tags:
+    - docker_swarm_build_web_server
+    - docker_deploy
+
+- name: Create build folder
+  file:
+    path: "{{ docker_swarm_build_web_server_docker_file | dirname }}"
+    state: directory
+    recurse: true
+    mode: '0755'
+  when: docker_swarm_build_web_server_build
+  delegate_to: "{{ docker_swarm_build_node }}"
+  tags:
+    - docker_swarm_build_web_server
+    - docker_deploy
+
+- name: Template docker image
+  template:
+    src: "{{ docker_swarm_build_web_server_dockerfile_template }}"
+    dest: "{{ docker_swarm_build_web_server_docker_file }}"
+  when: docker_swarm_build_web_server_build
+  delegate_to: "{{ docker_swarm_build_node }}"
+  tags:
+    - docker_swarm_build_web_server
+    - docker_deploy
+
+- name: Login into docker registry
+  docker_login:
+    registry_url: "{{ docker_registry_url | default(omit) }}"
+    username: "{{ docker_registry_username }}"
+    password: "{{ docker_registry_password }}"
+  delegate_to: "{{ docker_swarm_build_node }}"
+  changed_when: false
+  when: docker_registry_username is defined and docker_registry_password is defined and docker_swarm_build_web_server_build
+  tags:
+    - docker_swarm_build_web_server
+    - docker_deploy
+
+- name: Build web server docker image
+  docker_image:
+    source: build
+    build:
+      path: "{{ docker_swarm_build_web_server_docker_file | dirname }}"
+      pull: yes
+    name: "{{ docker_swarm_build_web_server_docker_repository }}/{{ docker_swarm_build_web_server_docker_image }}"
+    push: "{{ docker_swarm_build_push }}"
+    tag: "{{ docker_swarm_build_web_server_docker_tag }}"
+    force_source: true
+    force_tag: true
+  when: docker_swarm_build_web_server_build
+  register: docker_image_build_result
+  delegate_to: "{{ docker_swarm_build_node }}"
+  tags:
+    - docker_swarm_build_web_server
+    - docker_deploy
+
+- name: Logout of docker registry
+  docker_login:
+    registry: "{{ docker_registry | default(omit) }}"
+    username:
+    state: absent
+  when: docker_swarm_build_web_server_build
+  delegate_to: "{{ docker_swarm_build_node }}"
+  changed_when: false
+  when: docker_registry_username is defined and docker_registry_password is defined
+  tags:
+    - docker_swarm_build_web_server
+    - docker_deploy
+
+- name: Define fact with docker image
+  set_fact:
+    "{{ docker_swarm_build_web_server_docker_image_with_hash_fact_name | default('web_server_build_docker_image_with_hash') }}": "{{ docker_image_build_result.image.RepoDigests[0] }}"
+  when: docker_image_build_result.image.RepoDigests is defined
+  tags:
+    - docker_swarm_build_web_server
+    - docker_deploy
+
+- name: Define web server docker image if we aren't building it
+  set_fact:
+    "{{ docker_swarm_build_web_server_docker_image_with_hash_fact_name | default('web_server_build_docker_image_with_hash') }}": docker.io/{{ docker_swarm_build_web_server_docker_repository }}/{{ docker_swarm_build_web_server_docker_image }}:{{ docker_swarm_build_web_server_docker_tag }}
+  when: hostvars[inventory_hostname][ (docker_swarm_build_web_server_docker_image_with_hash_fact_name | default('web_server_build_docker_image_with_hash'))] is not defined
+  tags:
+    - docker_swarm_build_web_server
+    - docker_deploy
+
+- name: Update the web server docker image on the running docker stack
+  shell: docker service update --image {{ docker_image_build_result.image.RepoDigests[0] }} {{ docker_swarm_build_web_server_docker_swarm_service }}
+  when: docker_image_build_result.image.RepoDigests is defined and docker_swarm_build_web_server_deploy
+  tags:
+    - docker_swarm_build_web_server
+    - docker_deploy

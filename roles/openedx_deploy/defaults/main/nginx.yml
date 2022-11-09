@@ -1,5 +1,7 @@
 ---
-openedx_nginx_image: docker.io/nginx:1.22.1
+# No longer use the docker nginx upstream directly, but use the one build during the deployment.
+# openedx_nginx_image: "docker.io/{{ docker_swarm_build_web_server_docker_repository }}/{{ docker_swarm_build_web_server_docker_image }}:{{ docker_swarm_build_web_server_docker_tag }}"
+
 openedx_nginx_replicas: 1
 
 openedx_nginx_http: 80
@@ -86,6 +88,29 @@ openedx_nginx_docker_deploy_files:
     secret_name: nginx_htpasswd
     service: nginx
     when: "{{ openedx_nginx_basic_authentication_users is defined }}"
+
+  # Override images, like default platform favicon on nginx level
+  - src: files/nginx/favicon.ico
+    dest: "{{ openedx_docker_deploy_base_folder }}/nginx/files/images/lms/favicon.ico"
+    service: nginx
+    config_name: nginx_lms_favicon
+    docker_target: /openedx/staticfiles/lms/next/images/favicon.ico
+  - src: files/nginx/favicon.ico
+    dest: "{{ openedx_docker_deploy_base_folder }}/nginx/files/images/cms/favicon.ico"
+    service: nginx
+    config_name: nginx_cms_favicon
+    docker_target: /openedx/staticfiles/cms/next/images/favicon.ico
+  - src: files/nginx/logo_nau_short_w557.png
+    dest: "{{ openedx_docker_deploy_base_folder }}/nginx/files/images/insights/logo_nau_short_w557.png"
+    service: nginx
+    config_name: nginx_insights_logo_nau
+    docker_target: /openedx/staticfiles/insights/next/images/openedx-logo-v2.png
+  - src: files/nginx/favicon.ico
+    dest: "{{ openedx_docker_deploy_base_folder }}/nginx/files/images/insights/favicon.ico"
+    service: nginx
+    config_name: nginx_insights_favicon
+    docker_target: /openedx/staticfiles/insights/next/images/favicon.ico
+
 
 # openedx_nginx_basic_authentication_users: !!null
 openedx_nginx_ssl_certificate_docker_target: /etc/ssl/certs/certificate.crt.pem

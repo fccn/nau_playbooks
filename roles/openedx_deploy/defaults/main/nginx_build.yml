@@ -1,0 +1,64 @@
+# Default configuration to build a nginx docker image with all static assets from each container 
+# in the stack. It includes a previous and next version assets so we can deliver and rolling deploy
+# on a control manner the stack.
+---
+# Variable that makes the nginx to be built
+# -e openedx_nginx_build=true
+openedx_nginx_build: false
+
+# docker registry organization
+openedx_docker_swarm_build_web_server_docker_repository: nauedu
+openedx_docker_swarm_build_web_server_docker_image: openedx-nginx
+openedx_docker_swarm_build_web_server_docker_swarm_service: openedx_nginx
+openedx_docker_swarm_build_web_server_docker_image_with_hash_fact_name: "openedx_nginx_image"
+
+openedx_docker_swarm_build_web_server_services_root: /openedx/staticfiles
+
+# services that we should cache the static assets
+openedx_docker_swarm_build_web_server_services:
+  - service: openedx_analyticsapi
+    docker_image: "{{ openedx_analyticsapi_image }}"
+    folders:
+      - folder: /openedx/analyticsapi/assets
+        previous: "{{ openedx_docker_swarm_build_web_server_services_root }}/analyticsapi/previous"
+        next: "{{ openedx_docker_swarm_build_web_server_services_root }}/analyticsapi/next"
+  - service: openedx_discovery
+    docker_image: "{{ openedx_discovery_docker_image }}"
+    folders:
+      - folder: /openedx/discovery/course_discovery/assets
+        previous: "{{ openedx_docker_swarm_build_web_server_services_root }}/discovery/previous"
+        next: "{{ openedx_docker_swarm_build_web_server_services_root }}/discovery/next"
+  - service: openedx_insights
+    docker_image: "{{ openedx_insights_image }}"
+    folders:
+      - folder: /openedx/insights/assets
+        previous: "{{ openedx_docker_swarm_build_web_server_services_root }}/insights/previous"
+        next: "{{ openedx_docker_swarm_build_web_server_services_root }}/insights/next"
+  - service: openedx_cms
+    docker_image: "{{ openedx_app_image }}"
+    folders:
+      - folder: /openedx/staticfiles/
+        previous: "{{ openedx_docker_swarm_build_web_server_services_root }}/cms/previous"
+        next: "{{ openedx_docker_swarm_build_web_server_services_root }}/cms/next"
+  - service: openedx_lms
+    docker_image: "{{ openedx_app_image }}"
+    folders:
+      - folder: /openedx/staticfiles/
+        previous: "{{ openedx_docker_swarm_build_web_server_services_root }}/lms/previous"
+        next: "{{ openedx_docker_swarm_build_web_server_services_root }}/lms/next"
+
+openedx_nginx_lms_staticfiles_folders:
+  - lms/next
+  - lms/previous
+
+openedx_nginx_cms_staticfiles_folders:
+  - cms/next
+  - cms/previous
+
+openedx_nginx_insights_staticfiles_folders:
+  - insights/next
+  - insights/previous
+
+openedx_nginx_discovery_staticfiles_folders:
+  - discovery/previous
+  - discovery/next
