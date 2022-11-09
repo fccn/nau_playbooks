@@ -60,6 +60,7 @@ richie_nginx_proxy_protocol: true
 richie_nginx_server_name: "{{ marketing_site_nau_domain }}"
 richie_nginx_enable_https: true
 richie_nginx_force_https: true
+richie_nginx_http2: true
 richie_nginx_hsts_max_age: 31536000
 richie_nginx_ssl_certificate_path: "/etc/nginx/ssl/www_dev_nau_fccn_pt.crt.pem"
 richie_nginx_certificate_key_path: "/etc/nginx/ssl/www_dev_nau_fccn_pt.key"
@@ -68,4 +69,3 @@ richie_nginx_enable_s3_maintenance: "{{ NGINX_EDXAPP_ENABLE_S3_MAINTENANCE }}"
 richie_nginx_enable_s3_maintenance_file: "{{ NGINX_EDXAPP_S3_MAINTENANCE_FILE }}"
 richie_nginx_enable_s3_maintenance_host: "{{ NGINX_EDXAPP_S3_MAINTENANCE_HOST }}"
 richie_nginx_enable_s3_maintenance_url: "{{ NGINX_EDXAPP_S3_MAINTENANCE_URL }}"
-
