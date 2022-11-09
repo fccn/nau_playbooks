@@ -313,6 +313,9 @@
 - name: Configure build server
   hosts: build_server
   tasks:
+    - name: Install docker
+      import_role:
+        name: geerlingguy.docker
     - name: Install Java to run a Jenkins node
       import_role:
         name: geerlingguy.java
