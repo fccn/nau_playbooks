@@ -411,7 +411,7 @@
         # on ansible inventory each host has its IPv4 address on the `ansible_host` variable
         docker_swarm_node_advertise_addr: "{{ hostvars[inventory_hostname].ansible_host }}"
 
-- name: Deploy openedx stack to the 1st docker swarm manager
+- name: Deploy docker stacks to the 1st docker swarm manager
   hosts: nau_docker_swarm_managers,nau_docker_swarm_workers
   become: True
   gather_facts: True
