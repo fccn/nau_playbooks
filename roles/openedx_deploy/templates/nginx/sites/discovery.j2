@@ -4,10 +4,10 @@
 
 server {
   server_name discovery.*;
-  listen 80{{ ' http2' if NGINX_HTTP2 is defined and NGINX_HTTP2 else ''}};
+  listen 80{{ ' http2' if openedx_nginx_http2 else '' }};
 
 {% if NGINX_ENABLE_SSL %}
-  listen 443 ssl{{ ' http2' if NGINX_HTTP2 is defined and NGINX_HTTP2 else ''}};  
+  listen 443 ssl{{ ' http2' if openedx_nginx_http2 else '' }};  
   ssl_certificate     {{ openedx_discovery_nginx_ssl_certificate_docker_target     }};
   ssl_certificate_key {{ openedx_discovery_nginx_ssl_certificate_key_docker_target }};
 {% endif %}

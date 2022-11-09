@@ -10,6 +10,8 @@ openedx_nginx_http_ingress_port: 80
 openedx_nginx_https: 443
 openedx_nginx_https_ingress_port: 443
 
+openedx_nginx_http2: true
+
 openedx_nginx_docker_deploy_templates:
   # nginx.conf
   - src: templates/nginx/nginx.conf
