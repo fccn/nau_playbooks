@@ -2,7 +2,7 @@
 interval = 2018-01-01-2030-01-01
 
 [ccx]
-enabled = false
+enabled = true
 
 [database-export]
 database = reports
@@ -16,6 +16,7 @@ destination = {{ analytics_pipeline_configuration_source }}/edx-analytics-pipeli
 [elasticsearch]
 # Point to the vagrant host's port 9201 where we assume elasticsearch is running
 host = [{{ analytics_pipeline_configuration_elasticsearch_url }}]
+# timeout = 120
 
 [enrollments]
 interval_start = 2018-08-01
