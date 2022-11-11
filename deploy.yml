@@ -31,9 +31,6 @@
 #   To deploy IdP proxy servers run:
 #     ansible-playbook -i nau-data/:nvs/<env>/hosts.ini deploy.yml --limit idpproxy_servers
 #
-#   To deploy IdP Auth servers run:
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit idpauth_servers
-##
 #   To mark a server for maintenance, like load balancer or mysql server, append to the shell command arguments:
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --tags keepalived --limit slave_persistence_servers -e keepalived_priority=1
 #   To mark a server back to normal state, run the same command without the --limit.
@@ -66,7 +63,7 @@
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_managers -e openedx_deploy=true -e openedx_nginx_build=true
 #
 - name: Bootstrap instances of 16.04
-  hosts: all,!idpproxy_servers,!idpauth_servers,!nau_docker_swarm_managers,!nau_docker_swarm_workers,!support_server,!build_server
+  hosts: all,!idpproxy_servers,!nau_docker_swarm_managers,!nau_docker_swarm_workers,!support_server,!build_server
   gather_facts: no
   become: true
   tasks:
@@ -279,7 +276,6 @@
 - name: Configure Shibboleth IdP
   hosts: 
     - idpproxy_servers
-    - idpauth_servers
   become: True
   gather_facts: True
   tags: 
