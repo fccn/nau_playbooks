@@ -117,6 +117,12 @@ healthcheck-mysql-primary: ## show primary master status on mysql_1 docker conta
 .PHONY: healthcheck-mysql-primary
 
 {% for container, config in openedx_mysql_containers.items() %}
+{{ container }}-showprocess-list: ## show the mysql processes inside the {{ container }} database instance
+	@MYSQL_PWD="{{ config.mysql_replication_login_password }}" /usr/bin/mysql -u {{ config.mysql_replication_login_user }} --host 127.0.0.1 --port {{ config.outside_port }} --execute="show processlist;"
+.PHONY: {{ container }}-showprocess-list
+{% endfor %}
+
+{% for container, config in openedx_mysql_containers.items() %}
 {% if not config.primary %}
 healthcheck-mysql-replica-{{ container }}: ## show replica slave status on {{ container }} docker container
 	@echo -n "Check mysql replica {{ container }} seconds behind master is lower than 60 seconds: "
