@@ -2,15 +2,19 @@
 
 openedx_app_image: nauedu/edxapp-prod:nau-lilac.master
 
-# number of docker service replicas
+# Number of docker service replicas, uwsgi workers and celery processes.
+# The uwsgi workers are the number of OS processes that real handle http requests
+# The lms/cms workers are celery processes that execute offline workloads.
+# The worker celery processes are a configuration for how many OS processes that each
+# replica will start.
 openedx_lms_replicas: 1
+openedx_lms_uwsgi_workers: 2
 openedx_cms_replicas: 1
+openedx_cms_uwsgi_workers: 2
 openedx_lms_worker_replicas: 1
+openedx_lms_worker_celery_processes: 1
 openedx_cms_worker_replicas: 1
-
-# number of workers that uwsgi has within each docker service
-OPENEDX_LMS_UWSGI_WORKERS: 2
-OPENEDX_CMS_UWSGI_WORKERS: 2
+openedx_cms_worker_celery_processes: 1
 
 openedx_app_docker_deploy_templates:
   - src_data:  "{{ openedx_lms_env_file | to_nice_yaml(indent=2, width=1337) }}" # default_flow_style=False didn't work
@@ -605,7 +609,7 @@ openedx_lms_env_var_default:
   SERVICE_VARIANT: lms
   SETTINGS: nau_production
   LMS_CFG: /openedx/config/lms.env.yml
-  UWSGI_WORKERS: "{{ OPENEDX_LMS_UWSGI_WORKERS }}"
+  UWSGI_WORKERS: "{{ openedx_lms_uwsgi_workers }}"
   # Use custom timezone
   TZ: "{{ openedx_timezone | default('Europe/Lisbon') }}"
 
@@ -692,7 +696,7 @@ openedx_cms_env_var_default:
   SERVICE_VARIANT: cms
   SETTINGS: nau_production
   STUDIO_CFG: /openedx/config/cms.env.yml
-  UWSGI_WORKERS: "{{ OPENEDX_CMS_UWSGI_WORKERS }}"
+  UWSGI_WORKERS: "{{ openedx_cms_uwsgi_workers }}"
   # Use custom timezone
   TZ: "{{ openedx_timezone | default('Europe/Lisbon') }}"
 
