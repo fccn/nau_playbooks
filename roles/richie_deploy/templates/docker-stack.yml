@@ -36,6 +36,8 @@ services:
         limits:
           # 200MB per worker
           memory: {{ richie_site_config.app_gunicorn_workers * 200 }}M
+        reservations:
+          memory: {{ richie_site_config.app_gunicorn_workers * 150 }}M
     # volumes:
       # Used to increase log verbosity of the gunicorn and to add a Gunicorn worker abort handler
       # - ./app.py:/usr/local/etc/gunicorn/app.py
@@ -119,7 +121,7 @@ services:
         limits:
           memory: 128M
         reservations:
-          memory: 5M
+          memory: 50M
     extra_hosts:
       - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
     healthcheck:
@@ -160,6 +162,8 @@ services:
       resources:
         limits:
           memory: 300M
+        reservations:
+          memory: 200M
       update_config:
         # We are updating 1 container a time
         parallelism: 1
@@ -208,6 +212,8 @@ services:
       resources:
         limits:
           memory: 4G
+        reservations:
+          memory: 1G
       placement:
         max_replicas_per_node: 1
         constraints:
@@ -258,9 +264,9 @@ services:
       replicas: 1
       resources:
         limits:
-          memory: 1.5G
+          memory: 3G
         reservations:
-          memory: 500M
+          memory: 1.5G
       placement:
         max_replicas_per_node: 1
         constraints:
@@ -299,6 +305,11 @@ services:
       update_config:
         # apply a slow rolling deploy
         parallelism: 1
+      resources:
+        limits:
+          memory: 50M
+        reservations:
+          memory: 10M
 
 {% for redis_container_name, redis_container in richie_redis_containers.items() %}
 

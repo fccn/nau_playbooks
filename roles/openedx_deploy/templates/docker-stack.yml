@@ -21,6 +21,11 @@ services:
         parallelism: {{ [ 1, ( openedx_insights_replicas / 2 | int ) ] | max | round(0, 'floor') | int }}
       placement:
         max_replicas_per_node: {{ ( openedx_insights_replicas / docker_swarm_cluster_group_length | int ) | round(0, 'ceil') | int }}
+      resources:
+        limits:
+          memory: 500M
+        reservations:
+          memory: 200M
     healthcheck:
       # Check if /health/ returns a HTTP status 200, meaning the service is ok
       test: curl --silent --fail --head --resolve insights:8000:127.0.0.1 http://insights:8000/health/ | egrep "HTTP/.*200 OK"
@@ -70,6 +75,11 @@ services:
         parallelism: {{ [ 1, ( openedx_analyticsapi_replicas / 2 | int ) ] | max | round(0, 'floor') | int }}
       placement:
         max_replicas_per_node: {{ ( openedx_analyticsapi_replicas / docker_swarm_cluster_group_length | int ) | round(0, 'ceil') | int }}
+      resources:
+        limits:
+          memory: 250M
+        reservations:
+          memory: 150M
     healthcheck:
       # Check if /health/ returns a HTTP status 200, meaning the service is ok
       test: curl --silent --fail --head --resolve analyticsapi:8100:127.0.0.1 http://analyticsapi:8100/health/ | egrep "HTTP/.*200 OK"
@@ -129,7 +139,7 @@ services:
         limits:
           memory: 128M
         reservations:
-          memory: 5M
+          memory: 50M
     extra_hosts:
       - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
     healthcheck:
@@ -153,10 +163,10 @@ services:
         max_replicas_per_node: {{ ( openedx_lms_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
       resources:
         limits:
-          # Tutor in docs: "each worker requires upwards of 500 Mb of RAM" so we give 700MB per uwsgi worker
-          memory: {{ openedx_lms_uwsgi_workers * 700 }}M
+          # Tutor in docs: "each worker requires upwards of 500 Mb of RAM" so we give 1G per uwsgi worker
+          memory: {{ openedx_lms_uwsgi_workers * 1000 }}M
         reservations:
-          memory: {{ openedx_lms_uwsgi_workers * 200 }}M
+          memory: {{ openedx_lms_uwsgi_workers * 500 }}M
     extra_hosts:
       - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"    
     healthcheck:
@@ -202,10 +212,10 @@ services:
         max_replicas_per_node: {{ ( openedx_cms_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
       resources:
         limits:
-          # Tutor in docs: "each worker requires upwards of 500 Mb of RAM" so we give 700MB per uwsgi worker
-          memory: {{ openedx_cms_uwsgi_workers * 700 }}M
+          # Tutor in docs: "each worker requires upwards of 500 Mb of RAM" so we give 1G per uwsgi worker
+          memory: {{ openedx_cms_uwsgi_workers * 1000 }}M
         reservations:
-          memory: {{ openedx_cms_uwsgi_workers * 200 }}M
+          memory: {{ openedx_cms_uwsgi_workers * 500 }}M
     healthcheck:
       # Check if heartbeat is ok
       test: curl --silent --fail --head --resolve cms:8000:127.0.0.1 http://cms:8000/heartbeat | egrep "HTTP/.*200 OK"
@@ -231,9 +241,9 @@ services:
         max_replicas_per_node: {{ ( openedx_lms_worker_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
       resources:
         limits:
-          memory: {{ openedx_lms_worker_celery_processes * 500 }}M
+          memory: {{ openedx_lms_worker_celery_processes * 1000 }}M
         reservations:
-          memory: {{ openedx_lms_worker_celery_processes * 200 }}M
+          memory: {{ openedx_lms_worker_celery_processes * 400 }}M
 {{ helper.service_configs(service='edxapp') }}
 {{ helper.service_secrets(service='edxapp') }}
 
@@ -252,9 +262,9 @@ services:
         max_replicas_per_node: {{ ( openedx_cms_worker_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
       resources:
         limits:
-          memory: {{ openedx_cms_worker_celery_processes * 500 }}M
+          memory: {{ openedx_cms_worker_celery_processes * 1000 }}M
         reservations:
-          memory: {{ openedx_cms_worker_celery_processes * 200 }}M
+          memory: {{ openedx_cms_worker_celery_processes * 400 }}M
 {{ helper.service_configs(service='edxapp') }}
 {{ helper.service_secrets(service='edxapp') }}
 
@@ -269,6 +279,11 @@ services:
       replicas: {{ openedx_forum_replicas }}
       placement:
         max_replicas_per_node: {{ ( openedx_forum_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
+      resources:
+        limits:
+          memory: 500M
+        reservations:
+          memory: 300M
     healthcheck:
       # Check if forum heartbeat returns ok
       test: wget -qSO- 127.0.0.1:{{ openedx_forum_port }}/heartbeat 2>&1 | egrep "HTTP/.*200 OK"
@@ -303,6 +318,11 @@ services:
       replicas: {{ openedx_notes_replicas }}
       placement:
         max_replicas_per_node: {{ ( openedx_notes_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 150M
     healthcheck:
       # Check if forum heartbeat returns ok
       test: |
@@ -341,6 +361,11 @@ services:
       replicas: {{ openedx_discovery_replicas }}
       placement:
         max_replicas_per_node: {{ ( openedx_discovery_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
+      resources:
+        limits:
+          memory: 400M
+        reservations:
+          memory: 210M
     healthcheck:
       # Check if /health/ returns a HTTP status 200, meaning the service is ok
       test: curl --silent --fail --head --resolve discovery:8000:127.0.0.1 http://discovery:8000/health/ | egrep "HTTP/.*200 OK"
@@ -378,6 +403,11 @@ services:
       replicas: {{ openedx_smtp_replicas }}
       placement:
         max_replicas_per_node: {{ ( openedx_smtp_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
+      resources:
+        limits:
+          memory: 50M
+        reservations:
+          memory: 10M
     healthcheck:
       test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/8025", "||", "exit", "1"]
       start_period: 30s
@@ -406,6 +436,11 @@ services:
       endpoint_mode: dnsrr
       placement:
         max_replicas_per_node: {{ ( openedx_redis_sentinel_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
+      resources:
+        limits:
+          memory: 50M
+        reservations:
+          memory: 10M
 
 {% for redis_container_name, redis_config in openedx_redis_containers.items() %}
   {{ redis_container_name }}:
@@ -426,6 +461,8 @@ services:
       resources:
         limits:
           memory: 4G
+        reservations:
+          memory: 200M
       placement:
         max_replicas_per_node: 1
 {% if redis_config.host_fqdn is defined and redis_config.host_fqdn is not none %}
@@ -484,9 +521,9 @@ services:
       endpoint_mode: dnsrr
       resources:
         limits:
-          memory: 1.5G
+          memory: 3G
         reservations:
-          memory: 500M
+          memory: 1.5G
       placement:
         max_replicas_per_node: 1
         constraints:
@@ -548,13 +585,15 @@ services:
       # Use custom timezone
       TZ: {{ openedx_timezone | default("Europe/Lisbon") }}
     deploy:
-      replicas: {{ openedx_haproxy_deploy_replicas_count | default(2) }}
+      replicas: {{ openedx_haproxy_replicas }}
       endpoint_mode: vip # the haproxy outside we use the default vip
       placement:
-        max_replicas_per_node: {{ ( openedx_haproxy_deploy_replicas_count / docker_swarm_cluster_group_length | int ) | round(0, 'ceil') | int }}
+        max_replicas_per_node: {{ ( openedx_haproxy_replicas / docker_swarm_cluster_group_length | int ) | round(0, 'ceil') | int }}
       resources:
         limits:
           memory: 300M
+        reservations:
+          memory: 200M
       update_config:
         # We are updating 1 container a time
         parallelism: 1
@@ -591,7 +630,9 @@ services:
       endpoint_mode: dnsrr
       resources:
         limits:
-          memory: 4G
+          memory: 8G
+        reservations:
+          memory: 5G
       placement:
         max_replicas_per_node: 1
         constraints:

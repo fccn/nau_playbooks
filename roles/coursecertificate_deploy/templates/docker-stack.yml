@@ -18,7 +18,7 @@ services:
         limits:
           memory: 1G
         reservations:
-          memory: 100M
+          memory: 300M
       update_config:
         # We are updating 1 container a time
         parallelism: 1
@@ -55,9 +55,9 @@ services:
       replicas: {{ coursecertificate_nginx_replicas }}
       resources:
         limits:
-          memory: 128M
+          memory: 50M
         reservations:
-          memory: 5M
+          memory: 10M
       update_config:
         # We are updating 1 container a time
         parallelism: 1

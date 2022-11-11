@@ -1,5 +1,5 @@
 ---
-openedx_haproxy_deploy_replicas_count: 2
+openedx_haproxy_replicas: 2
 openedx_haproxy_docker_image: haproxy:2.4.16
 
 # Open edX MySQL load balancer health check user
