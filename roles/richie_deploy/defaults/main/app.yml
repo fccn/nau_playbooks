@@ -110,6 +110,8 @@ richie_nau_app_environment_variables_default:
   # Add help desk link to header
   HELP_DESK_URL: "{{ EDXAPP_SUPPORT_SITE_LINK | default('') }}"
 
+  MAINTENANCE_HEADER_MSG: "{{ richie_nau_app_maintenance_header_msg | default(false) }}"
+
   # Google Analytics
   # WEB_ANALYTICS_PROVIDER: google_analytics
   # WEB_ANALYTICS_LOCATION: head
