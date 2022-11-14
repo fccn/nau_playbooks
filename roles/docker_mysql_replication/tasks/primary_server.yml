@@ -80,7 +80,7 @@
   tags: docker_mysql_replication
 
 - name: Copy data snapshot to localhost
-  shell: rsync -avhe 'ssh -o StrictHostKeyChecking=no -o ConnectTimeout=60 -o ServerAliveInterval=300 -o ServerAliveCountMax=30' root@{{ hostvars[inventory_hostname].ansible_host }}:{{ docker_mysql_replication_dump_file }} {{ docker_mysql_replication_dump_file | basename }}
+  shell: rsync -avhe 'ssh -o StrictHostKeyChecking=no -o ConnectTimeout=60 -o ServerAliveInterval=300 -o ServerAliveCountMax=30' {{ ansible_user_id }}@{{ hostvars[inventory_hostname].ansible_host }}:{{ docker_mysql_replication_dump_file }} {{ docker_mysql_replication_dump_file | basename }}
   delegate_to: localhost
   tags: docker_mysql_replication
 

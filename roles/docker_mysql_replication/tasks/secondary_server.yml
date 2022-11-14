@@ -19,7 +19,7 @@
 #   tags: always
 
 - name: Copy data snapshot from localhost to slave
-  shell: rsync -avhe 'ssh -o StrictHostKeyChecking=no -o ConnectTimeout=60 -o ServerAliveInterval=300 -o ServerAliveCountMax=30' {{ docker_mysql_replication_dump_file | basename }} root@{{ hostvars[inventory_hostname].ansible_host }}:{{ docker_mysql_replication_dump_file }}
+  shell: rsync -avhe 'ssh -o StrictHostKeyChecking=no -o ConnectTimeout=60 -o ServerAliveInterval=300 -o ServerAliveCountMax=30' {{ docker_mysql_replication_dump_file | basename }} {{ ansible_user_id }}@{{ hostvars[inventory_hostname].ansible_host }}:{{ docker_mysql_replication_dump_file }}
   delegate_to: localhost
   tags: docker_mysql_replication
 
