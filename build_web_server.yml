@@ -3,14 +3,21 @@
 # copy the current in execution static assets and the new to be deployed
 # static assets.
 # It will push a new docker image to Docker Hub, one per NAU environment (dev, stage and prod).
+#
 # Example for dev:
-# - docker.io/nauedu/openedx-nginx:dev
+#   docker.io/nauedu/openedx-nginx:dev
+#
+# Open edX: https://hub.docker.com/r/nauedu/openedx-nginx/tags
+# Richie:   https://hub.docker.com/r/nauedu/richie-nginx/tags
 #
 # This playbook should be called before each deploy, or the deploy playbook should enable the
 # build parameter.
 #
-# Examples:
+# Example to build openedx:
 #   ansible-playbook -i nau-data/envs/development/hosts.ini build_web_server.yml --limit nau_docker_swarm_servers -e openedx_nginx_build=true
+# 
+# Example to build richie:
+#   ansible-playbook -i nau-data/envs/development/hosts.ini build_web_server.yml --limit nau_docker_swarm_servers -e richie_nginx_build=true
 #
 ---
 - name: Build web server nginx with static assets
@@ -28,7 +35,7 @@
       vars:
         docker_swarm_build_node: "{{ hostvars[groups['build_server'][0]].ansible_host }}"
 
-    # - name: Build richie stack
-    #   role: richie_deploy
-    #   vars:
-    #     docker_swarm_build_node: "{{ hostvars[groups['build_server'][0]].ansible_host }}"
+    - name: Build richie stack
+      role: richie_deploy
+      vars:
+        docker_swarm_build_node: "{{ hostvars[groups['build_server'][0]].ansible_host }}"
