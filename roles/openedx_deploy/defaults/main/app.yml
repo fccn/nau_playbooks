@@ -598,6 +598,9 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
   # DJANGO_REDIS_LOG_IGNORED_EXCEPTIONS: true
 
   X_FRAME_OPTIONS: "{{ EDXAPP_X_FRAME_OPTIONS | default('DENY') }}"
+  
+  # Configure logo used by emails
+  LOGO_URL_PNG: "{{ COMMON_LMS_BASE_URL }}/static/nau-basic/images/logo_nau_w220.png"
 
 ##################
 # LMS
