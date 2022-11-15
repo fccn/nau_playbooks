@@ -2,7 +2,7 @@
 #
 # Examples:
 # To run all run the playbook with:
-#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_discovery_refresh_swarm.yml-e run_all=true
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_discovery_refresh_swarm.yml -e run_all=true
 #
 # To run specific step use:
 #   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_discovery_refresh_swarm.yml -e lms_schedules_send_course_next_section_update=true
@@ -21,22 +21,22 @@
 
     commands_to_execute:
       # lms tasks
-      - name: lms schedules send_course_next_section_update
+      - docker_exec_name: lms schedules send_course_next_section_update
         docker_stack: openedx
         docker_service_to_exec: lms
-        docker_exec_command: python manage.py lms send_course_next_section_update --settings nau_production
+        docker_exec_command: python manage.py lms send_course_next_section_update --settings nau_production {{ EDXAPP_LMS_BASE }}
         docker_exec_output_fact: lms_schedules_send_course_next_section_update_output
         when: "{{ _lms_schedules_send_course_next_section_update }}"
-      - name: lms schedules send_course_update
+      - docker_exec_name: lms schedules send_course_update
         docker_stack: openedx
         docker_service_to_exec: lms
-        docker_exec_command: python manage.py lms send_course_update --settings nau_production
+        docker_exec_command: python manage.py lms send_course_update --settings nau_production {{ EDXAPP_LMS_BASE }}
         docker_exec_output_fact: lms_schedules_send_course_update_output
         when: "{{ _lms_schedules_send_course_update }}"
-      - name: lms schedules send_recurring_nudge
+      - docker_exec_name: lms schedules send_recurring_nudge
         docker_stack: openedx
         docker_service_to_exec: lms
-        docker_exec_command: python manage.py lms send_recurring_nudge --settings nau_production
+        docker_exec_command: python manage.py lms send_recurring_nudge --settings nau_production {{ EDXAPP_LMS_BASE }}
         docker_exec_output_fact: lms_schedules_send_recurring_nudge_output
         when: "{{ _lms_schedules_send_recurring_nudge }}"
 
@@ -45,6 +45,7 @@
       include_role:
         name: docker_exec_in_swarm
       vars:
+        docker_exec_name: "{{ exec.docker_exec_name }}"
         docker_stack: "{{ exec.docker_stack }}"
         docker_service_to_exec: "{{ exec.docker_service_to_exec }}"
         docker_exec_command: "{{ exec.docker_exec_command }}"
@@ -53,7 +54,7 @@
       when: exec.when | default(true)
       loop_control:
         loop_var: exec
-        label: "Execute {{ exec.name }}"
+        label: "Execute {{ exec.docker_exec_name }}"
       loop: "{{ commands_to_execute }}"
 
     # needed only because we are ignoring the errors on previous task and now we are checking if
@@ -65,5 +66,5 @@
       when: check_cmd.when | default(true)
       loop_control:
         loop_var: check_cmd
-        label: Check if {{ check_cmd.name }} have finished with success
+        label: Check if {{ check_cmd.docker_exec_name }} have finished with success
       loop: "{{ commands_to_execute }}"
