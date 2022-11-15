@@ -91,7 +91,7 @@ services:
 {{ helper.service_secrets(service=richie_site+'_app') }}
 
   {{ richie_site }}_nginx:
-    image: {{ richie_site_config.nginx_image }}
+    image: {{ hostvars[inventory_hostname][richie_site_config.docker_swarm_build_web_server_docker_image_with_hash_fact_name] }}
     ports:
       - target: 80
         published: {{ richie_site_config.nginx_http_ingress_port }}

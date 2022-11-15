@@ -1,7 +1,10 @@
 ---
+# Variable that makes the nginx to be built
+# -e richie_nginx_build=true
+richie_nginx_build: false
+
 richie_sites_nginx:
   nau:
-    nginx_image: nauedu/nau-nginx:{{ richie_nau_version }}
     nginx_http_ingress_port:   "{{ richie_nau_nginx_http_ingress_port   }}"
     nginx_https_ingress_port:  "{{ richie_nau_nginx_https_ingress_port  }}"
     nginx_replicas:            1
@@ -19,6 +22,29 @@ richie_sites_nginx:
       # to match /pt/admin... /en/admin... or other new language added in future
       - path: '"^(/[a-zA-Z0-9]{2})?/admin"'
         cidrs: "{{ NGINX_ADMIN_ACCESS_CIDRS }}"
+
+    # docker registry organization
+    docker_swarm_build_web_server_docker_repository: nauedu
+    docker_swarm_build_web_server_docker_image: richie-nginx
+    docker_swarm_build_web_server_docker_swarm_service: richie_nau_nginx
+    docker_swarm_build_web_server_docker_image_with_hash_fact_name: "richie_nau_nginx_image"
+    docker_swarm_build_web_server_services_root: "{{ richie_docker_swarm_build_web_server_services_root }}"
+
+    # services that we should cache the static assets
+    docker_swarm_build_web_server_services:
+      # one config per richie site
+      - service: richie_nau_app
+        docker_image: nauedu/nau:{{ richie_nau_version }}
+        folders:
+          - folder: /data/static
+            previous: "{{ richie_docker_swarm_build_web_server_services_root }}/previous"
+            next: "{{ richie_docker_swarm_build_web_server_services_root }}/next"
+
+    nginx_staticfiles_folders:
+      - next
+      - previous
+
+richie_docker_swarm_build_web_server_services_root: /richie/staticfiles/nau
 
 richie_nau_nginx_ssl_certificate_key: !!null
 richie_nau_nginx_https_ingress_port: 24443

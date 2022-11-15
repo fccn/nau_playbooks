@@ -39,6 +39,23 @@
   tags:
     - docker_deploy
 
+- name: Build web server nginx docker image with all previous(current) and next release static assets
+  include_role:
+    name: docker_swarm_build_web_server
+  vars:
+    docker_swarm_build_web_server_docker_repository: "{{ item.value.docker_swarm_build_web_server_docker_repository }}"
+    docker_swarm_build_web_server_docker_image: "{{ item.value.docker_swarm_build_web_server_docker_image }}"
+    docker_swarm_build_web_server_docker_swarm_service: "{{ item.value.docker_swarm_build_web_server_docker_swarm_service }}"
+    docker_swarm_build_web_server_docker_image_with_hash_fact_name: "{{ item.value.docker_swarm_build_web_server_docker_image_with_hash_fact_name }}"
+    docker_swarm_build_web_server_services: "{{ item.value.docker_swarm_build_web_server_services }}"
+    docker_swarm_build_web_server_deploy: "{{ richie_deploy_run | default(false) | bool }}"
+    docker_swarm_build_web_server_build: "{{ richie_nginx_build | bool }}"
+  when: docker_swarm_manager_to_deploy is defined and docker_swarm_manager_to_deploy == inventory_hostname
+  with_dict: "{{ richie_sites }}"
+  tags:
+    - docker_swarm_build_web_server
+    - docker_deploy
+
 - name: Deploy
   include_role:
     name: ansible-docker-deploy
