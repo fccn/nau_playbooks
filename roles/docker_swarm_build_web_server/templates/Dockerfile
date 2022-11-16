@@ -6,6 +6,7 @@
 {% for service in docker_swarm_build_web_server_services %}
 # {{ service.service }}
 FROM {{ service.docker_image }} as {{ ( service.service + '_new' ) | replace("_", "") }}
+USER root
 {% for folder in service.folders %}
 RUN find {{ folder.folder }} -type l -exec bash -c "cp --remove-destination \$(readlink -f {}) {} " \;
 {% endfor %}
@@ -21,6 +22,7 @@ RUN find {{ folder.folder }} -type l -exec bash -c "cp --remove-destination \$(r
 {% if service.service.Spec is defined %}
 # {{ service.item.service }}
 FROM {{ service.service.Spec.TaskTemplate.ContainerSpec.Image }} as {{ ( service.item.service + '_previous' ) | replace("_", "") }}
+USER root
 {% for folder in service.item.folders %}
 RUN find {{ folder.folder }} -type l -exec bash -c "cp --remove-destination \$(readlink -f {}) {} " \;
 {% endfor %}
@@ -30,6 +32,7 @@ RUN find {{ folder.folder }} -type l -exec bash -c "cp --remove-destination \$(r
 
 # ---- Base image to inherit from ----
 FROM {{ docker_swarm_build_web_server_docker_image_from }} as base
+USER root
 
 # Install rdfind
 RUN apt-get update && \
