@@ -6,6 +6,8 @@ Run ansible with `-e openedx_deploy=true -e openedx_elasticsearch_initialization
 
 ## Initialize MySQL
 To initialize the mysql cluster use the `openedx_mysql_initialization` parameter.
+Before run a normal deploy that will stop on the health check steps.
+
 Run ansible with `-e openedx_deploy=true -e openedx_mysql_initialization=true --tags docker_mysql_replication`
 
 ## Database Migrations
