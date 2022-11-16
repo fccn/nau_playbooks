@@ -7,7 +7,7 @@
 # {{ service.service }}
 FROM {{ service.docker_image }} as {{ ( service.service + '_new' ) | replace("_", "") }}
 {% for folder in service.folders %}
-RUN find {{ folder.folder }} -type l -exec bash -c "cp --remove-destination \$(readlink {}) {} " \;
+RUN find {{ folder.folder }} -type l -exec bash -c "cp --remove-destination \$(readlink -f {}) {} " \;
 {% endfor %}
 
 {% endfor %}
@@ -22,7 +22,7 @@ RUN find {{ folder.folder }} -type l -exec bash -c "cp --remove-destination \$(r
 # {{ service.item.service }}
 FROM {{ service.service.Spec.TaskTemplate.ContainerSpec.Image }} as {{ ( service.item.service + '_previous' ) | replace("_", "") }}
 {% for folder in service.item.folders %}
-RUN find {{ folder.folder }} -type l -exec bash -c "cp --remove-destination \$(readlink {}) {} " \;
+RUN find {{ folder.folder }} -type l -exec bash -c "cp --remove-destination \$(readlink -f {}) {} " \;
 {% endfor %}
 
 {% endif %}
