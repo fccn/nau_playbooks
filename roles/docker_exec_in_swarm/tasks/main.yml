@@ -65,19 +65,19 @@
 - name: Print stdout of command output
   debug:
     msg: "{{ exec_output.stdout_lines }}"
-  when: exec_output is defined
+  when: exec_output is defined and exec_output.stdout_lines is defined
 
 - name: Print stderr of command output
   debug:
     msg: "{{ exec_output.stderr_lines }}"
-  when: exec_output is defined
+  when: exec_output is defined and exec_output.stderr_lines is defined
 
 - name: Check that command has finished with success if we need to check its return status
   assert:
     that: exec_output.rc == 0 and 'ERROR' not in exec_output.stdout
     fail_msg: The command has finished with error or has an ERROR on its output
     success_msg: "{{ }}"
-  when: not ( docker_exec_ignore_errors | default(False) )
+  when: not ( docker_exec_ignore_errors | default(False) ) and exec_output.rc is defined
 
 - name: Dynamic define fact based on 'docker_exec_output_fact'
   set_fact:

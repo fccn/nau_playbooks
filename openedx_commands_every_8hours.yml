@@ -93,7 +93,7 @@
       assert:
         that: hostvars[inventory_hostname][check_cmd.docker_exec_output_fact].rc == 0 and "ERROR" not in hostvars[inventory_hostname][check_cmd.docker_exec_output_fact].stdout
         quiet: true
-      when: check_cmd.when | default(true)
+      when: ( check_cmd.when | default(true) ) and not ansible_check_mode
       loop_control:
         loop_var: check_cmd
         label: Check if '{{ check_cmd.docker_exec_name }}' have finished with success
