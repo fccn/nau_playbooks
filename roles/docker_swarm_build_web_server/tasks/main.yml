@@ -59,19 +59,27 @@
     - docker_swarm_build_web_server
     - docker_deploy
 
+# Use manually the `docker image build` command because the ansible `docker_image` doesn't support
+# the docker buildkit. 
+# Reference: 
+# - https://github.com/docker/docker-py/issues/2230
+# - https://github.com/ansible-collections/community.general/issues/514
+# The docker buildkit has better build time performance for multi stage parallel builds.
 - name: Build web server docker image
-  docker_image:
-    source: build
-    build:
-      path: "{{ docker_swarm_build_web_server_docker_file | dirname }}"
-      pull: yes
-    name: "{{ docker_swarm_build_web_server_docker_repository }}/{{ docker_swarm_build_web_server_docker_image }}"
-    push: "{{ docker_swarm_build_push }}"
-    tag: "{{ docker_swarm_build_web_server_docker_tag }}"
-    force_source: true
-    force_tag: true
+  shell: DOCKER_BUILDKIT=1 docker image build --tag {{ docker_swarm_build_web_server_docker_repository }}/{{ docker_swarm_build_web_server_docker_image }}:{{ docker_swarm_build_web_server_docker_tag }} - < {{ docker_swarm_build_web_server_docker_file }}
   when: docker_swarm_build_web_server_build
-  register: docker_image_build_result
+  delegate_to: "{{ docker_swarm_build_node }}"
+  tags:
+    - docker_swarm_build_web_server
+    - docker_deploy
+
+- name: Push web server docker image to docker repository
+  docker_image:
+    name: "{{ docker_swarm_build_web_server_docker_repository }}/{{ docker_swarm_build_web_server_docker_image }}"
+    tag: "{{ docker_swarm_build_web_server_docker_tag }}"
+    push: "{{ docker_swarm_build_push }}"
+    source: local
+  when: docker_swarm_build_web_server_build
   delegate_to: "{{ docker_swarm_build_node }}"
   tags:
     - docker_swarm_build_web_server
