@@ -123,6 +123,7 @@ edxapp_course_data_dir: /openedx/data/modulestore
 # Old EDXAPP_ variables #
 #########################
 # that are shared between different environments
+COMMON_ENVIRONMENT: 'default_env'
 EDXAPP_ORA2_FILE_PREFIX: '{{ COMMON_ENVIRONMENT }}-{{ COMMON_DEPLOYMENT }}/ora2'
 EDXAPP_RETIREMENT_STATES:
   - "PENDING"
