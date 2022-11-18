@@ -606,6 +606,11 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
   # Configure logo used by emails
   LOGO_URL_PNG: "{{ COMMON_LMS_BASE_URL }}/static/nau-basic/images/logo_nau_w220.png"
 
+  # Configure insights
+  ANALYTICS_DASHBOARD_URL: "{{ EDXAPP_ANALYTICS_DASHBOARD_URL }}"
+  ANALYTICS_DASHBOARD_NAME: "Insights"
+  
+
 ##################
 # LMS
 ##################
