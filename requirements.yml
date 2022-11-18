@@ -25,7 +25,7 @@
 
 # Utility to deploy apps to docker compose or swarm
 - src: git+https://github.com/fccn/ansible-docker-deploy.git
-  version: 58256196ca258cd426ceb35703aabf3b50fd5705
+  version: 643bb1e95882ebec238915dcd202651edb450d2d
 
 # Auditory of the installed packages and software
 - src: git+https://github.com/fccn/ansible_pakiti_client.git
