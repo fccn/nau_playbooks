@@ -45,8 +45,6 @@
   hosts: "mongo_servers:&{{ target_mongo_server | default('mongo_servers') }}[0]"
   become: True
   gather_facts: True
-  vars: 
-    elasticsearch_healthcheck: true
   tasks:
     - name: Get MongoDB secondary nodes replication information
       shell: |
