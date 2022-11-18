@@ -15,23 +15,6 @@
 #   ansible-playbook -i nau-data/envs/development/hosts.ini healthcheck.yml
 #
 ---
-- name: Check MySQL 5.6 Database instances
-  hosts: "mysql_servers:&{{ target_mysql_server | default('mysql_servers') }}"
-  become: True
-  gather_facts: True
-  tasks:
-    - name: Check lag from primary
-      shell: mysql -u root -e "show slave status\G" | grep "Seconds_Behind_Master" | awk '{print $2}'
-      when: ( groups['mysql_servers'] | length ) > 1
-      register: mysql_output
-      changed_when: false
-      
-    - name: Fail if MySQL DB instance is too much behind
-      fail:
-        msg: Fail MySQL DB instance is too much behind
-      # it is ok if the node is behind from 0 to 9 seconds lag
-      when: ( groups['mysql_servers'] | length ) > 1 and mysql_output.stdout is not match("[0-9]")
-
 - name: Check MySQL 5.7 Database instances
   hosts: nau_docker_swarm_servers
   become: True
@@ -75,38 +58,6 @@
       fail:
         msg: Fail the number of healthy secondary nodes
       when: mongo_db_secoundary_nodes_result.stdout != ( (( groups['mongo_servers'] | length) -1) | string )
-
-    - name: Get Elasticsearch cluster health
-      shell: |
-        curl -s -X GET 'localhost:9200/_cluster/health?pretty' | grep 'number_of_nodes' | egrep -o '[0-9]+'
-      args:
-        warn: false
-      register: es_nodes_result
-      changed_when: false
-      when: (elasticsearch_healthcheck|bool)
-      
-    - name: Fail if Elasticsearch secondary nodes replication isn't ok
-      fail:
-        msg: Fail the number of healthy secondary nodes
-      when: (elasticsearch_healthcheck|bool) and es_nodes_result.stdout != (( groups['mongo_servers'] | length) | string )
-    
-    - name: Check Elasticsearch cluster, indexes and shards health
-      shell: curl -s -X GET 'localhost:9200/_cluster/health?level=shards&pretty' | egrep -o "status.*\," | sort | uniq | egrep -o "\"[^\ ]+\""
-      args:
-        warn: false
-      register: es_shards_result
-      changed_when: false
-      when: (elasticsearch_healthcheck|bool)
-
-    - set_fact:
-        # if its a single server there isn't the number of replicas to be on green status
-        expected_status: "{{ 'green' if ( groups['mongo_servers'] | length) > 1 else 'yellow' }}"
-      when: (elasticsearch_healthcheck|bool)
-      
-    - name: Fail if Elasticsearch cluster, indexes and shards health isn't ok
-      fail:
-        msg: Fail the Elasticsearch cluster, indexes and shards health
-      when: (elasticsearch_healthcheck|bool) and ( es_shards_result.stdout != ( '"' + expected_status + '"' ) )
 
 - name: Check URLs
   hosts: all
