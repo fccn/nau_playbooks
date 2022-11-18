@@ -138,23 +138,6 @@
       when: vrrp_instances is defined
   tags: load-balancer
 
-- name: Configure mysql server instance
-  hosts: mysql_servers
-  become: True
-  gather_facts: True
-  roles:
-    - role: remove_edx_apt_ppa_repo
-    - role: swapfile
-    - role: data_dirs
-    - role: edxlocal
-    - role: oraclejdk
-    - role: persistence_db
-      vars:
-        install_memcache: false
-    - role: mysql_replication
-    - role: keepalived
-      when: vrrp_instances is defined
-
 - name: Configure mongo server instance
   hosts: mongo_servers
   become: True
@@ -164,59 +147,7 @@
     - role: data_dirs
     - role: mongo_3_2
     - role: oraclejdk
-    - role: elasticsearch
     - role: es_kopf
-
-- name: Configure cache server instance
-  hosts: cache_servers
-  become: True
-  gather_facts: True
-  roles:
-    - role: memcache
-    - role: rabbitmq
-    - role: oraclejdk
-    - role: persistence_db
-      vars:
-        install_mysql: false
-
-- name: Configure the application server group
-  hosts: app_servers
-  serial: "{{ serial_number | default(1) }}"
-  become: True
-  gather_facts: True
-  roles:
-    - role: rolling_deploy
-      vars:
-        rolling_deploy_starting: true
-      when: ( groups['app_servers'] | length ) > 1
-    - role: remove_edx_apt_ppa_repo
-    - role: swapfile
-    - role: server_files # copy additional ssl certificates
-    - role: nginx
-      nginx_sites:
-      - cms
-      - lms
-      - forum
-      - nau_nginx_status
-      nginx_default_sites:
-      - lms
-    - role: nginx_default_static_site
-      when: use_nginx_default_site
-    - role: edxapp
-      celery_worker: True
-    - edxapp
-    - forum
-    - role: postfix_queue
-      when: POSTFIX_QUEUE_EXTERNAL_SMTP_HOST is defined and POSTFIX_QUEUE_EXTERNAL_SMTP_HOST != ""
-    - role: logrotate_overrides
-      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'aws' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
-    - role: web_server_monitoring
-    - role: snmpd
-    - role: nau_check_urls
-    - role: rolling_deploy
-      vars:
-        rolling_deploy_starting: false
-      when: ( groups['app_servers'] | length ) > 1
 
 - name: Configure the complementary server group
   hosts: complementary_servers
