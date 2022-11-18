@@ -611,7 +611,8 @@ services:
   {{ mysql_container_name }}:
     image: {{ openedx_mysql_docker_image | default("docker.io/mysql:5.7.37-debian") }}
     hostname: {{ mysql_container.hostname }}
-    command: mysqld --character-set-server=utf8 --collation-server=utf8_general_ci --innodb-buffer-pool-size=4G --innodb-log-file-size=1G --innodb-log-buffer-size=256M
+    command: mysqld --character-set-server=utf8 --collation-server=utf8_general_ci --innodb-buffer-pool-size=4G --innodb-log-file-size=1G --innodb-log-buffer-size=256M{{ (' ' + openedx_mysql_replica_extra_parameters) if not mysql_container.primary else '' }}
+      # Older DB had: --slave-skip-errors=1032,1062,1451,1452
     environment:
       # Use custom timezone
       TZ: {{ openedx_timezone | default("Europe/Lisbon") }}

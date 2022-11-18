@@ -82,3 +82,5 @@ openedx_docker_mysql_replication_additional_databases: "{{ edxlocal_databases }}
 openedx_docker_mysql_replication_additional_users: "{{ edxlocal_database_users }}" # Used by docker_mysql_replication role
 
 openedx_mysql_primary: "{{ openedx_mysql_containers.values() | list | selectattr('primary', 'equalto', True) | first }}"
+
+openedx_mysql_replica_extra_parameters: --slave-skip-errors=1062
