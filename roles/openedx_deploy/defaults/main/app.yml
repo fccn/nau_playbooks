@@ -358,9 +358,15 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
     ACCESS_REQUIRE_STAFF_FOR_COURSE: false
     ADVANCED_SECURITY: true
     ALLOW_ALL_ADVANCED_COMPONENTS: true
+    # Enable to give course staff unrestricted access to grade downloads;
+    # if set to False, only edX superusers can perform the downloads.
     ALLOW_COURSE_STAFF_GRADE_DOWNLOADS: true
+    # If True, it adds an option to show/hide the discussions tab.
     ALLOW_HIDING_DISCUSSION_TAB: true
     ALLOW_PUBLIC_ACCOUNT_CREATION: true
+    # When a logged in user goes to the homepage ('/') the user will be redirected to the
+    # dashboard page when this flag is set to True - this is default Open edX behavior. Set to False to not redirect
+    # the user.
     ALWAYS_REDIRECT_HOMEPAGE_TO_DASHBOARD_FOR_AUTHENTICATED_USER: false
     AUDIT_CERT_CUTOFF_DATE: None
     AUTH_USE_CAS: false
@@ -370,7 +376,11 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
     AUTH_USE_SHIB: false
     AUTOMATIC_AUTH_FOR_TESTING: false
     CERTIFICATES_ENABLED: true
+    # Enable view certificates
     CERTIFICATES_HTML_VIEW: true
+    # Enable to allow batch generation of certificates from the instructor dashboard.
+    # In case of self-paced courses, the certificate generation button is hidden if certificate
+    # generation is not explicitly enabled globally or for the specific course.
     CERTIFICATES_INSTRUCTOR_GENERATION: true
     COURSES_ARE_BROWSEABLE: true
     CUSTOM_CERTIFICATE_TEMPLATES_ENABLED: true
@@ -401,6 +411,9 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
     ENABLE_DJANGO_ADMIN_SITE: true
     ENABLE_EDXNOTES: true
     ENABLE_FEEDBACK_SUBMISSION: false
+    # Enable grade CSV downloads from the instructor dashboard. Grade
+    # calculation started from the instructor dashboard will write grades CSV files to the
+    # configured storage backend and give links for downloads.
     ENABLE_GRADE_DOWNLOADS: true
     ENABLE_INSTRUCTOR_ANALYTICS: false
     ENABLE_INSTRUCTOR_BACKGROUND_TASKS: true
@@ -434,6 +447,10 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
     INDIVIDUAL_DUE_DATES: true
     LICENSING: true
     LOG_POSTPAY_CALLBACKS: true
+    # Disable instructor dashboard buttons for downloading course data
+    # when enrollment exceeds this number. The number indicates the maximum allowed enrollments
+    # for the course to be considered "small". Courses exceeding the upper limit of "small"
+    # courses will have disabled buttons at the instructor dashboard.
     MAX_ENROLLMENT_INSTR_BUTTONS: 500
     MILESTONES_APP: true
     ORGANIZATIONS_APP: true
