@@ -449,6 +449,9 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
     USE_DJANGO_PIPELINE: true
     USE_MICROSITES: false
     ENABLE_OTHER_COURSE_SETTINGS: true
+    # Maximum number of rows to include in the csv file for downloading problem responses.
+    # We've increased to be x10 times the default value.
+    MAX_PROBLEM_RESPONSES_COUNT: 50000
   FILE_UPLOAD_STORAGE_BUCKET_NAME: "{{ EDXAPP_FILE_UPLOAD_STORAGE_BUCKET_NAME | default(EDXAPP_AWS_STORAGE_BUCKET_NAME) }}"
   GRADES_DOWNLOAD:
     STORAGE_CLASS: "{{ EDXAPP_GRADE_STORAGE_CLASS | default(None) }}"
