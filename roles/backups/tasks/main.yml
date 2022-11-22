@@ -24,7 +24,7 @@
   when: backup_mysql
 
 - name: Create data snapshot
-  shell: docker exec -it -e MYSQL_PWD={{ backup_mysql_login_password }} {{ mysql_container_id.stdout }} /usr/bin/mysqldump --user={{ backup_mysql_login_user }} --single-transaction --all-databases > {{ BACKUP_LOCATION }}/{{ BACKUP_DATE }}_{{ backup_mysql_container_name }}.mysql.sql
+  shell: docker exec -it -e MYSQL_PWD={{ backup_mysql_login_password }} {{ mysql_container_id.stdout }} /usr/bin/mysqldump --user={{ backup_mysql_login_user }} --single-transaction --all-databases --skip-extended-insert > {{ BACKUP_LOCATION }}/{{ BACKUP_DATE }}_{{ backup_mysql_container_name }}.mysql.sql
   when: backup_mysql
 
 - name: Give the server time to recover
