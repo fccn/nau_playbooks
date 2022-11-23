@@ -40,7 +40,9 @@ server {
     try_files $uri @proxy_to_app;
   }
 
-  {% include "robots.j2" %}
+  {% import 'robots.j2' as robots with context %}
+  {{ robots.generate_robots_txt(openedx_nginx_notes_robot_rules) }}
+  
 
   location @proxy_to_app {
     proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;

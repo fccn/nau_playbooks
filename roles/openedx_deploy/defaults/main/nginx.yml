@@ -139,3 +139,16 @@ COMMON_ENABLE_BASIC_AUTH: False
 EDXAPP_LMS_ENABLE_BASIC_AUTH: "{{ COMMON_ENABLE_BASIC_AUTH }}"
 NGINX_HSTS_MAX_AGE: 31536000
 NGINX_P3P_MESSAGE: 'CP="Open edX does not have a P3P policy."'
+
+# In NAU we ask robots to not index the LMS certificates,
+# because they can have sensitive and private data that our learners could not want to 
+# make searchable by the world.
+openedx_nginx_lms_robot_rules:
+  - agent: "*"
+    disallow: /certificates/
+  - agent: "*"
+    allow: "*"
+openedx_nginx_cms_robot_rules: []
+openedx_nginx_forum_robot_rules: []
+openedx_nginx_insights_robot_rules: []
+openedx_nginx_notes_robot_rules: []

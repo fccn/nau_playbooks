@@ -133,7 +133,9 @@ error_page {{ k }} {{ v }};
   }
 {% endif %}
 
-  {% include "robots.j2" %}
+  {% import 'robots.j2' as robots with context %}
+  {{ robots.generate_robots_txt(openedx_nginx_cms_robot_rules) }}
+  
   {% import 'static-files.j2' as static_files with context %}
   {{ static_files.generate_static_files(openedx_nginx_cms_staticfiles_folders) }}
 
