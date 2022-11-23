@@ -23,8 +23,14 @@
   changed_when: false
   when: backup_mysql
 
-- name: Create data snapshot
-  shell: docker exec -it -e MYSQL_PWD={{ backup_mysql_login_password }} {{ mysql_container_id.stdout }} /usr/bin/mysqldump --user={{ backup_mysql_login_user }} --single-transaction --all-databases --skip-extended-insert > {{ BACKUP_LOCATION }}/{{ BACKUP_DATE }}_{{ backup_mysql_container_name }}.mysql.sql
+- name: Create data snapshot and compress it
+  # Using `nice` to lower CPU OS process priority and `ionice` to lower IO OS process priority
+  shell: |
+    docker exec -it -e MYSQL_PWD={{ backup_mysql_login_password }} {{ mysql_container_id.stdout }} \
+    /usr/bin/mysqldump --user={{ backup_mysql_login_user }} --single-transaction --all-databases --skip-extended-insert \
+    | nice -n 10 gzip -c \
+    | ionice -c2 -n 7 tee {{ BACKUP_LOCATION }}/{{ BACKUP_DATE }}_{{ backup_mysql_container_name }}_mysql.sql.gz \
+    > /dev/null
   when: backup_mysql
 
 - name: Give the server time to recover
@@ -43,19 +49,11 @@
     -o {{ BACKUP_LOCATION }}/{{ BACKUP_DATE }}.mongo
   when:  backup_mongo
 
-#Compress files
-- name: Compress mysql backup file
-  command: "tar -czf {{ BACKUP_DATE }}_{{ backup_mysql_container_name }}_mysql.tar.gz {{ BACKUP_LOCATION}}/{{ BACKUP_DATE }}_{{ backup_mysql_container_name }}.mysql.sql --remove-files"
-  args:
-    chdir: "{{ BACKUP_LOCATION}}"
-  when:  backup_mysql
-
 - name: Compress mongo backup file
   command: "tar -czf {{ BACKUP_DATE }}_mongo.tar.gz {{ BACKUP_LOCATION}}/{{ BACKUP_DATE }}.mongo --remove-files"
   args:
     chdir: "{{ BACKUP_LOCATION}}"
   when:  backup_mongo
-
 
 # Upload backups to CEPH
 - include: ceph.yml
