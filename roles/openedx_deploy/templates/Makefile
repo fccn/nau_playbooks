@@ -194,7 +194,7 @@ healthcheck-load-balancer-haproxy-elasticsearch-port: ## check load balancer HAP
 .PHONY: healthcheck-load-balancer-haproxy-elasticsearch-port
 
 healthcheck-load-balancer-haproxy-redis-port: ## check load balancer HAProxy redis port
-	@echo -n "Check load balancer HAProxy elasticsearch port: "
+	@echo -n "Check load balancer HAProxy redis port: "
 	@nc -z 127.0.0.1 {{ openedx_haproxy_redis_port }}
 	@echo "OK"
 .PHONY: healthcheck-load-balancer-haproxy-redis-port
