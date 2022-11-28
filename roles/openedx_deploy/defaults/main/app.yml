@@ -54,15 +54,24 @@ openedx_smtp_external_host: "{{ POSTFIX_QUEUE_EXTERNAL_SMTP_HOST }}"
 openedx_smtp_external_username: ""
 openedx_smtp_external_password: "" # leave this blank to disable authentication
 
-# redis
-# use load balancer to use the right redis instance
+# Redis
+# use load balancer to use the right redis instance based on the availability of the 1st cluster
+# or if not available use the 2nd.
 OPENEDX_REDIS_HOST: haproxy
-#OPENEDX_REDIS_HOST: redis_1 # temporary
-OPENEDX_REDIS_PORT: 6379
+OPENEDX_REDIS_PRIMARY_PORT: 6379
+OPENEDX_REDIS_REPLICAS_PORT: 6380
 OPENEDX_REDIS_USERNAME: ""
 OPENEDX_REDIS_PASSWORD: ""
+
 OPENEDX_CELERY_REDIS_DB: 0
 OPENEDX_CACHE_REDIS_DB: 1
+
+OPENEDX_CELERY_BROKER_TRANSPORT: "redis"
+# Use 2nd cluster, this won't have high availability
+OPENEDX_CELERY_BROKER_HOSTNAME: "redis_c2p:6379"
+OPENEDX_CELERY_BROKER_VHOST: "{{ OPENEDX_CELERY_REDIS_DB }}"
+OPENEDX_CELERY_BROKER_USER: "{{ OPENEDX_REDIS_USERNAME }}"
+OPENEDX_CELERY_BROKER_PASSWORD: "{{ OPENEDX_REDIS_PASSWORD }}"
 
 OPENEDX_LANGUAGE_CODE: pt-PT
 
@@ -73,7 +82,10 @@ OPENEDX_LANGUAGE_CODE: pt-PT
 # Generic cache configuration so it can be reused bellow on both lms and studio
 openedx_generic_cache_config: &default_openedx_generic_cache_config
   BACKEND: "django_redis.cache.RedisCache"
-  LOCATION: "redis://{% if OPENEDX_REDIS_USERNAME and OPENEDX_REDIS_PASSWORD %}{{ OPENEDX_REDIS_USERNAME }}:{{ OPENEDX_REDIS_PASSWORD }}@{% endif %}{{ OPENEDX_REDIS_HOST }}:{{ OPENEDX_REDIS_PORT }}/{{ OPENEDX_CACHE_REDIS_DB }}"
+  LOCATION: [
+    "redis://{% if OPENEDX_REDIS_USERNAME and OPENEDX_REDIS_PASSWORD %}{{ OPENEDX_REDIS_USERNAME }}:{{ OPENEDX_REDIS_PASSWORD }}@{% endif %}{{ OPENEDX_REDIS_HOST }}:{{ OPENEDX_REDIS_PRIMARY_PORT }}/{{ OPENEDX_CACHE_REDIS_DB }}", # primary
+    "redis://{% if OPENEDX_REDIS_USERNAME and OPENEDX_REDIS_PASSWORD %}{{ OPENEDX_REDIS_USERNAME }}:{{ OPENEDX_REDIS_PASSWORD }}@{% endif %}{{ OPENEDX_REDIS_HOST }}:{{ OPENEDX_REDIS_REPLICAS_PORT }}/{{ OPENEDX_CACHE_REDIS_DB }}", # replica
+  ]
   # Use the `django-sentinel` package to connect to Redis.
   # This allows to use the Redis sentinel instance that sends writes to the Redis master and
   # reads to a random Redis container instance.
@@ -275,11 +287,11 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
   CMS_ROOT_URL: "https://{{ OPENEDX_CMS_HOST }}"
   CMS_BASE: "{{ OPENEDX_CMS_HOST }}"
   LMS_BASE: "{{ OPENEDX_LMS_HOST }}"
-  CELERY_BROKER_TRANSPORT: "redis"
-  CELERY_BROKER_HOSTNAME: "{{ OPENEDX_REDIS_HOST }}:{{ OPENEDX_REDIS_PORT }}"
-  CELERY_BROKER_VHOST: "{{ OPENEDX_CELERY_REDIS_DB }}"
-  CELERY_BROKER_USER: "{{ OPENEDX_REDIS_USERNAME }}"
-  CELERY_BROKER_PASSWORD: "{{ OPENEDX_REDIS_PASSWORD }}"
+  CELERY_BROKER_TRANSPORT: "{{ OPENEDX_CELERY_BROKER_TRANSPORT }}"
+  CELERY_BROKER_HOSTNAME: "{{ OPENEDX_CELERY_BROKER_HOSTNAME }}"
+  CELERY_BROKER_VHOST: "{{ OPENEDX_CELERY_BROKER_VHOST }}"
+  CELERY_BROKER_USER: "{{ OPENEDX_CELERY_BROKER_USER }}"
+  CELERY_BROKER_PASSWORD: "{{ OPENEDX_CELERY_BROKER_PASSWORD }}"
   ENABLE_COMPREHENSIVE_THEMING: true
   COMPREHENSIVE_THEME_DIRS: ["/openedx/themes"]
   COMPREHENSIVE_THEME_LOCALE_PATHS: ["/openedx/themes/nau-basic/conf/locale"]

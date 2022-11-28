@@ -68,7 +68,10 @@ openedx_analyticsapi_cfg_settings_default:
     default:
       BACKEND: django_redis.cache.RedisCache
       KEY_PREFIX: analyticsapi
-      LOCATION: redis://{% if OPENEDX_REDIS_USERNAME and OPENEDX_REDIS_PASSWORD %}{{ OPENEDX_REDIS_USERNAME }}:{{ OPENEDX_REDIS_PASSWORD }}{% endif %}@{{ OPENEDX_REDIS_HOST }}:{{ OPENEDX_REDIS_PORT }}/{{ ANALYTICS_API_CACHE_REDIS_DB }}
+      LOCATION: [
+        "redis://{% if OPENEDX_REDIS_USERNAME and OPENEDX_REDIS_PASSWORD %}{{ OPENEDX_REDIS_USERNAME }}:{{ OPENEDX_REDIS_PASSWORD }}@{% endif %}{{ OPENEDX_REDIS_HOST }}:{{ OPENEDX_REDIS_PRIMARY_PORT }}/{{ ANALYTICS_API_CACHE_REDIS_DB }}",  # leader 
+        "redis://{% if OPENEDX_REDIS_USERNAME and OPENEDX_REDIS_PASSWORD %}{{ OPENEDX_REDIS_USERNAME }}:{{ OPENEDX_REDIS_PASSWORD }}@{% endif %}{{ OPENEDX_REDIS_HOST }}:{{ OPENEDX_REDIS_REPLICAS_PORT }}/{{ ANALYTICS_API_CACHE_REDIS_DB }}", # replica
+      ]
   CSRF_COOKIE_SECURE: false
   DATABASES:
     # rw user

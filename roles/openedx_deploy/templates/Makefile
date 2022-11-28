@@ -110,10 +110,13 @@ healthcheck: \
 	healthcheck-mysql-replica-{{ container }} \
 {% endif %}
 {% endfor %}
-	healthcheck-elasticsearch \
 	healthcheck-load-balancer-haproxy-statistics-port \
+	healthcheck-elasticsearch \
 	healthcheck-load-balancer-haproxy-elasticsearch-port \
-	healthcheck-load-balancer-haproxy-redis-port
+	healthcheck-load-balancer-haproxy-redis-primary-port \
+	healthcheck-load-balancer-haproxy-redis-replicas-port \
+	healthcheck-load-balancer-haproxy-redis-primary-is-ok \
+	healthcheck-load-balancer-haproxy-redis-replicas-is-ok
 	@echo "Everything looks: OK"
 .PHONY: healthcheck
 
@@ -171,7 +174,7 @@ healthcheck-{{ container }}: ## Run elasticsearch healthcheck cluster on {{ open
 {% endfor %}
 
 healthcheck-elasticsearch: ## Run elastic search healthcheck cluster using load balancer
-	@echo -n "Check elasticsearch cluster: "
+	@echo -n "Check haproxy elasticsearch cluster: "
 	@test $$(curl --silent 'http://localhost:{{ openedx_haproxy_elasticsearch_port }}/_cluster/health?pretty' | grep 'number_of_nodes' | egrep -o '[0-9]+') -eq {{ openedx_elasticsearch_containers.keys() | length }}
 	@test $$(curl --silent 'http://localhost:{{ openedx_haproxy_elasticsearch_port }}/_cluster/health?level=shards&pretty' | egrep -o "status.*\," | sort | uniq | egrep -o "\"[^\ ]+\"") = "\"green\""
 	@echo "OK"
@@ -181,23 +184,41 @@ healthcheck-elasticsearch: ## Run elastic search healthcheck cluster using load 
 # HAProxy
 #######################
 
-healthcheck-load-balancer-haproxy-statistics-port: ## check load balancer HAProxy statistics {{ openedx_haproxy_statistics_port }} port
-	@echo -n "Check load balancer HAProxy statistics port: "
+healthcheck-load-balancer-haproxy-statistics-port: ## check haproxy statistics {{ openedx_haproxy_statistics_port }} port
+	@echo -n "Check haproxy statistics port: "
 	@nc -z 127.0.0.1 {{ openedx_haproxy_statistics_port }}
 	@echo "OK"
 .PHONY: healthcheck-load-balancer-haproxy-statistics-port
 
-healthcheck-load-balancer-haproxy-elasticsearch-port: ## check load balancer HAProxy elasticsearch {{ openedx_haproxy_elasticsearch_port }} port
-	@echo -n "Check load balancer HAProxy elasticsearch port: "
+healthcheck-load-balancer-haproxy-elasticsearch-port: ## check haproxy elasticsearch {{ openedx_haproxy_elasticsearch_port }} port
+	@echo -n "Check haproxy elasticsearch port: "
 	@nc -z 127.0.0.1 {{ openedx_haproxy_elasticsearch_port }}
 	@echo "OK"
 .PHONY: healthcheck-load-balancer-haproxy-elasticsearch-port
 
-healthcheck-load-balancer-haproxy-redis-port: ## check load balancer HAProxy redis port
-	@echo -n "Check load balancer HAProxy redis port: "
-	@nc -z 127.0.0.1 {{ openedx_haproxy_redis_port }}
+healthcheck-load-balancer-haproxy-redis-primary-port: ## check haproxy redis port
+	@echo -n "Check haproxy redis primary port: "
+	@nc -z 127.0.0.1 {{ openedx_haproxy_redis_primary_port }}
 	@echo "OK"
-.PHONY: healthcheck-load-balancer-haproxy-redis-port
+.PHONY: healthcheck-load-balancer-haproxy-redis-primary-port
+
+healthcheck-load-balancer-haproxy-redis-replicas-port: ## check haproxy redis port
+	@echo -n "Check haproxy redis replicas port: "
+	@nc -z 127.0.0.1 {{ openedx_haproxy_redis_replicas_port }}
+	@echo "OK"
+.PHONY: healthcheck-load-balancer-haproxy-redis-replicas-port
+
+healthcheck-load-balancer-haproxy-redis-primary-is-ok: ## check that redis cluster 1 primary is up
+	@echo -n "Check haproxy redis as a single primary: "
+	@curl -s "http://localhost:{{ openedx_haproxy_statistics_port }}/;csv;norefresh" | grep redis_primary | grep {{ openedx_docker_deploy_stack_name }}_{{ openedx_redis_cluster_1_primary_container }} | grep UP | wc -l | grep -q "1"
+	@echo "OK"
+.PHONY: healthcheck-load-balancer-haproxy-redis-primary-is-ok
+
+healthcheck-load-balancer-haproxy-redis-replicas-is-ok: ## check that redis cluster 1 replicas are UP and working
+	@echo -n "Check haproxy redis replicas: "
+	@curl -s "http://localhost:{{ openedx_haproxy_statistics_port }}/;csv;norefresh" | grep redis_cluster_1_replicas_backend | grep {{ openedx_docker_deploy_stack_name }} | grep UP | wc -l | grep -q "{{ openedx_redis_cluster_1_replicas | length }}"
+	@echo "OK"
+.PHONY: healthcheck-load-balancer-haproxy-redis-replicas-is-ok
 
 ########################
 # Stats

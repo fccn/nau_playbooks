@@ -18,7 +18,7 @@ services:
       update_config:
         # We are updating 1 container a time
         parallelism: 1
-        parallelism: {{ [ 1, ( openedx_insights_replicas / 2 | int ) ] | max | round(0, 'floor') | int }}
+        parallelism: {{ [ 1, ( openedx_insights_replicas / 2 ) ] | max | round(0, 'floor') | int }}
       placement:
         max_replicas_per_node: {{ ( openedx_insights_replicas / docker_swarm_cluster_group_length | int ) | round(0, 'ceil') | int }}
       resources:
@@ -72,7 +72,7 @@ services:
       update_config:
         # We are updating 1 container a time
         parallelism: 1
-        parallelism: {{ [ 1, ( openedx_analyticsapi_replicas / 2 | int ) ] | max | round(0, 'floor') | int }}
+        parallelism: {{ [ 1, ( openedx_analyticsapi_replicas / 2 ) ] | max | round(0, 'floor') | int }}
       placement:
         max_replicas_per_node: {{ ( openedx_analyticsapi_replicas / docker_swarm_cluster_group_length | int ) | round(0, 'ceil') | int }}
       resources:
@@ -132,7 +132,7 @@ services:
         #    3 --> 1
         #    4 --> 2
         #    5 --> 2
-        parallelism: {{ [ 1, ( openedx_nginx_replicas / 2 | int ) ] | max | round(0, 'floor') | int }}
+        parallelism: {{ [ 1, ( openedx_nginx_replicas / 2 ) ] | max | round(0, 'floor') | int }}
       placement:
         max_replicas_per_node: {{ ( openedx_nginx_replicas / docker_swarm_cluster_group_length | int ) | round(0, 'ceil') | int }}
       resources:
@@ -415,33 +415,6 @@ services:
       interval: 30s
       timeout: 30s
 
-  redis-sentinel:
-    image: {{ openedx_redis_sentinel_docker_image }}
-    environment:
-      # Use custom timezone
-      TZ: {{ openedx_timezone | default("Europe/Lisbon") }}
-      REDIS_MASTER_HOST: {{ openedx_docker_deploy_stack_name }}_{{ openedx_redis_primary_container }}
-      # Accept host names
-      REDIS_SENTINEL_RESOLVE_HOSTNAMES: "yes"
-      # Enabling the announce-hostnames global configuration makes Sentinel use host names instead. 
-      # This affects replies to clients, values written in configuration files, 
-      # the REPLICAOF command issued to replicas, etc.
-      REDIS_SENTINEL_ANNOUNCE_HOSTNAMES: "yes"
-      # announce the hostname of the container
-      # REDIS_SENTINEL_ANNOUNCE_IP:
-    deploy:
-      replicas: {{ openedx_redis_sentinel_replicas }}
-      # Use DNS Round Robin to bypass the docker routing mesh and to allow HAProxy parse the DNS
-      # entries to discover all the redis sentinel instance replicas.
-      endpoint_mode: dnsrr
-      placement:
-        max_replicas_per_node: {{ ( openedx_redis_sentinel_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
-      resources:
-        limits:
-          memory: 50M
-        reservations:
-          memory: 10M
-
 {% for redis_container_name, redis_config in openedx_redis_containers.items() %}
   {{ redis_container_name }}:
     image: {{ openedx_redis_docker_image }}
@@ -449,18 +422,20 @@ services:
       # Use custom timezone
       TZ: {{ openedx_timezone | default("Europe/Lisbon") }}
       ALLOW_EMPTY_PASSWORD: "yes"
-      REDIS_MASTER_HOST: {{ openedx_docker_deploy_stack_name }}_{{ openedx_redis_primary_container }}
+{% if redis_config['mode'] is defined %}
+      REDIS_MASTER_HOST: {{ openedx_docker_deploy_stack_name }}_{{ openedx_redis_cluster_1_primary_container }}
       REDIS_REPLICATION_MODE: {{ redis_config.mode }}
+{% endif %}
       # announce the hostname of the container, because the IP address can change after a container restart
       REDIS_REPLICA_IP: {{ openedx_docker_deploy_stack_name }}_{{ redis_container_name }}
     volumes:
-      - {{ redis_config.data }}:/bitnami/redis/data
+      - {{ redis_config.dest }}:/bitnami/redis/data
     deploy:
       replicas: 1
       endpoint_mode: dnsrr
       resources:
         limits:
-          memory: 4G
+          memory: 1G
         reservations:
           memory: 200M
       placement:
@@ -567,12 +542,16 @@ services:
         protocol:  tcp
         mode:      ingress
       # Balanced elasticsearch port, used to monitoring, it resolves to one of the elasticsearch containers
-      - target:    9200
+      - target:    {{ openedx_haproxy_elasticsearch_port }}
         published: {{ openedx_haproxy_elasticsearch_port }}
         protocol:  tcp
-      # Redis DB primary node
-      - target:    6379
-        published: {{ openedx_haproxy_redis_port }}
+      # Redis primary
+      - target:    {{ openedx_haproxy_redis_primary_port }}
+        published: {{ openedx_haproxy_redis_primary_port }}
+        protocol:  tcp
+      # Redis replicas
+      - target:    {{ openedx_haproxy_redis_replicas_port }}
+        published: {{ openedx_haproxy_redis_replicas_port }}
         protocol:  tcp
 {% for mysql_container_name, mysql_container in openedx_mysql_containers.items() %}
       # Allow connections to {{ mysql_container_name }}

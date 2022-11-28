@@ -43,7 +43,10 @@ openedx_insights_cfg_settings_default:
     default:
       BACKEND: django_redis.cache.RedisCache
       KEY_PREFIX: insights
-      LOCATION: redis://{% if OPENEDX_REDIS_USERNAME and OPENEDX_REDIS_PASSWORD %}{{ OPENEDX_REDIS_USERNAME }}:{{ OPENEDX_REDIS_PASSWORD }}{% endif %}@{{ OPENEDX_REDIS_HOST }}:{{ OPENEDX_REDIS_PORT }}/{{ INSIGHTS_CACHE_REDIS_DB }}
+      LOCATION: [
+        "redis://{% if OPENEDX_REDIS_USERNAME and OPENEDX_REDIS_PASSWORD %}{{ OPENEDX_REDIS_USERNAME }}:{{ OPENEDX_REDIS_PASSWORD }}@{% endif %}{{ OPENEDX_REDIS_HOST }}:{{ OPENEDX_REDIS_PRIMARY_PORT }}/{{ INSIGHTS_CACHE_REDIS_DB }}",  # primary
+        "redis://{% if OPENEDX_REDIS_USERNAME and OPENEDX_REDIS_PASSWORD %}{{ OPENEDX_REDIS_USERNAME }}:{{ OPENEDX_REDIS_PASSWORD }}@{% endif %}{{ OPENEDX_REDIS_HOST }}:{{ OPENEDX_REDIS_REPLICAS_PORT }}/{{ INSIGHTS_CACHE_REDIS_DB }}", # replica
+      ]
   CMS_COURSE_SHORTCUT_BASE_URL: "{{ INSIGHTS_CMS_BASE }}/course"
   COURSE_API_URL: "{{ INSIGHTS_CMS_BASE }}/api/courses/v1/"
   CSRF_COOKIE_NAME: "{{ INSIGHTS_CSRF_COOKIE_NAME | default('insights_csrftoken') }}"
