@@ -20,12 +20,11 @@ richie_docker_deploy_files: "{{ richie_nginx_docker_deploy_files }}"
 richie_sites: "{{ richie_sites_defaults }}"
 richie_sites_defaults: "{{ richie_sites_nginx | combine(richie_sites_app , recursive=True) }}"
 
-richie_docker_deploy_folders_additional: "{{ richie_mysql_docker_deploy_folders_additional + richie_elasticsearch_docker_deploy_folders_additional }}"
+richie_docker_deploy_folders_additional: "{{ richie_mysql_docker_deploy_folders_additional + richie_elasticsearch_docker_deploy_folders_additional + richie_redis_docker_deploy_folders_additional }}"
 
 # Declare additional docker stack services, to they can be used to generate Makefile helper targets.
 richie_docker_deploy_services_additional: "{{ (richie_elasticsearch_containers.keys() | list) + (richie_redis_containers.keys() | list) + (richie_docker_deploy_services_additional_list) }} "
 
 richie_docker_deploy_services_additional_list:
   #- nau_app
-  - redis-sentinel
   - nau_app_job

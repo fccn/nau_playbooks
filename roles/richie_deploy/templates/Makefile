@@ -105,15 +105,18 @@ healthcheck: \
 	healthcheck-tasks \
 	healthcheck-load-balancer-haproxy-statistics-port \
 	{{ ['healthcheck-mysql-port-'] | product(richie_mysql_containers.keys()|list) | map('join') | join(' \\\n\t') }} \
-	healthcheck-elasticsearch \
-	healthcheck-load-balancer-haproxy-elasticsearch-port \
-	healthcheck-load-balancer-haproxy-redis-port \
 	healthcheck-mysql-primary \
 {% for container, config in richie_mysql_containers.items() %}
 {% if not config.primary %}
 	healthcheck-mysql-replica-{{ container }} \
 {% endif %}
 {% endfor %}
+	healthcheck-elasticsearch \
+	healthcheck-load-balancer-haproxy-elasticsearch-port \
+	healthcheck-load-balancer-haproxy-redis-primary-port \
+	healthcheck-load-balancer-haproxy-redis-replicas-port \
+	healthcheck-load-balancer-haproxy-redis-primary-is-ok \
+	healthcheck-load-balancer-haproxy-redis-replicas-is-ok \
 	{{ ['healthcheck-'] | product(richie_sites.keys()|list) | map('join') | product(['_app_job']) | map('join') | join(' \\\n\t') }}
 	@echo "Everything looks: OK"
 .PHONY: healthcheck
@@ -125,17 +128,17 @@ healthcheck: \
 
 healthcheck-mysql-primary: ## show primary master status on mysql_1 docker container
 	@echo -n "Check mysql master status: "
-	@echo 'show master status \G' | MYSQL_PWD="{{ openark_orchestrator_client_password }}" mysql -u {{ openark_orchestrator_client_user }} --host 127.0.0.1 --port {{ richie_mysql_primary.ingress_port }} > /dev/null
+	@echo 'show master status \G' | MYSQL_PWD="{{ openark_orchestrator_client_password }}" mysql -u {{ openark_orchestrator_client_user }} --host 127.0.0.1 --port {{ richie_mysql_primary.outside_port }} > /dev/null
 	@echo "OK"
 .PHONY: healthcheck-mysql-primary
 
 {% for container, config in richie_mysql_containers.items() %}
 {{ container }}-showprocess-list: ## show the mysql processes inside the {{ container }} database instance
-	@MYSQL_PWD="{{ richie_MYSQL_ROOT_PASSWORD }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ config.ingress_port }} --execute="show processlist;"
+	@MYSQL_PWD="{{ richie_MYSQL_ROOT_PASSWORD }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ config.outside_port }} --execute="show processlist;"
 .PHONY: {{ container }}-showprocess-list
 {% endfor %}
 
-{% for container, config in openedx_mysql_containers.items() %}
+{% for container, config in richie_mysql_containers.items() %}
 {% if not config.primary %}
 healthcheck-mysql-replica-{{ container }}: ## show replica slave status on {{ container }} docker container
 	@echo -n "Check mysql replica {{ container }} seconds behind primary is lower than 600 seconds (< 10 minutes): "
@@ -155,7 +158,7 @@ BACKUP_FILE_{{ _site }} ?= richie-{{ _site }}-mysql-db-backup.sql.gz
 backup-mysql-{{ _site }}: ## backup mysql db of {{ _site }} site
 	@echo -n "Backing up MySQL database of '{{ _site }}'... "
 	@rm -f ${ROOT_DIR}/$(BACKUP_FILE_{{ _site }})
-	@MYSQL_PWD="{{ richie_MYSQL_ROOT_PASSWORD}}" /usr/bin/mysqldump -u root --host 127.0.0.1 --port {{ richie_mysql_primary.ingress_port }} --single-transaction {{ config.app_environment_variables.DB_NAME }} | gzip -c -9  > ${ROOT_DIR}/$(BACKUP_FILE_{{ _site }})
+	@MYSQL_PWD="{{ richie_MYSQL_ROOT_PASSWORD}}" /usr/bin/mysqldump -u root --host 127.0.0.1 --port {{ richie_mysql_primary.outside_port }} --single-transaction {{ config.app_environment_variables.DB_NAME }} | gzip -c -9  > ${ROOT_DIR}/$(BACKUP_FILE_{{ _site }})
 	@echo 'Done! File: $(BACKUP_FILE_{{ _site }})'
 .PHONY: backup-mysql-{{ _site }}
 
@@ -174,7 +177,7 @@ restore-mysql-{{ _site }}-change-environment: | _restore-mysql-{{ _site }}-chang
 
 restore-mysql-{{ _site }}: ## restore mysql db of {{ _site }} site
 	@echo -n "Loading to '{{ config.app_environment_variables.DB_NAME }}' MySQL database the backfile '$(BACKUP_FILE_{{ _site }})'. You can monitor the progress running 'make mysql_1-showprocess-list'."
-	@cat ${ROOT_DIR}/$(BACKUP_FILE_{{ _site }}) | gzip -d | MYSQL_PWD="{{ richie_MYSQL_ROOT_PASSWORD }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ richie_mysql_primary.ingress_port }} {{ config.app_environment_variables.DB_NAME }}
+	@cat ${ROOT_DIR}/$(BACKUP_FILE_{{ _site }}) | gzip -d | MYSQL_PWD="{{ richie_MYSQL_ROOT_PASSWORD }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ richie_mysql_primary.outside_port }} {{ config.app_environment_variables.DB_NAME }}
 	@echo 'Done!'
 .PHONY: restore-mysql-{{ _site }}
 
@@ -183,7 +186,7 @@ restore-mysql-{{ _site }}: ## restore mysql db of {{ _site }} site
 {% for container, config in richie_mysql_containers.items() %}
 healthcheck-mysql-port-{{ container }}: ## check mysql port for {{ container }}
 	@echo -n "Check mysql port for {{ container }}: "
-	@nc -z 127.0.0.1 {{ config.ingress_port }}
+	@nc -z 127.0.0.1 {{ config.outside_port }}
 	@echo "OK"
 .PHONY: healthcheck-port-{{ container }}
 {% endfor %}
@@ -225,11 +228,29 @@ healthcheck-load-balancer-haproxy-elasticsearch-port: ## check load balancer HAP
 	@echo "OK"
 .PHONY: healthcheck-load-balancer-haproxy-elasticsearch-port
 
-healthcheck-load-balancer-haproxy-redis-port: ## check load balancer HAProxy redis port
+healthcheck-load-balancer-haproxy-redis-primary-port: ## check load balancer HAProxy redis port
 	@echo -n "Check load balancer HAProxy elasticsearch port: "
-	@nc -z 127.0.0.1 {{ richie_load_balancer_haproxy_redis_port }}
+	@nc -z 127.0.0.1 {{ richie_haproxy_redis_primary_port }}
 	@echo "OK"
-.PHONY: healthcheck-load-balancer-haproxy-redis-port
+.PHONY: healthcheck-load-balancer-haproxy-redis-primary-port
+
+healthcheck-load-balancer-haproxy-redis-replicas-port: ## check haproxy redis port
+	@echo -n "Check haproxy redis replicas port: "
+	@nc -z 127.0.0.1 {{ richie_haproxy_redis_replicas_port }}
+	@echo "OK"
+.PHONY: healthcheck-load-balancer-haproxy-redis-replicas-port
+
+healthcheck-load-balancer-haproxy-redis-primary-is-ok: ## check that redis cluster 1 primary is up
+	@echo -n "Check haproxy redis as a single primary: "
+	@curl -s "http://localhost:{{ richie_load_balancer_haproxy_statistics_port }}/;csv;norefresh" | grep redis_primary | grep {{ richie_docker_deploy_stack_name }}_{{ richie_redis_cluster_1_primary_container }} | grep UP | wc -l | grep -q "1"
+	@echo "OK"
+.PHONY: healthcheck-load-balancer-haproxy-redis-primary-is-ok
+
+healthcheck-load-balancer-haproxy-redis-replicas-is-ok: ## check that redis cluster 1 replicas are UP and working
+	@echo -n "Check haproxy redis replicas: "
+	@curl -s "http://localhost:{{ richie_load_balancer_haproxy_statistics_port }}/;csv;norefresh" | grep redis_cluster_1_replicas_backend | grep {{ richie_docker_deploy_stack_name }} | grep UP | wc -l | grep -q "{{ richie_redis_cluster_1_replicas | length }}"
+	@echo "OK"
+.PHONY: healthcheck-load-balancer-haproxy-redis-replicas-is-ok
 
 ########################
 # App job

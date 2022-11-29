@@ -4,7 +4,7 @@ richie_mysql_containers:
     hostname: "{{ richie_mysql_1_hostname }}"
     data: /data/richie/mysql_1/
     host_fqdn: "{{ richie_mysql_primary_server }}"
-    ingress_port: 24308
+    outside_port: 24308
     primary: True
     mysql_replication_login_user: root
     mysql_replication_login_password: "{{ richie_MYSQL_ROOT_PASSWORD }}"
@@ -20,7 +20,7 @@ richie_mysql_containers:
     hostname: "{{ richie_mysql_2_hostname }}"
     data: /data/richie/mysql_2/
     host_fqdn: "{{ richie_mysql_replica_server }}"
-    ingress_port: 24309
+    outside_port: 24309
     primary: False
     mysql_replication_login_user: root
     mysql_replication_login_password: "{{ richie_MYSQL_ROOT_PASSWORD }}"

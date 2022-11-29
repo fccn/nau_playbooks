@@ -95,8 +95,9 @@ richie_nau_app_environment_variables_default:
 
   # Redis cache configuration
   CACHE_DEFAULT_BACKEND: base.cache.RedisCacheWithFallback
-  CACHE_DEFAULT_LOCATION: mymaster/redis-sentinel:26379,redis-sentinel:26379/0
-  CACHE_DEFAULT_OPTIONS: "{'CLIENT_CLASS': 'richie.apps.core.cache.SentinelClient'}"
+  # 1st primary/leader, second read-replicas
+  CACHE_DEFAULT_LOCATION: "redis://load_balancer_haproxy:{{ richie_haproxy_redis_primary_port }}/0,redis://load_balancer_haproxy:{{ richie_haproxy_redis_replicas_port }}/0"
+  CACHE_DEFAULT_OPTIONS: ""
 
   # Django Social auth for authentication from edX using OAuth2
   DJANGO_SOCIAL_ERROR_REVERSE_ID: login-error

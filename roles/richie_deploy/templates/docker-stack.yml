@@ -44,7 +44,7 @@ services:
     extra_hosts:
       - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
     user: "{{ richie_site_config.app_docker_user | default('1000') }}"
-    command: wait-for-it redis-sentinel:26379 -- wait-for-it load_balancer_haproxy:3306 -- /bin/bash -c "python manage.py migrate && gunicorn --workers={{ richie_site_config.app_gunicorn_workers | default(3) }} -c /usr/local/etc/gunicorn/app.py nau.wsgi:application"
+    command: wait-for-it load_balancer_haproxy:{{ richie_haproxy_redis_primary_port }} -- wait-for-it load_balancer_haproxy:3306 -- /bin/bash -c "python manage.py migrate && gunicorn --workers={{ richie_site_config.app_gunicorn_workers | default(3) }} -c /usr/local/etc/gunicorn/app.py nau.wsgi:application"
     healthcheck:
       test: curl --silent --fail --resolve {{ richie_site_config.app_environment_variables.DJANGO_ALLOWED_HOSTS }}:8000:127.0.0.1 'http://{{ richie_site_config.app_environment_variables.DJANGO_ALLOWED_HOSTS }}:8000'
       interval: 30s
@@ -148,13 +148,17 @@ services:
         published: {{ richie_load_balancer_haproxy_elasticsearch_port }}
         protocol:  tcp
         mode:      ingress
-      - target:    6379
-        published: {{ richie_load_balancer_haproxy_redis_port }}
+      # Redis primary
+      - target:    {{ richie_haproxy_redis_primary_port }}
+        published: {{ richie_haproxy_redis_primary_port }}
         protocol:  tcp
-        mode:      ingress
+      # Redis replicas
+      - target:    {{ richie_haproxy_redis_replicas_port }}
+        published: {{ richie_haproxy_redis_replicas_port }}
+        protocol:  tcp
     environment:
       # Use custom timezone
-      TZ: {{ openedx_timezone | default("Europe/Lisbon") }}
+      TZ: {{ richie_timezone | default("Europe/Lisbon") }}
     deploy:
       replicas: {{ richie_load_balancer_haproxy_deploy_replicas_count | default(2) }}
       placement:
@@ -185,7 +189,7 @@ services:
 {% endif %}
     environment:
       # Use custom timezone
-      TZ: {{ openedx_timezone | default("Europe/Lisbon") }}
+      TZ: {{ richie_timezone | default("Europe/Lisbon") }}
       MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql-root-password
     # use legacy authentication plugin to fix: 
       # django.db.utils.OperationalError: (2059, "Authentication plugin 'caching_sha2_password' 
@@ -204,7 +208,7 @@ services:
       # In future after the migration of everything to swarm, limit this connection to localhost
       # example with: "127.0.0.1:3306:3306"
       - target: 3306
-        published: {{ mysql_container.ingress_port }}
+        published: {{ mysql_container.outside_port }}
         protocol: tcp
         mode: ingress
     deploy:
@@ -228,7 +232,7 @@ services:
     image: "docker.elastic.co/elasticsearch/elasticsearch:7.17.4"
     environment:
       # Use custom timezone
-      TZ: {{ openedx_timezone | default("Europe/Lisbon") }}
+      TZ: {{ richie_timezone | default("Europe/Lisbon") }}
       # The elastic search node name has the same name of the container
       node.name: {{ elasticsearch_container_name }}
       # Disable the memory swapping
@@ -281,63 +285,43 @@ services:
       timeout: 10s
 {% endfor %}
 
-  redis-sentinel:
-    image: {{ richie_redis_sentinel_docker_image }}
-    environment:
-      # Use custom timezone
-      TZ: {{ openedx_timezone | default("Europe/Lisbon") }}
-      REDIS_MASTER_HOST: {{ richie_docker_deploy_stack_name }}_{{ richie_redis_primary_container }}
-      # Accept host names
-      REDIS_SENTINEL_RESOLVE_HOSTNAMES: "yes"
-      # Enabling the announce-hostnames global configuration makes Sentinel use host names instead. 
-      # This affects replies to clients, values written in configuration files, 
-      # the REPLICAOF command issued to replicas, etc.
-      REDIS_SENTINEL_ANNOUNCE_HOSTNAMES: "yes"
-      # announce the hostname of the container
-      # REDIS_SENTINEL_ANNOUNCE_IP:
-    deploy:
-      replicas: {{ richie_redis_sentinel_replicas }}
-      # Use DNS Round Robin to bypass the docker routing mesh and to allow HAProxy parse the DNS
-      # entries to discover all the redis sentinel instance replicas.
-      endpoint_mode: dnsrr
-      placement:
-        max_replicas_per_node: {{ ( richie_redis_sentinel_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
-      update_config:
-        # apply a slow rolling deploy
-        parallelism: 1
-      resources:
-        limits:
-          memory: 50M
-        reservations:
-          memory: 10M
 
-{% for redis_container_name, redis_container in richie_redis_containers.items() %}
-
+{% for redis_container_name, redis_config in richie_redis_containers.items() %}
   {{ redis_container_name }}:
     image: {{ richie_redis_docker_image }}
     environment:
       # Use custom timezone
-      TZ: {{ openedx_timezone | default("Europe/Lisbon") }}
+      TZ: {{ richie_timezone | default("Europe/Lisbon") }}
       ALLOW_EMPTY_PASSWORD: "yes"
-      REDIS_MASTER_HOST: {{ richie_docker_deploy_stack_name }}_{{ richie_redis_primary_container }}
-      REDIS_REPLICATION_MODE: {{ redis_container.mode }}
+{% if redis_config['mode'] is defined %}
+      REDIS_MASTER_HOST: {{ richie_docker_deploy_stack_name }}_{{ richie_redis_cluster_1_primary_container }}
+      REDIS_REPLICATION_MODE: {{ redis_config.mode }}
+{% endif %}
       # announce the hostname of the container, because the IP address can change after a container restart
       REDIS_REPLICA_IP: {{ richie_docker_deploy_stack_name }}_{{ redis_container_name }}
+    volumes:
+      - {{ redis_config.dest }}:/bitnami/redis/data
+    deploy:
+      replicas: 1
+      endpoint_mode: dnsrr
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 200M
+      placement:
+        max_replicas_per_node: 1
+{% if redis_config.host_fqdn is defined and redis_config.host_fqdn is not none %}
+        constraints:
+          - node.labels.fqdn == {{ redis_config.host_fqdn }}
+{% endif %}
     healthcheck:
       test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
       start_period: 30s
       retries: 10
       interval: 30s
       timeout: 30s
-    deploy:
-      replicas: 1
-      resources:
-        limits:
-          memory: 4G
-      placement:
-        max_replicas_per_node: 1
-        constraints:
-          - node.labels.fqdn == {{ redis_container.host_fqdn }}
+
 {% endfor %}
 
 {{ helper.configs() }}

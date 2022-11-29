@@ -3,21 +3,53 @@
 # Redis configurations
 #
 richie_redis_docker_image: docker.io/bitnami/redis:6.2.7-debian-11-r49
-richie_redis_primary_container: redis_1
-richie_redis_containers:
-  redis_1:
-    host_fqdn: "{{ richie_redis_1_server }}"
+
+richie_redis_containers: "{{ richie_redis_cluster_1_primary | combine(richie_redis_cluster_1_replicas, recursive=True) | combine(richie_redis_cluster_2, recursive=True) }}"
+
+richie_redis_cluster_1_primary:
+  redis_c1p:
+    host_fqdn: "{{ richie_redis_cluster_1_primary_server }}"
     mode: master
-  redis_2:
-    host_fqdn: "{{ richie_redis_2_server }}"
-    mode: slave
-  redis_3:
-    host_fqdn: "{{ richie_redis_3_server }}"
-    mode: slave
+    dest: /data/richie/redis_c1p/
+    dir_owner: 1001
+    dir_group: 1001
+    dir_mode: "0755"
+    when: "{{ inventory_hostname == richie_redis_cluster_1_primary_server }}"
 
-richie_redis_1_server: !!null
-richie_redis_2_server: !!null
-richie_redis_3_server: !!null
+richie_redis_cluster_1_replicas:
+  redis_c1r1:
+    host_fqdn: "{{ richie_redis_cluster_1_replica_1_server }}"
+    mode: slave
+    dest: /data/richie/redis_c1r1/
+    dir_owner: 1001
+    dir_group: 1001
+    dir_mode: "0755"
+    when: "{{ inventory_hostname == richie_redis_cluster_1_replica_1_server }}"
+  redis_c1r2:
+    host_fqdn: "{{ richie_redis_cluster_1_replica_2_server }}"
+    mode: slave
+    dest: /data/richie/redis_c1r2/
+    dir_owner: 1001
+    dir_group: 1001
+    dir_mode: "0755"
+    when: "{{ inventory_hostname == richie_redis_cluster_1_replica_2_server }}"
 
-richie_redis_sentinel_docker_image: docker.io/bitnami/redis-sentinel:6.2.7-debian-11-r49
-richie_redis_sentinel_replicas: 3
+richie_redis_cluster_2:
+  redis_c2p:
+    host_fqdn: "{{ richie_redis_cluster_2_primary_server }}"
+    backup: true
+    dest: /data/richie/redis_c2p/
+    dir_owner: 1001
+    dir_group: 1001
+    dir_mode: "0755"
+    when: "{{ inventory_hostname == richie_redis_cluster_2_primary_server }}"
+
+richie_redis_cluster_1_primary_container: "{{ richie_redis_cluster_1_primary.keys() | first }}"
+richie_redis_cluster_2_primary_container: "{{ richie_redis_cluster_2.keys() | first }}"
+
+richie_redis_docker_deploy_folders_additional: "{{ richie_redis_containers.values() | list }}"
+
+richie_redis_cluster_1_primary_server: !!null
+richie_redis_cluster_1_replica_1_server: !!null
+richie_redis_cluster_1_replica_2_server: !!null
+richie_redis_cluster_2_primary_server: !!null
