@@ -113,10 +113,8 @@ healthcheck: \
 {% endfor %}
 	healthcheck-elasticsearch \
 	healthcheck-load-balancer-haproxy-elasticsearch-port \
-	healthcheck-load-balancer-haproxy-redis-primary-port \
-	healthcheck-load-balancer-haproxy-redis-replicas-port \
-	healthcheck-load-balancer-haproxy-redis-primary-is-ok \
-	healthcheck-load-balancer-haproxy-redis-replicas-is-ok \
+	healthcheck-load-balancer-haproxy-redis-port \
+	healthcheck-load-balancer-haproxy-redis-is-ok \
 	{{ ['healthcheck-'] | product(richie_sites.keys()|list) | map('join') | product(['_app_job']) | map('join') | join(' \\\n\t') }}
 	@echo "Everything looks: OK"
 .PHONY: healthcheck
@@ -228,29 +226,17 @@ healthcheck-load-balancer-haproxy-elasticsearch-port: ## check load balancer HAP
 	@echo "OK"
 .PHONY: healthcheck-load-balancer-haproxy-elasticsearch-port
 
-healthcheck-load-balancer-haproxy-redis-primary-port: ## check load balancer HAProxy redis port
+healthcheck-load-balancer-haproxy-redis-port: ## check load balancer HAProxy redis port
 	@echo -n "Check load balancer HAProxy elasticsearch port: "
-	@nc -z 127.0.0.1 {{ richie_haproxy_redis_primary_port }}
+	@nc -z 127.0.0.1 {{ richie_haproxy_redis_port }}
 	@echo "OK"
 .PHONY: healthcheck-load-balancer-haproxy-redis-primary-port
 
-healthcheck-load-balancer-haproxy-redis-replicas-port: ## check haproxy redis port
-	@echo -n "Check haproxy redis replicas port: "
-	@nc -z 127.0.0.1 {{ richie_haproxy_redis_replicas_port }}
+healthcheck-load-balancer-haproxy-redis-is-ok: ## check that both redis passive and active are up
+	@echo -n "Check haproxy redis is up: "
+	@curl -s "http://localhost:{{ richie_load_balancer_haproxy_statistics_port }}/;csv;norefresh" | grep redis_primary | grep -v BACKEND | grep UP | wc -l | grep -q "{{ richie_redis_containers.keys() | length }}"
 	@echo "OK"
-.PHONY: healthcheck-load-balancer-haproxy-redis-replicas-port
-
-healthcheck-load-balancer-haproxy-redis-primary-is-ok: ## check that redis cluster 1 primary is up
-	@echo -n "Check haproxy redis as a single primary: "
-	@curl -s "http://localhost:{{ richie_load_balancer_haproxy_statistics_port }}/;csv;norefresh" | grep redis_primary | grep {{ richie_docker_deploy_stack_name }}_{{ richie_redis_cluster_1_primary_container }} | grep UP | wc -l | grep -q "1"
-	@echo "OK"
-.PHONY: healthcheck-load-balancer-haproxy-redis-primary-is-ok
-
-healthcheck-load-balancer-haproxy-redis-replicas-is-ok: ## check that redis cluster 1 replicas are UP and working
-	@echo -n "Check haproxy redis replicas: "
-	@curl -s "http://localhost:{{ richie_load_balancer_haproxy_statistics_port }}/;csv;norefresh" | grep redis_cluster_1_replicas_backend | grep {{ richie_docker_deploy_stack_name }} | grep UP | wc -l | grep -q "{{ richie_redis_cluster_1_replicas | length }}"
-	@echo "OK"
-.PHONY: healthcheck-load-balancer-haproxy-redis-replicas-is-ok
+.PHONY: healthcheck-load-balancer-haproxy-redis-is-ok
 
 ########################
 # App job

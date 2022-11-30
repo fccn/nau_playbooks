@@ -67,8 +67,8 @@ OPENEDX_CELERY_REDIS_DB: 0
 OPENEDX_CACHE_REDIS_DB: 1
 
 OPENEDX_CELERY_BROKER_TRANSPORT: "redis"
-# Use 2nd cluster, this won't have high availability
-OPENEDX_CELERY_BROKER_HOSTNAME: "redis_c2p:6379"
+# Use 2nd redis directly, this won't have high availability
+OPENEDX_CELERY_BROKER_HOSTNAME: "redis_2:6379"
 OPENEDX_CELERY_BROKER_VHOST: "{{ OPENEDX_CELERY_REDIS_DB }}"
 OPENEDX_CELERY_BROKER_USER: "{{ OPENEDX_REDIS_USERNAME }}"
 OPENEDX_CELERY_BROKER_PASSWORD: "{{ OPENEDX_REDIS_PASSWORD }}"
@@ -82,10 +82,7 @@ OPENEDX_LANGUAGE_CODE: pt-PT
 # Generic cache configuration so it can be reused bellow on both lms and studio
 openedx_generic_cache_config: &default_openedx_generic_cache_config
   BACKEND: "django_redis.cache.RedisCache"
-  LOCATION: [
-    "redis://{% if OPENEDX_REDIS_USERNAME and OPENEDX_REDIS_PASSWORD %}{{ OPENEDX_REDIS_USERNAME }}:{{ OPENEDX_REDIS_PASSWORD }}@{% endif %}{{ OPENEDX_REDIS_HOST }}:{{ OPENEDX_REDIS_PRIMARY_PORT }}/{{ OPENEDX_CACHE_REDIS_DB }}", # primary
-    "redis://{% if OPENEDX_REDIS_USERNAME and OPENEDX_REDIS_PASSWORD %}{{ OPENEDX_REDIS_USERNAME }}:{{ OPENEDX_REDIS_PASSWORD }}@{% endif %}{{ OPENEDX_REDIS_HOST }}:{{ OPENEDX_REDIS_REPLICAS_PORT }}/{{ OPENEDX_CACHE_REDIS_DB }}", # replica
-  ]
+  LOCATION: "redis://{% if OPENEDX_REDIS_USERNAME and OPENEDX_REDIS_PASSWORD %}{{ OPENEDX_REDIS_USERNAME }}:{{ OPENEDX_REDIS_PASSWORD }}@{% endif %}{{ OPENEDX_REDIS_HOST }}:{{ OPENEDX_REDIS_PRIMARY_PORT }}/{{ OPENEDX_CACHE_REDIS_DB }}"
   # Use the `django-sentinel` package to connect to Redis.
   # This allows to use the Redis sentinel instance that sends writes to the Redis master and
   # reads to a random Redis container instance.

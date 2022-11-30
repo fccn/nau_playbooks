@@ -5,5 +5,4 @@ richie_load_balancer_haproxy_health_check_user: richie_mysql_lb_user
 richie_load_balancer_haproxy_statistics_port: 24936
 richie_load_balancer_haproxy_elasticsearch_port: 24200
 
-richie_haproxy_redis_primary_port: 24379
-richie_haproxy_redis_replicas_port: 24380
+richie_haproxy_redis_port: 24379

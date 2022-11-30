@@ -423,7 +423,7 @@ services:
       TZ: {{ openedx_timezone | default("Europe/Lisbon") }}
       ALLOW_EMPTY_PASSWORD: "yes"
 {% if redis_config['mode'] is defined %}
-      REDIS_MASTER_HOST: {{ openedx_docker_deploy_stack_name }}_{{ openedx_redis_cluster_1_primary_container }}
+      REDIS_MASTER_HOST: {{ openedx_docker_deploy_stack_name }}_{{ redis_container_name }}
       REDIS_REPLICATION_MODE: {{ redis_config.mode }}
 {% endif %}
       # announce the hostname of the container, because the IP address can change after a container restart
@@ -546,12 +546,8 @@ services:
         published: {{ openedx_haproxy_elasticsearch_port }}
         protocol:  tcp
       # Redis primary
-      - target:    {{ openedx_haproxy_redis_primary_port }}
-        published: {{ openedx_haproxy_redis_primary_port }}
-        protocol:  tcp
-      # Redis replicas
-      - target:    {{ openedx_haproxy_redis_replicas_port }}
-        published: {{ openedx_haproxy_redis_replicas_port }}
+      - target:    {{ openedx_haproxy_redis_port }}
+        published: {{ openedx_haproxy_redis_port }}
         protocol:  tcp
 {% for mysql_container_name, mysql_container in openedx_mysql_containers.items() %}
       # Allow connections to {{ mysql_container_name }}

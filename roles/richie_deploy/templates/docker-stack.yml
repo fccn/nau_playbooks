@@ -44,7 +44,7 @@ services:
     extra_hosts:
       - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
     user: "{{ richie_site_config.app_docker_user | default('1000') }}"
-    command: wait-for-it load_balancer_haproxy:{{ richie_haproxy_redis_primary_port }} -- wait-for-it load_balancer_haproxy:3306 -- /bin/bash -c "python manage.py migrate && gunicorn --workers={{ richie_site_config.app_gunicorn_workers | default(3) }} -c /usr/local/etc/gunicorn/app.py nau.wsgi:application"
+    command: wait-for-it load_balancer_haproxy:{{ richie_haproxy_redis_port }} -- wait-for-it load_balancer_haproxy:3306 -- /bin/bash -c "python manage.py migrate && gunicorn --workers={{ richie_site_config.app_gunicorn_workers | default(3) }} -c /usr/local/etc/gunicorn/app.py nau.wsgi:application"
     healthcheck:
       test: curl --silent --fail --resolve {{ richie_site_config.app_environment_variables.DJANGO_ALLOWED_HOSTS }}:8000:127.0.0.1 'http://{{ richie_site_config.app_environment_variables.DJANGO_ALLOWED_HOSTS }}:8000'
       interval: 30s
@@ -148,13 +148,9 @@ services:
         published: {{ richie_load_balancer_haproxy_elasticsearch_port }}
         protocol:  tcp
         mode:      ingress
-      # Redis primary
-      - target:    {{ richie_haproxy_redis_primary_port }}
-        published: {{ richie_haproxy_redis_primary_port }}
-        protocol:  tcp
-      # Redis replicas
-      - target:    {{ richie_haproxy_redis_replicas_port }}
-        published: {{ richie_haproxy_redis_replicas_port }}
+      # Redis
+      - target:    {{ richie_haproxy_redis_port }}
+        published: {{ richie_haproxy_redis_port }}
         protocol:  tcp
     environment:
       # Use custom timezone
@@ -294,7 +290,7 @@ services:
       TZ: {{ richie_timezone | default("Europe/Lisbon") }}
       ALLOW_EMPTY_PASSWORD: "yes"
 {% if redis_config['mode'] is defined %}
-      REDIS_MASTER_HOST: {{ richie_docker_deploy_stack_name }}_{{ richie_redis_cluster_1_primary_container }}
+      REDIS_MASTER_HOST: {{ richie_docker_deploy_stack_name }}_{{ redis_container_name }}
       REDIS_REPLICATION_MODE: {{ redis_config.mode }}
 {% endif %}
       # announce the hostname of the container, because the IP address can change after a container restart
