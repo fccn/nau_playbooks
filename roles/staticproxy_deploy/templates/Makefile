@@ -79,7 +79,7 @@ logs-{{ _service }}: _{{ _service }}-logs ## View last 10 lines of logs of the {
 
 # Open bash
 _%-bash:
-	@test "$$(docker stack ps richie | grep -v " \\\\_ " | grep Running | grep $* | awk '{print $$4}')" = "$(shell hostname)" || { echo "Container is not running or is running in other docker swarm node." ; exit 1; }
+	@test "$$(docker stack ps {{ docker_deploy_stack_name }} | grep -v " \\\\_ " | grep Running | grep $* | awk '{print $$4}')" = "$(shell hostname)" || { echo "Container is not running or is running in other docker swarm node." ; exit 1; }
 	@docker exec -it $$(docker ps --filter "name={{ docker_deploy_stack_name }}_$*\." -q) bash
 
 {% for _service in docker_deploy_services %}
