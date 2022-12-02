@@ -84,4 +84,4 @@ openedx_docker_mysql_replication_additional_users: "{{ edxlocal_database_users }
 openedx_mysql_primary: "{{ openedx_mysql_containers.values() | list | selectattr('primary', 'equalto', True) | first }}"
 
 # The `max-allowed-packet` is to allow the mysqldump execute a backup
-openedx_mysql_replica_extra_parameters: --max-allowed-packet=1G --slave-skip-errors=1062
+openedx_mysql_replica_extra_parameters: --max-allowed-packet=1G --slave-skip-errors=1062,1032
