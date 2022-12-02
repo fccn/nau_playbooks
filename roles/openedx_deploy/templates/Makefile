@@ -143,8 +143,8 @@ healthcheck-mysql-replica-{{ container }}: ## show replica slave status on {{ co
 .PHONY: healthcheck-mysql-replica-{{ container }}
 
 mysql-replica-{{ container }}-seconds-behind: ## show how much seconds the replica slave {{ container }} in behind the primary
-	@echo -n "Seconds behind primary - should be lower than 600 seconds == ( < 10 minutes ): "
-	@echo 'show slave status \G' | MYSQL_PWD="{{ openark_orchestrator_client_password }}" mysql -u {{ openark_orchestrator_client_user }} --host 127.0.0.1 --port {{ config.outside_port }} | egrep -o "Seconds_Behind_Master: [0-5]?[0-9]?[0-9]$$" | egrep -o "[0-9]+"
+	@echo -n "Seconds behind primary - should be lower than 600 seconds == ( < 10 minutes )"
+	@echo 'show slave status \G' | MYSQL_PWD="{{ openark_orchestrator_client_password }}" mysql -u {{ openark_orchestrator_client_user }} --host 127.0.0.1 --port {{ config.outside_port }} | grep "Seconds_Behind_Master: " | egrep -o ": .*"
 .PHONY: mysql-replica-{{ container }}-seconds-behind
 
 {% endif %}
