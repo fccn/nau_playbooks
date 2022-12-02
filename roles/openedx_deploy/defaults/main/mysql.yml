@@ -53,6 +53,7 @@ openedx_mysql_containers:
     mysql_replication_user: "{{ EDXAPP_MYSQL_REPLICATION_USER }}"
     mysql_replication_password: "{{ EDXAPP_MYSQL_REPLICATION_PASSWORD }}"
     mysql_replication_init_databases: [ edxapp ]
+    limit_cpus: "{{ openedx_limit_cpus }}"
   mysql_2:
     hostname: "{{ openedx_mysql_2_hostname }}"
     data: "{{ openedx_mysql_data }}"
@@ -70,6 +71,7 @@ openedx_mysql_containers:
     mysql_replication_master_port: 3306
     mysql_replication_user: "{{ EDXAPP_MYSQL_REPLICATION_USER }}"
     mysql_replication_password: "{{ EDXAPP_MYSQL_REPLICATION_PASSWORD }}"
+    limit_cpus: "{{ openedx_limit_cpus }}"
 
 # In future move this to 03_databases.yml file. It is not possible to change the root username of the MySQL official Docker image
 COMMON_MYSQL_ADMIN_USER: root

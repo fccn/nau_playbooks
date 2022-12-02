@@ -6,6 +6,8 @@ openedx_forum_docker_wait_for: dockerize -wait tcp://{{ FORUM_MONGO_HOSTS[0] }}:
 openedx_forum_docker_entrypoint:     bash -c "{{ openedx_forum_docker_wait_for }} && ./bin/unicorn -c config/unicorn_tcp.rb -I '.' "
 openedx_forum_job_docker_entrypoint: bash -c "{{ openedx_forum_docker_wait_for }} && bundle exec rake search:initialize && bundle exec rake search:rebuild_indices"
 
+openedx_forum_limit_cpus: "{{ openedx_limit_cpus }}"
+
 FORUM_MONGO_USER: "cs_comments_service"
 FORUM_MONGO_PASSWORD: "password"
 FORUM_MONGO_HOSTS:

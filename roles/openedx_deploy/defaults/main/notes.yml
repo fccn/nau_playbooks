@@ -5,6 +5,7 @@ openedx_notes_docker_image: overhangio/openedx-notes:12.0.0
 openedx_notes_job_command: ./manage.py migrate
 
 openedx_notes_port: 8000
+openedx_notes_limit_cpus: "{{ openedx_limit_cpus }}"
 
 openedx_notes_docker_deploy_files:
   - src: files/notes/nau_production.py

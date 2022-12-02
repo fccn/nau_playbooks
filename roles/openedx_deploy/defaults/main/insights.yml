@@ -9,6 +9,7 @@ openedx_insights_nginx_ssl_certificate_key_docker_target: "{{ openedx_nginx_ssl_
 
 openedx_insights_job: false
 openedx_insights_job_command: python manage.py migrate
+openedx_insights_limit_cpus: "{{ openedx_limit_cpus }}"
 
 openedx_insights_docker_deploy_files:
   - src: files/insights/nau_production.py

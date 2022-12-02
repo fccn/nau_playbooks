@@ -24,6 +24,7 @@ services:
       resources:
         limits:
           memory: 500M
+          cpus: "{{ openedx_insights_limit_cpus }}"
         reservations:
           memory: 200M
     healthcheck:
@@ -49,6 +50,9 @@ services:
       mode: replicated # after docker 22.06.0 release change it to replicated-job
       restart_policy:
         condition: on-failure # restart this container only if it fails to run
+      resources:
+        limits:
+          cpus: "{{ openedx_insights_limit_cpus }}"
 {{ helper.service_configs(service='insights') }}
 {{ helper.service_secrets(service='insights') }}
 
@@ -78,6 +82,7 @@ services:
       resources:
         limits:
           memory: 250M
+          cpus: "{{ openedx_analyticsapi_limit_cpus }}"
         reservations:
           memory: 150M
     healthcheck:
@@ -103,6 +108,9 @@ services:
       mode: replicated # after docker 22.06.0 release change it to replicated-job
       restart_policy:
         condition: on-failure # restart this container only if it fails to run
+      resources:
+        limits:
+          cpus: "{{ openedx_analyticsapi_limit_cpus }}"
 {{ helper.service_configs(service='analyticsapi') }}
 {{ helper.service_secrets(service='analyticsapi') }}
 
@@ -138,6 +146,7 @@ services:
       resources:
         limits:
           memory: 128M
+          cpus: "{{ openedx_nginx_limit_cpus }}"
         reservations:
           memory: 50M
     extra_hosts:
@@ -165,6 +174,7 @@ services:
         limits:
           # Tutor in docs: "each worker requires upwards of 500 Mb of RAM" so we give 1G per uwsgi worker
           memory: {{ openedx_lms_uwsgi_workers * 1000 }}M
+          cpus: "{{ openedx_lms_limit_cpus }}"
         reservations:
           memory: {{ openedx_lms_uwsgi_workers * 500 }}M
     extra_hosts:
@@ -194,6 +204,9 @@ services:
       mode: replicated # after docker 22.06.0 release change it to replicated-job
       restart_policy:
         condition: on-failure # restart this container only if it fails to run
+      resources:
+        limits:
+          cpus: "{{ openedx_lms_limit_cpus }}"
 {{ helper.service_configs(service='edxapp') }}
 {{ helper.service_secrets(service='edxapp') }}
 {% endif %}
@@ -214,6 +227,7 @@ services:
         limits:
           # Tutor in docs: "each worker requires upwards of 500 Mb of RAM" so we give 1G per uwsgi worker
           memory: {{ openedx_cms_uwsgi_workers * 1000 }}M
+          cpus: "{{ openedx_cms_limit_cpus }}"
         reservations:
           memory: {{ openedx_cms_uwsgi_workers * 500 }}M
     healthcheck:
@@ -242,6 +256,7 @@ services:
       resources:
         limits:
           memory: {{ openedx_lms_worker_celery_processes * 1000 }}M
+          cpus: "{{ openedx_lms_worker_limit_cpus }}"
         reservations:
           memory: {{ openedx_lms_worker_celery_processes * 400 }}M
 {{ helper.service_configs(service='edxapp') }}
@@ -263,6 +278,7 @@ services:
       resources:
         limits:
           memory: {{ openedx_cms_worker_celery_processes * 1000 }}M
+          cpus: "{{ openedx_cms_worker_limit_cpus }}"
         reservations:
           memory: {{ openedx_cms_worker_celery_processes * 400 }}M
 {{ helper.service_configs(service='edxapp') }}
@@ -282,6 +298,7 @@ services:
       resources:
         limits:
           memory: 500M
+          cpus: "{{ openedx_forum_limit_cpus }}"
         reservations:
           memory: 300M
     healthcheck:
@@ -306,6 +323,9 @@ services:
       mode: replicated # after docker 22.06.0 release change it to replicated-job
       restart_policy:
         condition: on-failure # restart this container only if it fails to run
+      resources:
+        limits:
+          cpus: "{{ openedx_forum_limit_cpus }}"
 {% endif %}
 
   notes:
@@ -321,10 +341,10 @@ services:
       resources:
         limits:
           memory: 1G
+          cpus: "{{ openedx_notes_limit_cpus }}"
         reservations:
           memory: 150M
     healthcheck:
-      # Check if forum heartbeat returns ok
       test: |
         bash -c 'exec 3<>/dev/tcp/127.0.0.1/{{ openedx_notes_port }} && echo -e "GET /heartbeat/ HTTP/1.1\r\nHost: notes\r\nConnection: close\r\n\r\n" >&3 && cat <&3 | grep "HTTP/1.1 200 OK"'
       start_period: 30s
@@ -347,6 +367,9 @@ services:
       mode: replicated # after docker 22.06.0 release change it to replicated-job
       restart_policy:
         condition: on-failure # restart this container only if it fails to run
+      resources:
+        limits:
+          cpus: "{{ openedx_notes_limit_cpus }}"
 {{ helper.service_configs(service='notes') }}
 {{ helper.service_secrets(service='notes') }}
 {% endif %}
@@ -364,6 +387,7 @@ services:
       resources:
         limits:
           memory: 400M
+          cpus: "{{ openedx_discovery_limit_cpus }}"
         reservations:
           memory: 210M
     healthcheck:
@@ -389,6 +413,9 @@ services:
       mode: replicated # after docker 22.06.0 release change it to replicated-job
       restart_policy:
         condition: on-failure # restart this container only if it fails to run
+      resources:
+        limits:
+          cpus: "{{ openedx_discovery_limit_cpus }}"
 {{ helper.service_configs(service='discovery') }}
 {{ helper.service_secrets(service='discovery') }}
 {% endif %}
@@ -406,6 +433,7 @@ services:
       resources:
         limits:
           memory: 50M
+          cpus: "{{ openedx_smtp_limit_cpus }}"
         reservations:
           memory: 10M
     healthcheck:
@@ -436,6 +464,7 @@ services:
       resources:
         limits:
           memory: 1G
+          cpus: "{{ openedx_limit_cpus }}"
         reservations:
           memory: 200M
       placement:
@@ -497,6 +526,7 @@ services:
       resources:
         limits:
           memory: 3G
+          cpus: "{{ openedx_limit_cpus }}"
         reservations:
           memory: 1.5G
       placement:
@@ -567,6 +597,7 @@ services:
       resources:
         limits:
           memory: 300M
+          cpus: "{{ openedx_limit_cpus }}"
         reservations:
           memory: 200M
       update_config:
@@ -607,6 +638,9 @@ services:
       resources:
         limits:
           memory: 8G
+{% if mysql_container.limit_cpus %}
+          cpus: "{{ mysql_container.limit_cpus }}"
+{% endif %}
         reservations:
           memory: 5G
       placement:

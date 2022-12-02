@@ -16,6 +16,11 @@ openedx_lms_worker_celery_processes: 1
 openedx_cms_worker_replicas: 1
 openedx_cms_worker_celery_processes: 1
 
+openedx_lms_limit_cpus: "{{ openedx_limit_cpus }}"
+openedx_cms_limit_cpus: "{{ openedx_limit_cpus }}"
+openedx_lms_worker_limit_cpus: "{{ openedx_limit_cpus }}"
+openedx_cms_worker_limit_cpus: "{{ openedx_limit_cpus }}"
+
 openedx_app_docker_deploy_templates:
   - src_data:  "{{ openedx_lms_env_file | to_nice_yaml(indent=2, width=1337) }}" # default_flow_style=False didn't work
     dest: "{{ openedx_docker_deploy_base_folder }}/app/lms.env.yml"

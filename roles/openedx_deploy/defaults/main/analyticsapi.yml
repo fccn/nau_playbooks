@@ -10,6 +10,7 @@ openedx_analyticsapi_replicas: 1
 openedx_analyticsapi_image: nauedu/openedx-analytics-data-api:nau-maple.master-fb37ebc8d99124ae87867148fc53120800a12b10-build-10
 
 openedx_analyticsapi_port: 8100
+openedx_analyticsapi_limit_cpus: "{{ openedx_limit_cpus }}"
 
 openedx_analyticsapi_job_command: bash -c "{{ openedx_analyticsapi_job_commands | join(' && ') }}"
 
