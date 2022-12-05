@@ -43,6 +43,7 @@
   include_role:
     name: docker_swarm_build_web_server
   vars:
+    docker_swarm_build_web_server_stack_name: "{{ richie_docker_deploy_stack_name }}"
     docker_swarm_build_web_server_docker_repository: "{{ item.value.docker_swarm_build_web_server_docker_repository }}"
     docker_swarm_build_web_server_docker_image: "{{ item.value.docker_swarm_build_web_server_docker_image }}"
     docker_swarm_build_web_server_docker_swarm_service: "{{ item.value.docker_swarm_build_web_server_docker_swarm_service }}"

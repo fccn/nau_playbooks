@@ -79,6 +79,7 @@
     tag: "{{ docker_swarm_build_web_server_docker_tag }}"
     push: "{{ docker_swarm_build_push }}"
     source: local
+  register: docker_image_build_result
   when: docker_swarm_build_web_server_build
   delegate_to: "{{ docker_swarm_build_node }}"
   tags:
@@ -115,8 +116,23 @@
     - docker_deploy
 
 - name: Update the web server docker image on the running docker stack
-  shell: docker service update --image {{ docker_image_build_result.image.RepoDigests[0] }} {{ docker_swarm_build_web_server_docker_swarm_service }}
-  when: docker_image_build_result.image.RepoDigests is defined and docker_swarm_build_web_server_deploy
+  shell: docker service update --image {{ docker_swarm_build_web_server_docker_image_out }} {{ docker_swarm_build_web_server_docker_swarm_service }}
+  when: docker_swarm_build_web_server_deploy
+  tags:
+    - docker_swarm_build_web_server
+    - docker_deploy
+
+- name: Pause for {{ docker_swarm_build_web_server_docker_swarm_service_pause_to_verify | default(15) }} seconds so previous version of the service could stop
+  pause:
+    seconds: "{{ docker_swarm_build_web_server_docker_swarm_service_pause_to_verify | default(15) }}"
+  when: docker_swarm_build_web_server_deploy
+  tags:
+    - docker_swarm_build_web_server
+    - docker_deploy
+  
+- name: Wait until {{ docker_swarm_build_web_server_docker_swarm_service }} is updated
+  shell: docker stack ps {{ docker_swarm_build_web_server_stack_name }} | grep "{{ docker_swarm_build_web_server_docker_swarm_service }}" | grep -v " \\\\_ " | awk '{ if ( $5 != $6 ) {exit -1} }'
+  when: docker_swarm_build_web_server_deploy
   tags:
     - docker_swarm_build_web_server
     - docker_deploy

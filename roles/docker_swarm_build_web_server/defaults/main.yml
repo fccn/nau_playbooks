@@ -15,3 +15,4 @@ docker_swarm_build_node: "{{ inventory_hostname }}"
 
 docker_swarm_build_push: "{{ docker_registry_username is defined and docker_registry_password is defined }}"
 
+docker_swarm_build_web_server_docker_image_out: docker.io/{{ docker_swarm_build_web_server_docker_repository }}/{{ docker_swarm_build_web_server_docker_image }}:{{ docker_swarm_build_web_server_docker_tag }}

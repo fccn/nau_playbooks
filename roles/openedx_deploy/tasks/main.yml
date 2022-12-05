@@ -42,6 +42,7 @@
   include_role:
     name: docker_swarm_build_web_server
   vars:
+    docker_swarm_build_web_server_stack_name: "{{ openedx_docker_deploy_stack_name }}"
     docker_swarm_build_web_server_docker_repository: "{{ openedx_docker_swarm_build_web_server_docker_repository }}"
     docker_swarm_build_web_server_docker_image: "{{ openedx_docker_swarm_build_web_server_docker_image }}"
     docker_swarm_build_web_server_docker_swarm_service: "{{ openedx_docker_swarm_build_web_server_docker_swarm_service }}"
