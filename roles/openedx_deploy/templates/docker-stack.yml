@@ -604,7 +604,7 @@ services:
         # We are updating 1 container a time
         parallelism: 1
     healthcheck:
-      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/{{ openedx_haproxy_write_port | default(3306) }}", "&&", "echo", "''", ">", "/dev/tcp/127.0.0.1/{{ openedx_haproxy_readonly_port | default(3306) }}", "||", "exit", "1"]
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/{{ openedx_haproxy_statistics_port }}", "||", "exit", "1"]
       start_period: 30s
       retries: 10
       interval: 30s
