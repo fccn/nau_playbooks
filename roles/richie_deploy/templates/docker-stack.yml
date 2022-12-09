@@ -156,7 +156,7 @@ services:
       # Use custom timezone
       TZ: {{ richie_timezone | default("Europe/Lisbon") }}
     deploy:
-      replicas: {{ richie_load_balancer_haproxy_deploy_replicas_count | default(2) }}
+      replicas: {{ richie_load_balancer_haproxy_deploy_replicas_count }}
       placement:
         max_replicas_per_node: 1
       resources:
