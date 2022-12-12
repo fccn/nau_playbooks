@@ -44,7 +44,10 @@ openedx_insights_cfg_settings_default:
     default:
       BACKEND: django_redis.cache.RedisCache
       KEY_PREFIX: insights
-      LOCATION: "redis://{% if OPENEDX_REDIS_USERNAME and OPENEDX_REDIS_PASSWORD %}{{ OPENEDX_REDIS_USERNAME }}:{{ OPENEDX_REDIS_PASSWORD }}@{% endif %}{{ OPENEDX_REDIS_HOST }}:{{ OPENEDX_REDIS_PRIMARY_PORT }}/{{ INSIGHTS_CACHE_REDIS_DB }}"
+      # Use directly the redis instance without the load balancer in the middle,
+      # because it raises "Connection reset by peer".
+      # this service isn't used very often.
+      LOCATION: "redis://{% if INSIGHTS_REDIS_USERNAME and INSIGHTS_REDIS_PASSWORD %}{{ INSIGHTS_REDIS_USERNAME }}:{{ INSIGHTS_REDIS_PASSWORD }}@{% endif %}{{ INSIGHTS_REDIS_HOST }}:{{ INSIGHTS_REDIS_PRIMARY_PORT }}/{{ INSIGHTS_CACHE_REDIS_DB }}"
   CMS_COURSE_SHORTCUT_BASE_URL: "{{ INSIGHTS_CMS_BASE }}/course"
   COURSE_API_URL: "{{ INSIGHTS_CMS_BASE }}/api/courses/v1/"
   CSRF_COOKIE_NAME: "{{ INSIGHTS_CSRF_COOKIE_NAME | default('insights_csrftoken') }}"
@@ -141,3 +144,13 @@ INSIGHTS_OAUTH2_URL_LOGOUT: '{{ INSIGHTS_LMS_BASE }}/logout'
 INSIGHTS_OPEN_SOURCE_URL: https://github.com/fccn/edx-analytics-dashboard
 INSIGHTS_SEGMENT_IO_KEY: 'YOUR_KEY'
 INSIGHTS_TIME_ZONE: 'Europe/Lisbon'
+
+# Redis Insights configuration
+# Because this service isn't used very often, the redis connection raises "Connection reset by peer"
+# And we don't need high availability for this service, so we use directly the redis instance
+# without the load balancer in the middle.
+INSIGHTS_REDIS_USERNAME: "{{ OPENEDX_REDIS_USERNAME }}"
+INSIGHTS_REDIS_PASSWORD: "{{ OPENEDX_REDIS_PASSWORD }}"
+INSIGHTS_REDIS_HOST: redis_1
+INSIGHTS_REDIS_PRIMARY_PORT: "{{ OPENEDX_REDIS_PRIMARY_PORT }}"
+INSIGHTS_CACHE_REDIS_DB: "{{ OPENEDX_CACHE_REDIS_DB }}"
