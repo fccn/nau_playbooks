@@ -113,4 +113,6 @@
   tags:
     - docker_deploy
     - docker_mysql_replication
+    - docker_mysql_replication_additional
+    - docker_mysql_replication_additional_databases
     - docker_mysql_replication_additional_users

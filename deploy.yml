@@ -62,6 +62,9 @@
 #   To deploy the openedx docker stack and build the web server docker image
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_managers -e openedx_deploy=true -e openedx_nginx_build=true
 #
+#   To update the openedx databases and mysql user grants
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_servers -e openedx_deploy=true -e openedx_mysql_initialization=true --tags docker_mysql_replication_additional
+#
 - name: Bootstrap instances of 16.04
   hosts: all,!idpproxy_servers,!nau_docker_swarm_managers,!nau_docker_swarm_workers,!support_server,!build_server
   gather_facts: no
