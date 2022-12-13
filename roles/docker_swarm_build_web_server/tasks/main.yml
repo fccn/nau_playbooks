@@ -116,7 +116,7 @@
     - docker_deploy
 
 - name: Update the web server docker image on the running docker stack
-  shell: docker service update --image {{ docker_swarm_build_web_server_docker_image_out }} {{ docker_swarm_build_web_server_docker_swarm_service }}
+  shell: docker service update --image {{ docker_swarm_build_web_server_docker_image_out }} --update-parallelism 1 {{ docker_swarm_build_web_server_docker_swarm_service }}
   when: docker_swarm_build_web_server_deploy
   tags:
     - docker_swarm_build_web_server
