@@ -1,5 +1,6 @@
 ---
 openedx_notes_replicas: 1
+openedx_notes_deploy_parallelism: 1
 openedx_notes_job: false
 openedx_notes_docker_image: overhangio/openedx-notes:12.0.0
 openedx_notes_job_command: ./manage.py migrate

@@ -1,5 +1,6 @@
 ---
 openedx_discovery_replicas: 1
+openedx_discovery_deploy_parallelism: 1
 openedx_discovery_job: false
 openedx_discovery_docker_image: overhangio/openedx-discovery:12.0.4
 openedx_discovery_job_command: bash -c "python manage.py migrate --noinput && python manage.py install_es_indexes"

@@ -3,6 +3,7 @@
 openedx_analyticsapi: false
 
 openedx_analyticsapi_replicas: 1
+openedx_analyticsapi_deploy_parallelism: "{{ [ 1, ( openedx_analyticsapi_replicas / 2 ) ] | max | round(0, 'floor') | int }}"
 
 # last commit on open-release/lilac.master that the docker build has been executed: d5f12d33d86cfcc57e1f6662890dbe784cfdce23
 # last commit on open-release/maple.master that the docker build has been executed: e0c4aa3f20f869ad7d680ef90b62f7800acaa844 

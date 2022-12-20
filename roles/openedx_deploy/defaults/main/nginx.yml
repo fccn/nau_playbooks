@@ -3,6 +3,8 @@
 # openedx_nginx_image: "docker.io/{{ docker_swarm_build_web_server_docker_repository }}/{{ docker_swarm_build_web_server_docker_image }}:{{ docker_swarm_build_web_server_docker_tag }}"
 
 openedx_nginx_replicas: 1
+openedx_nginx_deploy_parallelism: 1
+# openedx_nginx_deploy_parallelism: "{{ [ 1, ( openedx_nginx_replicas / 2 ) ] | max | round(0, 'floor') | int }}"
 
 openedx_nginx_http: 80
 openedx_nginx_http_ingress_port: 80

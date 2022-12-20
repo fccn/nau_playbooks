@@ -75,8 +75,7 @@ services:
       replicas: {{ openedx_analyticsapi_replicas }}
       update_config:
         # We are updating 1 container a time
-        parallelism: 1
-        parallelism: {{ [ 1, ( openedx_analyticsapi_replicas / 2 ) ] | max | round(0, 'floor') | int }}
+        parallelism: {{ openedx_analyticsapi_deploy_parallelism }}
       placement:
         max_replicas_per_node: {{ ( openedx_analyticsapi_replicas / docker_swarm_cluster_group_length | int ) | round(0, 'ceil') | int }}
       resources:
@@ -140,7 +139,7 @@ services:
         #    3 --> 1
         #    4 --> 2
         #    5 --> 2
-        parallelism: {{ [ 1, ( openedx_nginx_replicas / 2 ) ] | max | round(0, 'floor') | int }}
+        parallelism: {{ openedx_nginx_deploy_parallelism }}
       placement:
         max_replicas_per_node: {{ ( openedx_nginx_replicas / docker_swarm_cluster_group_length | int ) | round(0, 'ceil') | int }}
       resources:
@@ -168,6 +167,8 @@ services:
 {% endfor %}
     deploy:
       replicas: {{ openedx_lms_replicas }}
+      update_config:
+        parallelism: {{ openedx_lms_deploy_parallelism }}
       placement:
         max_replicas_per_node: {{ ( openedx_lms_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
       resources:
@@ -221,6 +222,8 @@ services:
       - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
     deploy:
       replicas: {{ openedx_cms_replicas }}
+      update_config:
+        parallelism: {{ openedx_cms_deploy_parallelism }}
       placement:
         max_replicas_per_node: {{ ( openedx_cms_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
       resources:
@@ -305,6 +308,8 @@ services:
 {% endfor %}
     deploy:
       replicas: {{ openedx_forum_replicas }}
+      update_config:
+        parallelism: {{ openedx_forum_deploy_parallelism }}
       placement:
         max_replicas_per_node: {{ ( openedx_forum_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
       resources:
@@ -348,6 +353,8 @@ services:
 {% endfor %}
     deploy:
       replicas: {{ openedx_notes_replicas }}
+      update_config:
+        parallelism: {{ openedx_notes_deploy_parallelism }}
       placement:
         max_replicas_per_node: {{ ( openedx_notes_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
       resources:
@@ -394,6 +401,8 @@ services:
 {% endfor %}
     deploy:
       replicas: {{ openedx_discovery_replicas }}
+      update_config:
+        parallelism: {{ openedx_discovery_deploy_parallelism }}
       placement:
         max_replicas_per_node: {{ ( openedx_discovery_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
       resources:
@@ -440,6 +449,8 @@ services:
 {% endfor %}
     deploy:
       replicas: {{ openedx_smtp_replicas }}
+      update_config:
+        parallelism: {{ openedx_smtp_deploy_parallelism }}
       placement:
         max_replicas_per_node: {{ ( openedx_smtp_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
       resources:

@@ -1,5 +1,6 @@
 ---
 openedx_forum_replicas: 1
+openedx_forum_deploy_parallelism: 1
 openedx_forum_job: false
 openedx_forum_docker_image: overhangio/openedx-forum:12.2.0
 openedx_forum_docker_wait_for: dockerize -wait tcp://{{ FORUM_MONGO_HOSTS[0] }}:{{ FORUM_MONGO_PORT }} -wait {{ FORUM_ELASTICSEARCH_URL }} -wait-retry-interval 5s -timeout 600s

@@ -1,5 +1,6 @@
 ---
 openedx_smtp_replicas: 1
+openedx_smtp_deploy_parallelism: 1
 openedx_smtp_docker_image: docker.io/devture/exim-relay:4.95-r0-4
 
 openedx_smtp_limit_cpus: "{{ openedx_limit_cpus }}"

@@ -16,6 +16,9 @@ openedx_lms_worker_celery_processes: 1
 openedx_cms_worker_replicas: 1
 openedx_cms_worker_celery_processes: 1
 
+openedx_lms_deploy_parallelism: 1
+openedx_cms_deploy_parallelism: 1
+
 openedx_lms_limit_cpus: "{{ openedx_limit_cpus }}"
 openedx_cms_limit_cpus: "{{ openedx_limit_cpus }}"
 openedx_lms_worker_limit_cpus: "{{ openedx_limit_cpus }}"
