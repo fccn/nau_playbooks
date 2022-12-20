@@ -74,7 +74,9 @@ observability_fluentbit_output_docker_service_s3:
   - richie_nau_nginx
   - openedx_nginx
   - openedx_lms
+  - openedx_lms-worker
   - openedx_cms
+  - openedx_cms-worker
 
 observability_fluentbit_metrics: "{{ observability_fluentbit_metrics_functions + observability_fluentbit_metrics_total }}"
 
