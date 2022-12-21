@@ -379,4 +379,3 @@
       vars:
         observability_deploy_run: "{{ observability_deploy | default(false) }}"
         observability_deploy_create_volumes: "{{ observability_deploy | default(false) }}"
-        observability_fluentbit_aggregator_host_fqdn: "{{ groups['nau_docker_swarm_managers'][0] }}"
