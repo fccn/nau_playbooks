@@ -20,6 +20,7 @@
     hostname: "{{ item }}"
     labels: "{{ hostvars[item]['docker_swarm_node_labels_default'] | combine( hostvars[ item ]['docker_swarm_node_labels_extend'] if hostvars[ item ]['docker_swarm_node_labels_extend'] is defined else {} ) }}"
     labels_state: replace
+    availability: "{{ hostvars[ item ]['docker_swarm_node_availability'] | default(omit) }}"
   loop: "{{ docker_swarm_worker + docker_swarm_manager }}"
   tags:
     - swarm
