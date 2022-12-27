@@ -10,3 +10,5 @@ venv_ops/
 venv/
 mysql_dumb.sql
 .vscode
+
+nau-data/
