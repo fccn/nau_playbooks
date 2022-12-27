@@ -374,6 +374,7 @@
       vars:
         richie_deploy_run: "{{ richie_deploy | default(false) }}"
         richie_deploy_create_volumes: "{{ richie_deploy | default(false) }}"
+        docker_swarm_build_node: "{{ hostvars[groups['build_server'][0]].ansible_host }}"
 
     - name: Deploy observability stack
       role: observability_deploy
