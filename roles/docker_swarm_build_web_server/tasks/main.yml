@@ -2,10 +2,12 @@
 - name: Find which docker image version each service is running
   # Retrieves information about docker services from a Swarm Manager
   docker_swarm_service_info:
-    name: "{{ item.service }}"
+    name: "{{ dservice.service }}"
   register: docker_swarm_service_info_result
   when: docker_swarm_build_web_server_build
-  with_items: "{{ docker_swarm_build_web_server_services }}"
+  loop: "{{ docker_swarm_build_web_server_services }}"
+  loop_control:
+    loop_var: dservice
   tags:
     - docker_swarm_build_web_server
     - docker_deploy
