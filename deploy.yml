@@ -301,10 +301,13 @@
   # serial: "{{ serial_number | default(1) }}"
   become: True
   gather_facts: True
+  vars:
+    _docker_swarm_deploy: "{{ docker_swarm_deploy | default(false) | bool }}"
   tasks:
     - name: configures the swarm
       import_role:
         name: docker_swarm
+      when: _docker_swarm_deploy
       vars:
         docker_swarm_manager: "{{ groups['nau_docker_swarm_managers'] }}"
         docker_swarm_worker: "{{ groups['nau_docker_swarm_workers'] }}"
@@ -327,6 +330,8 @@
   hosts: nau_docker_swarm_managers,nau_docker_swarm_workers
   become: True
   gather_facts: True
+  vars:
+    _docker_swarm_deploy: "{{ docker_swarm_deploy | default(false) | bool }}"
   tasks:
     - import_role:
         name: snmpd
@@ -335,6 +340,7 @@
     - name: configures the swarm
       import_role:
         name: docker_swarm
+      when: _docker_swarm_deploy
       vars:
         docker_swarm_manager: "{{ groups['nau_docker_swarm_managers'] }}"
         docker_swarm_worker: "{{ groups['nau_docker_swarm_workers'] }}"
