@@ -2,6 +2,7 @@
 # Health check user for HaProxy that balances MySQL
 richie_load_balancer_haproxy_health_check_user: richie_mysql_lb_user
 
+richie_load_balancer_haproxy_deploy_replicas_count: 1
 richie_load_balancer_haproxy_statistics_port: 24936
 richie_load_balancer_haproxy_elasticsearch_port: 24200
 
