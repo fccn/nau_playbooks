@@ -117,7 +117,9 @@
 
 - name: Update the web server docker image on the running docker stack
   shell: docker service update --image {{ docker_swarm_build_web_server_docker_image_out }} --update-parallelism 1 {{ docker_swarm_build_web_server_docker_swarm_service }}
-  when: docker_swarm_build_web_server_deploy
+  when: docker_swarm_build_web_server_deploy | bool
+  ignore_errors: True
+  register: update_web_server_output
   tags:
     - docker_swarm_build_web_server
     - docker_deploy
@@ -125,14 +127,14 @@
 - name: Pause for {{ docker_swarm_build_web_server_docker_swarm_service_pause_to_verify | default(15) }} seconds so previous version of the service could stop
   pause:
     seconds: "{{ docker_swarm_build_web_server_docker_swarm_service_pause_to_verify | default(15) }}"
-  when: docker_swarm_build_web_server_deploy
+  when: docker_swarm_build_web_server_deploy | bool
   tags:
     - docker_swarm_build_web_server
     - docker_deploy
   
 - name: Wait until {{ docker_swarm_build_web_server_docker_swarm_service }} is updated
   shell: docker stack ps {{ docker_swarm_build_web_server_stack_name }} | grep "{{ docker_swarm_build_web_server_docker_swarm_service }}" | grep -v " \\\\_ " | awk '{ if ( $5 != $6 ) {exit -1} }'
-  when: docker_swarm_build_web_server_deploy
+  when: ( docker_swarm_build_web_server_deploy | bool ) and update_web_server_output.rc is defined and update_web_server_output.rc == 0
   tags:
     - docker_swarm_build_web_server
     - docker_deploy
