@@ -21,6 +21,14 @@
   tags:
     - docker_deploy
 
+- name: Template configs for aggregator node
+  template: 
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  when: item.when | default(true) | bool
+  with_items: "{{ observability_aggregator_node_templates }}"
+  tags: docker_deploy
+
 - name: Run healthcheck
   shell: make healthcheck
   args:

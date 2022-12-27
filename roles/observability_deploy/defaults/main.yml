@@ -14,9 +14,21 @@ observability_docker_deploy_stack_name: observability
 observability_docker_deploy_stack_template: templates/docker-stack.yml
 observability_docker_deploy_base_folder: /nau/ops/observability
 
+observability_aggregator_node_templates:
+  - src: "{{ observability_makefile_template | default('templates/Makefile') }}"
+    dest: "{{ observability_docker_deploy_base_folder }}/Makefile"
+    when: "{{ inventory_hostname == observability_fluentbit_aggregator_host_fqdn }}"
+  - src: "{{ observability_makefile_template | default('makefile-metrics.mk') }}"
+    dest: "{{ observability_docker_deploy_base_folder }}/makefile-metrics.mk"
+    when: "{{ inventory_hostname == observability_fluentbit_aggregator_host_fqdn }}"
+  
 observability_docker_deploy_templates:
   - src: "{{ observability_makefile_template | default('templates/Makefile') }}"
     dest: "{{ observability_docker_deploy_base_folder }}/Makefile"
+  - src: "{{ observability_makefile_template | default('templates/makefile-base.mk') }}"
+    dest: "{{ observability_docker_deploy_base_folder }}/makefile-base.mk"
+  - src: "{{ observability_makefile_template | default('templates/makefile-specific.mk') }}"
+    dest: "{{ observability_docker_deploy_base_folder }}/makefile-specific.mk"
   # aggregator
   - src: templates/fluent-bit-aggregator.conf
     dest: "{{ observability_docker_deploy_base_folder }}/fluent-bit-aggregator.conf"
