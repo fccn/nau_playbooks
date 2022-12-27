@@ -315,6 +315,12 @@
         # on ansible inventory each host has its IPv4 address on the `ansible_host` variable
         docker_swarm_node_advertise_addr: "{{ hostvars[inventory_hostname].ansible_host }}"
 
+    - name: Create ops folder
+      file:
+        name: /nau/ops
+        state: directory
+        recurse: true
+
     - name: Copy multi stack healthcheck Makefile script
       template:
         src: "templates/global/Makefile"
