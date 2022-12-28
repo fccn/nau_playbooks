@@ -2,12 +2,13 @@
 #
 # Examples:
 # To run all run the playbook with:
-#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_discovery_refresh_swarm.yml -e run_all=true
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_commands_every_day.yml -e run_all=true
 #
 # To run specific step use:
-#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_discovery_refresh_swarm.yml -e lms_schedules_send_course_next_section_update=true
-#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_discovery_refresh_swarm.yml -e lms_schedules_send_course_update=true
-#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_discovery_refresh_swarm.yml -e lms_schedules_send_recurring_nudge=true
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_commands_every_day.yml -e lms_schedules_send_course_next_section_update=true
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_commands_every_day.yml -e lms_schedules_send_course_update=true
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_commands_every_day.yml -e lms_schedules_send_recurring_nudge=true
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_commands_every_day.yml -e lms_nau_openedx_extensions_add_archived_course_message=true
 
 ---
 - name: Run daily openedx tasks
@@ -15,9 +16,10 @@
   become: True
   gather_facts: True
   vars:
-    _lms_schedules_send_course_next_section_update: "{{ run_all | default(lms_schedules_send_course_next_section_update) | default(false) | bool }}"
-    _lms_schedules_send_course_update:              "{{ run_all | default(lms_schedules_send_course_update)              | default(false) | bool }}"
-    _lms_schedules_send_recurring_nudge:            "{{ run_all | default(lms_schedules_send_recurring_nudge)            | default(false) | bool }}"
+    _lms_schedules_send_course_next_section_update:          "{{ run_all | default(lms_schedules_send_course_next_section_update)          | default(false) | bool }}"
+    _lms_schedules_send_course_update:                       "{{ run_all | default(lms_schedules_send_course_update)                       | default(false) | bool }}"
+    _lms_schedules_send_recurring_nudge:                     "{{ run_all | default(lms_schedules_send_recurring_nudge)                     | default(false) | bool }}"
+    _lms_nau_openedx_extensions_add_archived_course_message: "{{ run_all | default(lms_nau_openedx_extensions_add_archived_course_message) | default(false) | bool }}"
 
     commands_to_execute:
       # lms tasks
@@ -39,6 +41,12 @@
         docker_exec_command: python manage.py lms send_recurring_nudge --settings nau_production {{ EDXAPP_LMS_BASE }}
         docker_exec_output_fact: lms_schedules_send_recurring_nudge_output
         when: "{{ _lms_schedules_send_recurring_nudge }}"
+      - docker_exec_name: lms nau_openedx_extensions add_archived_course_message
+        docker_stack: openedx
+        docker_service_to_exec: lms
+        docker_exec_command: python manage.py lms add_archived_course_message --settings nau_production
+        docker_exec_output_fact: lms_nau_openedx_extensions_add_archived_course_message_output
+        when: "{{ _lms_nau_openedx_extensions_add_archived_course_message }}"
 
   tasks:
     - name: Execute discovery and lms refresh jobs
