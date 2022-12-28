@@ -2,12 +2,10 @@
 - name: Find which docker image version each service is running
   # Retrieves information about docker services from a Swarm Manager
   docker_swarm_service_info:
-    name: "{{ dservice.service }}"
+    name: "{{ item.service }}"
   register: docker_swarm_service_info_result
   when: docker_swarm_build_web_server_build
-  loop: "{{ docker_swarm_build_web_server_services }}"
-  loop_control:
-    loop_var: dservice
+  with_items: "{{ docker_swarm_build_web_server_services }}"
   tags:
     - docker_swarm_build_web_server
     - docker_deploy
@@ -20,7 +18,7 @@
   when: docker_swarm_build_web_server_build
   loop: "{{ docker_swarm_service_info_result.results }}"
   loop_control:
-    label: "Check if {{ running_service.dservice.service }} is found"
+    label: "Check if {{ running_service.item.service }} is found"
     loop_var: running_service
   ignore_errors: yes # even if the container is not running we still need to build a newer one, this could happen on 1st deployment.
   tags:
