@@ -104,3 +104,6 @@ observability_fluentbit_metrics_total:
   - metrics.requests.last5m.code.3xx
   - metrics.requests.last5m.code.4xx
   - metrics.requests.last5m.code.5xx
+
+observability_docker_deploy_stack_verify_retries: 120
+observability_docker_deploy_stack_verify_delay: 60

@@ -79,3 +79,6 @@ coursecertificate_nau_urls_to_check:
     page: static/images/digital_sign/digital_signature_en.png
     port: "{{ coursecertificate_nginx_https_ingress_port }}"
     haproxy_protocol: true
+
+coursecertificate_docker_deploy_stack_verify_retries: 120
+coursecertificate_docker_deploy_stack_verify_delay: 60

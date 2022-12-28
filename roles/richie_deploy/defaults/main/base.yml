@@ -28,3 +28,6 @@ richie_docker_deploy_services_additional: "{{ (richie_elasticsearch_containers.k
 richie_docker_deploy_services_additional_list:
   #- nau_app
   - nau_app_job
+
+richie_docker_deploy_stack_verify_retries: 120
+richie_docker_deploy_stack_verify_delay: 60

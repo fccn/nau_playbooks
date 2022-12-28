@@ -71,6 +71,8 @@
     docker_deploy_secrets:             "{{ richie_docker_deploy_secrets | default([]) }}"
     docker_deploy_services_additional: "{{ richie_docker_deploy_services_additional | default([]) }}"
     docker_deploy_stack_prune:         "{{ richie_docker_deploy_stack_prune }}"
+    docker_deploy_stack_verify_retries: "{{ richie_docker_deploy_stack_verify_retries }}"
+    docker_deploy_stack_verify_delay:  "{{ richie_docker_deploy_stack_verify_delay }}"
   when: docker_swarm_manager_to_deploy is defined and docker_swarm_manager_to_deploy == inventory_hostname and richie_deploy_run | default(false)
   tags:
     - docker_deploy
@@ -79,10 +81,10 @@
   shell: make healthcheck
   args:
     chdir: "{{ richie_docker_deploy_base_folder }}"
-  delay: "{{ docker_deploy_stack_verify_delay | default(130) }}"
+  delay: "{{ richie_docker_deploy_stack_verify_delay }}"
   register: result
   until: result.rc == 0
-  retries: "{{ richie_deploy_healthcheck_retries | default(100) }}"
+  retries: "{{ richie_docker_deploy_stack_verify_retries }}"
   # run it only when deploying or when on healthcheck mode.
   when: docker_swarm_manager_to_deploy is defined and docker_swarm_manager_to_deploy == inventory_hostname and not ansible_check_mode and (richie_deploy_run | default(false)) or (healthcheck | default(false))
   changed_when: False

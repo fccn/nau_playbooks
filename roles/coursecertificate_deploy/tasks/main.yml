@@ -13,6 +13,8 @@
     docker_deploy_secrets:             "{{ coursecertificate_docker_deploy_secrets | default([]) }}"
     docker_deploy_services_additional: "{{ coursecertificate_docker_deploy_services_additional | default([]) }}"
     docker_deploy_stack_prune:         "{{ coursecertificate_docker_deploy_stack_prune }}"
+    docker_deploy_stack_verify_retries: "{{ coursecertificate_docker_deploy_stack_verify_retries }}"
+    docker_deploy_stack_verify_delay:  "{{ coursecertificate_docker_deploy_stack_verify_delay }}"
   when: docker_swarm_manager_to_deploy is defined and docker_swarm_manager_to_deploy == inventory_hostname and coursecertificate_deploy_run | default(false)
   tags:
     - docker_deploy
@@ -21,10 +23,10 @@
   shell: make healthcheck
   args:
     chdir: "{{ coursecertificate_docker_deploy_base_folder }}"
-  delay: "{{ docker_deploy_stack_verify_delay | default(15) }}"
+  delay: "{{ coursecertificate_docker_deploy_stack_verify_delay }}"
   register: result
   until: result.rc == 0
-  retries: "{{ coursecertificate_deploy_healthcheck_retries | default(100) }}" # 20 minutes of waiting
+  retries: "{{ coursecertificate_docker_deploy_stack_verify_retries}}" # 20 minutes of waiting
   # run it only when deploying or when on healthcheck mode.
   when: docker_swarm_manager_to_deploy is defined and docker_swarm_manager_to_deploy == inventory_hostname and not ansible_check_mode and (coursecertificate_deploy_run | default(false)) or (healthcheck | default(false))
   changed_when: False
