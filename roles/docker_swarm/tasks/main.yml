@@ -64,6 +64,14 @@
     - swarm
     - swarm-worker
 
+# - name: Changes all other nodes roles on 1st manager
+#   include_tasks: role.yml
+#   when: inventory_hostname == docker_swarm_manager[0] and ( configure_labels | default (true) )
+#   tags:
+#     - swarm
+#     - swarm-manager
+#     - swarm-worker
+
 - name: Configures nodes labels on the 1st manager
   include_tasks: labels.yml
   when: inventory_hostname == docker_swarm_manager[0] and ( configure_labels | default (true) )
