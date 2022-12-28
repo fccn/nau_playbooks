@@ -20,7 +20,7 @@
   when: docker_swarm_build_web_server_build
   loop: "{{ docker_swarm_service_info_result.results }}"
   loop_control:
-    label: "Check if {{ running_service.item.service }} is found"
+    label: "Check if {{ running_service.dservice.service }} is found"
     loop_var: running_service
   ignore_errors: yes # even if the container is not running we still need to build a newer one, this could happen on 1st deployment.
   tags:
