@@ -22,11 +22,14 @@
     - docker_deploy
 
 - name: Template configs for aggregator node
-  template: 
-    src: "{{ item.src }}"
-    dest: "{{ item.dest }}"
-  when: item.when | default(true) | bool
-  with_items: "{{ observability_aggregator_node_templates }}"
+  template:
+    src: "{{ observability_extra_template.src }}"
+    dest: "{{ observability_extra_template.dest }}"
+  when: (observability_deploy_run | default(false)) and ( observability_extra_template.when | default(true) | bool )
+  loop: "{{ observability_aggregator_node_templates }}"
+  loop_control:
+    label: "Template {{ observability_extra_template.dest }}"
+    loop_var: observability_extra_template
   tags: docker_deploy
 
 - name: Run healthcheck
