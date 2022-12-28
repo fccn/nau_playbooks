@@ -3,9 +3,9 @@
 - name: Deploy openark orchestrator tool
   include_role: 
     name: ansible-docker-deploy
-  tags: openark_orchestrator_docker_deploy
   vars:
     docker_deploy_base_folder: "{{ openark_orchestrator_docker_deploy_base_folder }}"
     docker_deploy_compose_template: "{{ openark_orchestrator_docker_deploy_compose_template }}"
     docker_deploy_templates: "{{ openark_orchestrator_docker_deploy_templates }}"
     docker_deploy_shell: true # use shell directly to start the docker compose
+  tags: openark_orchestrator_docker_deploy

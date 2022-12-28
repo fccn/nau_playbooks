@@ -2,6 +2,17 @@
 - name: Deploy
   include_role:
     name: ansible-docker-deploy
+  vars:
+    docker_deploy_stack_name:          "{{ coursecertificate_docker_deploy_stack_name }}"
+    docker_deploy_stack_template:      "{{ coursecertificate_docker_deploy_stack_template }}"
+    docker_deploy_base_folder:         "{{ coursecertificate_docker_deploy_base_folder }}"
+    docker_deploy_templates:           "{{ coursecertificate_docker_deploy_templates | default([]) }}"
+    docker_deploy_files:               "{{ coursecertificate_docker_deploy_files | default([]) }}"
+    docker_deploy_folders_additional:  "{{ coursecertificate_docker_deploy_folders_additional | default([]) }}"
+    docker_deploy_configs:             "{{ coursecertificate_docker_deploy_configs | default([]) }}"
+    docker_deploy_secrets:             "{{ coursecertificate_docker_deploy_secrets | default([]) }}"
+    docker_deploy_services_additional: "{{ coursecertificate_docker_deploy_services_additional | default([]) }}"
+    docker_deploy_stack_prune:         "{{ coursecertificate_docker_deploy_stack_prune }}"
   when: docker_swarm_manager_to_deploy is defined and docker_swarm_manager_to_deploy == inventory_hostname and coursecertificate_deploy_run | default(false)
   tags:
     - docker_deploy
@@ -24,6 +35,8 @@
 - name: Check URLs
   include_role:
     name: nau_check_urls
+  vars:
+    nau_urls_to_check: "{{ coursecertificate_nau_urls_to_check }}"
   when: docker_swarm_manager_to_deploy is defined and docker_swarm_manager_to_deploy == inventory_hostname and (coursecertificate_deploy_run | default(false)) or (healthcheck | default(false))
   tags:
     - docker_deploy
