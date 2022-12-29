@@ -107,3 +107,10 @@ observability_fluentbit_metrics_total:
 
 observability_docker_deploy_stack_verify_retries: 120
 observability_docker_deploy_stack_verify_delay: 60
+
+observability_fluentbit_output_opensearch_enabled: false
+observability_fluentbit_output_opensearch_host: !!null
+observability_fluentbit_output_opensearch_host_port: !!null
+observability_fluentbit_output_opensearch_index: !!null
+observability_fluentbit_output_opensearch_user: !!null
+observability_fluentbit_output_opensearch_password: !!null
