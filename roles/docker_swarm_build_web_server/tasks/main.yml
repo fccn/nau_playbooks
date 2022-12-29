@@ -91,10 +91,9 @@
     registry: "{{ docker_registry | default(omit) }}"
     username:
     state: absent
-  when: docker_swarm_build_web_server_build
   delegate_to: "{{ docker_swarm_build_node }}"
   changed_when: false
-  when: docker_registry_username is defined and docker_registry_password is defined
+  when: docker_registry_username is defined and docker_registry_password is defined and docker_swarm_build_web_server_build
   tags:
     - docker_swarm_build_web_server
     - docker_deploy
