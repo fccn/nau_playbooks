@@ -109,8 +109,25 @@ observability_docker_deploy_stack_verify_retries: 120
 observability_docker_deploy_stack_verify_delay: 60
 
 observability_fluentbit_output_opensearch_enabled: false
+observability_fluentbit_output_opensearch_outputs:
+  - match: "*"
+    index: "{{ observability_fluentbit_output_opensearch_index_all }}"
+    host: "{{ observability_fluentbit_output_opensearch_host }}"
+    host_port: "{{ observability_fluentbit_output_opensearch_host_port }}"
+    user: "{{ observability_fluentbit_output_opensearch_user }}"
+    password: "{{ observability_fluentbit_output_opensearch_password }}"
+  # Host operating system log files like /var/log/auth.log /var/log/syslog /var/log/dpkg.log /var/log/mail.log
+  - match: "host.file.*"
+    index: "{{ observability_fluentbit_output_opensearch_index_system_logs }}"
+    host: "{{ observability_fluentbit_output_opensearch_host }}"
+    host_port: "{{ observability_fluentbit_output_opensearch_host_port }}"
+    user: "{{ observability_fluentbit_output_opensearch_user }}"
+    password: "{{ observability_fluentbit_output_opensearch_password }}"
+
 observability_fluentbit_output_opensearch_host: !!null
 observability_fluentbit_output_opensearch_host_port: !!null
-observability_fluentbit_output_opensearch_index: !!null
 observability_fluentbit_output_opensearch_user: !!null
 observability_fluentbit_output_opensearch_password: !!null
+
+observability_fluentbit_output_opensearch_index_all: !!null
+observability_fluentbit_output_opensearch_index_system_logs: !!null
