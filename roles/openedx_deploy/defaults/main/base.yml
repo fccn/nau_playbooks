@@ -54,9 +54,12 @@ openedx_docker_deploy_services_additional: "{{
 
 openedx_docker_deploy_services_additional_list:
   - lms
-  - lms-worker
+  - lms-worker-default
+  - lms-worker-high
+  - lms-worker-high_mem
   - cms
-  - cms-worker
+  - cms-worker-default
+  - cms-worker-high
   - app-job
   - smtp
   - forum
