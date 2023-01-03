@@ -43,11 +43,11 @@ error_page {{ k }} {{ v }};
 
 {% include "empty_json.j2" %}
 
-  listen {{ EDXAPP_CMS_NGINX_PORT }} {{ ' http2' if openedx_nginx_http2 else '' }};
+  listen {{ EDXAPP_CMS_NGINX_PORT }} {{ ' http2' if ( cms_server.http2 | default(false) | bool ) else '' }};
 
   {% if NGINX_ENABLE_SSL %}
 
-  listen {{ EDXAPP_CMS_SSL_NGINX_PORT }} ssl{% if haproxy_tcp %} proxy_protocol{% endif %}{{ ' http2' if openedx_nginx_http2 else '' }};
+  listen {{ EDXAPP_CMS_SSL_NGINX_PORT }} ssl{% if haproxy_tcp %} proxy_protocol{% endif %}{{ ' http2' if ( cms_server.http2 | default(false) | bool ) else '' }};
 
 {% include "real_ip.j2" %}
 

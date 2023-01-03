@@ -7,7 +7,7 @@ server {
   listen 80;
 
 {% if NGINX_ENABLE_SSL %}
-  listen 443 ssl{% if haproxy_tcp %} proxy_protocol{% endif %}{{ ' http2' if openedx_nginx_http2 else '' }};
+  listen 443 ssl{% if haproxy_tcp %} proxy_protocol{% endif %}{{ ' http2' if ( openedx_insights_nginx_http2 | default(false) | bool ) else '' }};
 
 {% include "real_ip.j2" %}
   

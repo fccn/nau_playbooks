@@ -12,7 +12,7 @@ openedx_nginx_http_ingress_port: 80
 openedx_nginx_https: 443
 openedx_nginx_https_ingress_port: 443
 
-openedx_nginx_http2: true
+openedx_nginx_http2: false
 
 openedx_nginx_limit_cpus: "{{ openedx_limit_cpus }}"
 
@@ -132,11 +132,13 @@ openedx_nginx_lms_servers:
     default_server: true
     ssl_certificate: "{{ openedx_nginx_ssl_certificate_docker_target }}"
     ssl_certificate_key: "{{ openedx_nginx_ssl_certificate_key_docker_target }}"
+    http2: "{{ openedx_nginx_lms_http2 | default(openedx_nginx_http2) }}"
 
 openedx_nginx_cms_servers:
   - server_name: "{{ EDXAPP_CMS_BASE }}"
     ssl_certificate: "{{ openedx_nginx_ssl_certificate_docker_target }}"
     ssl_certificate_key: "{{ openedx_nginx_ssl_certificate_key_docker_target }}"
+    http2: "{{ openedx_nginx_cms_http2 | default(openedx_nginx_http2) }}"
 
 # from the old ansible configuration repository
 COMMON_ENABLE_BASIC_AUTH: False
