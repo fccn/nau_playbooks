@@ -31,3 +31,5 @@ richie_docker_deploy_services_additional_list:
 
 richie_docker_deploy_stack_verify_retries: 120
 richie_docker_deploy_stack_verify_delay: 60
+
+richie_docker_images_to_prefetch:  "{{ richie_sites_app | dict2items | map(attribute='value') | map(attribute='app_image') | list }}"

@@ -57,6 +57,19 @@
     - docker_swarm_build_web_server
     - docker_deploy
 
+- name: Get docker images
+  docker_image:
+    name: "{{ docker_image }}"
+    source: pull
+  # Prefetch image to docker swarm nodes that aren't on drain mode
+  when: richie_deploy_run | default(false) and ( hostvars[inventory_hostname].docker_swarm_node_availability | default('') ) != 'drain'
+  loop_control:
+    loop_var: docker_image
+    label: "Pulling docker image: {{ docker_image }}"
+  loop: "{{ richie_docker_images_to_prefetch }}"
+  tags:
+    - docker_deploy
+
 - name: Deploy
   include_role:
     name: ansible-docker-deploy
