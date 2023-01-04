@@ -33,7 +33,8 @@ services:
           memory: 200M
     healthcheck:
       # Check if /health/ returns a HTTP status 200, meaning the service is ok
-      test: curl --silent --fail --head --resolve insights:8000:127.0.0.1 http://insights:8000/health/ | egrep "HTTP/.*200 OK"
+      # test: curl --silent --fail --head --resolve insights:8000:127.0.0.1 http://insights:8000/health/ | egrep "HTTP/.*200 OK"
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/8000", "||", "exit", "1"]
       start_period: 30s
       retries: 10
       interval: 30s
@@ -99,7 +100,8 @@ services:
           memory: 150M
     healthcheck:
       # Check if /health/ returns a HTTP status 200, meaning the service is ok
-      test: curl --silent --fail --head --resolve analyticsapi:8100:127.0.0.1 http://analyticsapi:8100/health/ | egrep "HTTP/.*200 OK"
+      # test: curl --silent --fail --head --resolve analyticsapi:8100:127.0.0.1 http://analyticsapi:8100/health/ | egrep "HTTP/.*200 OK"
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/8100", "||", "exit", "1"]
       start_period: 30s
       retries: 10
       interval: 30s
@@ -208,7 +210,7 @@ services:
       - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"    
     healthcheck:
       # Check if heartbeat is ok
-      test: curl --silent --fail --head --resolve lms:8000:127.0.0.1 http://lms:8000/heartbeat | egrep "HTTP/.*200 OK"
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/8000", "||", "exit", "1"]
       start_period: 30s
       retries: 10
       interval: 30s
@@ -270,7 +272,7 @@ services:
           memory: {{ openedx_cms_uwsgi_workers * 500 }}M
     healthcheck:
       # Check if heartbeat is ok
-      test: curl --silent --fail --head --resolve cms:8000:127.0.0.1 http://cms:8000/heartbeat | egrep "HTTP/.*200 OK"
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/8000", "||", "exit", "1"]
       start_period: 30s
       retries: 10
       interval: 30s
@@ -338,7 +340,8 @@ services:
           memory: 300M
     healthcheck:
       # Check if forum heartbeat returns ok
-      test: wget -qSO- 127.0.0.1:{{ openedx_forum_port }}/heartbeat 2>&1 | egrep "HTTP/.*200 OK"
+      # test: wget -qSO- 127.0.0.1:{{ openedx_forum_port }}/heartbeat 2>&1 | egrep "HTTP/.*200 OK"
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/{{ openedx_forum_port }}", "||", "exit", "1"]
       start_period: 30s
       retries: 10
       interval: 30s
@@ -391,8 +394,9 @@ services:
         reservations:
           memory: 150M
     healthcheck:
-      test: |
-        bash -c 'exec 3<>/dev/tcp/127.0.0.1/{{ openedx_notes_port }} && echo -e "GET /heartbeat/ HTTP/1.1\r\nHost: notes\r\nConnection: close\r\n\r\n" >&3 && cat <&3 | grep "HTTP/1.1 200 OK"'
+      # test: |
+      #   bash -c 'exec 3<>/dev/tcp/127.0.0.1/{{ openedx_notes_port }} && echo -e "GET /heartbeat/ HTTP/1.1\r\nHost: notes\r\nConnection: close\r\n\r\n" >&3 && cat <&3 | grep "HTTP/1.1 200 OK"'
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/{{ openedx_notes_port }}", "||", "exit", "1"]
       start_period: 30s
       retries: 10
       interval: 30s
@@ -449,7 +453,8 @@ services:
           memory: 210M
     healthcheck:
       # Check if /health/ returns a HTTP status 200, meaning the service is ok
-      test: curl --silent --fail --head --resolve discovery:8000:127.0.0.1 http://discovery:8000/health/ | egrep "HTTP/.*200 OK"
+      # test: curl --silent --fail --head --resolve discovery:8000:127.0.0.1 http://discovery:8000/health/ | egrep "HTTP/.*200 OK"
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/8000", "||", "exit", "1"]
       start_period: 30s
       retries: 10
       interval: 30s

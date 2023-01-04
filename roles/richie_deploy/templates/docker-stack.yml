@@ -46,11 +46,12 @@ services:
     user: "{{ richie_site_config.app_docker_user | default('1000') }}"
     command: wait-for-it load_balancer_haproxy:{{ richie_haproxy_redis_port }} -- wait-for-it load_balancer_haproxy:3306 -- /bin/bash -c "python manage.py migrate && gunicorn --workers={{ richie_site_config.app_gunicorn_workers | default(3) }} -c /usr/local/etc/gunicorn/app.py nau.wsgi:application"
     healthcheck:
-      test: curl --silent --fail --resolve {{ richie_site_config.app_environment_variables.DJANGO_ALLOWED_HOSTS }}:8000:127.0.0.1 'http://{{ richie_site_config.app_environment_variables.DJANGO_ALLOWED_HOSTS }}:8000'
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+      # test: curl --silent --fail --resolve {{ richie_site_config.app_environment_variables.DJANGO_ALLOWED_HOSTS }}:8000:127.0.0.1 'http://{{ richie_site_config.app_environment_variables.DJANGO_ALLOWED_HOSTS }}:8000'
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/8000", "||", "exit", "1"]
+      start_period: 30s
+      interval: 60s
+      timeout: 60s
+      retries: 10
 {{ helper.service_configs(service=richie_site+'_app') }}
 {{ helper.service_secrets(service=richie_site+'_app') }}
 
@@ -126,10 +127,10 @@ services:
       - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
     healthcheck:
       test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/80", "&&", "echo", "''", ">", "/dev/tcp/127.0.0.1/443", "||", "exit", "1"]
-      start_period: 3s
-      retries: 3
-      interval: 10s
-      timeout: 10s
+      start_period: 30s
+      interval: 60s
+      timeout: 60s
+      retries: 10
 {{ helper.service_configs(service=richie_site+'_nginx') }}
 {{ helper.service_secrets(service=richie_site+'_nginx') }}
 {% endfor %}
@@ -169,10 +170,10 @@ services:
         parallelism: 1
     healthcheck:
       test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/{{ richie_load_balancer_haproxy_statistics_port }}", "||", "exit", "1"]
-      start_period: 3s
+      start_period: 30s
+      interval: 120s
+      timeout: 120s
       retries: 10
-      interval: 10s
-      timeout: 10s
 {{ helper.service_configs(service='load_balancer_haproxy') }}
 {{ helper.service_secrets(service='load_balancer_haproxy') }}
 

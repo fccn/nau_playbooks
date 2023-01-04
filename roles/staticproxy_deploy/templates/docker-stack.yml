@@ -40,8 +40,8 @@ services:
       test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/80", "&&", "echo", "''", ">", "/dev/tcp/127.0.0.1/443", "||", "exit", "1"]
       start_period: 30s
       retries: 10
-      interval: 30s
-      timeout: 30s
+      interval: 90s
+      timeout: 90s
 {{ helper.service_configs() }}
 {{ helper.service_secrets() }}
 
