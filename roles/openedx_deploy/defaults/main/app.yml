@@ -638,7 +638,17 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
   # Configure insights
   ANALYTICS_DASHBOARD_URL: "{{ EDXAPP_ANALYTICS_DASHBOARD_URL }}"
   ANALYTICS_DASHBOARD_NAME: "Insights"
-  
+
+  #
+  # Change default rate limits
+  #
+  # On registration form validate each field
+  REGISTRATION_VALIDATION_RATELIMIT: 1500/h
+  # Create account / registration
+  REGISTRATION_RATELIMIT: 150/h
+  # Reset password rate limits
+  RESET_PASSWORD_TOKEN_VALIDATE_API_RATELIMIT: 30/h
+  RESET_PASSWORD_API_RATELIMIT: 30/h
 
 ##################
 # LMS
