@@ -78,3 +78,6 @@ openedx_limit_cpus: "{{ ansible_processor_vcpus / 2 | int }}"
 
 openedx_docker_deploy_stack_verify_retries: 120
 openedx_docker_deploy_stack_verify_delay: 60
+
+openedx_docker_images_to_prefetch:
+  - "{{ openedx_app_image }}"

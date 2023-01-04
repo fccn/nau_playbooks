@@ -34,7 +34,7 @@
 - name: Install MySQL client for health check
   package:
     name: mysql-client
-  when: openedx_deploy_run | default(false)
+  when: docker_swarm_manager_to_deploy is defined and docker_swarm_manager_to_deploy == inventory_hostname and openedx_deploy_run | default(false)
   tags:
     - docker_deploy
 
@@ -53,6 +53,19 @@
   when: docker_swarm_manager_to_deploy is defined and docker_swarm_manager_to_deploy == inventory_hostname
   tags:
     - docker_swarm_build_web_server
+    - docker_deploy
+
+- name: Get docker images
+  docker_image:
+    name: "{{ docker_image }}"
+    source: pull
+  # Prefetch image to docker swarm nodes that aren't on drain mode
+  when: openedx_deploy_run | default(false) and ( hostvars[inventory_hostname].docker_swarm_node_availability | default('') ) != 'drain'
+  loop_control:
+    loop_var: docker_image
+    label: "Pulling docker image: {{ docker_image }}"
+  loop: "{{ openedx_docker_images_to_prefetch }}"
+  tags:
     - docker_deploy
 
 - name: Deploy
