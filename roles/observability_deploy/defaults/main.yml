@@ -65,9 +65,7 @@ observability_docker_deploy_folders_additional:
     # We don't define `when`, because we really want to create this folder on all the docker nodes
     # This container is defined on `global` mode.
 
-observability_fluentbit_docker_image: fluent/fluent-bit:1.9.8{{ '-debug' if (observability_fluentbit_debug|bool) else '' }}
-# image: fluent/fluent-bit:latest-debug
-# image: fluent/fluent-bit:latest
+observability_fluentbit_docker_image: fluent/fluent-bit:2.0.8{{ '-debug' if (observability_fluentbit_debug|bool) else '' }}
 
 # By convention we use /data/<stack name>/<container>
 # that is why we have a strange double fluentbit value.
