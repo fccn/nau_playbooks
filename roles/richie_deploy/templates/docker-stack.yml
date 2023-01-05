@@ -195,10 +195,10 @@ services:
     command: --default-authentication-plugin=mysql_native_password
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping --silent -p{{ EDXAPP_MYSQL_PASSWORD_ADMIN }} || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 30
-      start_period: 10s
+      interval: 90s
+      timeout: 60s
+      retries: 10
+      start_period: 60s
     volumes:
       - {{ mysql_container.data }}:/var/lib/mysql
     ports:
@@ -277,9 +277,9 @@ services:
       # node should be correctly connected to the cluster, but the other nodes only resolve this
       # node DNS when this container is on healthy state.
       test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/9300", "||", "exit", "1"]
-      retries: 30
-      interval: 10s
-      timeout: 10s
+      retries: 10
+      interval: 60s
+      timeout: 60s
 {% endfor %}
 
 
@@ -316,8 +316,8 @@ services:
       test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
       start_period: 30s
       retries: 10
-      interval: 30s
-      timeout: 30s
+      interval: 60s
+      timeout: 60s
 
 {% endfor %}
 
