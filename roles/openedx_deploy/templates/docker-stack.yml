@@ -703,10 +703,10 @@ services:
       MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql-root-password
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping --silent -p{{ EDXAPP_MYSQL_PASSWORD_ADMIN }} || exit 1"]
-      start_period: 30s
+      start_period: 60s
       retries: 10
-      interval: 30s
-      timeout: 30s
+      interval: 60s
+      timeout: 60s
     volumes:
       - {{ mysql_container.data }}:/var/lib/mysql
     deploy:
