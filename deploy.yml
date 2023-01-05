@@ -270,6 +270,18 @@
       pip:
         name: docker-py
 
+- name: Configure docker registry mirror
+  hosts: registry_mirror_server
+  become: True
+  gather_facts: True
+  vars:
+    _registry_mirror_deploy : "{{ registrymirror_deploy | default(false) | bool }}"
+  tasks:
+    - name: Deploy registry mirror
+      import_role:
+        name: registry_mirror_deploy
+      when: _registry_mirror_deploy
+
 # We need to install/upgrade/configure docker service, one docker swarm node at a time and
 # executing all docker stacks health checks before we upgrade the next docker node. Using this
 # approach we can upgrade all the cluster with minimal service unavailability.

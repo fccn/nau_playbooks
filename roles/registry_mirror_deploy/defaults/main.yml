@@ -1,0 +1,21 @@
+---
+registry_mirror_docker_deploy_base_folder: /nau/ops/docker_registry_mirror
+registry_mirror_docker_compose_name: "{{ registry_mirror_docker_deploy_base_folder | basename }}"
+registry_mirror_docker_deploy_compose_template: docker-compose.yml
+
+registry_mirror_docker_deploy_templates:
+  - src: config.yml
+    dest: "{{ docker_deploy_base_folder }}/config.yml"
+    docker_target: /etc/docker/registry/config.yml
+    config_name: registry_config_yml
+    service: registry
+  - src: Makefile
+    dest: "{{ docker_deploy_base_folder }}/Makefile"
+
+registry_mirror_docker_deploy_folders_additional:
+  - dest: "{{ registry_mirror_host_data_folder }}"
+
+registry_mirror_host_data_folder: /data/mirror_docker
+
+registry_mirror_docker_image: registry:2
+registry_mirror_port: 5000

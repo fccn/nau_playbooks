@@ -1,0 +1,25 @@
+{% import '_docker_deploy_helper.j2' as helper with context %}
+# {{ ansible_managed }}
+version: '3.8'
+
+services:
+  registry:
+    restart: always
+    image: {{ registry_mirror_docker_image }}
+    ports:
+      - {{ registry_mirror_port }}:{{ registry_mirror_port }}
+    environment:
+      REGISTRY_HTTP_ADDR: 0.0.0.0:{{ registry_mirror_port }}
+    volumes:
+      - {{ registry_mirror_host_data_folder }}:/var/lib/registry
+    healthcheck:
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/{{ registry_mirror_port }}", "||", "exit", "1"]
+      start_period: 30s
+      retries: 10
+      interval: 90s
+      timeout: 90s
+{{ helper.service_configs() }}
+{{ helper.service_secrets() }}
+
+{{ helper.configs() }}
+{{ helper.secrets() }}
