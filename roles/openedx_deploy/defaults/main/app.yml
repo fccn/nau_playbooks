@@ -481,6 +481,9 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
     # calculation started from the instructor dashboard will write grades CSV files to the
     # configured storage backend and give links for downloads
     ENABLE_CCX_ANALYTICS_DASHBOARD_URL: True
+    # Creating a new course run or content library with an unrecognized org slug will raise an error.
+    # This is helpful if you wish to restrict the set of organizations under which course runs and content libraries may be created.
+    ORGANIZATIONS_AUTOCREATE: False
   FILE_UPLOAD_STORAGE_BUCKET_NAME: "{{ EDXAPP_FILE_UPLOAD_STORAGE_BUCKET_NAME | default(EDXAPP_AWS_STORAGE_BUCKET_NAME) }}"
   GRADES_DOWNLOAD:
     STORAGE_CLASS: "{{ EDXAPP_GRADE_STORAGE_CLASS | default(None) }}"
