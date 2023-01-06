@@ -49,7 +49,7 @@ openedx_insights_cfg_settings_default:
       # this service isn't used very often.
       LOCATION: "redis://{% if INSIGHTS_REDIS_USERNAME and INSIGHTS_REDIS_PASSWORD %}{{ INSIGHTS_REDIS_USERNAME }}:{{ INSIGHTS_REDIS_PASSWORD }}@{% endif %}{{ INSIGHTS_REDIS_HOST }}:{{ INSIGHTS_REDIS_PRIMARY_PORT }}/{{ INSIGHTS_CACHE_REDIS_DB }}"
   CMS_COURSE_SHORTCUT_BASE_URL: "{{ INSIGHTS_CMS_BASE }}/course"
-  COURSE_API_URL: "{{ INSIGHTS_CMS_BASE }}/api/courses/v1/"
+  COURSE_API_URL: "{{ INSIGHTS_LMS_BASE }}/api/courses/v1/"
   CSRF_COOKIE_NAME: "{{ INSIGHTS_CSRF_COOKIE_NAME | default('insights_csrftoken') }}"
   CSRF_COOKIE_SECURE: "{{ INSIGHTS_CSRF_COOKIE_SECURE }}"
   DATABASES: "{{ INSIGHTS_DATABASES }}"
