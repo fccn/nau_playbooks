@@ -308,8 +308,9 @@ services:
       test: celery --app={{ worker.service_variant }}.celery inspect ping -d celery@edx.{{ worker.service_variant }}.core.{{ worker.queue }}.%$$HOSTNAME
       start_period: 120s
       retries: 10
-      interval: 120s
-      timeout: 90s
+      # Big interval because each ping uses much memory and takes a couple of seconds to execute.
+      interval: 600s # 10 minutes
+      timeout: 120s
 {{ helper.service_configs(service='edxapp') }}
 {{ helper.service_secrets(service='edxapp') }}
 
