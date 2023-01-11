@@ -110,10 +110,14 @@
   hosts: all
   become: True
   gather_facts: True
-  roles:
-    - role: users
-    - role: ssh_authorized_keys
-    - role: ansible_pakiti_client
+  tasks:
+    - import_role:
+        name: users
+      when: ansible_distribution == 'Ubuntu'
+    - import_role:
+        name: ssh_authorized_keys
+    - import_role:
+        name: ansible_pakiti_client
 
 - name: Configure hosts file
   hosts: all,!support_server,!command_and_control,!build_server
