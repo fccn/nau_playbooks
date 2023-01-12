@@ -72,7 +72,7 @@ richie_nginx_docker_deploy_files:
     service: nau_nginx
   - dest: "{{ docker_deploy_base_folder }}/nau/nginx/nginx.htpasswd"
     # don't copy the file because it is already there.
-    docker_target: /etc/nginx/nginx.htpasswd
+    docker_target: /etc/nginx/nau_nginx.htpasswd
     secret_name: nau_nginx_htpasswd
     service: nau_nginx
     when: "{{ richie_sites.nau.nginx_basic_authentication_users is defined }}"
