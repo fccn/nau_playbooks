@@ -400,7 +400,7 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
     EMBARGO: false
     ENABLE_COMBINED_LOGIN_REGISTRATION: true
     ENABLE_COMBINED_LOGIN_REGISTRATION_FOOTER: true
-    ENABLE_COOKIE_CONSENT: true
+    ENABLE_COOKIE_CONSENT: false # disable cookie bar
     ENABLE_CORS_HEADERS: true
     ENABLE_COSMETIC_DISPLAY_PRICE: false
     ENABLE_COUNTRY_ACCESS: false
