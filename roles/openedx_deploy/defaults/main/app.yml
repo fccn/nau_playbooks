@@ -188,6 +188,9 @@ COMMON_JWT_AUTH_REFRESH_COOKIE: 'edx-jwt-refresh-cookie'
 EDXAPP_SESSION_COOKIE_DOMAIN: ".{{ EDXAPP_LMS_BASE }}"
 EDXAPP_AWS_S3_CUSTOM_DOMAIN: ""
 
+EDXAPP_CELERY_TIMEZONE: UTC
+EDXAPP_TIME_ZONE: UTC
+
 ###########################################
 # bridge from OPENEDX to EDXAPP variables #
 ###########################################
@@ -613,7 +616,7 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
     - nau_user_extended_model_employment_situation
   SUPPORT_SITE_LINK: "{{ EDXAPP_SUPPORT_SITE_LINK }}"
   TIME_ZONE: "{{ EDXAPP_TIME_ZONE }}"
-  CELERY_TIMEZONE: "{{ EDXAPP_TIME_ZONE }}"
+  CELERY_TIMEZONE: "{{ EDXAPP_CELERY_TIMEZONE }}"
   VIDEO_TRANSCRIPTS_SETTINGS: "{{ EDXAPP_VIDEO_TRANSCRIPTS_SETTINGS }}"
 
   # Django media url configuration

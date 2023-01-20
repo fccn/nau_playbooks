@@ -142,7 +142,7 @@ INSIGHTS_OAUTH2_URL_ROOT: '{{ INSIGHTS_LMS_BASE }}/oauth2'
 INSIGHTS_OAUTH2_URL_LOGOUT: '{{ INSIGHTS_LMS_BASE }}/logout'
 INSIGHTS_OPEN_SOURCE_URL: https://github.com/fccn/edx-analytics-dashboard
 INSIGHTS_SEGMENT_IO_KEY: 'YOUR_KEY'
-INSIGHTS_TIME_ZONE: 'Europe/Lisbon'
+INSIGHTS_TIME_ZONE: UTC # 'Europe/Lisbon'
 
 # Redis Insights configuration
 # Because this service isn't used very often, the redis connection raises "Connection reset by peer"
