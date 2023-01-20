@@ -55,7 +55,7 @@
     - docker_swarm_build_web_server
     - docker_deploy
 
-- name: Get docker images
+- name: Prefetch docker images
   docker_image:
     name: "{{ docker_image }}"
     source: pull
