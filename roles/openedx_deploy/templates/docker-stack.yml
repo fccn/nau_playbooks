@@ -23,7 +23,7 @@ services:
         max_replicas_per_node: {{ ( openedx_insights_replicas / docker_swarm_cluster_group_length | int ) | round(0, 'ceil') | int }}
 {% if openedx_insights_constraint | default(false) | bool %}
         constraints:
-          - node.labels.openedx_insights == true
+          - node.labels.docker_node_constraint_label_openedx_insights == true
 {% endif %}
       resources:
         limits:
@@ -58,7 +58,7 @@ services:
       placement:
 {% if openedx_insights_job_constraint | default(false) | bool %}
         constraints:
-          - node.labels.openedx_insights_job == true
+          - node.labels.docker_node_constraint_label_openedx_insights_job == true
 {% endif %}
       resources:
         limits:
@@ -90,7 +90,7 @@ services:
         max_replicas_per_node: {{ ( openedx_analyticsapi_replicas / docker_swarm_cluster_group_length | int ) | round(0, 'ceil') | int }}
 {% if openedx_analyticsapi_constraint | default(false) | bool %}
         constraints:
-          - node.labels.openedx_analyticsapi == true
+          - node.labels.docker_node_constraint_label_openedx_analyticsapi == true
 {% endif %}
       resources:
         limits:
@@ -125,7 +125,7 @@ services:
       placement:
 {% if openedx_analyticsapi_job_constraint | default(false) | bool %}
         constraints:
-          - node.labels.openedx_analyticsapi_job == true
+          - node.labels.docker_node_constraint_label_openedx_analyticsapi_job == true
 {% endif %}
       resources:
         limits:
@@ -164,7 +164,7 @@ services:
         max_replicas_per_node: {{ ( openedx_nginx_replicas / docker_swarm_cluster_group_length | int ) | round(0, 'ceil') | int }}
 {% if openedx_nginx_constraint | default(false) | bool %}
         constraints:
-          - node.labels.openedx_nginx == true
+          - node.labels.docker_node_constraint_label_openedx_nginx == true
 {% endif %}
       resources:
         limits:
@@ -197,7 +197,7 @@ services:
         max_replicas_per_node: {{ ( openedx_lms_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
 {% if openedx_lms_deploy_constraint | default(false) | bool %}
         constraints:
-          - node.labels.openedx_lms == true
+          - node.labels.docker_node_constraint_label_openedx_lms == true
 {% endif %}
       resources:
         limits:
@@ -236,7 +236,7 @@ services:
       placement:
 {% if openedx_app_job_deploy_constraint | default(false) | bool %}
         constraints:
-          - node.labels.openedx_app_job == true
+          - node.labels.docker_node_constraint_label_openedx_app_job == true
 {% endif %}
       resources:
         limits:
@@ -261,7 +261,7 @@ services:
         max_replicas_per_node: {{ ( openedx_cms_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
 {% if openedx_cms_deploy_constraint | default(false) | bool %}
         constraints:
-          - node.labels.openedx_cms == true
+          - node.labels.docker_node_constraint_label_openedx_cms == true
 {% endif %}
       resources:
         limits:
@@ -331,7 +331,7 @@ services:
         max_replicas_per_node: {{ ( openedx_forum_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
 {% if openedx_forum_deploy_constraint | default(false) | bool %}
         constraints:
-          - node.labels.openedx_forum == true
+          - node.labels.docker_node_constraint_label_openedx_forum == true
 {% endif %}
       resources:
         limits:
@@ -365,7 +365,7 @@ services:
       placement:
 {% if openedx_forum_job_deploy_constraint | default(false) | bool %}
         constraints:
-          - node.labels.openedx_forum_job == true
+          - node.labels.docker_node_constraint_label_openedx_forum_job == true
 {% endif %}
       resources:
         limits:
@@ -386,7 +386,7 @@ services:
         max_replicas_per_node: {{ ( openedx_notes_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
 {% if openedx_notes_deploy_constraint | default(false) | bool %}
         constraints:
-          - node.labels.openedx_notes == true
+          - node.labels.docker_node_constraint_label_openedx_notes == true
 {% endif %}
       resources:
         limits:
@@ -421,7 +421,7 @@ services:
       placement:
 {% if openedx_notes_job_deploy_constraint | default(false) | bool %}
         constraints:
-          - node.labels.openedx_notes_job == true
+          - node.labels.docker_node_constraint_label_openedx_notes_job == true
 {% endif %}
       resources:
         limits:
@@ -444,7 +444,7 @@ services:
         max_replicas_per_node: {{ ( openedx_discovery_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
 {% if openedx_discovery_deploy_constraint | default(false) | bool %}
         constraints:
-          - node.labels.openedx_discovery == true
+          - node.labels.docker_node_constraint_label_openedx_discovery == true
 {% endif %}
       resources:
         limits:
@@ -479,7 +479,7 @@ services:
       placement:
 {% if openedx_discovery_job_deploy_constraint | default(false) | bool %}
         constraints:
-          - node.labels.openedx_discovery_job == true
+          - node.labels.docker_node_constraint_label_openedx_discovery_job == true
 {% endif %}
       resources:
         limits:
@@ -502,7 +502,7 @@ services:
         max_replicas_per_node: {{ ( openedx_smtp_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
 {% if openedx_smtp_deploy_constraint | default(false) | bool %}
         constraints:
-          - node.labels.openedx_smtp == true
+          - node.labels.docker_node_constraint_label_openedx_smtp == true
 {% endif %}
       resources:
         limits:
@@ -670,7 +670,7 @@ services:
         max_replicas_per_node: {{ ( openedx_haproxy_replicas / docker_swarm_cluster_group_length | int ) | round(0, 'ceil') | int }}
 {% if openedx_haproxy_deploy_constraint | default(false) | bool %}
         constraints:
-          - node.labels.openedx_haproxy == true
+          - node.labels.docker_node_constraint_label_openedx_haproxy == true
 {% endif %}
       resources:
         limits:

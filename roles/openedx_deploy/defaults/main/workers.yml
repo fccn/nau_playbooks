@@ -46,7 +46,7 @@ openedx_celery_workers:
     deploy_replicas: "{{ openedx_lms_worker_replicas }}"
     deploy_max_replicas_per_node: "{{ ( openedx_lms_worker_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}"
     deploy_constraint: "{{ openedx_lms_worker_deploy_constraint | default(false) | bool }}"
-    deploy_constraint_label: openedx_lms_worker
+    deploy_constraint_label: docker_node_constraint_label_openedx_lms_worker
     deploy_resources_limit_memory: "{{ openedx_lms_worker_celery_processes * 1000 }}M"
     deploy_resources_limit_cpus: "{{ openedx_lms_worker_limit_cpus }}"
     deploy_resources_reservations_memory: "{{ openedx_lms_worker_celery_processes * 400 }}M"
@@ -58,7 +58,7 @@ openedx_celery_workers:
     deploy_replicas: "{{ openedx_lms_worker_replicas }}"
     deploy_max_replicas_per_node: "{{ ( openedx_lms_worker_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}"
     deploy_constraint: "{{ openedx_lms_worker_deploy_constraint | default(false) | bool }}"
-    deploy_constraint_label: openedx_lms_worker
+    deploy_constraint_label: docker_node_constraint_label_openedx_lms_worker
     deploy_resources_limit_memory: "{{ openedx_lms_worker_celery_processes * 1000 }}M"
     deploy_resources_limit_cpus: "{{ openedx_lms_worker_limit_cpus }}"
     deploy_resources_reservations_memory: "{{ openedx_lms_worker_celery_processes * 400 }}M"
@@ -70,7 +70,7 @@ openedx_celery_workers:
     deploy_replicas: "{{ openedx_lms_worker_replicas }}"
     deploy_max_replicas_per_node: "{{ ( openedx_lms_worker_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}"
     deploy_constraint: "{{ openedx_lms_worker_deploy_constraint | default(false) | bool }}"
-    deploy_constraint_label: openedx_lms_worker
+    deploy_constraint_label: docker_node_constraint_label_openedx_lms_worker
     deploy_resources_limit_memory: "{{ openedx_lms_worker_celery_processes * 1000 }}M"
     deploy_resources_limit_cpus: "{{ openedx_lms_worker_limit_cpus }}"
     deploy_resources_reservations_memory: "{{ openedx_lms_worker_celery_processes * 400 }}M"
@@ -82,7 +82,7 @@ openedx_celery_workers:
     deploy_replicas: "{{ openedx_cms_worker_replicas }}"
     deploy_max_replicas_per_node: "{{ ( openedx_cms_worker_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}"
     deploy_constraint: "{{ openedx_cms_worker_deploy_constraint | default(false) | bool }}"
-    deploy_constraint_label: openedx_cms_worker
+    deploy_constraint_label: docker_node_constraint_label_openedx_cms_worker
     deploy_resources_limit_memory: "{{ openedx_cms_worker_celery_processes * 1000 }}M"
     deploy_resources_limit_cpus: "{{ openedx_cms_worker_limit_cpus }}"
     deploy_resources_reservations_memory: "{{ openedx_cms_worker_celery_processes * 400 }}M"
@@ -94,7 +94,7 @@ openedx_celery_workers:
     deploy_replicas: "{{ openedx_cms_worker_replicas }}"
     deploy_max_replicas_per_node: "{{ ( openedx_cms_worker_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}"
     deploy_constraint: "{{ openedx_cms_worker_deploy_constraint | default(false) | bool }}"
-    deploy_constraint_label: openedx_cms_worker
+    deploy_constraint_label: docker_node_constraint_label_openedx_cms_worker
     deploy_resources_limit_memory: "{{ openedx_cms_worker_celery_processes * 1000 }}M"
     deploy_resources_limit_cpus: "{{ openedx_cms_worker_limit_cpus }}"
     deploy_resources_reservations_memory: "{{ openedx_cms_worker_celery_processes * 400 }}M"
