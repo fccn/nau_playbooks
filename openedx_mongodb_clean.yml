@@ -1,0 +1,92 @@
+# Ansible playbook to:
+#
+# Recover space on MongoDB for edx-platform by deleting unreachable, historical course content data.
+#
+# The intention of this playbook is to be run periodically with a greater schedule, like weekly or monthly. 
+# On a time where the platform isn't in use, like from the night of Saturday to Sunday.
+#
+# Example generate make plan, but don't delete anything:
+#   ansible-playbook -i nau-data/envs/development/hosts.ini openedx_mongodb_clean.yml
+#
+# Example generate make plan and delete/prune older information:
+#   ansible-playbook -i nau-data/envs/development/hosts.ini openedx_mongodb_clean.yml -e prune=true
+#
+---
+- name: Exports information to excel from Open EDX LMS/Studio databases
+  # by default  run on the last swarm server on the inventory
+  hosts: "nau_docker_swarm_servers:&{{ target | default('nau_docker_swarm_servers') }}[-1]"
+  become: True
+  gather_facts: True
+  vars:
+    _tubular_version: "{{ version | default('open-release/lilac.master') }}"
+    _tubular_repo: "{{ repo | default('https://github.com/openedx/tubular.git') }}"
+    _tubular_base_directory: /tmp/openedx-tubular
+    _tubular_git_directory: "/tmp/openedx-tubular/tubular"
+    _tubular_virtualenv_directory: "/tmp/openedx-tubular/venv"
+    _tubular_make_plan: "{{ make_plan | default(true) | bool }}"
+    _tubular_prune: "{{ prune | default(false) | bool }}"
+    _tubular_docker_image: openedx_tubular:latest
+    _tubular_docker_run: docker run -t --rm --name openedx-tubular -v {{ _tubular_base_directory }}/output:/data {{ _tubular_docker_image }}
+    _tubular_mongodb_connection: mongodb://{{ EDXAPP_MONGO_USER }}:{{ EDXAPP_MONGO_PASSWORD }}@{{ EDXAPP_MONGO_HOSTS[0] }}:{{ EDXAPP_MONGO_PORT }}/{{ EDXAPP_MONGO_DB_NAME }}
+  tasks:
+
+    - name: Clone tubular tool
+      git:
+        repo: "{{ _tubular_repo }}"
+        dest: "{{ _tubular_base_directory }}"
+        version: "{{ _tubular_version }}"
+        force: yes
+    
+    - name: Create output folder
+      file:
+        path: "{{ _tubular_base_directory }}/output"
+        state: directory
+
+    # we need a custom Dockerfile because the one that exists in the repository is incompatible with
+    # the pip requirements
+    - name: Template new Dockerfile
+      copy:
+        dest: "{{ _tubular_base_directory }}/Dockerfile"
+        content: |
+          FROM python:3.8-buster
+          WORKDIR /app
+          ADD . /app
+          RUN pip install .
+
+    - name: Build docker image
+      shell:
+        docker build -t {{ _tubular_docker_image }} .
+      args:
+        chdir: "{{ _tubular_base_directory }}"
+
+    - name: Runs make_plan on structures.py to make a change plan
+      shell: |
+        {{ _tubular_docker_run }} structures.py --connection="{{ _tubular_mongodb_connection }}" --database-name {{ EDXAPP_MONGO_DB_NAME }} make_plan -v DEBUG /data/out.json --details /data/details.txt --delay 2000 --batch-size 1000
+      register: make_plan_output
+      when: _tubular_make_plan
+
+    - name: Print stdout of make_plan output
+      debug:
+        msg: "{{ make_plan_output.stdout_lines }}"
+      when: make_plan_output.stdout_lines is defined and _tubular_make_plan
+
+    - name: Print stderr of make_plan output
+      debug:
+        msg: "{{ make_plan_output.stderr_lines }}"
+      when: make_plan_output.stderr_lines is defined and _tubular_make_plan
+
+    - name: Runs prune on the structures.py to delete/prune the older course structures
+      shell: |
+        {{ _tubular_docker_run }} structures.py --connection="{{ _tubular_mongodb_connection }}" --database-name {{ EDXAPP_MONGO_DB_NAME }} prune /data/out.json --delay 2000 --batch-size 1000
+      register: prune_output
+      when: _tubular_prune
+
+    - name: Print stdout of prune output
+      debug:
+        msg: "{{ prune_output.stdout_lines }}"
+      when: prune_output.stdout_lines is defined and _tubular_prune
+
+    - name: Print stderr of prune output
+      debug:
+        msg: "{{ prune_output.stderr_lines }}"
+      when: prune_output.stderr_lines is defined and _tubular_prune
