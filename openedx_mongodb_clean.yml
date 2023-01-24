@@ -27,7 +27,7 @@
     _tubular_prune: "{{ prune | default(false) | bool }}"
     _tubular_docker_image: openedx_tubular:latest
     _tubular_docker_run: docker run -t --rm --name openedx-tubular -v {{ _tubular_base_directory }}/output:/data {{ _tubular_docker_image }}
-    _tubular_mongodb_connection: mongodb://{{ EDXAPP_MONGO_USER }}:{{ EDXAPP_MONGO_PASSWORD }}@{{ EDXAPP_MONGO_HOSTS[0] }}:{{ EDXAPP_MONGO_PORT }}/{{ EDXAPP_MONGO_DB_NAME }}
+    _tubular_mongodb_connection: mongodb://{{ EDXAPP_MONGO_USER }}:{{ EDXAPP_MONGO_PASSWORD }}@{%- for host in EDXAPP_MONGO_HOSTS -%}{{ host }}:{{ EDXAPP_MONGO_PORT }}{%- if not loop.last -%},{%- endif -%}{%- endfor -%}/{{ EDXAPP_MONGO_DB_NAME }}
   tasks:
 
     - name: Clone tubular tool
