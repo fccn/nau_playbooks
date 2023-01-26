@@ -56,9 +56,10 @@ openedx_smtp_external_password: "" # leave this blank to disable authentication
 # Redis
 # use load balancer to use the right redis instance based on the availability of the 1st cluster
 # or if not available use the 2nd.
-OPENEDX_REDIS_HOST: haproxy
+# OPENEDX_REDIS_HOST: haproxy
+OPENEDX_REDIS_HOST: redis_1
 OPENEDX_REDIS_PRIMARY_PORT: 6379
-OPENEDX_REDIS_REPLICAS_PORT: 6380
+# OPENEDX_REDIS_REPLICAS_PORT: 6380
 OPENEDX_REDIS_USERNAME: ""
 OPENEDX_REDIS_PASSWORD: ""
 
@@ -88,9 +89,9 @@ openedx_generic_cache_config: &default_openedx_generic_cache_config
   # https://github.com/fccn/nau-tutor-configs/commit/bfd251b6b3cd7440c22aa47fbda536eeddec6a8e
   # If the `django-sentinel` package isn't available use this configuration instead:
   # LOCATION: mymaster/redis-sentinel:26379,redis-sentinel:26379/0
-  OPTIONS:
-    SOCKET_TIMEOUT: 3200 # seconds
-    SOCKET_CONNECT_TIMEOUT: 30 # seconds
+  # OPTIONS:
+  #   SOCKET_TIMEOUT: 3200 # seconds
+  #   SOCKET_CONNECT_TIMEOUT: 30 # seconds
     # CLIENT_CLASS: "django_sentinel.SentinelClient"
     # Ignore exceptions when redis is down, this is default behavior in the memcached backend.
     # In reality can't be included because if redis is down, the LMS shows a message to the user
