@@ -1,0 +1,30 @@
+---
+- name: Deploy
+  include_role:
+    name: ansible-docker-deploy
+  vars:
+    docker_deploy_base_folder:         "{{ mongo_docker_deploy_base_folder }}"
+    docker_deploy_compose_template:    "{{ mongo_docker_deploy_compose_template }}"
+    docker_deploy_templates:           "{{ mongo_docker_deploy_templates | default([]) }}"
+    docker_deploy_files:               "{{ mongo_docker_deploy_files | default([]) }}"
+    docker_deploy_folders_additional:  "{{ mongo_docker_deploy_folders_additional | default([]) }}"
+    docker_deploy_configs:             "{{ mongo_docker_deploy_configs | default([]) }}"
+    docker_deploy_secrets:             "{{ mongo_docker_deploy_secrets | default([]) }}"
+    docker_deploy_services_additional: "{{ mongo_docker_deploy_services_additional | default([]) }}"
+    docker_deploy_shell: true
+  tags:
+    - docker_deploy
+
+- name: Run healthcheck
+  shell: make healthcheck
+  args:
+    chdir: "{{ mongo_docker_deploy_base_folder }}"
+  delay: "{{ mongo_docker_deploy_stack_verify_delay }}"
+  register: result
+  until: result.rc == 0
+  retries: "{{ mongo_docker_deploy_stack_verify_retries }}"
+  # run it only when deploying or when on healthcheck mode.
+  changed_when: False
+  tags: 
+    - healthcheck
+    - docker_deploy

@@ -1,0 +1,36 @@
+---
+mongo_docker_instance_name: mongo
+mongo_docker_initdb_root_username: !!null
+mongo_docker_initdb_root_password: !!null
+mongo_docker_published_port: 27017
+
+mongo_docker_image: docker.io/mongo:3.6.23
+
+mongo_docker_deploy_parent_folder: /nau/ops
+mongo_docker_deploy_base_folder: "{{ mongo_docker_deploy_parent_folder }}/{{ mongo_docker_instance_name }}"
+mongo_docker_deploy_compose_template: templates/docker-compose.yml.j2
+
+mongo_docker_container_name: "{{ mongo_docker_deploy_base_folder | basename }}"
+mongo_docker_deploy_stack_verify_delay: 5
+mongo_docker_deploy_stack_verify_retries: 50
+
+# Files to be templated during deployment
+mongo_docker_deploy_templates:
+  - src_data: "{{ EDXAPP_MYSQL_PASSWORD_ADMIN }}"
+    dest: "{{ mongo_docker_deploy_base_folder }}/mongo/mongo-root-username"
+    secret_name: mongo_root_username
+    service: mongo
+    docker_target: "{{ mongo_docker_secret_root_username_file_path }}"
+  - src_data: "{{ EDXAPP_MYSQL_PASSWORD_ADMIN }}"
+    dest: "{{ mongo_docker_deploy_base_folder }}/mongo/mongo-root-password"
+    secret_name: mongo_root_password
+    service: mongo
+    docker_target: "{{ mongo_docker_secret_root_password_file_path }}"
+  - src: templates/Makefile
+    dest: "{{ mongo_docker_deploy_base_folder }}/Makefile"
+
+# File path where the docker secrets are stored inside the mongo docker container
+mongo_docker_secret_root_username_file_path: /run/secrets/mongo-root-username
+mongo_docker_secret_root_password_file_path: /run/secrets/mongo-root-password
+
+mongo_docker_volume_path: /data/{{ mongo_docker_instance_name }}

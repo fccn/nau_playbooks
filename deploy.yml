@@ -71,6 +71,8 @@
 #   To deploy the docker registry mirror
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit registry_mirror_server -e registrymirror_deploy=true
 #
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml -e mongo_deploy=true --limit mongo_docker_servers
+#
 - name: Bootstrap instances of 16.04
   hosts: all,!idpproxy_servers,!nau_docker_swarm_managers,!nau_docker_swarm_workers,!support_server,!build_server
   gather_facts: no
@@ -409,3 +411,20 @@
       vars:
         observability_deploy_run: "{{ observability_deploy | default(false) }}"
         observability_deploy_create_volumes: "{{ observability_deploy | default(false) }}"
+
+- name: Deploy docker stacks to the 1st docker swarm manager
+  hosts: mongo_docker_servers
+  become: True
+  gather_facts: True
+  vars:
+    docker_swarm_manager_to_deploy: "{{ groups['nau_docker_swarm_managers'][0] }}"
+    docker_swarm_cluster_group_length: "{{ groups['nau_docker_swarm_servers'] | length }}"
+  tasks:
+    - name: Deploy mongo
+      import_role:
+        name: mongo_docker_deploy
+      vars:
+        # mongo_docker_instance_name
+        mongo_docker_initdb_root_username: "{{ MONGO_ADMIN_USER | default('admin') }}"
+        mongo_docker_initdb_root_password: "{{ MONGO_ADMIN_PASSWORD }}"
+      when: mongo_deploy | default(false) | bool
