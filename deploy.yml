@@ -427,4 +427,5 @@
         # mongo_docker_instance_name
         mongo_docker_initdb_root_username: "{{ MONGO_ADMIN_USER | default('admin') }}"
         mongo_docker_initdb_root_password: "{{ MONGO_ADMIN_PASSWORD }}"
+        mongo_docker_replSet: "{{ MONGO_REPL_SET }}"
       when: mongo_deploy | default(false) | bool

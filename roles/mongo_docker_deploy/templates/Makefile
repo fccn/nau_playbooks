@@ -51,6 +51,10 @@ bash-{{ mongo_docker_container_name }}: _{{ mongo_docker_container_name }}-bash 
 sh-{{ mongo_docker_container_name }}: _{{ mongo_docker_container_name }}-bash ## Open sh on the current node for the {{ mongo_docker_container_name }} docker service
 .PHONY: sh-{{ mongo_docker_container_name }}
 
+mongo-shell: ## Open mongo shell
+	docker exec -it $$(docker ps --filter "name={{ mongo_docker_container_name }}" -q) bash -c 'mongo -u $$(<$$MONGO_INITDB_ROOT_USERNAME_FILE) -p $$(<$$MONGO_INITDB_ROOT_PASSWORD_FILE)'
+.PHONY: mongo-shell
+
 # Silent mode other targets.
 # To run `healthcheck` target on silient mode, run it like `make silent-healthcheck`.
 # It will print "OK" if everything is fine.
@@ -59,6 +63,6 @@ silent-%:
 
 healthcheck: ## Check the mongo port is up
 	@echo -n "Check mongo port: "
-	@nc -z 127.0.0.1 {{ mongo_docker_published_port }}
+	@nc -z 127.0.0.1 {{ mongo_docker_port }}
 	@echo "OK"
 .PHONY: healthcheck

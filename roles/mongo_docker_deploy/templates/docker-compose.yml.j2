@@ -10,7 +10,7 @@ services:
   mongo:
     image: {{ mongo_docker_image }}
     container_name: {{ mongo_docker_container_name }}
-    command: --replSet {{ MONGO_REPL_SET }} --bind_ip localhost,{{ mongo_docker_container_name }}
+    command: --replSet {{ mongo_docker_replSet }} --port {{ mongo_docker_port }} --bind_ip localhost,{{ mongo_docker_container_name }},{{ ansible_host }}
     restart: always
     environment:
       TZ: {{ mongo_timezone | default("Europe/Lisbon") }}
@@ -18,13 +18,9 @@ services:
       MONGO_INITDB_ROOT_PASSWORD_FILE: {{ mongo_docker_secret_root_password_file_path }}
     volumes:
       - {{ mongo_docker_volume_path }}:/data/db
-    ports:
-      - target: 27017
-        published: {{ mongo_docker_published_port }}
-        protocol: tcp
-        mode: ingress
+    network_mode: host
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongo localhost:27017/test --quiet
+      test: echo 'db.runCommand("ping").ok' | mongo localhost:{{ mongo_docker_port }}/test --quiet
       interval: 60s
       timeout: 50s
       retries: 10
