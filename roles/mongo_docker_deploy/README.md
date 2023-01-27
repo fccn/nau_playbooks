@@ -3,12 +3,9 @@
 Deploy Mongo DB service using a docker compose file.
 
 This role deploys a Mongo DB service using `host` network.
-Alternatively it would require that all the other mongo nodes has `extra_hosts` configuration
-and the clients also has an `extra_hosts` to know the real IP address of each Mongo node.
 
 Deploying a MongoDB Cluster with Docker
 https://www.mongodb.com/compatibility/deploying-a-mongodb-cluster-with-docker
-
 
 ## Add Members to a Replica Set
 https://www.mongodb.com/docs/v3.6/tutorial/expand-replica-set/
@@ -17,21 +14,26 @@ Deploy this role to new server.
 
 Connect to the replica set’s primary. Run this to know which is the primary.
 ```
+ssh pers...
+mongo admin -u admin -pXXXXXXX -host rs0/localhost
 db.hello()
 ```
 
 Add this new mongo to the replica set.
 ```
-rs.add( { host: "mongodb3.example.net:27017", priority: 0, votes: 0 } )
+rs.add( { host: "<new VM>:27017", priority: 0, votes: 0 } )
 ```
 
 Ensure it reaches SECONDARY state.
 ```
+ssh <new VM>
+mongo admin -u admin -pXXXXXXX -host rs0/localhost
 rs.status()
 ```
 
-Deploy the new node to clients, like open edx.
+Deploy the new node to Mongo DB clients. On Open edX add that new node on the list of Mongo connection string.
 
+Once the newly added member has transitioned into SECONDARY state, use rs.reconfig() to update the newly added member’s priority and votes if needed.
 Update the new node:
 ```
 var cfg = rs.conf();
