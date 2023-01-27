@@ -33,27 +33,25 @@ ps: ## list containers
 	docker-compose ps
 .PHONY: ps
 
-# View the logs of the specified service container
-_%-logs:
-	docker-compose logs $*
+logs: ## View logs
+	docker-compose logs -f
+.PHONY: logs
 
-# Open bash
-_%-bash:
-	@docker exec -it $$(docker ps --filter "name=$*\." -q) bash
-
-# Open sh
-_%-sh:
+shell: ## Open shell
 	@docker exec -it $$(docker ps --filter "name=$*\." -q) sh
+.PHONY: shell
 
-bash-{{ mongo_docker_container_name }}: _{{ mongo_docker_container_name }}-bash ## Open bash on the current node for the {{ mongo_docker_container_name }} docker service
-.PHONY: bash-{{ mongo_docker_container_name }}
-
-sh-{{ mongo_docker_container_name }}: _{{ mongo_docker_container_name }}-bash ## Open sh on the current node for the {{ mongo_docker_container_name }} docker service
-.PHONY: sh-{{ mongo_docker_container_name }}
+bash: ## Open bash on the current node for the {{ mongo_docker_container_name }} docker service
+	@docker exec -it $$(docker ps --filter "name={{ mongo_docker_container_name }}" -q) bash
+.PHONY: bash
 
 mongo-shell: ## Open mongo shell
 	docker exec -it $$(docker ps --filter "name={{ mongo_docker_container_name }}" -q) bash -c 'mongo -u $$(<$$MONGO_INITDB_ROOT_USERNAME_FILE) -p $$(<$$MONGO_INITDB_ROOT_PASSWORD_FILE)'
 .PHONY: mongo-shell
+
+mongo-status: ## Open mongo shell
+        docker exec -it $$(docker ps --filter "name=mongo" -q) bash -c 'mongo -u $$(<$$MONGO_INITDB_ROOT_USERNAME_FILE) -p $$(<$$MONGO_INITDB_ROOT_PASSWORD_FILE) --eval "rs.status()"'
+.PHONY: mongo-status
 
 # Silent mode other targets.
 # To run `healthcheck` target on silient mode, run it like `make silent-healthcheck`.
