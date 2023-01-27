@@ -50,7 +50,7 @@ mongo-shell: ## Open mongo shell
 .PHONY: mongo-shell
 
 mongo-status: ## Open mongo shell
-        docker exec -it $$(docker ps --filter "name=mongo" -q) bash -c 'mongo -u $$(<$$MONGO_INITDB_ROOT_USERNAME_FILE) -p $$(<$$MONGO_INITDB_ROOT_PASSWORD_FILE) --eval "rs.status()"'
+	docker exec -it $$(docker ps --filter "name=mongo" -q) bash -c 'mongo -u $$(<$$MONGO_INITDB_ROOT_USERNAME_FILE) -p $$(<$$MONGO_INITDB_ROOT_PASSWORD_FILE) --eval "rs.status()"'
 .PHONY: mongo-status
 
 # Silent mode other targets.
