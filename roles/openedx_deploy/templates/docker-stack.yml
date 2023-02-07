@@ -256,6 +256,7 @@ services:
     deploy:
       replicas: {{ openedx_cms_replicas }}
       update_config:
+        order: start-first
         parallelism: {{ openedx_cms_deploy_parallelism }}
       placement:
         max_replicas_per_node: {{ ( openedx_cms_replicas / ( docker_swarm_cluster_group_length | int ) ) | round(0, 'ceil') | int }}
