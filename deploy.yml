@@ -448,11 +448,14 @@
     - name: Install or upgrade docker daemon
       import_role:
         name: geerlingguy.docker
+      when: redis_deploy | default(false) | bool
 
     - import_role:
         name: snmpd
+      when: redis_deploy | default(false) | bool
     - import_role:
         name: snmpd_docker
+      when: redis_deploy | default(false) | bool
 
     - name: Deploy cache redis
       import_role:
