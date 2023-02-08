@@ -14,7 +14,6 @@ redis_docker_deploy_parent_folder: /nau/ops
 redis_docker_deploy_base_folder: "{{ redis_docker_deploy_parent_folder }}/{{ redis_docker_instance_name }}"
 redis_docker_deploy_compose_template: templates/docker-compose.yml.j2
 
-redis_docker_container_name: "{{ redis_docker_deploy_base_folder | basename }}"
 redis_docker_deploy_stack_verify_delay: 5
 redis_docker_deploy_stack_verify_retries: 50
 

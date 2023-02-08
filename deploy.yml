@@ -77,14 +77,15 @@
 #   To deploy Redis cache
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml -e redis_deploy=true --limit redis_docker_servers
 #
-- name: Bootstrap instances of 16.04
-  hosts: all,!idpproxy_servers,!nau_docker_swarm_managers,!nau_docker_swarm_workers,!support_server,!build_server
-  gather_facts: no
-  become: true
-  tasks:
-    - import_role:
-        name: python_minimal
-      when: ansible_python_interpreter is not defined
+
+# - name: Bootstrap instances of 16.04
+#   hosts: all,!idpproxy_servers,!nau_docker_swarm_managers,!nau_docker_swarm_workers,!support_server,!build_server
+#   gather_facts: no
+#   become: true
+#   tasks:
+#     - import_role:
+#         name: python_minimal
+#       when: ansible_python_interpreter is not defined
 
 - name: Bootstrap instances of Ubuntu 20.04
   hosts: all
@@ -356,7 +357,7 @@
       tags: global_healthcheck
 
 - name: Configure other snmpd and docker swarm
-  hosts: nau_docker_swarm_managers,nau_docker_swarm_workers,redis_docker_servers
+  hosts: nau_docker_swarm_managers,nau_docker_swarm_workers
   become: True
   gather_facts: True
   vars:
@@ -447,6 +448,11 @@
     - name: Install or upgrade docker daemon
       import_role:
         name: geerlingguy.docker
+
+    - import_role:
+        name: snmpd
+    - import_role:
+        name: snmpd_docker
 
     - name: Deploy cache redis
       import_role:
