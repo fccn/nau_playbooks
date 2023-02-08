@@ -1,4 +1,11 @@
 ---
+- name: Install make
+  package:
+    name: make
+    state: present
+  tags:
+    - docker_deploy
+
 - name: Deploy
   include_role:
     name: ansible-docker-deploy

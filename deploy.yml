@@ -419,9 +419,19 @@
 
 - name: Deploy Mongo servers
   hosts: mongo_docker_servers
+  serial: "{{ serial_number | default(1) }}" # deploy in sequence
   become: True
   gather_facts: True
   tasks:
+    - name: Install or upgrade docker daemon
+      import_role:
+        name: geerlingguy.docker
+
+    - import_role:
+        name: snmpd
+    - import_role:
+        name: snmpd_docker
+
     - name: Deploy mongo
       import_role:
         name: mongo_docker_deploy
@@ -452,9 +462,11 @@
 
     - import_role:
         name: snmpd
+      tags: snmpd
       when: redis_deploy | default(false) | bool
     - import_role:
         name: snmpd_docker
+      tags: snmpd
       when: redis_deploy | default(false) | bool
 
     - name: Deploy cache redis

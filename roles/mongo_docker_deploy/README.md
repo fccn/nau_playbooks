@@ -39,7 +39,17 @@ Update the new node:
 var cfg = rs.conf();
 cfg.members[4].priority = 1
 cfg.members[4].votes = 1
-rs.reconfig(cfg)
+rs.reconfig(cfg, {force: true})
+```
+
+Log in to each old server to remove and then shutdown it.
+```
+db.shutdownServer()
+```
+
+Then login into primary and remove the old server from the cluster.
+```
+rs.remove("<old host>")
 ```
 
 https://www.mongodb.com/docs/manual/tutorial/expand-replica-set/
