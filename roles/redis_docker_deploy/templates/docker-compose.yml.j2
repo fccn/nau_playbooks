@@ -1,0 +1,44 @@
+{% import '_docker_deploy_helper.j2' as helper with context %}
+# {{ ansible_managed }}
+#
+# Docker compose file for redis.
+#
+version: '3.8'
+
+services:
+
+  redis:
+    image: {{ redis_docker_image }}
+    container_name: {{ redis_docker_container_name }}
+    restart: always
+    environment:
+      # Use custom timezone
+      TZ: {{ openedx_timezone | default("Europe/Lisbon") }}
+      ALLOW_EMPTY_PASSWORD: "yes"
+      REDIS_MASTER_HOST: {{ redis_master_host }}
+      REDIS_PORT_NUMBER: {{ redis_docker_port }}
+      REDIS_REPLICATION_MODE: {{ redis_replication_mode }}
+      # announce the hostname of the container, because the IP address can change after a container restart
+      REDIS_REPLICA_IP: {{ redis_replica_ip }}
+    ports:
+      - target:    {{ redis_docker_port }}
+        published: {{ redis_docker_port }}
+        protocol:  tcp
+        mode:      ingress
+    volumes:
+      - {{ redis_docker_volume_path }}:/bitnami/redis/data
+    deploy:
+      replicas: 1
+      placement:
+        max_replicas_per_node: 1
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -p {{ redis_docker_port }} ping | grep PONG"]
+      start_period: 30s
+      retries: 10
+      interval: 30s
+      timeout: 30s
+{{ helper.service_configs(service='redis') }}
+{{ helper.service_secrets(service='redis') }}
+
+{{ helper.configs() }}
+{{ helper.secrets() }}

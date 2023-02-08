@@ -1,0 +1,30 @@
+---
+redis_docker_image: docker.io/bitnami/redis:6.2.7-debian-11-r49
+redis_docker_instance_name: redis
+
+redis_replication_mode: master
+redis_docker_port: 6379
+redis_docker_container_name: "{{ redis_docker_deploy_base_folder | basename }}"
+redis_master_host: "{{ redis_docker_container_name }}"
+redis_replica_ip: "{{ redis_docker_container_name }}"
+
+redis_docker_volume_path: /data/{{ redis_docker_instance_name }}
+
+redis_docker_deploy_parent_folder: /nau/ops
+redis_docker_deploy_base_folder: "{{ redis_docker_deploy_parent_folder }}/{{ redis_docker_instance_name }}"
+redis_docker_deploy_compose_template: templates/docker-compose.yml.j2
+
+redis_docker_container_name: "{{ redis_docker_deploy_base_folder | basename }}"
+redis_docker_deploy_stack_verify_delay: 5
+redis_docker_deploy_stack_verify_retries: 50
+
+# Files to be templated during deployment
+redis_docker_deploy_templates:
+  - src: templates/Makefile
+    dest: "{{ redis_docker_deploy_base_folder }}/Makefile"
+
+redis_docker_deploy_folders_additional:
+  - dest: /data/{{ redis_docker_instance_name }}/
+    dir_owner: 1001
+    dir_group: 1001
+    dir_mode: "0755"

@@ -71,7 +71,11 @@
 #   To deploy the docker registry mirror
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit registry_mirror_server -e registrymirror_deploy=true
 #
+#   To deploy Mongo DB
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml -e mongo_deploy=true --limit mongo_docker_servers
+#
+#   To deploy Redis cache
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml -e redis_deploy=true --limit redis_docker_servers
 #
 - name: Bootstrap instances of 16.04
   hosts: all,!idpproxy_servers,!nau_docker_swarm_managers,!nau_docker_swarm_workers,!support_server,!build_server
@@ -351,8 +355,8 @@
         dest: "/nau/ops/Makefile"
       tags: global_healthcheck
 
-- name: Configure other docker swarm nodes
-  hosts: nau_docker_swarm_managers,nau_docker_swarm_workers
+- name: Configure other snmpd and docker swarm
+  hosts: nau_docker_swarm_managers,nau_docker_swarm_workers,redis_docker_servers
   become: True
   gather_facts: True
   vars:
@@ -412,13 +416,10 @@
         observability_deploy_run: "{{ observability_deploy | default(false) }}"
         observability_deploy_create_volumes: "{{ observability_deploy | default(false) }}"
 
-- name: Deploy docker stacks to the 1st docker swarm manager
+- name: Deploy Mongo servers
   hosts: mongo_docker_servers
   become: True
   gather_facts: True
-  vars:
-    docker_swarm_manager_to_deploy: "{{ groups['nau_docker_swarm_managers'][0] }}"
-    docker_swarm_cluster_group_length: "{{ groups['nau_docker_swarm_servers'] | length }}"
   tasks:
     - name: Deploy mongo
       import_role:
@@ -429,3 +430,32 @@
         mongo_docker_initdb_root_password: "{{ MONGO_ADMIN_PASSWORD }}"
         mongo_docker_replSet: "{{ MONGO_REPL_SET }}"
       when: mongo_deploy | default(false) | bool
+
+- name: Deploy cache redis docker servers
+  hosts: redis_docker_servers
+  serial: "{{ serial_number | default(1) }}" # deploy in sequence
+  become: True
+  gather_facts: True
+  tasks:
+    - name: Lower keepalived priority to force VIP swap
+      import_role:
+        name: keepalived
+      vars: 
+        keepalived_priority_value: 1 # Lower priority so the VIPs can swap to other machine.
+      when: ( redis_deploy | default(false) | bool ) and vrrp_instances is defined and ( groups['redis_docker_servers'] | length ) > 1
+
+    - name: Install or upgrade docker daemon
+      import_role:
+        name: geerlingguy.docker
+
+    - name: Deploy cache redis
+      import_role:
+        name: redis_docker_deploy
+      when: redis_deploy | default(false) | bool
+
+    - name: Restore keepalived priority
+      import_role:
+        name: keepalived
+      vars:
+        keepalived_priority_value: "{{ keepalived_priority }}"
+      when: ( redis_deploy | default(false) | bool ) and vrrp_instances is defined and ( groups['redis_docker_servers'] | length ) > 1
