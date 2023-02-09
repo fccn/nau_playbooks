@@ -1,7 +1,7 @@
 {% import '_docker_deploy_helper.j2' as helper with context %}
 # {{ ansible_managed }}
 #
-# Docker compose file for mongo.
+# Docker compose file for mongodb.
 #
 version: '3.8'
 
@@ -10,12 +10,16 @@ services:
   mongo:
     image: {{ mongo_docker_image }}
     container_name: {{ mongo_docker_container_name }}
-    command: --replSet {{ mongo_docker_replSet }} --port {{ mongo_docker_port }} --bind_ip localhost,{{ mongo_docker_container_name }},{{ ansible_host }}
+    command: {{ mongo_docker_command }}
     restart: always
     environment:
       TZ: {{ mongo_timezone | default("Europe/Lisbon") }}
-      # MONGO_INITDB_ROOT_USERNAME_FILE: {{ mongo_docker_secret_root_username_file_path }}
-      # MONGO_INITDB_ROOT_PASSWORD_FILE: {{ mongo_docker_secret_root_password_file_path }}
+{% if mongo_docker_secret_root_username_file_path | length > 0 %}
+      MONGO_INITDB_ROOT_USERNAME_FILE: {{ mongo_docker_secret_root_username_file_path }}
+{% endif %}
+{% if mongo_docker_secret_root_password_file_path | length > 0 %}
+      MONGO_INITDB_ROOT_PASSWORD_FILE: {{ mongo_docker_secret_root_password_file_path }}
+{% endif %}
     volumes:
       - {{ mongo_docker_volume_path }}:/data/db
     network_mode: host

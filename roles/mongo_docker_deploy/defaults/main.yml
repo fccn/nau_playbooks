@@ -11,6 +11,11 @@ mongo_docker_port: 27017
 mongo_docker_image: docker.io/mongo:4.0.28
 #3.6.23
 
+mongo_docker_command: "{{ mongo_docker_command_keyfile }}--replSet {{ mongo_docker_replSet }} --port {{ mongo_docker_port }} --bind_ip localhost,{{ mongo_docker_container_name }},{{ ansible_host }}"
+mongo_docker_command_keyfile: "{{ '--keyFile ' + mongo_docker_keyfile_path + ' ' if mongo_docker_keyfile_is_defined | bool else '' }}"
+mongo_docker_keyfile_is_defined: "{{ mongo_docker_keyFile_value is defined and ( mongo_docker_keyFile_value | length > 0 ) }}"
+mongo_docker_keyfile_path: /run/secrets/mongodb_key
+
 mongo_docker_deploy_parent_folder: /nau/ops
 mongo_docker_deploy_base_folder: "{{ mongo_docker_deploy_parent_folder }}/{{ mongo_docker_instance_name }}"
 mongo_docker_deploy_compose_template: templates/docker-compose.yml.j2
@@ -21,22 +26,32 @@ mongo_docker_deploy_stack_verify_retries: 50
 
 # Files to be templated during deployment
 mongo_docker_deploy_templates:
-  - src_data: "{{ EDXAPP_MONGO_USER }}" # MONGO_ADMIN_USER
+  - src_data: "{{ mongo_docker_initdb_root_username }}"
     dest: "{{ mongo_docker_deploy_base_folder }}/mongo/mongo-root-username"
     secret_name: mongo_root_username
     service: mongo
     docker_target: "{{ mongo_docker_secret_root_username_file_path }}"
-  - src_data: "{{ EDXAPP_MYSQL_PASSWORD_ADMIN }}" # MONGO_ADMIN_PASSWORD
+    when: "{{ mongo_docker_initdb_root_username | length > 0 }}"
+  - src_data: "{{ mongo_docker_initdb_root_password }}"
     dest: "{{ mongo_docker_deploy_base_folder }}/mongo/mongo-root-password"
     secret_name: mongo_root_password
     service: mongo
     docker_target: "{{ mongo_docker_secret_root_password_file_path }}"
+    when: "{{ mongo_docker_initdb_root_password | length > 0 }}"
+  - src_data: "{{ mongo_docker_keyFile_value }}"
+    dest: "{{ mongo_docker_deploy_base_folder }}/mongo/mongodb_key"
+    mode: 600
+    owner: 999
+    secret_name: mongo_key
+    service: mongo
+    docker_target: "{{ mongo_docker_keyfile_path }}"
+    when: "{{ mongo_docker_keyfile_is_defined }}"
   - src: templates/Makefile
     dest: "{{ mongo_docker_deploy_base_folder }}/Makefile"
 
 # File path where the docker secrets are stored inside the mongo docker container
-mongo_docker_secret_root_username_file_path: /run/secrets/mongo-root-username
-mongo_docker_secret_root_password_file_path: /run/secrets/mongo-root-password
+mongo_docker_secret_root_username_file_path: "{{ '/run/secrets/mongo-root-username' if mongo_docker_initdb_root_username else None }}"
+mongo_docker_secret_root_password_file_path: "{{ '/run/secrets/mongo-root-password' if mongo_docker_initdb_root_password else None }}"
 
 mongo_docker_volume_path: /data/{{ mongo_docker_instance_name }}
 

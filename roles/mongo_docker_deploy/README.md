@@ -7,6 +7,14 @@ This role deploys a Mongo DB service using `host` network.
 Deploying a MongoDB Cluster with Docker
 https://www.mongodb.com/compatibility/deploying-a-mongodb-cluster-with-docker
 
+## Configuration
+
+Variables:
+- mongo_docker_replSet - required variable its value could be, example: `rs0`;
+- mongo_docker_initdb_root_username - optional username value to initialize the database, example: `admin`;
+- mongo_docker_initdb_root_password - optional password value to initialize the database.
+- mongo_docker_keyFile_value - optional value of the MongoDB keyFile to increase security between node configuration.
+
 ## Add Members to a Replica Set
 https://www.mongodb.com/docs/v3.6/tutorial/expand-replica-set/
 
@@ -15,7 +23,7 @@ Deploy this role to new server.
 Connect to the replica set’s primary. Run this to know which is the primary.
 ```
 ssh pers...
-mongo edxapp -u edxapp -pXXXXXXX -host rs0/localhost
+mongo admin -u admin -pXXXXXXX -host rs0/localhost
 db.hello()
 ```
 
@@ -29,7 +37,7 @@ Note: you have to add it one by one waiting for the previous one to pass from `S
 Ensure it reaches SECONDARY state.
 ```
 ssh <new VM>
-mongo edxapp -u edxapp -pXXXXXXX -host rs0/localhost
+mongo admin -u admin -pXXXXXXX -host rs0/localhost
 rs.status()
 ```
 

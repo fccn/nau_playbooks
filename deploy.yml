@@ -441,9 +441,10 @@
         name: mongo_docker_deploy
       vars:
         # mongo_docker_instance_name
-        mongo_docker_initdb_root_username: "{{ MONGO_ADMIN_USER | default('admin') }}"
-        mongo_docker_initdb_root_password: "{{ MONGO_ADMIN_PASSWORD }}"
+        mongo_docker_initdb_root_username: "{{ MONGO_ADMIN_USER | default('admin') if (mongo_docker_init | default(false) | bool) else None }}"
+        mongo_docker_initdb_root_password: "{{ MONGO_ADMIN_PASSWORD if (mongo_docker_init | default(false) | bool) else None }}"
         mongo_docker_replSet: "{{ MONGO_REPL_SET }}"
+        mongo_docker_keyFile_value: "{{ MONGO_CLUSTER_KEY | default('') }}"
       when: mongo_deploy | default(false) | bool
 
 - name: Deploy cache redis docker servers
