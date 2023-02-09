@@ -44,14 +44,36 @@ cfg.members[1].votes = 1
 rs.reconfig(cfg, {force: true})
 ```
 
-Log in to each old server to remove and then shutdown it.
+In the final step to make one of the new ones primary, you can use the command `db.isMaster()` which returns a list of hosts to guide you in setting the highest priority to the node you want to make primary by using.
+
 ```
-db.shutdownServer()
+cfg = rs.conf()
+cfg.members[0].priority = 0.5
+cfg.members[1].priority = 1
+rs.reconfig(cfg, {force: true})
 ```
+
+Run `rs.status()` on older and new master to check the `PRIMARY` replica has been changed.
 
 Then login into primary and remove the old server from the cluster.
 ```
 rs.remove("<old host>")
+```
+
+Log in to each old server to remove and then shutdown it.
+```
+mongo -host localhost
+```
+
+Run this to shutdown it.
+```
+use admin
+db.shutdownServer()
+```
+
+If needed disable the OS service.
+```
+systemctl disable mongod.service
 ```
 
 https://www.mongodb.com/docs/manual/tutorial/expand-replica-set/
