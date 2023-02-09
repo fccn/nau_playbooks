@@ -95,13 +95,16 @@
     - name: Install pip
       import_role:
         name: geerlingguy.pip
-      when: ansible_distribution == 'Ubuntu' and ansible_distribution_version == '20.04'
-    
-    # https://github.com/georchestra/ansible/issues/55
+      when: ansible_distribution == 'Ubuntu' and (ansible_distribution_major_version|int) >= 20
+
     - name: On Ubuntu 20.04 or later, you need to install the acl package to becoming non privileged user.
+      # Fix of this error:
+      #   Failed to set permissions on the temporary files Ansible needs to create when becoming an unprivileged user 
+      #   (rc: 1, err: chown: changing ownership of  Operation not permitted
+      #   https://github.com/georchestra/ansible/issues/55
       package:
         name: acl
-      when: ansible_distribution == 'Ubuntu' and ansible_distribution_version == '20.04'
+      when: ansible_distribution == 'Ubuntu' and (ansible_distribution_major_version|int) >= 20
 
 - name: Bootstrap cnc with Ubuntu 20.04
   hosts: command_and_control_2004
@@ -112,6 +115,7 @@
     - name: Install docker
       import_role:
         name: geerlingguy.docker
+      when: ansible_distribution == 'Ubuntu' and (ansible_distribution_major_version|int) >= 20
 
 - name: Infrastructure configuration
   hosts: all
