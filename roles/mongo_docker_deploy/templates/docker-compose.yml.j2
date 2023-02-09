@@ -14,8 +14,8 @@ services:
     restart: always
     environment:
       TZ: {{ mongo_timezone | default("Europe/Lisbon") }}
-      MONGO_INITDB_ROOT_USERNAME_FILE: {{ mongo_docker_secret_root_username_file_path }}
-      MONGO_INITDB_ROOT_PASSWORD_FILE: {{ mongo_docker_secret_root_password_file_path }}
+      # MONGO_INITDB_ROOT_USERNAME_FILE: {{ mongo_docker_secret_root_username_file_path }}
+      # MONGO_INITDB_ROOT_PASSWORD_FILE: {{ mongo_docker_secret_root_password_file_path }}
     volumes:
       - {{ mongo_docker_volume_path }}:/data/db
     network_mode: host

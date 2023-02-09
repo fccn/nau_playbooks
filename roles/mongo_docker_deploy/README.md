@@ -15,7 +15,7 @@ Deploy this role to new server.
 Connect to the replica set’s primary. Run this to know which is the primary.
 ```
 ssh pers...
-mongo admin -u admin -pXXXXXXX -host rs0/localhost
+mongo edxapp -u edxapp -pXXXXXXX -host rs0/localhost
 db.hello()
 ```
 
@@ -24,10 +24,12 @@ Add this new mongo to the replica set.
 rs.add( { host: "<new VM>:27017", priority: 0, votes: 0 } )
 ```
 
+Note: you have to add it one by one waiting for the previous one to pass from `STARTUP2` (synchronizing) to `SECONDARY` (ready) state. If you add all of them at the same time it will increase a lot the traffic of the primary node.
+
 Ensure it reaches SECONDARY state.
 ```
 ssh <new VM>
-mongo admin -u admin -pXXXXXXX -host rs0/localhost
+mongo edxapp -u edxapp -pXXXXXXX -host rs0/localhost
 rs.status()
 ```
 
@@ -37,8 +39,8 @@ Once the newly added member has transitioned into SECONDARY state, use rs.reconf
 Update the new node:
 ```
 var cfg = rs.conf();
-cfg.members[4].priority = 1
-cfg.members[4].votes = 1
+cfg.members[1].priority = 1
+cfg.members[1].votes = 1
 rs.reconfig(cfg, {force: true})
 ```
 
