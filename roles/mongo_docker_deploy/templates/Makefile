@@ -42,16 +42,28 @@ shell: ## Open shell
 .PHONY: shell
 
 bash: ## Open bash on the current node for the {{ mongo_docker_container_name }} docker service
-	@docker exec -it $$(docker ps --filter "name={{ mongo_docker_container_name }}" -q) bash
+	@docker exec -it {{ mongo_docker_container_name }} bash
 .PHONY: bash
 
 mongo-shell: ## Open mongo shell
-	docker exec -it $$(docker ps --filter "name={{ mongo_docker_container_name }}" -q) bash -c 'mongo -u $$(<$$MONGO_INITDB_ROOT_USERNAME_FILE) -p $$(<$$MONGO_INITDB_ROOT_PASSWORD_FILE)'
+	@docker exec -it {{ mongo_docker_container_name }} mongo -u {{ mongo_docker_admin_username }} -p{{ mongo_docker_admin_password }}
 .PHONY: mongo-shell
 
-mongo-status: ## Open mongo shell
-	docker exec -it $$(docker ps --filter "name=mongo" -q) bash -c 'mongo -u $$(<$$MONGO_INITDB_ROOT_USERNAME_FILE) -p $$(<$$MONGO_INITDB_ROOT_PASSWORD_FILE) --eval "rs.status()"'
+mongo-status: ## View MongoDB status
+	@docker exec -it {{ mongo_docker_container_name }} mongo -u {{ mongo_docker_admin_username }} -p{{ mongo_docker_admin_password }} --eval "printjson(rs.status())"
 .PHONY: mongo-status
+
+healthcheck-replication: ## Check mongo replication
+	@echo -n "Check mongo replication is 600 seconds (<10 minutes) seconds behind primary: "
+	@(docker exec -it {{ mongo_docker_container_name }} mongo admin -u {{ mongo_docker_admin_username }} -p{{ mongo_docker_admin_password }} -host rs0/localhost --eval 'rs.status().members.filter(config => config.name == "{{ ansible_host }}:{{ mongo_docker_port }}")[0].state' | tail -1 | grep -q 1 ) || ( docker exec -it {{ mongo_docker_container_name }} mongo admin -u {{ mongo_docker_admin_username }} -p{{ mongo_docker_admin_password }} --host rs0/localhost --eval 'db.printSecondaryReplicationInfo()' | grep -A 3 "source: {{ ansible_host }}:{{ mongo_docker_port }}" | grep "behind the primary" | awk '{print $$1}' | egrep "^[0-5]?[0-9]?[0-9]$$" > /dev/null )
+	@echo "OK"
+.PHONY: healthcheck-replication
+
+healthcheck-port: # Check mongo port is up
+	@echo -n "Check mongo port: "
+	@nc -z 127.0.0.1 {{ mongo_docker_port }}
+	@echo "OK"
+.PHONY: healthcheck-port
 
 # Silent mode other targets.
 # To run `healthcheck` target on silient mode, run it like `make silent-healthcheck`.
@@ -59,8 +71,9 @@ mongo-status: ## Open mongo shell
 silent-%:
 	@$(MAKE) $* > /dev/null && echo "OK"
 
-healthcheck: ## Check the mongo port is up
-	@echo -n "Check mongo port: "
-	@nc -z 127.0.0.1 {{ mongo_docker_port }}
-	@echo "OK"
+healthcheck: ## Overall healthcheck
+healthcheck: \
+	healthcheck-port \
+	healthcheck-replication
+	@echo "Everything looks: OK"
 .PHONY: healthcheck

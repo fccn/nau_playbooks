@@ -11,6 +11,8 @@ https://www.mongodb.com/compatibility/deploying-a-mongodb-cluster-with-docker
 
 Variables:
 - mongo_docker_replSet - required variable its value could be, example: `rs0`;
+- mongo_docker_admin_username - required variable its value have the admin username.
+- mongo_docker_admin_password - required variable its value have the admin password.
 - mongo_docker_initdb_root_username - optional username value to initialize the database, example: `admin`;
 - mongo_docker_initdb_root_password - optional password value to initialize the database.
 - mongo_docker_keyFile_value - optional value of the MongoDB keyFile to increase security between node configuration.

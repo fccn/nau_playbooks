@@ -1,8 +1,4 @@
 ---
-# Vars Meant to be overridden
-MONGO_ADMIN_USER: 'admin'
-MONGO_ADMIN_PASSWORD: 'password'
-
 mongo_docker_instance_name: mongo
 mongo_docker_initdb_root_username: !!null
 mongo_docker_initdb_root_password: !!null
