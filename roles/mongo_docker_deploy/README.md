@@ -86,6 +86,12 @@ If needed disable the OS service.
 systemctl disable mongod.service
 ```
 
+After removing all the older nodes, we should upgrade the compatibility version of the cluster.
+On the primary node run this:
+```
+db.adminCommand( { setFeatureCompatibilityVersion: "4.0" } )
+```
+
 https://www.mongodb.com/docs/manual/tutorial/expand-replica-set/
 
 
