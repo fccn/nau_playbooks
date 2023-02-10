@@ -51,11 +51,11 @@
         mongo admin -u admin -p{{ MONGO_ADMIN_PASSWORD }} --host rs0/localhost --eval 'db.printSlaveReplicationInfo()' | grep "behind the primary" | awk '{print $1}' | egrep "^[0-9]$" | wc -l
       register: mongo_db_secoundary_nodes_result
       changed_when: false
-      
+
     - name: Fail if MongoDB secondary nodes replication isn't ok
       fail:
         msg: Fail the number of healthy secondary nodes
-      when: mongo_db_secoundary_nodes_result.stdout != ( (( groups['mongo_servers'] | length) -1) | string )
+      when: (mongo_db_secoundary_nodes_result.stdout | int) < ( (( groups['mongo_servers'] | length) -1) | int )
 
 - name: Check URLs
   hosts: all
