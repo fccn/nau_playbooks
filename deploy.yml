@@ -87,11 +87,19 @@
 #         name: python_minimal
 #       when: ansible_python_interpreter is not defined
 
-- name: Bootstrap instances of Ubuntu 20.04
+- name: Infrastructure configuration
   hosts: all
-  gather_facts: yes
-  become: true
+  become: True
+  gather_facts: True
   tasks:
+    - import_role:
+        name: users
+      when: ansible_distribution == 'Ubuntu'
+    - import_role:
+        name: ssh_authorized_keys
+    - import_role:
+        name: ansible_pakiti_client
+
     - name: Install pip
       import_role:
         name: geerlingguy.pip
@@ -116,19 +124,6 @@
       import_role:
         name: geerlingguy.docker
       when: ansible_distribution == 'Ubuntu' and (ansible_distribution_major_version|int) >= 20
-
-- name: Infrastructure configuration
-  hosts: all
-  become: True
-  gather_facts: True
-  tasks:
-    - import_role:
-        name: users
-      when: ansible_distribution == 'Ubuntu'
-    - import_role:
-        name: ssh_authorized_keys
-    - import_role:
-        name: ansible_pakiti_client
 
 - name: Configure hosts file
   hosts: all,!support_server,!command_and_control,!build_server
