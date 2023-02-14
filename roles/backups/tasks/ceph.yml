@@ -13,7 +13,7 @@
   when: backup_mysql
 
 - name: Put mongo backup in S3
-  command: "s3cmd put {{ BACKUP_LOCATION }}/{{ BACKUP_DATE }}_mongo.tar.gz s3://{{ AWS_S3_DBS_BACKUP_BUCKET_NAME }}/ --no-ssl --host {{ AWS_S3_DBS_BACKUP_HOST }}  --host-bucket {{ AWS_S3_DBS_BACKUP_BUCKET_NAME }}"
+  command: "s3cmd put {{ BACKUP_LOCATION }}/{{ BACKUP_DATE }}_mongo.gz s3://{{ AWS_S3_DBS_BACKUP_BUCKET_NAME }}/ --no-ssl --host {{ AWS_S3_DBS_BACKUP_HOST }}  --host-bucket {{ AWS_S3_DBS_BACKUP_BUCKET_NAME }}"
   environment:
     AWS_ACCESS_KEY_ID: "{{ EDXAPP_BACKUPS_AWS_ACCESS_KEY_ID }}"
     AWS_SECRET_ACCESS_KEY: "{{ EDXAPP_BACKUPS_AWS_SECRET_ACCESS_KEY }}"

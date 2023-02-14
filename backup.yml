@@ -1,7 +1,7 @@
 ---
 
 - name: Backup of Mongo data
-  hosts: mongo_servers[0]
+  hosts: mongo_docker_servers[0]
   become: True
   gather_facts: True
   roles:
