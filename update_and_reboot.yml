@@ -107,14 +107,13 @@
         name: keepalived
       when: vrrp_instances is defined
 
-    - name: Run healthcheck Makefile target on each stack
+    - name: Run Makefile healthcheck
       shell: make --no-print-directory -C {{ item }} healthcheck
       retries: "{{ healthcheck_retries | default(50) }}"
       delay: "{{ healthcheck_delay | default(30) }}"
       register: result
       until: result.rc == 0
-      when: inventory_hostname in groups['nau_docker_swarm_servers']
+      check_mode: no # execute even when ansible is run with --check
+      when: makefile_healthcheck is defined
       changed_when: False
-      with_items: "{{ docker_stacks }}"
-      # Run only on the first primary manager
-      delegate_to: "{{ groups['nau_docker_swarm_managers'][0] }}"
+      with_items: "{{ makefile_healthcheck }}"

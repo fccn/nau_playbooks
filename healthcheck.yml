@@ -57,6 +57,21 @@
         msg: Fail the number of healthy secondary nodes
       when: (mongo_db_secoundary_nodes_result.stdout | int) < ( (( groups['mongo_servers'] | length) -1) | int )
 
+- name: Run Makefile healthcheck
+  hosts: all
+  become: True
+  gather_facts: True
+  tasks:
+    - name: Run Makefile healthcheck
+      shell: make --no-print-directory -C {{ item }} healthcheck
+      retries: "{{ healthcheck_retries | default(50) }}"
+      delay: "{{ healthcheck_delay | default(30) }}"
+      register: result
+      until: result.rc == 0
+      when: makefile_healthcheck is defined
+      changed_when: False
+      with_items: "{{ makefile_healthcheck }}"
+
 - name: Check URLs
   hosts: all
   become: True
@@ -102,41 +117,3 @@
         richie_deploy_run: false
         healthcheck: true
       tags: nau_check_urls
-
-    - name: Run healthcheck Makefile target on each stack
-      shell: make --no-print-directory -C {{ item }} healthcheck
-      retries: "{{ healthcheck_retries | default(3) }}"
-      delay: "{{ healthcheck_delay | default(15) }}"
-      register: result
-      until: result.rc == 0
-      when: not ansible_check_mode
-      changed_when: False
-      with_items: "{{ _docker_stacks }}"
-
-- name: Check Redis docker servers healthcheck
-  hosts: redis_docker_servers
-  become: True
-  gather_facts: True
-  tasks:
-    - name: Run healthcheck
-      shell: make --no-print-directory -C {{ redis_docker_deploy_base_folder }} healthcheck
-      retries: "{{ healthcheck_retries | default(3) }}"
-      delay: "{{ healthcheck_delay | default(15) }}"
-      register: result
-      until: result.rc == 0
-      when: not ansible_check_mode
-      changed_when: False
-
-- name: Check Mongo docker servers healthcheck
-  hosts: mongo_docker_servers
-  become: True
-  gather_facts: True
-  tasks:
-    - name: Run Mongo healthcheck
-      shell: make --no-print-directory -C {{ mongo_docker_deploy_base_folder }} healthcheck
-      retries: "{{ healthcheck_retries | default(3) }}"
-      delay: "{{ healthcheck_delay | default(15) }}"
-      register: result
-      until: result.rc == 0
-      when: not ansible_check_mode
-      changed_when: False
