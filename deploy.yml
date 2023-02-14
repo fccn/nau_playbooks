@@ -444,6 +444,28 @@
         mongo_docker_keyFile_value: "{{ MONGO_CLUSTER_KEY | default('') }}"
       when: mongo_deploy | default(false) | bool
 
+- name: Deploy Elasticsearch servers
+  hosts: elasticsearch_docker_servers
+  serial: "{{ serial_number | default(1) }}" # deploy in sequence
+  become: True
+  gather_facts: True
+  tasks:
+    - name: Install or upgrade docker daemon
+      import_role:
+        name: geerlingguy.docker
+      when: elasticsearch_deploy | default(false) | bool
+
+    - import_role:
+        name: snmpd
+    - import_role:
+        name: snmpd_docker
+      when: elasticsearch_deploy | default(false) | bool
+
+    - name: Deploy elasticsearch
+      import_role:
+        name: elasticsearch_docker_deploy
+      when: elasticsearch_deploy | default(false) | bool
+
 - name: Deploy cache redis docker servers
   hosts: redis_docker_servers
   serial: "{{ serial_number | default(1) }}" # deploy in sequence

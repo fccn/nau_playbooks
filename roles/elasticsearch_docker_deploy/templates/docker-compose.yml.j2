@@ -1,0 +1,88 @@
+{% import '_docker_deploy_helper.j2' as helper with context %}
+# {{ ansible_managed }}
+#
+# Docker compose file for elasticsearch.
+#
+version: '3.8'
+
+services:
+
+  elasticsearch:
+    image: {{ elasticsearch_docker_image }}
+    container_name: {{ elasticsearch_docker_container_name }}
+    restart: always
+    environment:
+      # Use custom timezone
+      TZ: {{ elasticsearch_timezone | default("Europe/Lisbon") }}
+      # The elastic search node name has the same name of the container
+      node.name: {{ elasticsearch_node_name }}
+      # Disable the memory swapping
+      bootstrap.memory_lock: "true"
+      # The name of the cluster. A node can only join a cluster when it shares its cluster.name with all the other nodes in the cluster.
+      cluster.name: elasticsearch-es-cluster
+      # By default only binds to loopback addresses, this binds to any network
+      network.host: "_local_,{{ elasticsearch_network_host }}"
+      # The port to bind for HTTP client communication.
+      http.port: {{ elasticsearch_http_port }}
+      # The port to bind for communication between nodes.
+      transport.port: {{ elasticsearch_transport_port }}
+{% if elasticsearch_discovery_seed_hosts is defined %}
+      discovery.seed_hosts: {{ elasticsearch_discovery_seed_hosts | join(',') }}
+{% endif %}
+{% if ( elasticsearch_initialization | default(false) ) %}
+      # Only define on first cluster configuration
+      cluster.initial_master_nodes: {{ elasticsearch_initial_master_nodes }}
+{% endif %}
+      ES_JAVA_OPTS: -Xms1g -Xmx1g -Des.enforce.bootstrap.checks=true
+         # -Des.index.number_of_replicas=2
+      xpack.security.enabled: "false"
+      xpack.security.http.ssl.enabled: "false"
+      xpack.security.transport.ssl.enabled: "false"
+      xpack.ml.enabled: "false"
+      xpack.graph.enabled: "false"
+      xpack.watcher.enabled: "false"
+      xpack.monitoring.enabled: "false"
+      xpack.monitoring.collection.enabled: "false"
+    user: "1000:1000"
+    volumes:
+      - {{ elasticsearch_docker_volume_path }}:/usr/share/elasticsearch/data
+    network_mode: host
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    # ports:
+    #   - target:    {{ elasticsearch_http_port }}
+    #     published: {{ elasticsearch_http_port }}
+    #     protocol:  tcp
+    #     mode:      ingress
+    #   - target:    9300
+    #     published: 9300
+    #     protocol:  tcp
+    #     mode:      ingress
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: 3G
+{% if elasticsearch_limit_cpus is defined %}
+          cpus: "{{ elasticsearch_limit_cpus }}"
+{% endif %}
+        reservations:
+          memory: 1.5G
+      placement:
+        max_replicas_per_node: 1
+    healthcheck:
+      # We can't run an healthcheck against the 9200 HTTP port, because it requires that this
+      # node should be correctly connected to the cluster, but the other nodes only resolve this
+      # node DNS when this container is on healthy state.
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/9300", "||", "exit", "1"]
+      start_period: 30s
+      retries: 10
+      interval: 30s
+      timeout: 30s
+{{ helper.service_configs(service='elasticsearch') }}
+{{ helper.service_secrets(service='elasticsearch') }}
+
+{{ helper.configs() }}
+{{ helper.secrets() }}

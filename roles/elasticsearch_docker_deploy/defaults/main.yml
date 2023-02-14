@@ -1,0 +1,34 @@
+---
+
+elasticsearch_docker_image: docker.elastic.co/elasticsearch/elasticsearch:7.17.4
+
+elasticsearch_node_name: "{{ inventory_hostname }}"
+
+elasticsearch_http_port: 9200
+elasticsearch_transport_port: 9300
+elasticsearch_docker_container_name: elasticsearch
+
+elasticsearch_network_host: "{{ ansible_host }}" # "0.0.0.0"
+
+elasticsearch_docker_deploy_parent_folder: /nau/ops
+elasticsearch_docker_deploy_base_folder: "{{ elasticsearch_docker_deploy_parent_folder }}/{{ elasticsearch_docker_container_name }}"
+elasticsearch_docker_deploy_compose_template: templates/docker-compose.yml.j2
+
+elasticsearch_docker_deploy_stack_verify_delay: 5
+elasticsearch_docker_deploy_stack_verify_retries: 50
+
+# Files to be templated during deployment
+elasticsearch_docker_deploy_templates:
+  - src: templates/Makefile
+    dest: "{{ elasticsearch_docker_deploy_base_folder }}/Makefile"
+
+elasticsearch_docker_volume_path: /data/{{ elasticsearch_docker_container_name }}/
+
+elasticsearch_docker_deploy_folders_additional:
+  - dest: "{{ elasticsearch_docker_volume_path }}"
+    dir_owner: 1000
+    dir_group: 1000
+    dir_mode: "0755"
+
+elasticsearch_sysctl_conf:
+  vm.max_map_count: 262144
