@@ -6,7 +6,7 @@
   gather_facts: True
   tasks:
     - name: Send docker stack services logs to S3 from last 1 day
-      shell: /nau/ops/bin/send-docker-logs-to-s3.sh --days 1 --service {{ item }} --access_key {{ AWS_S3_LOGS_ACCESS_KEY_ID }} --secret_key {{ AWS_S3_LOGS_SECRET_KEY }} --no-ssl --host {{ nau_ceph_host }} --host-bucket bucket --target s3://{{ COMMON_OBJECT_STORE_LOG_SYNC_BUCKET }}/docker_service/{{ item }}/
+      shell: /nau/ops/bin/send-docker-logs-to-s3.sh --days 1 --service {{ item }} --access_key {{ AWS_S3_LOGS_ACCESS_KEY_ID }} --secret_key {{ AWS_S3_LOGS_SECRET_KEY }} --host {{ nau_ceph_host }} --host-bucket bucket --target s3://{{ COMMON_OBJECT_STORE_LOG_SYNC_BUCKET }}/docker_service/{{ item }}/
       with_items:
         - coursecertificate_nginx
         - staticproxy_nginx

@@ -13,7 +13,7 @@ HTTP_HEADER_META_LIMIT_NUMBER_PAGES: nau-course-certificate-limit-pages
 BUCKET_NAME: {{ coursecertificate_app_bucket_name }}
 BUCKET_AWS_ACCESS_KEY_ID: {{ coursecertificate_app_bucket_aws_access_key_id }}
 BUCKET_AWS_SECRET_ACCESS_KEY: {{ coursecertificate_app_bucket_aws_secret_access_key }}
-BUCKET_ENDPOINT_URL: http://{{ nau_ceph_host }}
+BUCKET_ENDPOINT_URL: https://{{ nau_ceph_host }}
 BUCKET_CERTIFICATE_NO_VERSION_KEY: no-version
 DIGITAL_SIGNATURE:
   CERTIFICATE_P12_PATH: /app/digital_signature/sign-pdf.p12

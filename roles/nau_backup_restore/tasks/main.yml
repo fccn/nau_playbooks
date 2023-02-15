@@ -5,7 +5,7 @@
     state: present
 
 - name: Get backup on ceph using s3
-  command: "s3cmd get s3://{{ AWS_S3_DBS_BACKUP_BUCKET_NAME }}/{{ BACKUP_DATE }}_{{ BACKUP_FILE }} {{ BACKUP_DIRECTORY }}/{{ BACKUP_FILE }} --force --no-ssl --host {{ AWS_S3_DBS_BACKUP_HOST }}  --host-bucket {{ AWS_S3_DBS_BACKUP_BUCKET_NAME }}"
+  command: "s3cmd get s3://{{ AWS_S3_DBS_BACKUP_BUCKET_NAME }}/{{ BACKUP_DATE }}_{{ BACKUP_FILE }} {{ BACKUP_DIRECTORY }}/{{ BACKUP_FILE }} --force --host {{ AWS_S3_DBS_BACKUP_HOST }}  --host-bucket {{ AWS_S3_DBS_BACKUP_BUCKET_NAME }}"
   environment:
     AWS_ACCESS_KEY_ID: "{{ EDXAPP_BACKUPS_AWS_ACCESS_KEY_ID }}"
     AWS_SECRET_ACCESS_KEY: "{{ EDXAPP_BACKUPS_AWS_SECRET_ACCESS_KEY }}"

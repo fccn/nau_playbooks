@@ -172,8 +172,6 @@ services:
           cpus: "{{ openedx_nginx_limit_cpus }}"
         reservations:
           memory: 50M
-    extra_hosts:
-      - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
     healthcheck:
       test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/80", "&&", "echo", "''", ">", "/dev/tcp/127.0.0.1/443", "||", "exit", "1"]
       start_period: 30s
@@ -205,9 +203,7 @@ services:
           memory: {{ openedx_lms_uwsgi_workers * 1000 }}M
           cpus: "{{ openedx_lms_limit_cpus }}"
         reservations:
-          memory: {{ openedx_lms_uwsgi_workers * 500 }}M
-    extra_hosts:
-      - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"    
+          memory: {{ openedx_lms_uwsgi_workers * 500 }}M    
     healthcheck:
       # Check if heartbeat is ok
       test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/8000", "||", "exit", "1"]
@@ -226,8 +222,6 @@ services:
       {{ env_var_name }}: "{{ env_var_value }}"
 {% endfor %}
     command: {{ openedx_app_job_command }}
-    extra_hosts:
-      - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
     deploy:
       replicas: 1 # should exist only 1 instance of this container
       mode: replicated # after docker 22.06.0 release change it to replicated-job
@@ -251,8 +245,6 @@ services:
 {% for env_var_name, env_var_value in openedx_cms_env_var.items() %}
       {{ env_var_name }}: "{{ env_var_value }}"
 {% endfor %}
-    extra_hosts:
-      - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
     deploy:
       replicas: {{ openedx_cms_replicas }}
       update_config:
@@ -289,8 +281,6 @@ services:
       {{ env_var_name }}: "{{ env_var_value }}"
 {% endfor %}
     command: celery --app={{ worker.service_variant }}.celery worker --loglevel=info --queues=edx.{{ worker.service_variant }}.core.{{ worker.queue }} --hostname=edx.{{ worker.service_variant }}.core.{{ worker.queue }}.%%h --max-tasks-per-child=100 --concurrency={{ worker.processes }}
-    extra_hosts:
-      - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
     deploy:
       replicas: {{ worker.deploy_replicas }}
       placement:

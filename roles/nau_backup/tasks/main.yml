@@ -21,7 +21,7 @@
   command: "mv {{ BACKUP_DIRECTORY }}/{{ BACKUP_FILE }} {{ BACKUP_LOCATION }}/{{ BACKUP_DATE }}_{{ BACKUP_FILE }}"
 
 - name: Put backup on ceph using s3
-  command: "s3cmd put {{ BACKUP_LOCATION }}/{{ BACKUP_DATE }}_{{ BACKUP_FILE }} s3://{{ AWS_S3_DBS_BACKUP_BUCKET_NAME }}/ --no-ssl --host {{ AWS_S3_DBS_BACKUP_HOST }} --host-bucket {{ AWS_S3_DBS_BACKUP_BUCKET_NAME }}"
+  command: "s3cmd put {{ BACKUP_LOCATION }}/{{ BACKUP_DATE }}_{{ BACKUP_FILE }} s3://{{ AWS_S3_DBS_BACKUP_BUCKET_NAME }}/ --host {{ AWS_S3_DBS_BACKUP_HOST }} --host-bucket {{ AWS_S3_DBS_BACKUP_BUCKET_NAME }}"
   environment:
     AWS_ACCESS_KEY_ID: "{{ EDXAPP_BACKUPS_AWS_ACCESS_KEY_ID }}"
     AWS_SECRET_ACCESS_KEY: "{{ EDXAPP_BACKUPS_AWS_SECRET_ACCESS_KEY }}"

@@ -41,8 +41,6 @@ services:
     # volumes:
       # Used to increase log verbosity of the gunicorn and to add a Gunicorn worker abort handler
       # - ./app.py:/usr/local/etc/gunicorn/app.py
-    extra_hosts:
-      - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
     user: "{{ richie_site_config.app_docker_user | default('1000') }}"
     command: wait-for-it load_balancer_haproxy:{{ richie_haproxy_redis_port }} -- wait-for-it load_balancer_haproxy:3306 -- /bin/bash -c "python manage.py migrate && gunicorn --workers={{ richie_site_config.app_gunicorn_workers | default(3) }} -c /usr/local/etc/gunicorn/app.py nau.wsgi:application"
     healthcheck:
@@ -78,8 +76,6 @@ services:
           memory: 500M
       placement:
         max_replicas_per_node: 1
-    extra_hosts:
-      - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
     user: "{{ richie_site_config.app_docker_user | default('1000') }}"
     # wait for elasticsearch and mysql proxied on load balancer HAProxy
     command: wait-for-it load_balancer_haproxy:9200 -- wait-for-it load_balancer_haproxy:3306 -- /bin/bash -c "python manage.py migrate && sleep 1m && python manage.py bootstrap_elasticsearch"
@@ -123,8 +119,6 @@ services:
           memory: 128M
         reservations:
           memory: 50M
-    extra_hosts:
-      - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
     healthcheck:
       test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/80", "&&", "echo", "''", ">", "/dev/tcp/127.0.0.1/443", "||", "exit", "1"]
       start_period: 30s

@@ -34,8 +34,6 @@ services:
     environment:
       # Use custom timezone
       TZ: {{ staticproxy_timezone | default("Europe/Lisbon") }}
-    extra_hosts:
-      - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
     healthcheck:
       test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/80", "&&", "echo", "''", ">", "/dev/tcp/127.0.0.1/443", "||", "exit", "1"]
       start_period: 30s

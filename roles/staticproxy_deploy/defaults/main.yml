@@ -48,19 +48,19 @@ staticproxy_nginx_docker_ssl_certificate_crt: /etc/ssl/certs/certificate.crt.pem
 staticproxy_nginx_servers: "{{ staticproxy_nginx_servers_default }}"
 staticproxy_nginx_servers_default:
   - name: "shared.{{ nau_ceph_host_public }}"
-    proxy_pass: "{{ nau_ceph_host }}/{{ NAU_SHARED_BUCKET }}/"
+    proxy_pass: "https://{{ nau_ceph_host }}/{{ NAU_SHARED_BUCKET }}/"
   - name: "{{ EDXAPP_GRADE_BUCKET }}.{{ nau_ceph_host_public }}"
-    proxy_pass: "{{ nau_ceph_host }}/{{ EDXAPP_GRADE_BUCKET }}/"
+    proxy_pass: "https://{{ nau_ceph_host }}/{{ EDXAPP_GRADE_BUCKET }}/"
   - name: "profile-pictures.{{ nau_ceph_host_public}}"
-    proxy_pass: "{{ nau_ceph_host }}/{{ NAU_PROFILE_IMAGE_BUCKET }}/"
+    proxy_pass: "https://{{ nau_ceph_host }}/{{ NAU_PROFILE_IMAGE_BUCKET }}/"
   - name: "uploads.{{ nau_ceph_host_public }}"
-    proxy_pass: "{{ nau_ceph_host }}/{{ EDXAPP_AWS_STORAGE_BUCKET_NAME }}/"
+    proxy_pass: "https://{{ nau_ceph_host }}/{{ EDXAPP_AWS_STORAGE_BUCKET_NAME }}/"
   - name: "{{ EDXAPP_IMPORT_EXPORT_BUCKET }}.{{ nau_ceph_host_public }}"
-    proxy_pass: "{{ nau_ceph_host }}/{{ EDXAPP_IMPORT_EXPORT_BUCKET }}/"
+    proxy_pass: "https://{{ nau_ceph_host }}/{{ EDXAPP_IMPORT_EXPORT_BUCKET }}/"
   - name: "{{ EDXAPP_AWS_STORAGE_BUCKET_NAME }}.{{ nau_ceph_host_public }}"
-    proxy_pass: "{{ nau_ceph_host }}/{{ EDXAPP_AWS_STORAGE_BUCKET_NAME }}/"
+    proxy_pass: "https://{{ nau_ceph_host }}/{{ EDXAPP_AWS_STORAGE_BUCKET_NAME }}/"
   - name: "{{ RICHIE_NAU_AWS_BUCKET_NAME }}.{{ nau_ceph_host_public }}"
-    proxy_pass: "{{ nau_ceph_host }}/{{ RICHIE_NAU_AWS_BUCKET_NAME }}/"
+    proxy_pass: "https://{{ nau_ceph_host }}/{{ RICHIE_NAU_AWS_BUCKET_NAME }}/"
 
 # List of URLs to check during deployment.
 staticproxy_nau_urls_to_check:

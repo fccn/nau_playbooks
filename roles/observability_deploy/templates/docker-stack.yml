@@ -6,8 +6,6 @@ services:
 
   fluentbit-aggregator:
     image: {{ observability_fluentbit_docker_image }}
-    extra_hosts:
-      - "{{ nau_ceph_host }}:{{ nau_ceph_s3_ip }}"
     deploy:
       # mode: global
       replicas: 1
