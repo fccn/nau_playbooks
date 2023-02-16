@@ -50,12 +50,12 @@ mongo-shell: ## Open mongo shell
 .PHONY: mongo-shell
 
 mongo-status: ## View MongoDB status
-	@docker exec -it {{ mongo_docker_container_name }} mongo -u {{ mongo_docker_admin_username }} -p{{ mongo_docker_admin_password }} --eval "printjson(rs.status())"
+	@docker exec {{ mongo_docker_container_name }} mongo -u {{ mongo_docker_admin_username }} -p{{ mongo_docker_admin_password }} --eval "printjson(rs.status())"
 .PHONY: mongo-status
 
 healthcheck-replication: ## Check mongo replication
 	@echo -n "Check mongo replication is 600 seconds (<10 minutes) seconds behind primary: "
-	@(docker exec -it {{ mongo_docker_container_name }} mongo admin -u {{ mongo_docker_admin_username }} -p{{ mongo_docker_admin_password }} -host rs0/localhost --eval 'rs.status().members.filter(config => config.name == "{{ ansible_host }}:{{ mongo_docker_port }}")[0].state' | tail -1 | grep -q 1 ) || ( docker exec -it {{ mongo_docker_container_name }} mongo admin -u {{ mongo_docker_admin_username }} -p{{ mongo_docker_admin_password }} --host rs0/localhost --eval 'db.printSecondaryReplicationInfo()' | grep -A 3 "source: {{ ansible_host }}:{{ mongo_docker_port }}" | grep "behind the primary" | awk '{print $$1}' | egrep "^[0-5]?[0-9]?[0-9]$$" > /dev/null )
+	@(docker exec {{ mongo_docker_container_name }} mongo admin -u {{ mongo_docker_admin_username }} -p{{ mongo_docker_admin_password }} -host rs0/localhost --eval 'rs.status().members.filter(config => config.name == "{{ ansible_host }}:{{ mongo_docker_port }}")[0].state' | tail -1 | grep -q 1 ) || ( docker exec {{ mongo_docker_container_name }} mongo admin -u {{ mongo_docker_admin_username }} -p{{ mongo_docker_admin_password }} --host rs0/localhost --eval 'db.printSecondaryReplicationInfo()' | grep -A 3 "source: {{ ansible_host }}:{{ mongo_docker_port }}" | grep "behind the primary" | awk '{print $$1}' | egrep "^[0-5]?[0-9]?[0-9]$$" > /dev/null )
 	@echo "OK"
 .PHONY: healthcheck-replication
 
