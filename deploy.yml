@@ -72,11 +72,18 @@
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit registry_mirror_server -e registrymirror_deploy=true
 #
 #   To deploy Mongo DB
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml -e mongo_deploy=true --limit mongo_docker_servers
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit mongo_docker_servers -e mongo_deploy=true
 #
 #   To deploy Redis cache
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml -e redis_deploy=true --limit redis_docker_servers
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit redis_docker_servers -e redis_deploy=true
 #
+#   To deploy ElasticSearch cluster
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit elasticsearch_docker_servers -e elasticsearch_deploy=true
+#
+#   To deploy Richie MySQL
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit richie_mysql_docker_servers -e richie_mysql_deploy=true
+#
+
 
 # - name: Bootstrap instances of 16.04
 #   hosts: all,!idpproxy_servers,!nau_docker_swarm_managers,!nau_docker_swarm_workers,!support_server,!build_server
@@ -504,3 +511,87 @@
       vars:
         keepalived_priority_value: "{{ keepalived_priority }}"
       when: ( redis_deploy | default(false) | bool ) and vrrp_instances is defined and ( groups['redis_docker_servers'] | length ) > 1
+
+- name: Deploy richie mysql docker servers
+  hosts: richie_mysql_docker_servers
+  serial: "{{ serial_number | default(1) }}" # deploy in sequence
+  become: True
+  gather_facts: True
+  tasks:
+    # - name: Lower keepalived priority to force VIP swap
+    #   import_role:
+    #     name: keepalived
+    #   vars: 
+    #     keepalived_priority_value: 1 # Lower priority so the VIPs can swap to other machine.
+    #   when: ( richie_mysql_deploy | default(false) | bool ) and vrrp_instances is defined and ( groups['richie_mysql_docker_servers'] | length ) > 1
+
+    - name: Install or upgrade docker daemon
+      import_role:
+        name: geerlingguy.docker
+      when: richie_mysql_deploy | default(false) | bool
+
+    - import_role:
+        name: snmpd
+      tags: snmpd
+      when: richie_mysql_deploy | default(false) | bool
+    - import_role:
+        name: snmpd_docker
+      tags: snmpd
+      when: richie_mysql_deploy | default(false) | bool
+
+    - name: Deploy richie mysql
+      import_role:
+        name: mysql_docker_deploy
+      vars:
+        # Richie shared variables to all environments
+        richie_nau_MYSQL_DATABASE: richie_nau
+        richie_nau_MYSQL_USER: richie_nau
+        richie_mysql_replication_user: richie_replication
+
+        # Base configuration for the MySQL instance
+        mysql_docker_replication: true
+        mysql_docker_hostname: "{{ richie_mysql_docker_hostname }}"
+        mysql_docker_port: "{{ richie_mysql_docker_port }}"
+        mysql_docker_instance_name: richie_mysql
+        mysql_docker_primary: "{{ richie_mysql_docker_primary }}"
+        mysql_root_password: "{{ richie_MYSQL_ROOT_PASSWORD }}"
+        mysql_server_id: "{{ groups.richie_mysql_docker_servers.index(inventory_hostname) +1 }}"
+
+        # Advanced configuration that assumes that the first server is the primary replica.
+        mysql_replication_login_password: "{{ richie_MYSQL_ROOT_PASSWORD }}"
+        mysql_replication_master_server_ip: "{{ hostvars[groups.richie_mysql_docker_servers[0]].ansible_host }}"
+        mysql_replication_master_port: "{{ hostvars[groups.richie_mysql_docker_servers[0]].richie_mysql_docker_port }}"
+        mysql_replication_user: "{{ richie_mysql_replication_user }}"
+        mysql_replication_password: "{{ richie_mysql_replication_password }}"
+        mysql_replication_init_databases: [ "{{ richie_nau_MYSQL_DATABASE }}" ]
+        mysql_replication_additional_databases:
+          - "{{ richie_nau_MYSQL_DATABASE | default(None) }}"
+        mysql_replication_additional_users:
+          # one per site
+          - {
+              db: "{{ richie_nau_MYSQL_DATABASE | default(None) }}",
+              user: "{{ richie_nau_MYSQL_USER | default(None) }}",
+              pass: "{{ richie_nau_app_richie_MYSQL_PASSWORD | default(None) }}",
+              host: "%"
+            }
+          - {
+              db: "*",
+              user: "{{ openark_orchestrator_client_user | default(None) }}",
+              pass: "{{ openark_orchestrator_client_password | default(None) }}",
+              host: "{{ openark_orchestrator_client_mysql_host }}",
+              # ndbinfo.processes:SELECT
+              priv: "*.*:SUPER,PROCESS,REPLICATION SLAVE,REPLICATION CLIENT,RELOAD/meta.*:SELECT/performance_schema.replication_group_members:SELECT"
+            }
+          - {
+              db: "*",
+              user: "{{ richie_load_balancer_haproxy_health_check_user }}",
+              host: "{{ richie_load_balancer_haproxy_health_check_host | default('%') }}",
+            }
+      when: richie_mysql_deploy | default(false) | bool
+
+    # - name: Restore keepalived priority
+    #   import_role:
+    #     name: keepalived
+    #   vars:
+    #     keepalived_priority_value: "{{ keepalived_priority }}"
+    #   when: ( richie_mysql_deploy | default(false) | bool ) and vrrp_instances is defined and ( groups['richie_mysql_docker_servers'] | length ) > 1

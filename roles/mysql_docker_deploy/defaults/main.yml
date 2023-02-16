@@ -1,0 +1,74 @@
+---
+mysql_docker_image: docker.io/mysql:8.0.29
+mysql_docker_port: 3306
+mysql_docker_instance_name: mysql
+mysql_docker_hostname: mysql
+mysql_major_release_number: 8
+mysql_command_mysqldump_source_data: "{{ '--source-data' if mysql_major_release_number >= 8 else '--master-data' }}"
+
+mysql_docker_command: --default-authentication-plugin=mysql_native_password{{ (' --port ' + (mysql_docker_port|string) ) if mysql_docker_port != 3306 else '' }}
+
+mysql_docker_deploy_parent_folder: /nau/ops
+mysql_docker_deploy_base_folder: "{{ mysql_docker_deploy_parent_folder }}/{{ mysql_docker_instance_name }}"
+mysql_docker_deploy_compose_template: templates/docker-compose.yml.j2
+
+mysql_docker_container_name: "{{ mysql_docker_deploy_base_folder | basename }}"
+mysql_docker_deploy_stack_verify_delay: 5
+mysql_docker_deploy_stack_verify_retries: 50
+
+# Files to be templated during deployment
+mysql_docker_deploy_templates:
+  - src_data: "{{ mysql_root_password }}"
+    dest: "{{ mysql_docker_deploy_base_folder }}/mysql-root-password"
+    secret_name: mysql_root_password
+    service: mysql
+    docker_target: "{{ mysql_docker_root_password }}"
+  - src:  templates/mysql.cnf.j2
+    dest: "{{ docker_deploy_base_folder }}/mysql.cfg"
+    config_name: mysql_cfg
+    service: mysql
+    docker_target: /etc/mysql/conf.d/mysql.cnf
+    when: "{{ mysql_docker_replication | bool }}"
+  - src: templates/Makefile
+    dest: "{{ mysql_docker_deploy_base_folder }}/Makefile"
+
+mysql_docker_root_password: /run/secrets/mysql-root-password
+
+mysql_docker_volume_path: /data/{{ mysql_docker_instance_name }}
+
+mysql_docker_deploy_folders_additional:
+  - dest: /data/{{ mysql_docker_instance_name }}/
+    dir_owner: 999
+    dir_group: root
+    dir_mode: "0755"
+
+mysql_docker_deploy_extra_hosts: []
+
+mysql_read_only: "{{ not (mysql_docker_primary | default(true)) }}"
+mysql_super_read_only: false
+# mysql_super_read_only: "{{ mysql_read_only }}"
+
+###############
+# Replication #
+###############
+docker_mysql_replication_common_pip_pkgs:
+  - PyMySQL==0.9.3
+
+docker_mysql_replication_dump_file: /tmp/mysql_dumb.sql
+
+# Configure or not the MySQL with replication,
+# if `true` you also need to configure `mysql_docker_primary`.
+mysql_docker_replication: false
+
+# mysql_docker_primary
+mysql_replication_login_user: root
+# mysql_replication_login_password
+# mysql_replication_master_server_ip
+# mysql_replication_master_port
+# mysql_replication_user
+# mysql_replication_password
+# mysql_replication_init_databases
+
+mysql_replication_slave_server_ip: "%"
+mysql_replication_login_host: 127.0.0.1
+mysql_replication_login_port: "{{ mysql_docker_port }}"

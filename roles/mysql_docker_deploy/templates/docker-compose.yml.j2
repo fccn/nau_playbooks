@@ -1,0 +1,48 @@
+{% import '_docker_deploy_helper.j2' as helper with context %}
+# {{ ansible_managed }}
+#
+# Docker compose file for mysqldb.
+#
+version: '3.8'
+
+services:
+
+  mysql:
+    image: {{ mysql_docker_image }}
+    container_name: {{ mysql_docker_container_name }}
+{% if mysql_docker_hostname is defined %}
+    hostname: {{ mysql_docker_hostname }}
+{% endif %}
+    command: {{ mysql_docker_command }}
+    restart: always
+    environment:
+      # Use custom timezone
+      TZ: {{ mysql_docker_timezone | default("Europe/Lisbon") }}
+      MYSQL_ROOT_PASSWORD_FILE: {{ mysql_docker_root_password }}
+      # use legacy authentication plugin to fix: 
+      # django.db.utils.OperationalError: (2059, "Authentication plugin 'caching_sha2_password' 
+      # cannot be loaded: /usr/lib/x86_64-linux-gnu/mariadb18/plugin/caching_sha2_password.so: 
+      # cannot open shared object file: No such file or directory
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping --silent -p`cat $MYSQL_ROOT_PASSWORD_FILE` || exit 1"]
+      interval: 90s
+      timeout: 60s
+      retries: 10
+      start_period: 60s
+    volumes:
+      - {{ mysql_docker_volume_path }}:/var/lib/mysql
+    network_mode: host
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 1G
+      placement:
+        max_replicas_per_node: 1
+{{ helper.service_configs(service='mysql') }}
+{{ helper.service_secrets(service='mysql') }}
+
+{{ helper.configs() }}
+{{ helper.secrets() }}

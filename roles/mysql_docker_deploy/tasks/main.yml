@@ -1,0 +1,65 @@
+---
+- name: Install make
+  package:
+    name: make
+    state: present
+  tags:
+    - docker_deploy
+
+- name: Install pip package requirements
+  pip:
+    name: "{{ docker_mysql_replication_common_pip_pkgs }}"
+    state: present
+  tags:
+    - docker_mysql_replication
+    - docker_mysql_replication_additional
+    - mysql_replication_additional_users
+
+- name: Install MySQL client for health check
+  package:
+    name: mysql-client
+  tags:
+    - docker_deploy
+
+- name: Deploy
+  include_role:
+    name: ansible-docker-deploy
+  vars:
+    docker_deploy_base_folder:         "{{ mysql_docker_deploy_base_folder }}"
+    docker_deploy_compose_template:    "{{ mysql_docker_deploy_compose_template }}"
+    docker_deploy_templates:           "{{ mysql_docker_deploy_templates | default([]) }}"
+    docker_deploy_files:               "{{ mysql_docker_deploy_files | default([]) }}"
+    docker_deploy_folders_additional:  "{{ mysql_docker_deploy_folders_additional | default([]) }}"
+    docker_deploy_configs:             "{{ mysql_docker_deploy_configs | default([]) }}"
+    docker_deploy_secrets:             "{{ mysql_docker_deploy_secrets | default([]) }}"
+    docker_deploy_services_additional: "{{ mysql_docker_deploy_services_additional | default([]) }}"
+    docker_deploy_shell:               true
+    docker_deploy_healthcheck_delay :  "{{ mysql_docker_deploy_stack_verify_delay }}"
+    docker_deploy_healthcheck_retries: "{{ mysql_docker_deploy_stack_verify_retries }}"
+  tags:
+    - docker_deploy
+
+- name: Configure primary (master)
+  include_tasks: primary_server.yml
+  when: ( mysql_initialize_replication | default(false) | bool ) and ( mysql_docker_primary | bool )
+  tags: always
+
+- name: Configure secondary (slave)
+  include_tasks: secondary_server.yml
+  when: ( mysql_initialize_replication | default(false) | bool ) and not ( mysql_docker_primary | bool )
+  tags: always
+
+- name: Run healthcheck
+  shell: make healthcheck
+  args:
+    chdir: "{{ mysql_docker_deploy_base_folder }}"
+  delay: "{{ mysql_docker_deploy_stack_verify_delay }}"
+  register: result
+  until: result.rc == 0
+  retries: "{{ mysql_docker_deploy_stack_verify_retries }}"
+  # run it only when deploying or when on healthcheck mode.
+  changed_when: False
+  when: not ansible_check_mode
+  tags: 
+    - healthcheck
+    - docker_deploy

@@ -1,0 +1,17 @@
+---
+
+- name: Create additional databases
+  mysql_db:
+    db: "{{ item }}"
+    state: present
+    encoding: utf8
+    login_host: "{{ mysql_replication_login_host }}"
+    login_user: "{{ mysql_replication_login_user }}"
+    login_password: "{{ mysql_replication_login_password }}"
+    login_port: "{{ mysql_replication_login_port }}"
+  when: item != None and item != ''
+  with_items: "{{ mysql_replication_additional_databases }}"
+  tags:
+    - docker_mysql_replication
+    - docker_mysql_replication_additional
+    - mysql_replication_additional_databases

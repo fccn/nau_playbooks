@@ -1,0 +1,76 @@
+---
+- name: Print which container it is configuring
+  debug:
+    msg: "Configure container {{ mysql_docker_container_name }}"
+  tags: always
+
+# - name: Get MySQL databases information
+#   mysql_info:
+#     login_host: "{{ mysql_replication_login_host }}"
+#     login_user: "{{ mysql_replication_login_user }}"
+#     login_password: "{{ mysql_replication_login_password }}"
+#     login_port: "{{ mysql_replication_login_port }}"
+#     filter:
+#     - databases
+#     return_empty_dbs: true # only on ansible 2.10
+#   register: mysql_info_databases_out
+#   tags: docker_mysql_replication
+
+# - name: Define a variable databases to dump
+#   set_fact:
+#     _mysql_databases_to_dump: "{{ mysql_info_databases_out.databases.keys() | difference(['information_schema','mysql','performance_schema','sys']) | list }}"
+#   tags: docker_mysql_replication
+
+# - name: Print mysql database names
+#   debug:
+#     var: _mysql_databases_to_dump
+#   when: ansible_verbosity > 0
+#   tags: docker_mysql_replication
+
+- name: Set database names to initialize replication
+  set_fact:
+    _mysql_databases_to_dump: "{{ mysql_replication_init_databases }}"
+  tags: always
+
+- name: Assert MySQL replication initial databases variable
+  assert:
+    that: >
+          ( _mysql_databases_to_dump is defined ) and ( _mysql_databases_to_dump is not mapping )
+          and ( _mysql_databases_to_dump is iterable ) and ( _mysql_databases_to_dump is not string )
+  tags: always
+
+- name: Create additional databases
+  include_tasks: create_dbs.yml
+  tags: always
+
+- name: Create additional users and grants
+  include_tasks: create_users.yml
+  tags: always
+
+- name: Create replication user
+  mysql_user:
+    name: "{{ mysql_replication_user }}"
+    password: "{{ mysql_replication_password }}"
+    login_host: "{{ mysql_replication_login_host }}"
+    login_user: "{{ mysql_replication_login_user }}"
+    login_password: "{{ mysql_replication_login_password }}"
+    login_port: "{{ mysql_replication_login_port }}"
+    priv: '*.*:ALL'
+    host: "{{ mysql_replication_slave_server_ip }}"
+    state: present
+  tags: docker_mysql_replication
+
+- name: Create data snapshot
+  shell: docker exec -e MYSQL_PWD={{ mysql_replication_login_password }} {{ mysql_docker_container_name }} /usr/bin/mysqldump --user={{ mysql_replication_login_user }} {{ mysql_command_mysqldump_source_data }} --databases {{ _mysql_databases_to_dump | join(',') }} > {{ docker_mysql_replication_dump_file }}
+  tags: docker_mysql_replication
+
+# - name: Copy data snapshot to localhost
+#   shell: rsync -avhe 'ssh -o StrictHostKeyChecking=no -o ConnectTimeout=60 -o ServerAliveInterval=300 -o ServerAliveCountMax=30' {{ ansible_user_id }}@{{ hostvars[inventory_hostname].ansible_host }}:{{ docker_mysql_replication_dump_file }} {{ docker_mysql_replication_dump_file | basename }}
+#   delegate_to: localhost
+#   tags: docker_mysql_replication
+
+# - name: Remove data snapshot in inventory hostname
+#   file:
+#     dest: "{{ docker_mysql_replication_dump_file }}"
+#     state: absent
+#   tags: docker_mysql_replication

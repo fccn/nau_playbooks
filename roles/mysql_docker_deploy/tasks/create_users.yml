@@ -1,0 +1,19 @@
+---
+
+- name: Create additional database users
+  mysql_user:
+    name: "{{ item.user }}"
+    password: "{{ item.pass | default(omit) }}"
+    login_host: "{{ mysql_replication_login_host }}"
+    login_user: "{{ mysql_replication_login_user }}"
+    login_password: "{{ mysql_replication_login_password }}"
+    login_port: "{{ mysql_replication_login_port }}"
+    priv: "{{ item.priv | default( item.db + '.*:ALL' ) }}"
+    host: "{{ item.host | default('%') }}"
+    state: present
+  when: item.db != None and item.db != ''
+  with_items: "{{ mysql_replication_additional_users }}"
+  tags:
+    - docker_mysql_replication
+    - docker_mysql_replication_additional
+    - mysql_replication_additional_users
