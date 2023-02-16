@@ -65,6 +65,8 @@ rs.reconfig(cfg, {force: true})
 
 Run `rs.status()` on older and new master to check the `PRIMARY` replica has been changed.
 
+After lowering the `priority` of the older Mongo DB instances; then deploy the new connection to Mongo DB on its clients without the older, to be removed, instances. Then remove the old server from the cluster.
+
 Then login into primary and remove the old server from the cluster.
 ```
 rs.remove("<old host>")
