@@ -84,6 +84,10 @@ mysql-showprocess-list: ## show the processes inside mysql
 	@MYSQL_PWD="{{ mysql_root_password }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ mysql_docker_port }} --execute="show processlist;"
 .PHONY: mysql-showprocess-list
 
+mysql-shell: ## open mysl shell to run SQL commands
+	@MYSQL_PWD="{{ mysql_root_password }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ mysql_docker_port }}
+.PHONY: mysql-shell
+
 {% if not richie_mysql_docker_primary %}
 healthcheck-mysql-replica: ## show replica slave status
 	@echo -n "Check mysql replica {{ mysql_docker_container_name }} seconds behind primary is lower than 600 seconds (< 10 minutes): "
