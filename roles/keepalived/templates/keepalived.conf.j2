@@ -1,13 +1,14 @@
 ## Managed by ANSIBLE
 
-vrrp_script {{ keepalived_health.name }} {
-   script "{{ keepalived_health.script }}"
-   timeout  {{ keepalived_health.timeout }} 
-   interval {{ keepalived_health.interval }}
+{% for kh in keepalived_health %}
+vrrp_script {{ kh.name }} {
+   script "{{ kh.script }}"
+   timeout  {{ kh.timeout }} 
+   interval {{ kh.interval }}
 }
+{% endfor %}
 
-
-{% for instance in vrrp_instances %}
+{% for instance in keepalived_vrrp_instances %}
 
 vrrp_instance {{ instance.name }} {
    state {{ instance.state }} # MASTER/BACKUP
@@ -30,7 +31,7 @@ vrrp_instance {{ instance.name }} {
    }
 
    track_script {
-    {{ keepalived_health.name }}
+    {{ instance.track_script }}
    }
 
    # The virtual ip address shared between the two loadbalancers

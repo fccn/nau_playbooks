@@ -19,8 +19,8 @@
     - import_role: 
         name: keepalived
       vars: 
-        keepalived_priority: 1
-      when: vrrp_instances is defined
+        keepalived_priority_override: 1
+      when: keepalived_vrrp_instances is defined
     - name: force all notified handlers to run at this point
       meta: flush_handlers
     - import_role:
@@ -105,7 +105,9 @@
       when: rolling_deploy_enabled | bool
     - import_role: 
         name: keepalived
-      when: vrrp_instances is defined
+      vars:
+        keepalived_priority_override: ""
+      when: keepalived_vrrp_instances is defined and ( keepalived_vrrp_instances|length > 0 )
 
     - name: Run Makefile healthcheck
       shell: make --no-print-directory -C {{ item }} healthcheck

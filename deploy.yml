@@ -150,8 +150,8 @@
   roles:
     - role: keepalived
       vars: 
-        keepalived_priority_value: 1 # Lower priority so the VIPs can swap to other machine.
-      when: vrrp_instances is defined
+        keepalived_priority_override: 1 # Lower priority so the VIPs can swap to other machine.
+      when: balancer_keepalived_vrrp_instances is defined
     - role: geerlingguy.docker
     - role: ansible-firewall
     - role: ansible-docker-deploy
@@ -160,8 +160,8 @@
     - role: nau_check_urls
     - role: keepalived
       vars:
-        keepalived_priority_value: "{{ keepalived_priority }}"
-      when: vrrp_instances is defined
+        keepalived_priority_override: ""
+      when: balancer_keepalived_vrrp_instances is defined
   tags: load-balancer
 
 - name: Configure mongo server instance
@@ -483,8 +483,8 @@
       import_role:
         name: keepalived
       vars: 
-        keepalived_priority_value: 1 # Lower priority so the VIPs can swap to other machine.
-      when: ( redis_deploy | default(false) | bool ) and vrrp_instances is defined and ( groups['redis_docker_servers'] | length ) > 1
+        keepalived_priority_override: 1 # Lower priority so the VIPs can swap to other machine.
+      when: ( redis_deploy | default(false) | bool ) and redis_keepalived_vrrp_instances is defined and ( groups['redis_docker_servers'] | length ) > 1
 
     - name: Install or upgrade docker daemon
       import_role:
@@ -509,8 +509,8 @@
       import_role:
         name: keepalived
       vars:
-        keepalived_priority_value: "{{ keepalived_priority }}"
-      when: ( redis_deploy | default(false) | bool ) and vrrp_instances is defined and ( groups['redis_docker_servers'] | length ) > 1
+        keepalived_priority_override: ""
+      when: ( redis_deploy | default(false) | bool ) and redis_keepalived_vrrp_instances is defined and ( groups['redis_docker_servers'] | length ) > 1
 
 - name: Deploy richie mysql docker servers
   hosts: richie_mysql_docker_servers
@@ -518,12 +518,12 @@
   become: True
   gather_facts: True
   tasks:
-    # - name: Lower keepalived priority to force VIP swap
-    #   import_role:
-    #     name: keepalived
-    #   vars: 
-    #     keepalived_priority_value: 1 # Lower priority so the VIPs can swap to other machine.
-    #   when: ( richie_mysql_deploy | default(false) | bool ) and vrrp_instances is defined and ( groups['richie_mysql_docker_servers'] | length ) > 1
+    - name: Lower keepalived priority to force VIP swap
+      import_role:
+        name: keepalived
+      vars: 
+        keepalived_priority_override: 1 # Lower priority so the VIPs can swap to other machine.
+      when: ( richie_mysql_deploy | default(false) | bool ) and richie_mysql_keepalived_vrrp_instances is defined and ( groups['richie_mysql_docker_servers'] | length ) > 1
 
     - name: Install or upgrade docker daemon
       import_role:
@@ -589,9 +589,9 @@
             }
       when: richie_mysql_deploy | default(false) | bool
 
-    # - name: Restore keepalived priority
-    #   import_role:
-    #     name: keepalived
-    #   vars:
-    #     keepalived_priority_value: "{{ keepalived_priority }}"
-    #   when: ( richie_mysql_deploy | default(false) | bool ) and vrrp_instances is defined and ( groups['richie_mysql_docker_servers'] | length ) > 1
+    - name: Restore keepalived priority
+      import_role:
+        name: keepalived
+      vars:
+        keepalived_priority_override: ""
+      when: ( richie_mysql_deploy | default(false) | bool ) and richie_mysql_keepalived_vrrp_instances is defined and ( groups['richie_mysql_docker_servers'] | length ) > 1
