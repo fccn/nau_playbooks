@@ -639,19 +639,20 @@
     - name: Install or upgrade docker daemon
       import_role:
         name: geerlingguy.docker
-      when: coursecertificate_deploy | default(false) | bool
+      when: coursecertificate_docker_deploy | default(false) | bool
     - import_role:
         name: snmpd
       tags: snmpd
-      when: coursecertificate_deploy | default(false) | bool
+      when: coursecertificate_docker_deploy | default(false) | bool
     - import_role:
         name: snmpd_docker
       tags: snmpd
-      when: coursecertificate_deploy | default(false) | bool
+      when: coursecertificate_docker_deploy | default(false) | bool
     - name: Deploy coursecertificate as docker compose file
       import_role:
         name: coursecertificate_docker_deploy
       vars:
+        coursecertificate_docker_deploy_run: "{{ coursecertificate_docker_deploy | default(false) }}"
 
 - name: Deploy staticproxy docker servers
   hosts: staticproxy_docker_servers
