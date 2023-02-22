@@ -1,0 +1,38 @@
+{% import '_docker_deploy_helper.j2' as helper with context %}
+# {{ ansible_managed }}
+version: '3.8'
+
+services:
+  nginx:
+    image: {{ staticproxy_nginx_image }}
+    container_name: {{ staticproxy_docker_deploy_compose_name }}_nginx
+    ports:
+      - target: 80
+        published: {{ staticproxy_nginx_http_ingress_port }}
+        protocol: tcp
+        mode: ingress
+      - target: 443
+        published: {{ staticproxy_nginx_https_ingress_port }}
+        protocol: tcp
+        mode: ingress
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 50M
+    environment:
+      # Use custom timezone
+      TZ: {{ staticproxy_timezone | default("Europe/Lisbon") }}
+    healthcheck:
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/80", "&&", "echo", "''", ">", "/dev/tcp/127.0.0.1/443", "||", "exit", "1"]
+      start_period: 30s
+      retries: 10
+      interval: 90s
+      timeout: 90s
+{{ helper.service_configs() }}
+{{ helper.service_secrets() }}
+
+{{ helper.configs() }}
+{{ helper.secrets() }}

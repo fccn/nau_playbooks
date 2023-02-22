@@ -652,4 +652,27 @@
       import_role:
         name: coursecertificate_docker_deploy
       vars:
-        coursecertificate_deploy_run: "{{ coursecertificate_deploy | default(false) }}"
+
+- name: Deploy staticproxy docker servers
+  hosts: staticproxy_docker_servers
+  serial: "{{ serial_number | default(1) }}" # deploy in sequence
+  become: True
+  gather_facts: True
+  tasks:
+    - name: Install or upgrade docker daemon
+      import_role:
+        name: geerlingguy.docker
+      when: staticproxy_docker_deploy | default(false) | bool
+    - import_role:
+        name: snmpd
+      tags: snmpd
+      when: staticproxy_docker_deploy | default(false) | bool
+    - import_role:
+        name: snmpd_docker
+      tags: snmpd
+      when: staticproxy_docker_deploy | default(false) | bool
+    - name: Deploy staticproxy as docker compose file
+      import_role:
+        name: staticproxy_docker_deploy
+      vars:
+        staticproxy_docker_deploy_run: "{{ staticproxy_docker_deploy | default(false) }}"
