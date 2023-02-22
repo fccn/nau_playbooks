@@ -1,9 +1,17 @@
 ---
 - name: Install snmpd
   package:
-    name: snmpd
+    name: "{{ package_to_install }}"
     state: present
-  tags: snmpd
+  loop:
+    - snmpd
+    - snmp
+    - snmp-mibs-downloader
+  loop_control:
+    loop_var: package_to_install
+  tags: 
+    - snmpd
+    - snmp
 
 - name: Configure snmpd
   template: 
@@ -11,11 +19,15 @@
     dest: /etc/snmp/snmpd.conf
     backup: yes
   notify: restart snmpd
-  tags: snmpd
+  tags: 
+    - snmpd
+    - snmp
 
 - name: Start Service snmpd
   service: 
     name: snmpd 
     state: started 
     enabled: yes
-  tags: snmpd
+  tags: 
+    - snmpd
+    - snmp
