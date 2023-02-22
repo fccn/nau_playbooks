@@ -617,3 +617,27 @@
         richie_docker_deploy_mysql_port: "{{ hostvars[groups['richie_mysql_docker_servers'][0]].richie_mysql_docker_port }}"
         # richie_deploy_create_volumes: "{{ richie_deploy | default(false) }}"
         # docker_swarm_build_node: "{{ hostvars[groups['build_server'][0]].ansible_host }}"
+
+- name: Deploy coursecertificate docker servers
+  hosts: coursecertificate_docker_servers
+  serial: "{{ serial_number | default(1) }}" # deploy in sequence
+  become: True
+  gather_facts: True
+  tasks:
+    - name: Install or upgrade docker daemon
+      import_role:
+        name: geerlingguy.docker
+      when: coursecertificate_deploy | default(false) | bool
+    - import_role:
+        name: snmpd
+      tags: snmpd
+      when: coursecertificate_deploy | default(false) | bool
+    - import_role:
+        name: snmpd_docker
+      tags: snmpd
+      when: coursecertificate_deploy | default(false) | bool
+    - name: Deploy coursecertificate as docker compose file
+      import_role:
+        name: coursecertificate_docker_deploy
+      vars:
+        coursecertificate_deploy_run: "{{ coursecertificate_deploy | default(false) }}"

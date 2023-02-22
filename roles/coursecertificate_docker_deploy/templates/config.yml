@@ -1,0 +1,44 @@
+HTTP_HEADER_NAME: X-NAU-Certificate-force-html
+HTTP_HEADER_VALUE: true
+LMS_SERVER_URL: {{ coursecertificate_app_lms_server_url }}
+CERTIFICATE_FILE_NAME: certificate.pdf
+CERTIFICATE_IMAGE_FILE_NAME: certificate
+HTTP_HEADER_META_PREFIX: pdfkit-
+HTTP_HEADER_META_IMAGE_PREFIX: imgkit-
+HTTP_HEADER_META_IMAGE_FORMAT: imgkit-format
+HTTP_HEADER_META_VERSION_NAME: nau-course-certificate-version
+HTTP_HEADER_META_FILENAME_NAME: nau-course-certificate-filename
+HTTP_HEADER_META_IMAGE_FILENAME_NAME: nau-course-certificate-image-filename
+HTTP_HEADER_META_LIMIT_NUMBER_PAGES: nau-course-certificate-limit-pages
+BUCKET_NAME: {{ coursecertificate_app_bucket_name }}
+BUCKET_AWS_ACCESS_KEY_ID: {{ coursecertificate_app_bucket_aws_access_key_id }}
+BUCKET_AWS_SECRET_ACCESS_KEY: {{ coursecertificate_app_bucket_aws_secret_access_key }}
+BUCKET_ENDPOINT_URL: https://{{ nau_ceph_host }}
+BUCKET_CERTIFICATE_NO_VERSION_KEY: no-version
+DIGITAL_SIGNATURE:
+  CERTIFICATE_P12_PATH: /app/digital_signature/sign-pdf.p12
+  CERTIFICATE_P12_PASSWORD: "{{ coursecertificate_digital_signature_certificate_p12_password }}"
+  signaturebox: 742,30,810,60
+  contact: ajuda@nau.edu.pt
+  location: Lisboa
+  reason:
+    pt-pt: Certificado de curso assinado digitalmente por NAU
+    en: Digitally signed course certificate by NAU
+LOGGING:
+  version: 1
+  disable_existing_loggers: False
+  root:
+    level: INFO
+    handlers: [console]
+  formatters:
+    standard:
+      datefmt: "%Y-%m-%d %H:%M:%S"
+      format: "%(asctime)s %(levelname)-10s %(message)s"
+    error:
+      format: "%(levelname)s <PID %(process)d:%(processName)s> %(name)s.%(funcName)s(): %(message)s"
+  handlers:
+    console:
+      class: logging.StreamHandler
+      level: DEBUG
+      stream: ext://sys.stdout
+      formatter: standard

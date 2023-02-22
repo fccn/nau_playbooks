@@ -1,0 +1,82 @@
+{% import '_docker_deploy_helper.j2' as helper with context %}
+# {{ ansible_managed }}
+version: "3.8"
+
+services:
+  app:
+    image: {{ coursecertificate_app_docker_image }}
+    container_name: {{ coursecertificate_docker_deploy_compose_name }}_app
+    ports:
+      - target:    {{ coursecertificate_app_docker_port_target | default(5000) }}
+        published: {{ coursecertificate_app_docker_port_published | default(5000) }}
+        protocol:  tcp
+        mode:      ingress
+    deploy:
+      replicas: {{ coursecertificate_app_replicas }}
+      placement:
+        max_replicas_per_node: 1
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 300M
+      update_config:
+        # We are updating 1 container a time
+        parallelism: 1
+    environment:
+      # Use custom timezone
+      TZ: {{ coursecertificate_timezone | default("Europe/Lisbon") }}
+    healthcheck:
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/5000", "||", "exit", "1"]
+      start_period: 60s
+      retries: 10
+      interval: 90s
+      timeout: 90s
+{{ helper.service_configs(service='app') }}
+{{ helper.service_secrets(service='app') }}
+
+  nginx:
+    image: {{ coursecertificate_nginx_image }}
+    container_name: {{ coursecertificate_docker_deploy_compose_name }}_nginx
+    restart: always
+    ports:
+      - target: 80
+        published: {{ coursecertificate_nginx_http_ingress_port }}
+        protocol: tcp
+        mode: ingress
+      - target: 443
+        published: {{ coursecertificate_nginx_https_ingress_port }}
+        protocol: tcp
+        mode: ingress
+    environment:
+      # Use custom timezone
+      TZ: {{ coursecertificate_timezone | default("Europe/Lisbon") }}
+    deploy:
+      replicas: {{ coursecertificate_nginx_replicas }}
+      resources:
+        limits:
+          memory: 50M
+        reservations:
+          memory: 10M
+      update_config:
+        # We are updating 1 container a time
+        parallelism: 1
+      placement:
+        max_replicas_per_node: 1
+{% if coursecertificate_docker_placement_constraints is defined and ( coursecertificate_docker_placement_constraints | length > 0 ) %}
+        constraints:
+{% for key, value in coursecertificate_docker_placement_constraints.items() %}
+          - {{ key }} == {{ value }}
+{% endfor %}
+{% endif %}
+    healthcheck:
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/80", "&&", "echo", "''", ">", "/dev/tcp/127.0.0.1/443", "||", "exit", "1"]
+      start_period: 30s
+      retries: 10
+      interval: 90s
+      timeout: 90s
+{{ helper.service_configs(service='nginx') }}
+{{ helper.service_secrets(service='nginx') }}
+
+{{ helper.configs() }}
+{{ helper.secrets() }}
