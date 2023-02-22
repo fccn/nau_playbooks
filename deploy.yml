@@ -603,11 +603,22 @@
   become: True
   gather_facts: True
   tasks:
+    - name: Install or upgrade docker daemon
+      import_role:
+        name: geerlingguy.docker
+      when: richie_docker_deploy | default(false) | bool
+
+    - import_role:
+        name: snmpd
+      when: richie_docker_deploy | default(false) | bool
+    - import_role:
+        name: snmpd_docker
+      when: richie_docker_deploy | default(false) | bool
+
     - name: Deploy richie as docker compose file
       import_role:
         name: richie_docker_deploy
       vars:
-        richie_deploy_run: "{{ richie_deploy | default(false) }}"
         richie_docker_deploy_run: "{{ richie_docker_deploy | default(false) }}"
         elasticsearch_cluster_hosts_url_tmp: "{% for elastic_host in groups['elasticsearch_docker_servers'] %}http://{{ hostvars[elastic_host].ansible_host }}:{{ hostvars[elastic_host].elasticsearch_http_port }}{{ ',' if not loop.last else '' }}{% endfor %}"
         richie_docker_deploy_elasticsearch_cluster_hosts_url: "{{ elasticsearch_cluster_hosts_url_tmp.split(',') | list }}"
