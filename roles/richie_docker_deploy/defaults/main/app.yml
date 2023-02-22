@@ -1,0 +1,129 @@
+---
+richie_sites_app:
+  nau:
+    app_image: nauedu/nau:{{ richie_nau_version }}
+    nginx_image: nauedu/nau-nginx:{{ richie_nau_version }}
+    app_replicas: 1
+    app_environment_variables: "{{ richie_nau_app_environment_variables }}"
+    app_gunicorn_workers: 3 # the same default upstream workers
+
+# variables with a default value
+richie_nau_app_richie_CDN_DOMAIN: "{{ RICHIE_NAU_AWS_BUCKET_NAME }}.{{ nau_ceph_host }}"
+richie_nau_app_richie_MYSQL_DATABASE: richie_nau
+richie_nau_app_richie_MYSQL_USER: richie_nau
+
+# variables that should be defined
+RICHIE_NAU_AWS_BUCKET_NAME: !!null
+richie_nau_app_richie_MYSQL_PASSWORD: !!null
+richie_nau_app_richie_django_secret_key: !!null
+richie_nau_app_richie_site: !!null
+richie_nau_app_openedx_lms_url: !!null
+richie_nau_app_richie_DJANGO_AWS_SECRET_ACCESS_KEY: !!null
+richie_nau_app_richie_DJANGO_AWS_ACCESS_KEY_ID: !!null
+richie_nau_app_DJANGO_RICHIE_COURSE_RUN_SYNC_SECRETS: !!null
+
+richie_docker_deploy_redis_db: 0
+
+richie_app_docker_deploy_templates:
+  # hot fix, to increase elasticsearch timeout so we can run the django command bootstrap_elasticsearch
+  - src: templates/app/richie/apps/search/__init__.py
+    dest: "{{ richie_docker_deploy_base_folder }}/app/richie/apps/search/__init__.py"
+    docker_target: /usr/local/lib/python3.10/site-packages/richie/apps/search/__init__.py
+    config_name: nau_app_richie_apps_search_init
+    service: nau_app
+
+# Environment variables to the nau_app container and its job
+# the normal config, the overrides variable and the default variables.
+richie_nau_app_environment_variables: "{{ richie_nau_app_environment_variables_default | combine(richie_nau_app_environment_variables_overrides, recursive=True) }}"
+richie_nau_app_environment_variables_overrides: {}
+richie_nau_app_environment_variables_default:
+  # Use custom timezone
+  TZ: "{{ openedx_timezone | default('Europe/Lisbon') }}"
+
+  DJANGO_STATICFILES_STORAGE: django.contrib.staticfiles.storage.ManifestStaticFilesStorage
+  DJANGO_SETTINGS_MODULE: nau.settings
+  DJANGO_CONFIGURATION: Production
+
+  # Python
+  PYTHONUNBUFFERED: 1
+
+  # Django
+  DJANGO_SECRET_KEY: "{{ richie_nau_app_richie_django_secret_key }}"
+  DJANGO_ALLOWED_HOSTS: "{{ richie_nau_app_richie_site }}"
+
+  # Elastic search
+  RICHIE_ES_INDICES_PREFIX: richie_nau
+  RICHIE_ES_HOST: "{{ richie_docker_deploy_elasticsearch_cluster_hosts_url | join(',') }}"
+  #- discovery.type: single-node
+
+  # App database configuration
+  DB_ENGINE: django.db.backends.mysql
+  # use haproxy load balancer to connect to mysql db
+  DB_HOST: "{{ richie_docker_deploy_mysql_host }}"
+  DB_NAME: "{{ richie_nau_app_richie_MYSQL_DATABASE }}"
+  DB_USER: "{{ richie_nau_app_richie_MYSQL_USER }}"
+  DB_PASSWORD: "{{ richie_nau_app_richie_MYSQL_PASSWORD }}"
+  DB_PORT: "{{ richie_docker_deploy_mysql_port }}"
+  DB_OPTION_CHARSET: utf8mb4
+
+  # Social auth
+  # DJANGO_SOCIAL_AUTH_EDX_OAUTH2_KEY: social-id
+  # DJANGO_SOCIAL_AUTH_EDX_OAUTH2_SECRET: fakesecret
+
+  # LMS Backend
+  EDX_BACKEND: richie.apps.courses.lms.edx.EdXLMSBackend
+  EDX_JS_BACKEND: openedx-hawthorn
+  # the double $$ is required so docker don't try to interpolate
+  EDX_COURSE_REGEX: "^{{ richie_nau_app_openedx_lms_url }}/courses/(?P<course_id>.*)/info$$"
+  EDX_JS_COURSE_REGEX: ^.*/courses/(.*)/info/?$$
+  EDX_BASE_URL: "{{ richie_nau_app_openedx_lms_url }}"
+  DJANGO_RICHIE_COURSE_RUN_SYNC_SECRETS: "{{ richie_nau_app_DJANGO_RICHIE_COURSE_RUN_SYNC_SECRETS }}"
+
+  # Authentication Backend
+  AUTHENTICATION_BASE_URL: "{{ richie_nau_app_openedx_lms_url }}"
+  AUTHENTICATION_BACKEND: openedx-hawthorn
+
+  # S3 AWS compatible Ceph bucket for django media
+  DJANGO_AWS_S3_ENDPOINT_URL: https://{{ nau_ceph_host }}
+  DJANGO_AWS_STORAGE_BUCKET_NAME: "{{ RICHIE_NAU_AWS_BUCKET_NAME }}"
+  DJANGO_AWS_ACCESS_KEY_ID: "{{ richie_nau_app_richie_DJANGO_AWS_ACCESS_KEY_ID }}"
+  DJANGO_AWS_SECRET_ACCESS_KEY: "{{ richie_nau_app_richie_DJANGO_AWS_SECRET_ACCESS_KEY }}"
+  DJANGO_AWS_S3_CUSTOM_DOMAIN: "{{ richie_nau_app_richie_CDN_DOMAIN }}"
+
+  # Enable the deliver of the static asset files like css, images, fonts, etc.
+  # nginx will also deliver this files, but during rolling deploy, the nginx could have one
+  # version of the files and the app still running a different version.
+  DJANGO_STATIC_FILES_URL_ENABLE: True
+
+  # Redis cache configuration
+  CACHE_DEFAULT_BACKEND: base.cache.RedisCacheWithFallback
+  # 1st primary/leader, second read-replicas
+  CACHE_DEFAULT_LOCATION: "redis://{{ richie_docker_deploy_redis_host }}:{{ richie_docker_deploy_redis_port }}/{{ richie_docker_deploy_redis_db }}"
+  CACHE_DEFAULT_OPTIONS: ""
+
+  # Django Social auth for authentication from edX using OAuth2
+  DJANGO_SOCIAL_ERROR_REVERSE_ID: login-error
+  # DJANGO_SOCIAL_AUTH_EDX_OAUTH2_ENDPOINT: {{ richie_nau_app_openedx_lms_url }}/oauth2/
+  # DJANGO_SOCIAL_AUTH_EDX_OAUTH2_KEY: OeH2jowLbfzouuOKt1WaqKlIrSAIL7kjC85Itohj
+  # DJANGO_SOCIAL_AUTH_EDX_OAUTH2_SECRET: hrHyDucMJ77khrkh95YkPPMUVQnitqn1VIpZdRm2FNsw0qR86qQ1l32KNvjEbzHCzQNbKUELuHYnPy9xp5wecU50Z0fYEka6S6jzIC1skmJOeMrxLZi4pGZm0M1NXGMp
+  # DJANGO_SOCIAL_AUTH_EDX_OAUTH2_AUTHORIZATION_URL: {{ richie_nau_app_openedx_lms_url }}/oauth2/authorize
+  # DJANGO_SOCIAL_AUTH_EDX_OAUTH2_ACCESS_TOKEN_URL: {{ richie_nau_app_openedx_lms_url }}/oauth2/access_token
+  # DJANGO_SOCIAL_AUTH_EDX_OAUTH2_END_SESSION_URL: {{ richie_nau_app_openedx_lms_url }}/oauth2/logout
+
+  # Add help desk link to header
+  HELP_DESK_URL: "{{ EDXAPP_SUPPORT_SITE_LINK | default('') }}"
+
+  MAINTENANCE_HEADER_MSG: "{{ richie_nau_app_maintenance_header_msg | default(false) }}"
+
+  # Google Analytics
+  # WEB_ANALYTICS_PROVIDER: google_analytics
+  # WEB_ANALYTICS_LOCATION: head
+  # WEB_ANALYTICS_ID: UA-122313510-1
+
+  # Jira service desk
+  # JIRA_WIDGET_KEY: c19e6a24-a1f6-4a84-aa46-89e82b94b809
+
+  # Facebook pixel
+  # FACEBOOK_PIXEL_ID: "1013367026191204"
+
+  # DJANGO_DEBUG: True
