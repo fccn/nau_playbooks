@@ -31,3 +31,24 @@
   tags: 
     - snmpd
     - snmp
+
+# Require ansible at least 2.9.8 to be uncomment
+# - name: populate service facts
+#   service_facts:
+#   tags: 
+#     - snmpd
+#     - snmp
+#     - snmpd_docker
+
+# # allow snmpd to execute docker commands, like searching on logs
+# - name: Adding existing user 'Debian-snmp' to group docker
+#   user:
+#     name: Debian-snmp
+#     groups: docker
+#     append: yes
+#   notify: restart snmpd
+#   when: ansible_distribution_version is version('20.04', '>=') and ansible_facts.services['docker.service'] is defined
+#   tags:
+#     - snmpd
+#     - snmp
+#     - snmpd_docker
