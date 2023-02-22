@@ -464,6 +464,7 @@
 
     - import_role:
         name: snmpd
+      when: elasticsearch_deploy | default(false) | bool
     - import_role:
         name: snmpd_docker
       when: elasticsearch_deploy | default(false) | bool
