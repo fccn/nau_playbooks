@@ -1,0 +1,99 @@
+---
+observability_docker_deploy_compose_template: templates/docker-compose.yml.j2
+observability_docker_deploy_base_folder: /nau/ops/observability
+
+observability_docker_deploy_compose_name: "{{ observability_docker_deploy_base_folder | basename }}"
+
+# Variable to enable or disable the use of debug information, like increase logging verbosity and
+# to use the debug fluentbit docker image.
+observability_fluentbit_debug: true
+observability_fluentbit_log_level: "{{ 'debug' if (observability_fluentbit_debug|bool) else 'info' }}"
+
+observability_docker_deploy_templates:
+  - src: "{{ observability_makefile_template | default('templates/Makefile') }}"
+    dest: "{{ observability_docker_deploy_base_folder }}/Makefile"
+  - src: templates/fluent-bit.conf
+    dest: "{{ observability_docker_deploy_base_folder }}/fluent-bit.conf"
+    docker_target: /fluent-bit/etc/fluent-bit.conf
+    config_name: fluent_bit_conf
+    service: fluentbit
+  - src: templates/extra-parsers.conf
+    dest: "{{ observability_docker_deploy_base_folder }}/extra-parsers.conf"
+    docker_target: /fluent-bit/etc/extra-parsers.conf
+    config_name: extra_parsers_conf
+    service: fluentbit
+  - src: templates/stream_processor.conf
+    dest: "{{ observability_docker_deploy_base_folder }}/stream_processor.conf"
+    docker_target: /fluent-bit/etc/stream_processor.conf
+    config_name: stream_processor_conf
+    service: fluentbit
+
+observability_docker_deploy_folders_additional:
+  - dest: "{{ observability_fluentbit_data }}"
+    dir_owner: 999
+    dir_group: root
+    dir_mode: "0755"
+
+observability_fluentbit_docker_image: fluent/fluent-bit:2.0.8{{ '-debug' if (observability_fluentbit_debug|bool) else '' }}
+
+observability_fluentbit_data: /data/observability_fluentbit/
+
+observability_fluentbit_forward_port: 24224
+observability_fluentbit_http_port: 2020
+
+observability_fluentbit_output_docker_service_s3:
+  - coursecertificate_nginx
+  - staticproxy_nginx
+  - richie_nau_nginx
+  - openedx_nginx
+  - openedx_lms
+  - openedx_lms-worker-default
+  - openedx_lms-worker-high
+  - openedx_lms-worker-high_mem
+  - openedx_cms
+  - openedx_cms-worker-default
+  - openedx_cms-worker-high
+
+observability_fluentbit_metrics: "{{ observability_fluentbit_metrics_functions + observability_fluentbit_metrics_total }}"
+
+observability_fluentbit_metrics_functions:
+  - metrics.requests.last5m.time.max
+  - metrics.requests.last5m.time.avg
+
+observability_fluentbit_metrics_total:
+  - metrics.log.last5m.count.total
+  - metrics.requests.last5m.count.total
+  - metrics.requests.last5m.code.1xx
+  - metrics.requests.last5m.code.2xx
+  - metrics.requests.last5m.code.3xx
+  - metrics.requests.last5m.code.4xx
+  - metrics.requests.last5m.code.5xx
+
+observability_docker_deploy_stack_verify_retries: 120
+observability_docker_deploy_stack_verify_delay: 60
+
+observability_fluentbit_output_opensearch_enabled: false
+observability_fluentbit_output_opensearch_outputs:
+  - alias: opensearch_all
+    match: "*"
+    index: "{{ observability_fluentbit_output_opensearch_index_all }}"
+    host: "{{ observability_fluentbit_output_opensearch_host }}"
+    host_port: "{{ observability_fluentbit_output_opensearch_host_port }}"
+    user: "{{ observability_fluentbit_output_opensearch_user }}"
+    password: "{{ observability_fluentbit_output_opensearch_password }}"
+  # Host operating system log files like /var/log/auth.log /var/log/syslog /var/log/dpkg.log /var/log/mail.log
+  - alias: opensearch_system_logs
+    match: "host.file.*"
+    index: "{{ observability_fluentbit_output_opensearch_index_system_logs }}"
+    host: "{{ observability_fluentbit_output_opensearch_host }}"
+    host_port: "{{ observability_fluentbit_output_opensearch_host_port }}"
+    user: "{{ observability_fluentbit_output_opensearch_user }}"
+    password: "{{ observability_fluentbit_output_opensearch_password }}"
+
+observability_fluentbit_output_opensearch_host: !!null
+observability_fluentbit_output_opensearch_host_port: !!null
+observability_fluentbit_output_opensearch_user: !!null
+observability_fluentbit_output_opensearch_password: !!null
+
+observability_fluentbit_output_opensearch_index_all: !!null
+observability_fluentbit_output_opensearch_index_system_logs: !!null
