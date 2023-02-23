@@ -1,5 +1,4 @@
 ---
-# Remove old containers that this stack no longer use
 richie_docker_deploy_compose_template: templates/docker-compose.yml.j2
 richie_docker_deploy_base_folder: /nau/ops/richie
 
