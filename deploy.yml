@@ -564,6 +564,7 @@
         richie_mysql_replication_user: richie_replication
 
         # Base configuration for the MySQL instance
+        mysql_docker_image: docker.io/mysql:8.0.29
         mysql_docker_replication: true
         mysql_docker_hostname: "{{ richie_mysql_docker_hostname }}"
         mysql_docker_port: "{{ richie_mysql_docker_port }}"
