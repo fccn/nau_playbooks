@@ -83,7 +83,21 @@
 #   To deploy Richie MySQL
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit richie_mysql_docker_servers -e richie_mysql_deploy=true
 #
-
+#   To deploy Richie Application
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit richie_docker_servers -e richie_docker_deploy=true
+#
+#   To deploy Course Certificate
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit coursecertificate_docker_servers -e coursecertificate_docker_deploy=true
+#
+#   To deploy StaticProxy
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit staticproxy_docker_servers -e staticproxy_docker_deploy=true
+#
+#   To deploy Observability
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit observability_docker_servers -e observability_docker_deploy=true
+#
+#   To deploy Openedx MySQL Database
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit openedx_mysql_docker_servers -e openedx_mysql_deploy=true
+#
 
 # - name: Bootstrap instances of 16.04
 #   hosts: all,!idpproxy_servers,!nau_docker_swarm_managers,!nau_docker_swarm_workers,!support_server,!build_server
