@@ -660,6 +660,12 @@
   become: True
   gather_facts: True
   tasks:
+    - name: Start rolling deploy - block load balancer connections
+      import_role:
+        name: rolling_deploy
+      vars:
+        rolling_deploy_starting: true
+      when: ( groups['staticproxy_docker_servers'] | length ) > 1
     - name: Install or upgrade docker daemon
       import_role:
         name: geerlingguy.docker
@@ -677,6 +683,12 @@
         name: staticproxy_docker_deploy
       vars:
         staticproxy_docker_deploy_run: "{{ staticproxy_docker_deploy | default(false) }}"
+    - name: End rolling deploy - open load balancer connections
+      import_role:
+        name: rolling_deploy
+      vars:
+        rolling_deploy_starting: false
+      when: ( groups['staticproxy_docker_servers'] | length ) > 1
 
 - name: Deploy observability docker servers
   hosts: observability_docker_servers
