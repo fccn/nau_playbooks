@@ -603,6 +603,13 @@
   become: True
   gather_facts: True
   tasks:
+    - name: Start rolling deploy - block load balancer connections
+      import_role:
+        name: rolling_deploy
+      vars:
+        rolling_deploy_starting: true
+      when: ( groups['richie_docker_servers'] | length ) > 1 and ( richie_docker_deploy | default(false) | bool )
+    
     - name: Install or upgrade docker daemon
       import_role:
         name: geerlingguy.docker
@@ -629,6 +636,13 @@
         richie_docker_deploy_mysql_port: "{{ hostvars[groups['richie_mysql_docker_servers'][0]].richie_mysql_docker_port }}"
         # richie_deploy_create_volumes: "{{ richie_deploy | default(false) }}"
         # docker_swarm_build_node: "{{ hostvars[groups['build_server'][0]].ansible_host }}"
+
+    - name: End rolling deploy - open load balancer connections
+      import_role:
+        name: rolling_deploy
+      vars:
+        rolling_deploy_starting: false
+      when: ( groups['richie_docker_servers'] | length ) > 1 and ( richie_docker_deploy | default(false) | bool )
 
 - name: Deploy coursecertificate docker servers
   hosts: coursecertificate_docker_servers
