@@ -636,6 +636,12 @@
   become: True
   gather_facts: True
   tasks:
+    - name: Start rolling deploy - block load balancer connections
+      import_role:
+        name: rolling_deploy
+      vars:
+        rolling_deploy_starting: true
+      when: ( groups['coursecertificate_docker_servers'] | length ) > 1
     - name: Install or upgrade docker daemon
       import_role:
         name: geerlingguy.docker
@@ -653,6 +659,12 @@
         name: coursecertificate_docker_deploy
       vars:
         coursecertificate_docker_deploy_run: "{{ coursecertificate_docker_deploy | default(false) }}"
+    - name: End rolling deploy - open load balancer connections
+      import_role:
+        name: rolling_deploy
+      vars:
+        rolling_deploy_starting: false
+      when: ( groups['coursecertificate_docker_servers'] | length ) > 1
 
 - name: Deploy staticproxy docker servers
   hosts: staticproxy_docker_servers
