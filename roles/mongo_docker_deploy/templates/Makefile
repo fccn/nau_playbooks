@@ -30,7 +30,7 @@ restart-{{ _service }}: _{{ _service }}-restart ## Restart the {{ _service }} se
 {% endfor %}
 
 ps: ## list containers
-	docker-compose ps
+	docker ps -a --filter name={{ mongo_docker_container_name }}
 .PHONY: ps
 
 logs: ## View logs

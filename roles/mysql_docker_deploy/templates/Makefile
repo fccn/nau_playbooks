@@ -30,7 +30,7 @@ restart-{{ _service }}: _{{ _service }}-restart ## Restart the {{ _service }} se
 {% endfor %}
 
 ps: ## list containers
-	docker-compose ps
+	docker ps --filter name={{ mysql_docker_container_name }}
 .PHONY: ps
 
 logs: ## View logs
@@ -44,10 +44,6 @@ shell: ## Open shell
 bash: ## Open bash on the current node for the {{ mysql_docker_container_name }} docker service
 	@docker exec -it {{ mysql_docker_container_name }} bash
 .PHONY: bash
-
-mysql-shell: ## Open mysql shell
-	@MYSQL_PWD="{{ mysql_root_password }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ mysql_docker_port }}
-.PHONY: mysql-shell
 
 # Silent mode other targets.
 # To run `healthcheck` target on silient mode, run it like `make silent-healthcheck`.
