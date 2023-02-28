@@ -13,6 +13,11 @@
   tags:
     - docker_deploy
 
+- name: Restart sysctl if necessary
+  meta: flush_handlers
+  tags:
+    - docker_deploy
+
 - name: Deploy
   include_role:
     name: ansible-docker-deploy

@@ -43,3 +43,7 @@ For example:
 ansible-playbook -i hosts.ini deploy.yml -e elasticsearch_initialization=true -e elasticsearch_docker_servers=true
 ```
 
+To initialize a cluster deploy all instances at the same time.
+```
+ansible-playbook -i hosts.ini  deploy.yml --limit elasticsearch_docker_servers -e elasticsearch_deploy=true -e elasticsearch_initialization=true -e serial_number=10
+```

@@ -471,6 +471,13 @@
   become: True
   gather_facts: True
   tasks:
+    - name: Lower keepalived priority to force VIP swap
+      import_role:
+        name: keepalived
+      vars: 
+        keepalived_priority_override: 1 # Lower priority so the VIPs can swap to other machine.
+      when: ( elasticsearch_deploy | default(false) | bool ) and elasticsearch_keepalived_vrrp_instances is defined and ( groups['elasticsearch_docker_servers'] | length ) > 1
+
     - name: Install or upgrade docker daemon
       import_role:
         name: geerlingguy.docker
@@ -487,6 +494,14 @@
       import_role:
         name: elasticsearch_docker_deploy
       when: elasticsearch_deploy | default(false) | bool
+
+    - name: Restore keepalived priority
+      import_role:
+        name: keepalived
+      vars:
+        keepalived_priority_override: ""
+      when: ( elasticsearch_deploy | default(false) | bool ) and elasticsearch_keepalived_vrrp_instances is defined and ( groups['elasticsearch_docker_servers'] | length ) > 1
+
 
 - name: Deploy cache redis docker servers
   hosts: redis_docker_servers
