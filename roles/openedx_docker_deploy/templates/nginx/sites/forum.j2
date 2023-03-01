@@ -1,0 +1,51 @@
+# {{ ansible_managed }}
+#
+# Open edx Forum nginx configuration
+
+server {
+
+  server_name forum.*;
+  listen {{ FORUM_NGINX_PORT | default("18080") }};
+{% if NGINX_ENABLE_IPV6 | default(False) %}
+  listen [::]:{{ FORUM_NGINX_PORT }};
+{% endif %}
+
+  client_max_body_size {{ NGINX_FORUM_CLIENT_MAX_BODY_SIZE | default("1M") }};
+  proxy_read_timeout {{ NGINX_FORUM_PROXY_READ_TIMEOUT | default("60s") }};
+  keepalive_timeout 5;
+
+  location / {
+    try_files $uri @proxy_to_app;
+  }
+
+  {% import 'robots.j2' as robots with context %}
+  {{ robots.generate_robots_txt(openedx_nginx_forum_robot_rules) }}
+  
+  location @proxy_to_app {
+    {% if NGINX_SET_X_FORWARDED_HEADERS %}
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Port $server_port;
+    proxy_set_header X-Forwarded-For $remote_addr;
+    {% else %}
+    proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+    proxy_set_header X-Forwarded-Port $http_x_forwarded_port;
+    proxy_set_header X-Forwarded-For $http_x_forwarded_for;
+    {% endif %}
+
+    # newrelic-specific header records the time when nginx handles a request.
+    proxy_set_header X-Queue-Start "t=${msec}";
+
+    proxy_set_header Host $http_host;
+
+    proxy_redirect off;
+
+    # When using a variable to specify the domain name in the proxy_pass directive.
+    # NGINX re‑resolves the domain name when its TTL expires.
+    # Nevertheless, when we are using the resolver directive and its valid parameter,
+    # you can tell NGINX to ignore the TTL and re‑resolve names at a specified 
+    # frequency instead.
+    # https://www.nginx.com/blog/dns-service-discovery-nginx-plus/
+    set $backend_servers forum;
+    proxy_pass http://$backend_servers:{{ openedx_forum_port }} ;
+  }
+}

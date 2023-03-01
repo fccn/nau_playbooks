@@ -1,0 +1,54 @@
+---
+- name: Check if 'docker_exec_name' is defined
+  assert:
+    that: docker_exec_name is defined
+    fail_msg: You need to define the 'docker_exec_name' variable
+    success_msg: The 'docker_exec_name' is defined, with {{ docker_exec_name }}
+    quiet: true
+
+- name: Check if 'docker_container_name' is defined
+  assert:
+    that: docker_container_name is defined
+    fail_msg: You need to define the 'docker_container_name' variable
+    success_msg: The 'docker_container_name' is defined, with {{ docker_container_name }}
+    quiet: true
+
+- name: Check if 'docker_exec_command' is defined
+  assert:
+    that: docker_exec_command is defined
+    fail_msg: You need to define the 'docker_exec_command' variable
+    success_msg: The 'docker_exec_command' is defined
+    quiet: true
+
+- name: Printing name
+  debug:
+    msg: "Running '{{ docker_exec_name }}'..."
+
+- name: Execute command in docker container
+  shell: docker exec -it {{ docker_container_name }} {{ docker_exec_command }}
+  ignore_errors: True
+  delegate_to: "{{ node_output.stdout }}"
+  register: exec_output
+  no_log: true # don't print the log, because it isn't formatted, we print it on the next tasks
+
+- name: Print stdout of command output
+  debug:
+    msg: "{{ exec_output.stdout_lines }}"
+  when: exec_output is defined and exec_output.stdout_lines is defined
+
+- name: Print stderr of command output
+  debug:
+    msg: "{{ exec_output.stderr_lines }}"
+  when: exec_output is defined and exec_output.stderr_lines is defined
+
+- name: Check that command has finished with success if we need to check its return status
+  assert:
+    that: exec_output.rc == 0 and 'ERROR' not in exec_output.stdout
+    fail_msg: The command has finished with error or has an ERROR on its output
+    success_msg: "{{ }}"
+  when: not ( docker_exec_ignore_errors | default(False) ) and exec_output.rc is defined
+
+- name: Dynamic define fact based on 'docker_exec_output_fact'
+  set_fact:
+     "{{ docker_exec_output_fact }}": "{{ exec_output }}"
+  when: docker_exec_output_fact is defined and exec_output is defined

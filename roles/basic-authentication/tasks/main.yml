@@ -4,7 +4,7 @@
   apt:
     pkg: python-passlib
     state: present
-  when: basic_authentication_users is defined and ( basic_authentication_users | length > 0 ) and ( ansible_distribution == 'Ubuntu' and ansible_distribution_major_version <= '20' )
+  when: basic_authentication_users is defined and ( basic_authentication_users | length > 0 ) and ( ansible_distribution == 'Ubuntu' and ansible_distribution_major_version < '20' )
 
 - name: Make sure we can use htpasswd module for python3
   apt:

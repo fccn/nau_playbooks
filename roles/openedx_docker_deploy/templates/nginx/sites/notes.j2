@@ -1,0 +1,63 @@
+# {{ ansible_managed }}
+#
+# Open edx notes nginx configuration
+
+server {
+  server_name notes.*;
+  listen 80{{ ' http2' if ( openedx_notes_nginx_http2 | default(false) | bool ) else '' }};
+
+{% if NGINX_ENABLE_SSL %}
+  listen 443 ssl{% if haproxy_tcp %} proxy_protocol{% endif %}{{ ' http2' if ( openedx_notes_nginx_http2 | default(false) | bool ) else '' }};
+
+{% include "real_ip.j2" %}
+
+  ssl_certificate     {{ openedx_notes_nginx_ssl_certificate_docker_target     }};
+  ssl_certificate_key {{ openedx_notes_nginx_ssl_certificate_key_docker_target }};
+{% endif %}
+
+{% if NGINX_ENABLE_SSL or NGINX_REDIRECT_TO_HTTPS %}
+  # request the browser to use SSL for all connections
+  add_header Strict-Transport-Security "max-age={{ NGINX_HSTS_MAX_AGE }}; includeSubDomains";
+{% endif %}
+  add_header X-Backend-Server $hostname always;
+
+  # Disables server version feedback on pages and in headers
+  server_tokens off;
+
+  # Prevent invalid display courseware in IE 10+ with high privacy settings
+  add_header P3P '{{ NGINX_P3P_MESSAGE }}';
+
+{% if NGINX_REDIRECT_TO_HTTPS %}
+  if ($scheme != "https") 
+  { 
+    return 301 https://$host$request_uri;
+  }
+{% endif %}
+
+  # server_name {{ EDX_NOTES_API_HOSTNAME }};
+
+  location / {
+    try_files $uri @proxy_to_app;
+  }
+
+  {% import 'robots.j2' as robots with context %}
+  {{ robots.generate_robots_txt(openedx_nginx_notes_robot_rules) }}
+  
+
+  location @proxy_to_app {
+    proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+    proxy_set_header X-Forwarded-Port $http_x_forwarded_port;
+    proxy_set_header X-Forwarded-For $http_x_forwarded_for;
+    proxy_set_header Host $http_host;
+    proxy_redirect off;
+
+    # When using a variable to specify the domain name in the proxy_pass directive.
+    # NGINX re‑resolves the domain name when its TTL expires.
+    # Nevertheless, when we are using the resolver directive and its valid parameter,
+    # you can tell NGINX to ignore the TTL and re‑resolve names at a specified 
+    # frequency instead.
+    # https://www.nginx.com/blog/dns-service-discovery-nginx-plus/
+    set $backend_servers notes;
+    proxy_pass http://$backend_servers:{{ openedx_notes_port }} ;
+  }
+}

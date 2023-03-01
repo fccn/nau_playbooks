@@ -1,0 +1,77 @@
+# Run daily openedx tasks
+#
+# Examples:
+# To run all run the playbook with:
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_commands_every_day_compose.yml -e run_all=true
+#
+# To run specific step use:
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_commands_every_day_compose.yml -e lms_schedules_send_course_next_section_update=true
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_commands_every_day_compose.yml -e lms_schedules_send_course_update=true
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_commands_every_day_compose.yml -e lms_schedules_send_recurring_nudge=true
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_commands_every_day_compose.yml -e lms_nau_openedx_extensions_add_archived_course_message=true
+
+---
+- name: Run daily openedx tasks
+  hosts: openedx_docker_servers
+  become: True
+  gather_facts: True
+  order: shuffle # run on a random server
+  vars:
+    _openedx_compose_name: openedx
+    _lms_schedules_send_course_next_section_update:          "{{ run_all | default(lms_schedules_send_course_next_section_update)          | default(false) | bool }}"
+    _lms_schedules_send_course_update:                       "{{ run_all | default(lms_schedules_send_course_update)                       | default(false) | bool }}"
+    _lms_schedules_send_recurring_nudge:                     "{{ run_all | default(lms_schedules_send_recurring_nudge)                     | default(false) | bool }}"
+    _lms_nau_openedx_extensions_add_archived_course_message: "{{ run_all | default(lms_nau_openedx_extensions_add_archived_course_message) | default(false) | bool }}"
+
+    commands_to_execute:
+      # lms tasks
+      - docker_exec_name: lms schedules send_course_next_section_update
+        docker_container_name: "{{ _openedx_compose_name }}_lms"
+        docker_exec_command: python manage.py lms send_course_next_section_update --settings nau_production {{ EDXAPP_LMS_BASE }}
+        docker_exec_output_fact: lms_schedules_send_course_next_section_update_output
+        when: "{{ _lms_schedules_send_course_next_section_update }}"
+      - docker_exec_name: lms schedules send_course_update
+        docker_container_name: "{{ _openedx_compose_name }}_lms"
+        docker_exec_command: python manage.py lms send_course_update --settings nau_production {{ EDXAPP_LMS_BASE }}
+        docker_exec_output_fact: lms_schedules_send_course_update_output
+        when: "{{ _lms_schedules_send_course_update }}"
+      - docker_exec_name: lms schedules send_recurring_nudge
+        docker_container_name: "{{ _openedx_compose_name }}_lms"
+        docker_exec_command: python manage.py lms send_recurring_nudge --settings nau_production {{ EDXAPP_LMS_BASE }}
+        docker_exec_output_fact: lms_schedules_send_recurring_nudge_output
+        when: "{{ _lms_schedules_send_recurring_nudge }}"
+      - docker_exec_name: lms nau_openedx_extensions add_archived_course_message
+        docker_container_name: "{{ _openedx_compose_name }}_lms"
+        docker_exec_command: python manage.py lms add_archived_course_message --settings nau_production
+        docker_exec_output_fact: lms_nau_openedx_extensions_add_archived_course_message_output
+        when: "{{ _lms_nau_openedx_extensions_add_archived_course_message }}"
+
+  tasks:
+    - name: Execute discovery and lms refresh jobs
+      include_role:
+        name: docker_exec_in_swarm
+      vars:
+        docker_exec_name: "{{ exec.docker_exec_name }}"
+        docker_container_name: "{{ exec.docker_container_name }}"
+        docker_exec_command: "{{ exec.docker_exec_command }}"
+        docker_exec_ignore_errors: "{{ exec.docker_exec_ignore_errors | default(True) }}"
+        docker_exec_output_fact: "{{ exec.docker_exec_output_fact | default(None) }}"
+      run_once: true # run only on 1 of the hosts and not on all servers to prevent duplicate execution
+      when: exec.when | default(true)
+      loop_control:
+        loop_var: exec
+        label: "Execute {{ exec.docker_exec_name }}"
+      loop: "{{ commands_to_execute }}"
+
+    # needed only because we are ignoring the errors on previous task and now we are checking if
+    # each has finished with success.
+    - name: Check if above commands have finished with success
+      assert:
+        that: hostvars[inventory_hostname][check_cmd.docker_exec_output_fact].rc == 0 and "ERROR" not in hostvars[inventory_hostname][check_cmd.docker_exec_output_fact].stdout
+        quiet: true
+      run_once: true # run only on 1 of the hosts and not on all servers to prevent duplicate execution
+      when: ( check_cmd.when | default(true) ) and not ansible_check_mode
+      loop_control:
+        loop_var: check_cmd
+        label: Check if {{ check_cmd.docker_exec_name }} have finished with success
+      loop: "{{ commands_to_execute }}"

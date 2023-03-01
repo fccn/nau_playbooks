@@ -757,3 +757,99 @@
         name: observability_docker_deploy
       vars:
         observability_docker_deploy_run: "{{ observability_docker_deploy | default(false) }}"
+
+- name: Deploy openedx mysql docker servers
+  hosts: openedx_mysql_docker_servers
+  serial: "{{ serial_number | default(1) }}" # deploy in sequence
+  become: True
+  gather_facts: True
+  tasks:
+    - name: Install or upgrade docker daemon
+      import_role:
+        name: geerlingguy.docker
+      when: openedx_mysql_deploy | default(false) | bool
+
+    - import_role:
+        name: snmpd
+      tags: snmpd
+      when: openedx_mysql_deploy | default(false) | bool
+    - import_role:
+        name: snmpd_docker
+      tags: snmpd
+      when: openedx_mysql_deploy | default(false) | bool
+
+    - name: Deploy openedx mysql
+      import_role:
+        name: mysql_docker_deploy
+      when: openedx_mysql_deploy | default(false) | bool
+      vars:
+        mysql_docker_image: docker.io/mysql:5.7.37-debian
+        mysql_major_release_number: 5
+        # mysql_replication_login_user: "{{ COMMON_MYSQL_ADMIN_USER }}"
+
+        # Base configuration for the MySQL instance
+        mysql_docker_replication: true
+        mysql_docker_hostname: "{{ openedx_mysql_docker_hostname }}"
+        mysql_docker_port: "{{ openedx_mysql_docker_port }}"
+        mysql_docker_instance_name: openedx_mysql
+        mysql_docker_primary: "{{ openedx_mysql_docker_primary }}"
+        mysql_root_password: "{{ EDXAPP_MYSQL_PASSWORD_ADMIN }}"
+        mysql_server_id: "{{ groups.openedx_mysql_docker_servers.index(inventory_hostname) +1 }}"
+
+        # Advanced configuration that assumes that the first server is the primary replica.
+        mysql_replication_login_password: "{{ EDXAPP_MYSQL_PASSWORD_ADMIN }}"
+        mysql_replication_master_server_ip: "{{ hostvars[groups.openedx_mysql_docker_servers[0]].ansible_host }}"
+        mysql_replication_master_port: "{{ hostvars[groups.openedx_mysql_docker_servers[0]].openedx_mysql_docker_port }}"
+        mysql_replication_user: "{{ EDXAPP_MYSQL_REPLICATION_USER }}"
+        mysql_replication_password: "{{ EDXAPP_MYSQL_REPLICATION_PASSWORD }}"
+        mysql_replication_init_databases: [ edxapp ]
+        mysql_replication_additional_databases: "{{ edxlocal_databases }}" # Used by docker_mysql_replication role
+        mysql_replication_additional_users: "{{ edxlocal_database_users }}" # Used by docker_mysql_replication role
+
+- name: Deploy openedx application docker servers
+  hosts: openedx_docker_servers
+  serial: "{{ serial_number | default(1) }}" # deploy in sequence
+  become: True
+  gather_facts: True
+  tasks:
+    - name: Start rolling deploy - block load balancer connections
+      import_role:
+        name: rolling_deploy
+      vars:
+        rolling_deploy_starting: true
+      when: ( groups['openedx_docker_servers'] | length ) > 1
+    - name: Install or upgrade docker daemon
+      import_role:
+        name: geerlingguy.docker
+      when: openedx_docker_deploy | default(false) | bool
+    - import_role:
+        name: snmpd
+      tags: snmpd
+      when: openedx_docker_deploy | default(false) | bool
+    - import_role:
+        name: snmpd_docker
+      tags: snmpd
+      when: openedx_docker_deploy | default(false) | bool
+    - name: Deploy openedx as docker compose file
+      import_role:
+        name: openedx_docker_deploy
+      vars:
+        openedx_docker_deploy_run: "{{ openedx_docker_deploy | default(false) }}"
+        elasticsearch_cluster_hosts_url_tmp: "{% for elastic_host in groups['elasticsearch_docker_servers'] %}http://{{ hostvars[elastic_host].ansible_host }}:{{ hostvars[elastic_host].elasticsearch_http_port }}{{ ',' if not loop.last else '' }}{% endfor %}"
+        openedx_docker_deploy_elasticsearch_cluster_hosts_url: "{{ elasticsearch_cluster_hosts_url_tmp.split(',') | list }}"
+        openedx_docker_deploy_elasticsearch_url: "http://{{ hostvars[groups['elasticsearch_docker_servers'][0]].elasticsearch_virtual_ipv4 }}:{{ hostvars[groups['elasticsearch_docker_servers'][0]].elasticsearch_http_port }}"
+        openedx_docker_deploy_cache_redis_host: "{{ hostvars[groups['redis_docker_servers'][0]].redis_virtual_ipv4 }}" # use VIP
+        openedx_docker_deploy_cache_redis_port: "{{ hostvars[groups['redis_docker_servers'][0]].redis_docker_port }}"
+        openedx_docker_deploy_celery_redis_host: "{{ hostvars[groups['redis_docker_servers'][0]].ansible_host }}" # don't use VIP, use host IP
+        openedx_docker_deploy_celery_redis_port: "{{ hostvars[groups['redis_docker_servers'][0]].redis_docker_port }}"
+        openedx_docker_deploy_mysql_default_host: "{{ hostvars[groups['openedx_mysql_docker_servers'][0]].ansible_host }}"
+        openedx_docker_deploy_mysql_default_port: "{{ hostvars[groups['openedx_mysql_docker_servers'][0]].openedx_mysql_docker_port }}"
+        openedx_docker_deploy_mysql_read_replica_host: "{{ hostvars[groups['openedx_mysql_docker_servers'][1]].ansible_host }}"
+        openedx_docker_deploy_mysql_read_replica_port: "{{ hostvars[groups['openedx_mysql_docker_servers'][1]].openedx_mysql_docker_port }}"
+        openedx_build_web_server_node: "{{ hostvars[groups['build_server'][0]].ansible_host }}"
+    - name: End rolling deploy - open load balancer connections
+      import_role:
+        name: rolling_deploy
+      vars:
+        rolling_deploy_starting: false
+      when: ( groups['openedx_docker_servers'] | length ) > 1

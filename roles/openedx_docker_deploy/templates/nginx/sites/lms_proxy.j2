@@ -1,0 +1,27 @@
+{% if NGINX_SET_X_FORWARDED_HEADERS %}
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Port $server_port;
+    proxy_set_header X-Forwarded-For $remote_addr;
+{% else %}
+    proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+    proxy_set_header X-Forwarded-Port $http_x_forwarded_port;
+    proxy_set_header X-Forwarded-For $http_x_forwarded_for;
+{% endif %}
+
+    # newrelic-specific header records the time when nginx handles a request.
+    proxy_set_header X-Queue-Start "t=${msec}";
+
+    proxy_set_header Host $http_host;
+
+    proxy_redirect off;
+    
+    # When using a variable to specify the domain name in the proxy_pass directive.
+    # NGINX re‑resolves the domain name when its TTL expires.
+    # Nevertheless, when we are using the resolver directive and its valid parameter,
+    # you can tell NGINX to ignore the TTL and re‑resolve names at a specified 
+    # frequency instead.
+    # https://www.nginx.com/blog/dns-service-discovery-nginx-plus/
+    set $backend_servers lms;
+    proxy_pass http://$backend_servers:8000;
+
+    {{ NGINX_EDXAPP_LMS_APP_EXTRA | default('') }}

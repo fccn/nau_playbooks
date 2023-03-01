@@ -1,0 +1,41 @@
+{% macro generate_robots_txt(nginx_robot_rules) %}
+{% if nginx_robot_rules | default([]) | length > 0 %}
+  location = /robots.txt {
+    allow all;
+    log_not_found off;
+    # access_log off;
+
+    # return robots.txt inline
+    add_header Content-Type text/plain;
+    return 200
+'{% for item in nginx_robot_rules %}
+{% if item.agent is string %}
+User-agent: {{ item.agent }}
+{% else %}
+{% for agent in item.agent %}
+User-agent: {{ agent }}
+{% endfor %}
+{% endif %}
+{% if item.allow is defined %}
+{% if item.allow is string %}
+Allow: {{ item.allow }}
+{% else %}
+{% for allow in item.allow %}
+Allow: {{ allow }}
+{% endfor %}
+{% endif %}
+{% endif %}
+{% if item.disallow is defined %}
+{% if item.disallow is string %}
+Disallow: {{ item.disallow }}
+{% else %}
+{% for disallow in item.disallow %}
+Disallow: {{ disallow }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+{% endfor %}';
+  }
+{% endif %}
+{% endmacro %}

@@ -1,0 +1,89 @@
+---
+openedx_mysql_docker_deploy_templates:
+  - src_data: "{{ EDXAPP_MYSQL_PASSWORD_ADMIN }}"
+    dest: "{{ openedx_docker_deploy_base_folder }}/mysql_1/mysql-root-password"
+    secret_name: "{{ openedx_mysql_containers.mysql_1.docker_secret_name_mysql_root_password }}"
+    service: mysql_1
+    docker_target: /run/secrets/mysql-root-password
+  - src_data: "{{ EDXAPP_MYSQL_PASSWORD_ADMIN }}"
+    dest: "{{ openedx_docker_deploy_base_folder }}/mysql_2/mysql-root-password"
+    secret_name: "{{ openedx_mysql_containers.mysql_2.docker_secret_name_mysql_root_password }}"
+    service: mysql_2
+    docker_target: /run/secrets/mysql-root-password
+  - src:  roles/docker_mysql_replication/templates/replication.cnf.j2
+    dest: "{{ openedx_docker_deploy_base_folder }}/mysql_1/mysql.cfg"
+    config_name: "{{ openedx_mysql_containers.mysql_1.docker_config_name_mysql_cfg }}"
+    mysql_container: "{{ openedx_mysql_containers.mysql_1 }}"
+    service: mysql_1
+    docker_target: /etc/mysql/conf.d/mysql.cnf
+  - src:  roles/docker_mysql_replication/templates/replication.cnf.j2
+    dest: "{{ openedx_docker_deploy_base_folder }}/mysql_2/mysql.cfg"
+    config_name: "{{ openedx_mysql_containers.mysql_2.docker_config_name_mysql_cfg }}"
+    mysql_container: "{{ openedx_mysql_containers.mysql_2 }}"
+    service: mysql_2
+    docker_target: /etc/mysql/conf.d/mysql.cnf
+
+# need last slash
+openedx_mysql_data: /data/openedx/mysql/
+
+openedx_mysql_docker_deploy_folders_additional:
+  - dest: "{{ openedx_mysql_data }}"
+    dir_owner: 999
+    dir_group: root
+    dir_mode: "0755"
+    when: "{{ inventory_hostname in [openedx_mysql_primary_server, openedx_mysql_replica_server] }}"
+
+# expose database port so we can connect from old hosts
+# after the migration of everything to swarm, limit this connection to localhost.
+# example with: "127.0.0.1:3306:3306"
+openedx_mysql_containers:
+  mysql_1:
+    hostname: "{{ openedx_mysql_1_hostname }}"
+    data: "{{ openedx_mysql_data }}"
+    host_fqdn: "{{ openedx_mysql_primary_server }}"
+    outside_port: 3308
+    primary: True
+    mysql_replication_login_user: "{{ COMMON_MYSQL_ADMIN_USER }}"
+    mysql_replication_login_password: "{{ EDXAPP_MYSQL_PASSWORD_ADMIN }}"
+    mysql_replication_login_port: 3308
+    docker_config_name_mysql_cfg: mysql_1_cfg
+    docker_secret_name_mysql_root_password: mysql_1_root_password
+    server_id: 1
+    mysql_replication_slave_server_ip: "%"
+    mysql_replication_user: "{{ EDXAPP_MYSQL_REPLICATION_USER }}"
+    mysql_replication_password: "{{ EDXAPP_MYSQL_REPLICATION_PASSWORD }}"
+    mysql_replication_init_databases: [ edxapp ]
+    limit_cpus: "{{ openedx_limit_cpus }}"
+  mysql_2:
+    hostname: "{{ openedx_mysql_2_hostname }}"
+    data: "{{ openedx_mysql_data }}"
+    host_fqdn: "{{ openedx_mysql_replica_server }}"
+    outside_port: 3309
+    primary: False
+    mysql_replication_login_user: "{{ COMMON_MYSQL_ADMIN_USER }}"
+    mysql_replication_login_password: "{{ EDXAPP_MYSQL_PASSWORD_ADMIN }}"
+    mysql_replication_login_port: 3309
+    docker_config_name_mysql_cfg: mysql_2_cfg
+    docker_secret_name_mysql_root_password: mysql_2_root_password
+    server_id: 2
+    read_only: True
+    mysql_replication_master_server_ip: "{{ openedx_mysql_1_hostname }}"
+    mysql_replication_master_port: 3306
+    mysql_replication_user: "{{ EDXAPP_MYSQL_REPLICATION_USER }}"
+    mysql_replication_password: "{{ EDXAPP_MYSQL_REPLICATION_PASSWORD }}"
+    limit_cpus: "{{ openedx_limit_cpus }}"
+
+# In future move this to 03_databases.yml file. It is not possible to change the root username of the MySQL official Docker image
+COMMON_MYSQL_ADMIN_USER: root
+
+# allow connections from host to the root user
+# openedx_mysql_root_host: 10.20.0.%
+openedx_mysql_root_host: "%"
+
+openedx_docker_mysql_replication_additional_databases: "{{ edxlocal_databases }}" # Used by docker_mysql_replication role
+openedx_docker_mysql_replication_additional_users: "{{ edxlocal_database_users }}" # Used by docker_mysql_replication role
+
+openedx_mysql_primary: "{{ openedx_mysql_containers.values() | list | selectattr('primary', 'equalto', True) | first }}"
+
+# The `max-allowed-packet` is to allow the mysqldump execute a backup
+openedx_mysql_replica_extra_parameters: --max-allowed-packet=1G --slave-skip-errors=1062,1032

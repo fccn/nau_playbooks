@@ -1,0 +1,437 @@
+{% import '_docker_deploy_helper.j2' as helper with context %}
+# {{ ansible_managed }}
+version: "3.8"
+
+services:
+
+{% if openedx_insights_deploy %}
+  insights:
+    image: {{ openedx_insights_image }}
+    container_name: {{ openedx_docker_deploy_compose_name }}_insights
+    environment:
+{% for env_var_name, env_var_value in openedx_insights_docker_environment_variables.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    deploy:
+      resources:
+        limits:
+          memory: 500M
+{% if openedx_insights_limit_cpus is defined %}
+          cpus: "{{ openedx_insights_limit_cpus }}"
+{% endif %}
+        reservations:
+          memory: 200M
+    healthcheck:
+      # Check if /health/ returns a HTTP status 200, meaning the service is ok
+      # test: curl --silent --fail --head --resolve insights:8000:127.0.0.1 http://insights:8000/health/ | egrep "HTTP/.*200 OK"
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/8000", "||", "exit", "1"]
+      start_period: 30s
+      retries: 10
+      interval: 30s
+      timeout: 30s
+{{ helper.service_configs(service='insights') }}
+{{ helper.service_secrets(service='insights') }}
+{% endif %}{# comment if openedx_insights_deploy #}
+
+{% if openedx_insights_job_deploy %}
+  insights-job:
+    image: {{ openedx_insights_image }}
+    container_name: {{ openedx_docker_deploy_compose_name }}_insights-job
+    command: {{ openedx_insights_job_command }}
+    environment:
+{% for env_var_name, env_var_value in openedx_insights_docker_environment_variables.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    deploy:
+      mode: replicated # after docker 22.06.0 release change it to replicated-job
+      restart_policy:
+        condition: on-failure # restart this container only if it fails to run
+      resources:
+        limits:
+{% if openedx_insights_limit_cpus is defined %}
+          cpus: "{{ openedx_insights_limit_cpus }}"
+{% endif %}
+{{ helper.service_configs(service='insights') }}
+{{ helper.service_secrets(service='insights') }}
+
+{% endif %}{# comment if openedx_insights_job #}
+
+{% if openedx_analyticsapi_deploy %}
+  analyticsapi:
+    image: {{ openedx_analyticsapi_image }}
+    container_name: {{ openedx_docker_deploy_compose_name }}_analyticsapi
+    environment:
+{% for env_var_name, env_var_value in openedx_analyticsapi_docker_environment_variables.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    networks:
+      default:
+        aliases:
+          # alias configured on discovery user interface https://discovery.<environment>/admin/core/partner/1/change/
+          - openedx.analyticsapi
+    deploy:
+      resources:
+        limits:
+          memory: 250M
+{% if openedx_analyticsapi_limit_cpus is defined %}
+          cpus: "{{ openedx_analyticsapi_limit_cpus }}"
+{% endif %}
+        reservations:
+          memory: 150M
+    healthcheck:
+      # Check if /health/ returns a HTTP status 200, meaning the service is ok
+      # test: curl --silent --fail --head --resolve analyticsapi:8100:127.0.0.1 http://analyticsapi:8100/health/ | egrep "HTTP/.*200 OK"
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/8100", "||", "exit", "1"]
+      start_period: 30s
+      retries: 10
+      interval: 30s
+      timeout: 30s
+{{ helper.service_configs(service='analyticsapi') }}
+{{ helper.service_secrets(service='analyticsapi') }}
+{% endif %}{# comment if openedx_analyticsapi #}
+
+{% if openedx_analyticsapi_job_deploy %}
+  analyticsapi-job:
+    image: {{ openedx_analyticsapi_image }}
+    container_name: {{ openedx_docker_deploy_compose_name }}_analyticsapi-job
+    command: {{ openedx_analyticsapi_job_command }}
+    environment:
+{% for env_var_name, env_var_value in openedx_analyticsapi_docker_environment_variables.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    deploy:
+      mode: replicated # after docker 22.06.0 release change it to replicated-job
+      restart_policy:
+        condition: on-failure # restart this container only if it fails to run
+      resources:
+        limits:
+{% if openedx_analyticsapi_limit_cpus is defined %}
+          cpus: "{{ openedx_analyticsapi_limit_cpus }}"
+{% endif %}
+{{ helper.service_configs(service='analyticsapi') }}
+{{ helper.service_secrets(service='analyticsapi') }}
+
+{% endif %}{# comment if openedx_analyticsapi_job_deploy #}
+{% if openedx_nginx_deploy %}
+  nginx:
+    image: {{ openedx_nginx_image }}
+    container_name: {{ openedx_docker_deploy_compose_name }}_nginx
+    ports:
+      - target:    {{ openedx_nginx_http }}
+        published: {{ openedx_nginx_http_ingress_port }}
+        protocol:  tcp
+        mode:      ingress
+      - target:    {{ openedx_nginx_https }}
+        published: {{ openedx_nginx_https_ingress_port }}
+        protocol:  tcp
+        mode:      ingress
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+{% if openedx_nginx_limit_cpus is defined %}
+          cpus: "{{ openedx_nginx_limit_cpus }}"
+{% endif %}
+        reservations:
+          memory: 50M
+    healthcheck:
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/80", "&&", "echo", "''", ">", "/dev/tcp/127.0.0.1/443", "||", "exit", "1"]
+      start_period: 30s
+      retries: 10
+      interval: 30s
+      timeout: 30s
+{{ helper.service_configs(service='nginx') }}
+{{ helper.service_secrets(service='nginx') }}
+
+{% endif %}{# comment if openedx_nginx_deploy #}
+{% if openedx_lms_deploy %}
+  lms:
+    image: {{ openedx_app_image }}
+    container_name: {{ openedx_docker_deploy_compose_name }}_lms
+    environment:
+{% for env_var_name, env_var_value in openedx_lms_env_var.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    deploy:
+      resources:
+        limits:
+          # Tutor in docs: "each worker requires upwards of 500 Mb of RAM" so we give 1G per uwsgi worker
+          memory: {{ openedx_lms_uwsgi_workers * 1000 }}M
+{% if openedx_lms_limit_cpus is defined %}
+          cpus: "{{ openedx_lms_limit_cpus }}"
+{% endif %}
+        reservations:
+          memory: {{ openedx_lms_uwsgi_workers * 500 }}M    
+    healthcheck:
+      # Check if heartbeat is ok
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/8000", "||", "exit", "1"]
+      start_period: 30s
+      retries: 10
+      interval: 30s
+      timeout: 30s
+{{ helper.service_configs(service='edxapp') }}
+{{ helper.service_secrets(service='edxapp') }}
+
+{% endif %}{# comment if openedx_lms_deploy #}
+{% if openedx_app_job %}
+  app-job:
+    image: {{ openedx_app_image }}
+    container_name: {{ openedx_docker_deploy_compose_name }}_app-job
+    environment:
+{% for env_var_name, env_var_value in openedx_app_env_var.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    command: {{ openedx_app_job_command }}
+    deploy:
+      mode: replicated # after docker 22.06.0 release change it to replicated-job
+      restart_policy:
+        condition: on-failure # restart this container only if it fails to run
+      resources:
+        limits:
+{% if openedx_lms_limit_cpus is defined %}
+          cpus: "{{ openedx_lms_limit_cpus }}"
+{% endif %}
+{{ helper.service_configs(service='edxapp') }}
+{{ helper.service_secrets(service='edxapp') }}
+
+{% endif %}{# comment if openedx_app_job #}
+{% if openedx_cms_deploy %}
+  cms:
+    image: {{ openedx_app_image }}
+    container_name: {{ openedx_docker_deploy_compose_name }}_cms
+    environment:
+{% for env_var_name, env_var_value in openedx_cms_env_var.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    deploy:
+      resources:
+        limits:
+          # Tutor in docs: "each worker requires upwards of 500 Mb of RAM" so we give 1G per uwsgi worker
+          memory: {{ openedx_cms_uwsgi_workers * 1000 }}M
+{% if openedx_cms_limit_cpus is defined %}
+          cpus: "{{ openedx_cms_limit_cpus }}"
+{% endif %}
+        reservations:
+          memory: {{ openedx_cms_uwsgi_workers * 500 }}M
+    healthcheck:
+      # Check if heartbeat is ok
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/8000", "||", "exit", "1"]
+      start_period: 30s
+      retries: 10
+      interval: 30s
+      timeout: 30s
+{{ helper.service_configs(service='edxapp') }}
+{{ helper.service_secrets(service='edxapp') }}
+
+{% endif %}{# comment if openedx_cms_deploy #}
+{% for worker in openedx_celery_workers %}
+{% if worker.deploy %}
+  {{ worker.service_variant }}-worker-{{ worker.queue }}:
+    image: {{ worker.docker_image }}
+    container_name: {{ openedx_docker_deploy_compose_name }}_{{ worker.service_variant }}-worker-{{ worker.queue }}
+    environment:
+{% for env_var_name, env_var_value in worker.environment_variables_dict.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    command: celery --app={{ worker.service_variant }}.celery worker --loglevel=info --queues=edx.{{ worker.service_variant }}.core.{{ worker.queue }} --hostname=edx.{{ worker.service_variant }}.core.{{ worker.queue }}.%%h --max-tasks-per-child=100 --concurrency={{ worker.processes }}
+    deploy:
+      resources:
+        limits:
+          memory: {{ worker.deploy_resources_limit_memory }}
+{% if worker.deploy_resources_limit_cpus is defined %}
+          cpus: "{{ worker.deploy_resources_limit_cpus }}"
+{% endif %}
+        reservations:
+          memory: {{ worker.deploy_resources_reservations_memory }}
+    healthcheck:
+      test: celery --app={{ worker.service_variant }}.celery inspect ping -d celery@edx.{{ worker.service_variant }}.core.{{ worker.queue }}.%$$HOSTNAME
+      start_period: 120s
+      retries: 10
+      # Big interval because each ping uses much memory and takes a couple of seconds to execute.
+      interval: 600s # 10 minutes
+      timeout: 120s
+{{ helper.service_configs(service='edxapp') }}
+{{ helper.service_secrets(service='edxapp') }}
+
+{% endif %}{# comment if worker.deploy #}
+{% endfor %}
+
+{% if openedx_forum_deploy %}
+  forum:
+    image: {{ openedx_forum_docker_image }}
+    container_name: {{ openedx_docker_deploy_compose_name }}_forum
+    entrypoint: {{ openedx_forum_docker_entrypoint }}
+    environment:
+{% for env_var_name, env_var_value in openedx_forum_docker_environment_variables.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    deploy:
+      resources:
+        limits:
+          memory: 500M
+{% if openedx_forum_limit_cpus is defined %}
+          cpus: "{{ openedx_forum_limit_cpus }}"
+{% endif %}
+        reservations:
+          memory: 300M
+    healthcheck:
+      # Check if forum heartbeat returns ok
+      # test: wget -qSO- 127.0.0.1:{{ openedx_forum_port }}/heartbeat 2>&1 | egrep "HTTP/.*200 OK"
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/{{ openedx_forum_port }}", "||", "exit", "1"]
+      start_period: 30s
+      retries: 10
+      interval: 30s
+      timeout: 30s
+{% endif %}{# comment if openedx_forum_deploy #}
+
+{% if openedx_forum_job_deploy %}
+  forum-job:
+    image: {{ openedx_forum_docker_image }}
+    container_name: {{ openedx_docker_deploy_compose_name }}_forum-job
+    entrypoint: {{ openedx_forum_job_docker_entrypoint }}
+    environment:
+{% for env_var_name, env_var_value in openedx_forum_docker_environment_variables.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    # From https://github.com/overhangio/tutor-forum/blob/d03cb74eecd8397a728be32e1737e3edb9e13a35/tutorforum/templates/forum/hooks/forum/init
+    deploy:
+      mode: replicated # after docker 22.06.0 release change it to replicated-job
+      restart_policy:
+        condition: on-failure # restart this container only if it fails to run
+      resources:
+        limits:
+{% if openedx_forum_limit_cpus is defined %}
+          cpus: "{{ openedx_forum_limit_cpus }}"
+{% endif %}
+{% endif %}{# comment if openedx_forum_job_deploy #}
+
+{% if openedx_notes_deploy %}
+  notes:
+    image: {{ openedx_notes_docker_image }}
+    container_name: {{ openedx_docker_deploy_compose_name }}_notes
+    environment:
+{% for env_var_name, env_var_value in openedx_notes_docker_environment_variables.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+{% if openedx_notes_limit_cpus is defined %}
+          cpus: "{{ openedx_notes_limit_cpus }}"
+{% endif %}
+        reservations:
+          memory: 150M
+    healthcheck:
+      # test: |
+      #   bash -c 'exec 3<>/dev/tcp/127.0.0.1/{{ openedx_notes_port }} && echo -e "GET /heartbeat/ HTTP/1.1\r\nHost: notes\r\nConnection: close\r\n\r\n" >&3 && cat <&3 | grep "HTTP/1.1 200 OK"'
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/{{ openedx_notes_port }}", "||", "exit", "1"]
+      start_period: 30s
+      retries: 10
+      interval: 30s
+      timeout: 30s
+{{ helper.service_configs(service='notes') }}
+{{ helper.service_secrets(service='notes') }}
+
+{% endif %}{# comment if openedx_notes_deploy #}
+{% if openedx_notes_job_deploy %}
+  notes-job:
+    image: {{ openedx_notes_docker_image }}
+    container_name: {{ openedx_docker_deploy_compose_name }}_notes-job
+    environment:
+{% for env_var_name, env_var_value in openedx_notes_docker_environment_variables.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    command: {{ openedx_notes_job_command }}
+    deploy:
+      mode: replicated # after docker 22.06.0 release change it to replicated-job
+      restart_policy:
+        condition: on-failure # restart this container only if it fails to run
+      resources:
+        limits:
+{% if openedx_notes_limit_cpus is defined %}
+          cpus: "{{ openedx_notes_limit_cpus }}"
+{% endif %}
+{{ helper.service_configs(service='notes') }}
+{{ helper.service_secrets(service='notes') }}
+{% endif %}{# comment if openedx_notes_job_deploy #}
+
+{% if openedx_discovery_deploy %}
+  discovery:
+    image: {{ openedx_discovery_docker_image }}
+    container_name: {{ openedx_docker_deploy_compose_name }}_discovery
+    environment:
+{% for env_var_name, env_var_value in openedx_discovery_docker_environment_variables.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    deploy:
+      resources:
+        limits:
+          memory: 400M
+{% if openedx_discovery_limit_cpus is defined %}
+          cpus: "{{ openedx_discovery_limit_cpus }}"
+{% endif %}
+        reservations:
+          memory: 210M
+    healthcheck:
+      # Check if /health/ returns a HTTP status 200, meaning the service is ok
+      # test: curl --silent --fail --head --resolve discovery:8000:127.0.0.1 http://discovery:8000/health/ | egrep "HTTP/.*200 OK"
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/8000", "||", "exit", "1"]
+      start_period: 30s
+      retries: 10
+      interval: 30s
+      timeout: 30s
+{{ helper.service_configs(service='discovery') }}
+{{ helper.service_secrets(service='discovery') }}
+
+{% endif %}{# comment if openedx_discovery_deploy #}
+{% if openedx_discovery_job_deploy %}
+  discovery-job:
+    image: {{ openedx_discovery_docker_image }}
+    container_name: {{ openedx_docker_deploy_compose_name }}_discovery-job
+    environment:
+{% for env_var_name, env_var_value in openedx_discovery_docker_environment_variables.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    command: {{ openedx_discovery_job_command }}
+    deploy:
+      mode: replicated # after docker 22.06.0 release change it to replicated-job
+      restart_policy:
+        condition: on-failure # restart this container only if it fails to run
+      resources:
+        limits:
+{% if openedx_discovery_limit_cpus is defined %}
+          cpus: "{{ openedx_discovery_limit_cpus }}"
+{% endif %}
+{{ helper.service_configs(service='discovery') }}
+{{ helper.service_secrets(service='discovery') }}
+{% endif %}{# comment if openedx_discovery_job_deploy #}
+
+{% if openedx_smtp_deploy %}
+  smtp:
+    image: {{ openedx_smtp_docker_image }}
+    container_name: {{ openedx_docker_deploy_compose_name }}_smtp
+    environment:
+{% for env_var_name, env_var_value in openedx_smtp_docker_environment_variables.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    deploy:
+      resources:
+        limits:
+          memory: 50M
+{% if openedx_smtp_limit_cpus is defined %}
+          cpus: "{{ openedx_smtp_limit_cpus }}"
+{% endif %}
+        reservations:
+          memory: 10M
+    healthcheck:
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/8025", "||", "exit", "1"]
+      start_period: 30s
+      retries: 10
+      interval: 30s
+      timeout: 30s
+
+{% endif %}{# comment if openedx_smtp_deploy #}
+
+{{ helper.configs() }}
+{{ helper.secrets() }}
