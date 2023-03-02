@@ -6,6 +6,10 @@ richie_sites_app:
     app_replicas: 1
     app_environment_variables: "{{ richie_nau_app_environment_variables }}"
     app_gunicorn_workers: 3 # the same default upstream workers
+    deploy_job: "{{ richie_app_job_deploy }}"
+
+# Deploy nau_app_job
+richie_app_job_deploy: true
 
 # variables with a default value
 richie_nau_app_richie_CDN_DOMAIN: "{{ RICHIE_NAU_AWS_BUCKET_NAME }}.{{ nau_ceph_host }}"
@@ -53,7 +57,9 @@ richie_nau_app_environment_variables_default:
 
   # Elastic search
   RICHIE_ES_INDICES_PREFIX: richie_nau
-  RICHIE_ES_HOST: "{{ richie_docker_deploy_elasticsearch_cluster_hosts_url | join(',') }}"
+  # Temporary use only the 1st elasticsearch server until next release ( > 1.18 ) of NAU Richie.
+  RICHIE_ES_HOST: "{{ richie_docker_deploy_elasticsearch_cluster_hosts_url[0] }}"
+  # RICHIE_ES_HOST: "{{ richie_docker_deploy_elasticsearch_cluster_hosts_url | join(',') }}"
   #- discovery.type: single-node
 
   # App database configuration

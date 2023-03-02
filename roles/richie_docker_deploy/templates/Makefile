@@ -120,7 +120,7 @@ restore-mysql-{{ _site }}: ## restore mysql db of {{ _site }} site
 {% endfor %}
 
 healthcheck-mysql-port: ## check mysql port
-	@echo -n "Check mysql port for {{ richie_docker_deploy_mysql_host }}:{{ richie_docker_deploy_mysql_port }} "
+	@echo -n "Check mysql port `{{ richie_docker_deploy_mysql_host }}:{{ richie_docker_deploy_mysql_port }}`: "
 	@nc -z {{ richie_docker_deploy_mysql_host }} {{ richie_docker_deploy_mysql_port }}
 	@echo "OK"
 .PHONY: healthcheck-mysql-port
@@ -143,8 +143,8 @@ healthcheck-elasticsearch: ## Run elastic search healthcheck cluster
 # Redis
 #######################
 
-healthcheck-redis-port: ## check load balancer HAProxy redis port
-	@echo -n "Check load balancer HAProxy elasticsearch port: "
+healthcheck-redis-port: ## check redis port
+	@echo -n "Check redis port: "
 	@nc -z {{ richie_docker_deploy_redis_host }} {{ richie_docker_deploy_redis_port }}
 	@echo "OK"
 .PHONY: healthcheck-redis-port

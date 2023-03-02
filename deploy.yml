@@ -641,16 +641,17 @@
       import_role:
         name: richie_docker_deploy
       vars:
-        richie_docker_deploy_run: "{{ richie_docker_deploy | default(false) }}"
+        richie_docker_deploy_run: "{{ richie_docker_deploy | default(false) }}"        
         elasticsearch_cluster_hosts_url_tmp: "{% for elastic_host in groups['elasticsearch_docker_servers'] %}http://{{ hostvars[elastic_host].ansible_host }}:{{ hostvars[elastic_host].elasticsearch_http_port }}{{ ',' if not loop.last else '' }}{% endfor %}"
         richie_docker_deploy_elasticsearch_cluster_hosts_url: "{{ elasticsearch_cluster_hosts_url_tmp.split(',') | list }}"
+        # Temporary use elasticsearch VIP at least for the new NAU Richie release
         richie_docker_deploy_redis_host: "{{ hostvars[groups['redis_docker_servers'][0]].redis_virtual_ipv4 }}"
         richie_docker_deploy_redis_port: "{{ hostvars[groups['redis_docker_servers'][0]].redis_docker_port }}"
         richie_docker_deploy_redis_db: "2"
         richie_docker_deploy_mysql_host: "{{ hostvars[groups['richie_mysql_docker_servers'][0]].richie_mysql_virtual_ipv4 }}"
         richie_docker_deploy_mysql_port: "{{ hostvars[groups['richie_mysql_docker_servers'][0]].richie_mysql_docker_port }}"
-        # richie_deploy_create_volumes: "{{ richie_deploy | default(false) }}"
-        # docker_swarm_build_node: "{{ hostvars[groups['build_server'][0]].ansible_host }}"
+        # Run database migrations and elasticsearch re-index only on the 1st server
+        richie_app_job_deploy: "{{ groups['richie_docker_servers'][0] == inventory_hostname }}"
 
     - name: End rolling deploy - open load balancer connections
       import_role:

@@ -35,6 +35,7 @@ services:
 {{ helper.service_configs(service=richie_site+'_app') }}
 {{ helper.service_secrets(service=richie_site+'_app') }}
 
+{% if richie_site_config.deploy_job %}
   # Job container that migrates db and reindex
   {{ richie_site }}_app_job:
     # We tag our images with the current commit sha1 in the CI to make them
@@ -69,6 +70,8 @@ services:
     # python manage.py bootstrap_elasticsearch
 {{ helper.service_configs(service=richie_site+'_app') }}
 {{ helper.service_secrets(service=richie_site+'_app') }}
+
+{% endif %}
 
   {{ richie_site }}_nginx:
     image: {{ richie_site_config.nginx_image }}
