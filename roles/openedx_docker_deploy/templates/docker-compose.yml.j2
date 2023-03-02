@@ -8,6 +8,7 @@ services:
   insights:
     image: {{ openedx_insights_image }}
     container_name: {{ openedx_docker_deploy_compose_name }}_insights
+    restart: unless-stopped
     environment:
 {% for env_var_name, env_var_value in openedx_insights_docker_environment_variables.items() %}
       {{ env_var_name }}: "{{ env_var_value }}"
@@ -38,17 +39,15 @@ services:
     image: {{ openedx_insights_image }}
     container_name: {{ openedx_docker_deploy_compose_name }}_insights-job
     command: {{ openedx_insights_job_command }}
+    restart: on-failure
     environment:
 {% for env_var_name, env_var_value in openedx_insights_docker_environment_variables.items() %}
       {{ env_var_name }}: "{{ env_var_value }}"
 {% endfor %}
+{% if openedx_insights_limit_cpus is defined %}
     deploy:
-      mode: replicated # after docker 22.06.0 release change it to replicated-job
-      restart_policy:
-        condition: on-failure # restart this container only if it fails to run
       resources:
         limits:
-{% if openedx_insights_limit_cpus is defined %}
           cpus: "{{ openedx_insights_limit_cpus }}"
 {% endif %}
 {{ helper.service_configs(service='insights') }}
@@ -60,6 +59,7 @@ services:
   analyticsapi:
     image: {{ openedx_analyticsapi_image }}
     container_name: {{ openedx_docker_deploy_compose_name }}_analyticsapi
+    restart: unless-stopped
     environment:
 {% for env_var_name, env_var_value in openedx_analyticsapi_docker_environment_variables.items() %}
       {{ env_var_name }}: "{{ env_var_value }}"
@@ -95,17 +95,15 @@ services:
     image: {{ openedx_analyticsapi_image }}
     container_name: {{ openedx_docker_deploy_compose_name }}_analyticsapi-job
     command: {{ openedx_analyticsapi_job_command }}
+    restart: on-failure
     environment:
 {% for env_var_name, env_var_value in openedx_analyticsapi_docker_environment_variables.items() %}
       {{ env_var_name }}: "{{ env_var_value }}"
 {% endfor %}
+{% if openedx_analyticsapi_limit_cpus is defined %}
     deploy:
-      mode: replicated # after docker 22.06.0 release change it to replicated-job
-      restart_policy:
-        condition: on-failure # restart this container only if it fails to run
       resources:
         limits:
-{% if openedx_analyticsapi_limit_cpus is defined %}
           cpus: "{{ openedx_analyticsapi_limit_cpus }}"
 {% endif %}
 {{ helper.service_configs(service='analyticsapi') }}
@@ -116,6 +114,7 @@ services:
   nginx:
     image: {{ openedx_nginx_image }}
     container_name: {{ openedx_docker_deploy_compose_name }}_nginx
+    restart: unless-stopped
     ports:
       - target:    {{ openedx_nginx_http }}
         published: {{ openedx_nginx_http_ingress_port }}
@@ -148,6 +147,7 @@ services:
   lms:
     image: {{ openedx_app_image }}
     container_name: {{ openedx_docker_deploy_compose_name }}_lms
+    restart: unless-stopped
     environment:
 {% for env_var_name, env_var_value in openedx_lms_env_var.items() %}
       {{ env_var_name }}: "{{ env_var_value }}"
@@ -157,8 +157,8 @@ services:
         limits:
           # Tutor in docs: "each worker requires upwards of 500 Mb of RAM" so we give 1G per uwsgi worker
           memory: {{ openedx_lms_uwsgi_workers * 1000 }}M
-{% if openedx_lms_limit_cpus is defined %}
-          cpus: "{{ openedx_lms_limit_cpus }}"
+{% if openedx_analyticsapi_limit_cpus is defined %}
+          cpus: "{{ openedx_analyticsapi_limit_cpus }}"
 {% endif %}
         reservations:
           memory: {{ openedx_lms_uwsgi_workers * 500 }}M    
@@ -177,18 +177,16 @@ services:
   app-job:
     image: {{ openedx_app_image }}
     container_name: {{ openedx_docker_deploy_compose_name }}_app-job
+    restart: on-failure
     environment:
 {% for env_var_name, env_var_value in openedx_app_env_var.items() %}
       {{ env_var_name }}: "{{ env_var_value }}"
 {% endfor %}
     command: {{ openedx_app_job_command }}
+{% if openedx_lms_limit_cpus is defined %}
     deploy:
-      mode: replicated # after docker 22.06.0 release change it to replicated-job
-      restart_policy:
-        condition: on-failure # restart this container only if it fails to run
       resources:
         limits:
-{% if openedx_lms_limit_cpus is defined %}
           cpus: "{{ openedx_lms_limit_cpus }}"
 {% endif %}
 {{ helper.service_configs(service='edxapp') }}
@@ -199,6 +197,7 @@ services:
   cms:
     image: {{ openedx_app_image }}
     container_name: {{ openedx_docker_deploy_compose_name }}_cms
+    restart: unless-stopped
     environment:
 {% for env_var_name, env_var_value in openedx_cms_env_var.items() %}
       {{ env_var_name }}: "{{ env_var_value }}"
@@ -229,6 +228,7 @@ services:
   {{ worker.service_variant }}-worker-{{ worker.queue }}:
     image: {{ worker.docker_image }}
     container_name: {{ openedx_docker_deploy_compose_name }}_{{ worker.service_variant }}-worker-{{ worker.queue }}
+    restart: unless-stopped
     environment:
 {% for env_var_name, env_var_value in worker.environment_variables_dict.items() %}
       {{ env_var_name }}: "{{ env_var_value }}"
@@ -261,6 +261,7 @@ services:
     image: {{ openedx_forum_docker_image }}
     container_name: {{ openedx_docker_deploy_compose_name }}_forum
     entrypoint: {{ openedx_forum_docker_entrypoint }}
+    restart: unless-stopped
     environment:
 {% for env_var_name, env_var_value in openedx_forum_docker_environment_variables.items() %}
       {{ env_var_name }}: "{{ env_var_value }}"
@@ -289,18 +290,16 @@ services:
     image: {{ openedx_forum_docker_image }}
     container_name: {{ openedx_docker_deploy_compose_name }}_forum-job
     entrypoint: {{ openedx_forum_job_docker_entrypoint }}
+    restart: on-failure
     environment:
 {% for env_var_name, env_var_value in openedx_forum_docker_environment_variables.items() %}
       {{ env_var_name }}: "{{ env_var_value }}"
 {% endfor %}
     # From https://github.com/overhangio/tutor-forum/blob/d03cb74eecd8397a728be32e1737e3edb9e13a35/tutorforum/templates/forum/hooks/forum/init
+{% if openedx_forum_limit_cpus is defined %}
     deploy:
-      mode: replicated # after docker 22.06.0 release change it to replicated-job
-      restart_policy:
-        condition: on-failure # restart this container only if it fails to run
       resources:
         limits:
-{% if openedx_forum_limit_cpus is defined %}
           cpus: "{{ openedx_forum_limit_cpus }}"
 {% endif %}
 {% endif %}{# comment if openedx_forum_job_deploy #}
@@ -309,6 +308,7 @@ services:
   notes:
     image: {{ openedx_notes_docker_image }}
     container_name: {{ openedx_docker_deploy_compose_name }}_notes
+    restart: unless-stopped
     environment:
 {% for env_var_name, env_var_value in openedx_notes_docker_environment_variables.items() %}
       {{ env_var_name }}: "{{ env_var_value }}"
@@ -338,18 +338,16 @@ services:
   notes-job:
     image: {{ openedx_notes_docker_image }}
     container_name: {{ openedx_docker_deploy_compose_name }}_notes-job
+    restart: on-failure
     environment:
 {% for env_var_name, env_var_value in openedx_notes_docker_environment_variables.items() %}
       {{ env_var_name }}: "{{ env_var_value }}"
 {% endfor %}
     command: {{ openedx_notes_job_command }}
+{% if openedx_notes_limit_cpus is defined %}
     deploy:
-      mode: replicated # after docker 22.06.0 release change it to replicated-job
-      restart_policy:
-        condition: on-failure # restart this container only if it fails to run
       resources:
         limits:
-{% if openedx_notes_limit_cpus is defined %}
           cpus: "{{ openedx_notes_limit_cpus }}"
 {% endif %}
 {{ helper.service_configs(service='notes') }}
@@ -360,6 +358,7 @@ services:
   discovery:
     image: {{ openedx_discovery_docker_image }}
     container_name: {{ openedx_docker_deploy_compose_name }}_discovery
+    restart: unless-stopped
     environment:
 {% for env_var_name, env_var_value in openedx_discovery_docker_environment_variables.items() %}
       {{ env_var_name }}: "{{ env_var_value }}"
@@ -389,18 +388,16 @@ services:
   discovery-job:
     image: {{ openedx_discovery_docker_image }}
     container_name: {{ openedx_docker_deploy_compose_name }}_discovery-job
+    restart: on-failure
     environment:
 {% for env_var_name, env_var_value in openedx_discovery_docker_environment_variables.items() %}
       {{ env_var_name }}: "{{ env_var_value }}"
 {% endfor %}
     command: {{ openedx_discovery_job_command }}
+{% if openedx_discovery_limit_cpus is defined %}
     deploy:
-      mode: replicated # after docker 22.06.0 release change it to replicated-job
-      restart_policy:
-        condition: on-failure # restart this container only if it fails to run
       resources:
         limits:
-{% if openedx_discovery_limit_cpus is defined %}
           cpus: "{{ openedx_discovery_limit_cpus }}"
 {% endif %}
 {{ helper.service_configs(service='discovery') }}
@@ -411,6 +408,7 @@ services:
   smtp:
     image: {{ openedx_smtp_docker_image }}
     container_name: {{ openedx_docker_deploy_compose_name }}_smtp
+    restart: unless-stopped
     environment:
 {% for env_var_name, env_var_value in openedx_smtp_docker_environment_variables.items() %}
       {{ env_var_name }}: "{{ env_var_value }}"
