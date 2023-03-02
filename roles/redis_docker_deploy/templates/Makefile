@@ -30,7 +30,7 @@ restart-{{ _service }}: _{{ _service }}-restart ## Restart the {{ _service }} se
 {% endfor %}
 
 ps: ## list containers
-	docker ps -a --filter name={{ redis_docker_container_name }}
+	docker ps -a --filter name=^{{ redis_docker_container_name }}
 .PHONY: ps
 
 logs: ## View logs

@@ -30,7 +30,7 @@ restart-{{ _service }}: _{{ _service }}-restart ## Restart the {{ _service }} se
 {% endfor %}
 
 ps: ## list containers
-	docker ps -a --filter name={{ openedx_docker_deploy_compose_name }}
+	docker ps -a --filter name=^{{ openedx_docker_deploy_compose_name }}
 .PHONY: ps
 
 logs: ## View logs
@@ -39,7 +39,7 @@ logs: ## View logs
 
 # View the logs of the specified service container
 _%-logs:
-	docker logs --timestamps --follow --tail=10 {{ openedx_docker_deploy_compose_name }}-$*
+	docker logs --timestamps --follow --tail=10 {{ openedx_docker_deploy_compose_name }}_$*
 
 {% for _service in docker_deploy_services %}
 logs-{{ _service }}: _{{ _service }}-logs ## View last 10 lines of logs of the {{ _service }} docker service
@@ -49,7 +49,7 @@ logs-{{ _service }}: _{{ _service }}-logs ## View last 10 lines of logs of the {
 
 # Open bash
 _%-bash:
-	@docker exec -it $$(docker ps --filter "name={{ openedx_docker_deploy_compose_name }}_$*\." -q) bash
+	@docker exec -it {{ openedx_docker_deploy_compose_name }}_$* bash
 
 {% for _service in docker_deploy_services %}
 bash-{{ _service }}: _{{ _service }}-bash ## Open bash on the current node for the {{ _service }} docker service
