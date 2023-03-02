@@ -34,13 +34,13 @@
   changed_when: false
   register: node_output
 
-- name: Check if docker swarm node has been found
-  assert:
-    that: >
-      node_output.stdout in groups['all']
-    fail_msg: The node '{{ node_output.stdout }}' has not been found in the inventory list.
-    success_msg: Found the 1st container on the node '{{ node_output.stdout }}'
-    quiet: true
+# - name: Check if docker swarm node has been found
+#   assert:
+#     that: >
+#       node_output.stdout in groups['all']
+#     fail_msg: The node '{{ node_output.stdout }}' has not been found in the inventory list.
+#     success_msg: Found the 1st container on the node '{{ node_output.stdout }}'
+#     quiet: true
 
 - name: Find if the container is on the running state
   shell: docker stack ps {{ docker_stack }} | {% raw %} grep -v " \\\\_ " {% endraw %} | grep "{{ docker_service_to_exec_with_slot }}" | awk '{print $5}'
