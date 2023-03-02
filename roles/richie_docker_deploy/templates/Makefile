@@ -120,7 +120,7 @@ restore-mysql-{{ _site }}: ## restore mysql db of {{ _site }} site
 {% endfor %}
 
 healthcheck-mysql-port: ## check mysql port
-	@echo -n "Check mysql port `{{ richie_docker_deploy_mysql_host }}:{{ richie_docker_deploy_mysql_port }}`: "
+	@echo -n "Check mysql port {{ richie_docker_deploy_mysql_host }}:{{ richie_docker_deploy_mysql_port }}: "
 	@nc -z {{ richie_docker_deploy_mysql_host }} {{ richie_docker_deploy_mysql_port }}
 	@echo "OK"
 .PHONY: healthcheck-mysql-port
