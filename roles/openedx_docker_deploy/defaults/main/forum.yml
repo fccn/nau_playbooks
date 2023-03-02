@@ -20,7 +20,7 @@ FORUM_SINATRA_ENV: production
 
 FORUM_MONGO_URL: "mongodb://{{ FORUM_MONGO_USER }}:{{ FORUM_MONGO_PASSWORD }}@{%- for host in FORUM_MONGO_HOSTS -%}{{ host }}:{{ FORUM_MONGO_PORT }}{%- if not loop.last -%},{%- endif -%}{%- endfor -%}/{{ FORUM_MONGO_DATABASE }}{%- if FORUM_MONGO_TAGS -%}?tags={{ FORUM_MONGO_TAGS }}{%- endif -%}"
 
-FORUM_ELASTICSEARCH_URL: "{{ openedx_docker_deploy_elasticsearch_url }}" # example: http://es:9200
+FORUM_ELASTICSEARCH_URL: "{{ openedx_docker_deploy_elasticsearch_cluster_hosts_url[0] }}" # example: http://es:9200
 
 openedx_forum_docker_environment_variables: "{{ openedx_forum_docker_environment_variables_default }}"
 openedx_forum_docker_environment_variables_default:

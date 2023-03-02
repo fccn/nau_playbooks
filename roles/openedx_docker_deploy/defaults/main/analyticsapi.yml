@@ -136,7 +136,7 @@ ANALYTICS_API_REPORTS_MYSQL_OPTIONS:
 ANALYTICS_API_CACHE_REDIS_DB: 7
 
 # analytics api on lilac is still using elasticsearch v6, so we have installed the maple release
-OPENEDX_ANALYTICS_API_ELASTICSEARCH_LEARNERS_HOST: "{{ openedx_docker_deploy_elasticsearch_url }}"
+OPENEDX_ANALYTICS_API_ELASTICSEARCH_LEARNERS_HOST: "{{ openedx_docker_deploy_elasticsearch_cluster_hosts_url[0] }}"
 OPENEDX_ANALYTICS_API_ELASTICSEARCH_LEARNERS_INDEX: 'roster'
 OPENEDX_ANALYTICS_API_ELASTICSEARCH_LEARNERS_INDEX_ALIAS: roster_alias
 OPENEDX_ANALYTICS_API_ELASTICSEARCH_LEARNERS_UPDATE_INDEX: 'index_updates'

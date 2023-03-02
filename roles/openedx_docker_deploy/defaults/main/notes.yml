@@ -25,7 +25,7 @@ openedx_notes_docker_environment_variables_default:
   NOTES_MYSQL_DATABASE: "{{ EDX_NOTES_API_MYSQL_DB_NAME }}"
   NOTES_MYSQL_USERNAME: "{{ EDX_NOTES_API_MYSQL_DB_USER }}"
   NOTES_MYSQL_PASSWORD: "{{ EDX_NOTES_API_MYSQL_DB_PASS }}"
-  ELASTICSEARCH_HOST_PORT: "{{ openedx_docker_deploy_elasticsearch_url }}"
+  ELASTICSEARCH_HOST_PORT: "{{ openedx_docker_deploy_elasticsearch_cluster_hosts_url[0] }}"
   NOTES_OAUTH2_SECRET: "{{ EDX_NOTES_API_CLIENT_SECRET }}"
   NOTES_OAUTH2_ID: "{{ EDX_NOTES_API_CLIENT_ID }}"
 

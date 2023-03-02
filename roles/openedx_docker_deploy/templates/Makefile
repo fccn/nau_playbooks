@@ -187,8 +187,8 @@ healthcheck-redis-port: ## check Redis port
 #######################
 healthcheck-elasticsearch: ## Run elastic search healthcheck cluster
 	@echo -n "Check elasticsearch cluster: "
-	@test $$(curl --silent '{{ openedx_docker_deploy_elasticsearch_url }}/_cluster/health?pretty' | grep 'number_of_nodes' | egrep -o '[0-9]+') -eq {{ openedx_docker_deploy_elasticsearch_cluster_hosts_url | length }}
-	@test $$(curl --silent '{{ openedx_docker_deploy_elasticsearch_url }}/_cluster/health?level=shards&pretty' | egrep -o "status.*\," | sort | uniq | egrep -o "\"[^\ ]+\"") = "\"green\""
+	@test $$(curl --silent '{{ openedx_docker_deploy_elasticsearch_cluster_hosts_url[0] }}/_cluster/health?pretty' | grep 'number_of_nodes' | egrep -o '[0-9]+') -eq {{ openedx_docker_deploy_elasticsearch_cluster_hosts_url | length }}
+	@test $$(curl --silent '{{ openedx_docker_deploy_elasticsearch_cluster_hosts_url[0] }}/_cluster/health?level=shards&pretty' | egrep -o "status.*\," | sort | uniq | egrep -o "\"[^\ ]+\"") = "\"green\""
 {% for es in openedx_docker_deploy_elasticsearch_cluster_hosts_url %}
 	@test $$(curl -sLI {{ es }} -o /dev/null -w '%{http_code}\n') -eq 200
 {% endfor %}
