@@ -563,6 +563,13 @@
         richie_nau_MYSQL_USER: richie_nau
         richie_mysql_replication_user: richie_replication
 
+        # To fix Richie MySQL authentication
+        # use legacy authentication plugin to fix: 
+        # django.db.utils.OperationalError: (2059, "Authentication plugin 'caching_sha2_password' 
+        # cannot be loaded: /usr/lib/x86_64-linux-gnu/mariadb18/plugin/caching_sha2_password.so: 
+        # cannot open shared object file: No such file or directory
+        mysql_docker_command_extra: --default-authentication-plugin=mysql_native_password
+
         # Base configuration for the MySQL instance
         mysql_docker_image: docker.io/mysql:8.0.29
         mysql_docker_replication: true
@@ -771,6 +778,10 @@
       vars:
         mysql_docker_image: docker.io/mysql:5.7.37-debian
         mysql_major_release_number: 5
+
+        # The `max-allowed-packet` is to allow the mysqldump execute a backup
+        mysql_docker_command_extra: --character-set-server=utf8 --collation-server=utf8_general_ci --innodb-buffer-pool-size=4G --innodb-log-file-size=1G --innodb-log-buffer-size=256M --max-allowed-packet=1G {{ '--slave-skip-errors=1062,1032' if not openedx_mysql_docker_primary else '' }}
+        # Older DB had: --slave-skip-errors=1032,1062,1451,1452
         # mysql_replication_login_user: "{{ COMMON_MYSQL_ADMIN_USER }}"
 
         # Base configuration for the MySQL instance

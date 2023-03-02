@@ -6,7 +6,9 @@ mysql_docker_hostname: mysql
 mysql_major_release_number: 8
 mysql_command_mysqldump_source_data: "{{ '--source-data' if mysql_major_release_number >= 8 else '--master-data' }}"
 
-mysql_docker_command: --default-authentication-plugin=mysql_native_password{{ (' --port ' + (mysql_docker_port|string) ) if mysql_docker_port != 3306 else '' }}
+mysql_docker_command: "{{ mysql_docker_command_default }} {{ mysql_docker_command_extra }}"
+mysql_docker_command_default: --default-authentication-plugin=mysql_native_password{{ (' --port ' + (mysql_docker_port|string) ) if mysql_docker_port != 3306 else '' }}
+mysql_docker_command_extra: ""
 
 mysql_docker_deploy_parent_folder: /nau/ops
 mysql_docker_deploy_base_folder: "{{ mysql_docker_deploy_parent_folder }}/{{ mysql_docker_instance_name }}"
