@@ -13,17 +13,11 @@ services:
         protocol:  tcp
         mode:      ingress
     deploy:
-      replicas: {{ coursecertificate_app_replicas }}
-      placement:
-        max_replicas_per_node: 1
       resources:
         limits:
           memory: 1G
         reservations:
           memory: 300M
-      update_config:
-        # We are updating 1 container a time
-        parallelism: 1
     environment:
       # Use custom timezone
       TZ: {{ coursecertificate_timezone | default("Europe/Lisbon") }}
@@ -53,23 +47,11 @@ services:
       # Use custom timezone
       TZ: {{ coursecertificate_timezone | default("Europe/Lisbon") }}
     deploy:
-      replicas: {{ coursecertificate_nginx_replicas }}
       resources:
         limits:
           memory: 50M
         reservations:
           memory: 10M
-      update_config:
-        # We are updating 1 container a time
-        parallelism: 1
-      placement:
-        max_replicas_per_node: 1
-{% if coursecertificate_docker_placement_constraints is defined and ( coursecertificate_docker_placement_constraints | length > 0 ) %}
-        constraints:
-{% for key, value in coursecertificate_docker_placement_constraints.items() %}
-          - {{ key }} == {{ value }}
-{% endfor %}
-{% endif %}
     healthcheck:
       test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/80", "&&", "echo", "''", ">", "/dev/tcp/127.0.0.1/443", "||", "exit", "1"]
       start_period: 30s
