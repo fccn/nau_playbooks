@@ -153,7 +153,7 @@ healthcheck-openedx-forum-heartbeat: ## check openedx forum studio health
 {% if openedx_notes_deploy %}
 healthcheck-openedx-notes-heartbeat: ## check openedx notes health
 	@echo -n "Check notes heartbeat: "
-	@docker exec {{ openedx_docker_deploy_compose_name }}_notes bash -c 'exec 3<>/dev/tcp/127.0.0.1/{{ openedx_notes_port }} && echo -e "GET /heartbeat/ HTTP/1.1\r\nHost: notes\r\nConnection: close\r\n\r\n" >&3 && cat <&3 | grep --quiet "HTTP/1.1 200 OK"'
+	@docker exec {{ openedx_docker_deploy_compose_name }}_notes bash -c 'exec 3<>/dev/tcp/127.0.0.1/{{ openedx_notes_port }} && echo -e "GET /heartbeat/ HTTP/1.1\r\nHost: notes\r\nConnection: close\r\n\r\n" >&3 && cat <&3 2>&1 | grep --quiet "HTTP/1.1 200 OK"'
 	@echo "OK"
 .PHONY: healthcheck-openedx-notes-heartbeat
 {% endif %}
