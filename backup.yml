@@ -1,31 +1,68 @@
 ---
 
 - name: Backup of Mongo data
-  hosts: mongo_docker_servers[0]
+  # by default run the backup on the last mongo instance defined in the inventory
+  hosts: mongo_docker_servers[-1]
   become: True
   gather_facts: True
-  roles:
-    - role: backups
+  tasks:
+    - debug:
+        msg: Backing up OpenEdx Mysql Database
+      when: backup_mongo | default(true)
+
+    - import_role:
+        name: backups
       vars:
         backup_mongo: True
+      when: backup_mongo | default(true) | bool
 
-- name: Backup of Mysql data
-  hosts: nau_docker_swarm_servers
+- name: Backup OpenEdx Mysql data
+  # by default run the backup on the instance that should be a read replica
+  hosts: openedx_mysql_docker_servers[-1]
   become: True
   gather_facts: True
-  roles:
-    - role: backups
-      when: openedx_mysql_replica_server == inventory_hostname
+  tasks:
+    # - debug:
+    #     msg: Backing up OpenEdx Mysql Database
+    #   when: backup_openedx_mysql | default(true)
+
+    - name: Backup OpenEdx Mysql Database
+      import_role:
+        name: backups
       vars:
+        openedx_backup_mysql_container_name: openedx_mysql
+        openedx_backup_mysql_login_user: root
+        openedx_backup_mysql_login_password: "{{ EDXAPP_MYSQL_PASSWORD_ADMIN }}"
+
         backup_mysql: True
         backup_mysql_container_name: "{{ openedx_backup_mysql_container_name }}"
         backup_mysql_login_user: "{{ openedx_backup_mysql_login_user }}"
         backup_mysql_login_password: "{{ openedx_backup_mysql_login_password }}"
+        backup_mysql_port: "{{ openedx_mysql_docker_port }}"
+      when: backup_openedx_mysql | default(true) | bool
+    
+- name: Backup Richie Mysql data
+  # by default run the backup on the instance that should be a read replica
+  hosts: richie_mysql_docker_servers[-1]
+  become: True
+  gather_facts: True
+  tasks:
+    - debug:
+        msg: Backing up Richie Mysql Database
+      when: backup_richie_mysql | default(true)
 
-    - role: backups
-      when: richie_mysql_replica_server == inventory_hostname
+    - name: Backup Richie Mysql Database
+      import_role:
+        name: backups
       vars:
+        richie_backup_mysql_container_name: richie_mysql
+        richie_backup_mysql_login_user: root
+        richie_backup_mysql_login_password: "{{ richie_MYSQL_ROOT_PASSWORD }}"
+        richie_backup_mysql_port: 
+
         backup_mysql: True
         backup_mysql_container_name: "{{ richie_backup_mysql_container_name }}"
         backup_mysql_login_user: "{{ richie_backup_mysql_login_user }}"
         backup_mysql_login_password: "{{ richie_backup_mysql_login_password }}"
+        backup_mysql_port: "{{ richie_mysql_docker_port }}"
+      when: backup_richie_mysql | default(true) | bool

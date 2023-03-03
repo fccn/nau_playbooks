@@ -27,7 +27,7 @@
   # Using `nice` to lower CPU OS process priority and `ionice` to lower IO OS process priority
   shell: |
     docker exec -it -e MYSQL_PWD={{ backup_mysql_login_password }} {{ mysql_container_id.stdout }} \
-    /usr/bin/mysqldump --user={{ backup_mysql_login_user }} --single-transaction --all-databases --skip-extended-insert \
+    /usr/bin/mysqldump --user={{ backup_mysql_login_user }} --port={{ backup_mysql_port }} --single-transaction --all-databases --skip-extended-insert \
     | nice -n 10 gzip -c \
     | ionice -c2 -n 7 tee {{ BACKUP_LOCATION }}/{{ BACKUP_DATE }}_{{ backup_mysql_container_name }}_mysql.sql.gz \
     > /dev/null
