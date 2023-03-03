@@ -80,28 +80,28 @@ healthcheck: \
 	healthcheck-mongo-hosts-port \
 	healthcheck-elasticsearch \
 {% if openedx_lms_deploy %}
-	healthcheck-openedx-lms-heartbeat \
+	healthcheck-lms-heartbeat \
 {% endif %}
 {% if openedx_cms_deploy %}
-	healthcheck-openedx-cms-heartbeat \
+	healthcheck-cms-heartbeat \
 {% endif %}
 {% if openedx_forum_deploy %}
-	healthcheck-openedx-forum-heartbeat \
+	healthcheck-forum-heartbeat \
 {% endif %}
 {% if openedx_notes_deploy %}
-	healthcheck-openedx-notes-heartbeat \
+	healthcheck-notes-heartbeat \
 {% endif %}
 {% if openedx_discovery_deploy %}
-	healthcheck-openedx-discovery-heartbeat \
+	healthcheck-discovery-heartbeat \
 {% endif %}
 {% if openedx_insights_deploy %}
-	healthcheck-openedx-insights-heartbeat \
+	healthcheck-insights-heartbeat \
 {% endif %}
 {% if openedx_analyticsapi_deploy %}
-	healthcheck-openedx-analyticsapi-heartbeat \
+	healthcheck-analyticsapi-heartbeat \
 {% endif %}
 {% if openedx_smtp_deploy %}
-	healthcheck-openedx-smtp-port \
+	healthcheck-smtp-port \
 {% endif %}
 	healthcheck-docker-containers
 	@echo "Everything looks: OK"
@@ -111,67 +111,67 @@ healthcheck: \
 # Openedx health
 #######################
 {% if openedx_insights_deploy %}
-healthcheck-openedx-insights-heartbeat: ## check openedx insights health
+healthcheck-insights-heartbeat: ## check openedx insights health
 	@echo -n "Check insights heartbeat: "
 	@docker exec {{ openedx_docker_deploy_compose_name }}_insights curl --silent --fail --head --resolve insights:8000:127.0.0.1 http://insights:8000/health/ | egrep --quiet "HTTP/.*200 OK"
 	@echo "OK"
-.PHONY: healthcheck-openedx-insights-heartbeat
+.PHONY: healthcheck-insights-heartbeat
 {% endif %}
 
 {% if openedx_analyticsapi_deploy %}
-healthcheck-openedx-analyticsapi-heartbeat: ## check openedx analyticsapi health
+healthcheck-analyticsapi-heartbeat: ## check openedx analyticsapi health
 	@echo -n "Check analyticsapi heartbeat: "
 	@docker exec {{ openedx_docker_deploy_compose_name }}_analyticsapi curl --silent --fail --head --resolve analyticsapi:8000:127.0.0.1 http://analyticsapi:8100/health/ | egrep --quiet "HTTP/.*200 OK"
 	@echo "OK"
-.PHONY: healthcheck-openedx-analyticsapi-heartbeat
+.PHONY: healthcheck-analyticsapi-heartbeat
 {% endif %}
 
 {% if openedx_lms_deploy %}
-healthcheck-openedx-lms-heartbeat: ## check openedx lms health
+healthcheck-lms-heartbeat: ## check openedx lms health
 	@echo -n "Check lms heartbeat: "
 	@docker exec {{ openedx_docker_deploy_compose_name }}_lms curl --silent --fail --head --resolve lms:8000:127.0.0.1 http://lms:8000/heartbeat | egrep --quiet "HTTP/.*200 OK"
 	@echo "OK"
-.PHONY: healthcheck-openedx-lms-heartbeat
+.PHONY: healthcheck-lms-heartbeat
 {% endif %}
 
 {% if openedx_cms_deploy %}
-healthcheck-openedx-cms-heartbeat: ## check openedx cms/studio health
+healthcheck-cms-heartbeat: ## check openedx cms/studio health
 	@echo -n "Check cms heartbeat: "
 	@docker exec {{ openedx_docker_deploy_compose_name }}_cms curl --silent --fail --head --resolve cms:8000:127.0.0.1 http://cms:8000/heartbeat | egrep --quiet "HTTP/.*200 OK"
 	@echo "OK"
-.PHONY: healthcheck-openedx-cms-heartbeat
+.PHONY: healthcheck-cms-heartbeat
 {% endif %}
 
 {% if openedx_forum_deploy %}
-healthcheck-openedx-forum-heartbeat: ## check openedx forum studio health
+healthcheck-forum-heartbeat: ## check openedx forum studio health
 	@echo -n "Check forum heartbeat: "
 	@docker exec {{ openedx_docker_deploy_compose_name }}_forum wget -qSO- 127.0.0.1:{{ openedx_forum_port }}/heartbeat 2>&1 | egrep --quiet "HTTP/.*200 OK"
 	@echo "OK"
-.PHONY: healthcheck-openedx-forum-heartbeat
+.PHONY: healthcheck-forum-heartbeat
 {% endif %}
 
 {% if openedx_notes_deploy %}
-healthcheck-openedx-notes-heartbeat: ## check openedx notes health
+healthcheck-notes-heartbeat: ## check openedx notes health
 	@echo -n "Check notes heartbeat: "
 	@docker exec {{ openedx_docker_deploy_compose_name }}_notes bash -c 'exec 3<>/dev/tcp/127.0.0.1/{{ openedx_notes_port }} && echo -e "GET /heartbeat/ HTTP/1.1\r\nHost: notes\r\nConnection: close\r\n\r\n" >&3 && cat <&3 2>&1 | grep --quiet "HTTP/1.1 200 OK"'
 	@echo "OK"
-.PHONY: healthcheck-openedx-notes-heartbeat
+.PHONY: healthcheck-notes-heartbeat
 {% endif %}
 
 {% if openedx_discovery_deploy %}
-healthcheck-openedx-discovery-heartbeat: ## check openedx discovery health
+healthcheck-discovery-heartbeat: ## check openedx discovery health
 	@echo -n "Check discovery heartbeat: "
 	@docker exec {{ openedx_docker_deploy_compose_name }}_discovery curl --silent --fail --head --resolve discovery:8000:127.0.0.1 http://discovery:8000/health/ | egrep --quiet "HTTP/.*200 OK"
 	@echo "OK"
-.PHONY: healthcheck-openedx-discovery-heartbeat
+.PHONY: healthcheck-discovery-heartbeat
 {% endif %}
 
 {% if openedx_smtp_deploy %}
-healthcheck-openedx-smtp-port: ## check openedx smtp health
+healthcheck-smtp-port: ## check openedx smtp health
 	@echo -n "Check smtp port: "
 	@docker exec {{ openedx_docker_deploy_compose_name }}_smtp nc -z 127.0.0.1 8025
 	@echo "OK"
-.PHONY: healthcheck-openedx-smtp-port
+.PHONY: healthcheck-smtp-port
 {% endif %}
 
 #######################
