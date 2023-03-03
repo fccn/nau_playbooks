@@ -11,8 +11,6 @@ openedx_nginx_https_ingress_port: 443
 
 openedx_nginx_http2: false
 
-openedx_nginx_limit_cpus: "{{ openedx_limit_cpus }}"
-
 openedx_nginx_docker_deploy_templates:
   # nginx.conf
   - src: templates/nginx/nginx.conf

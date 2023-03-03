@@ -5,8 +5,8 @@
 openedx_lms_worker_celery_processes: 1
 openedx_cms_worker_celery_processes: 1
 
-openedx_lms_worker_limit_cpus: "{{ openedx_limit_cpus }}"
-openedx_cms_worker_limit_cpus: "{{ openedx_limit_cpus }}"
+openedx_lms_worker_limit_cpus: 1
+openedx_cms_worker_limit_cpus: 1
 
 #######################################
 # LMS Worker - that run Celery tasks

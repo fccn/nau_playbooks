@@ -51,12 +51,6 @@ openedx_docker_deploy_services_additional:
   - discovery-job
   - analyticsapi-job
 
-# Limit the number of cpus available to each container with half of the available 
-# vCPUs on the deployed node. This assumes that each docker swarm node has a similar layout of
-# available cores. With this configuration we prevent a docker container to use all resources 
-# and impact on other containers and services.
-# openedx_limit_cpus: "{{ ansible_processor_vcpus / 2 | int }}"
-
 openedx_docker_deploy_stack_verify_retries: 120
 openedx_docker_deploy_stack_verify_delay: 60
 
