@@ -53,7 +53,7 @@ openedx_smtp_external_password: "" # leave this blank to disable authentication
 # use load balancer to use the right redis instance based on the availability of the 1st cluster
 # or if not available use the 2nd.
 OPENEDX_REDIS_HOST: "{{ openedx_docker_deploy_cache_redis_host }}"
-OPENEDX_REDIS_PRIMARY_PORT: "{{ openedx_docker_deploy_redis_port }}"
+OPENEDX_REDIS_PRIMARY_PORT: "{{ openedx_docker_deploy_cache_redis_port }}"
 # OPENEDX_REDIS_REPLICAS_PORT: 6380
 OPENEDX_REDIS_USERNAME: ""
 OPENEDX_REDIS_PASSWORD: ""
