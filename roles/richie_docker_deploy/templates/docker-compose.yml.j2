@@ -8,6 +8,7 @@ services:
     # unique and avoid collisions in parallel builds.
     image: {{ richie_site_config.app_image }}
     container_name: {{ richie_docker_deploy_compose_name }}_{{ richie_site }}_app
+    restart: unless-stopped
     environment:
 {% for env_var_name, env_var_value in richie_site_config.app_environment_variables.items() %}
       {{ env_var_name }}: "{{ env_var_value }}"
@@ -42,6 +43,7 @@ services:
     # unique and avoid collisions in parallel builds.
     image: {{ richie_site_config.app_image }}
     container_name: {{ richie_docker_deploy_compose_name }}_{{ richie_site }}_app_job
+    restart: on-failure
     # use an environment variables file so we can reuse them bellow
     environment:
 {% for env_var_name, env_var_value in richie_site_config.app_environment_variables.items() %}
@@ -76,6 +78,7 @@ services:
   {{ richie_site }}_nginx:
     image: {{ richie_site_config.nginx_image }}
     container_name: {{ richie_docker_deploy_compose_name }}_{{ richie_site }}_nginx
+    restart: unless-stopped
     ports:
       - target: 80
         published: {{ richie_site_config.nginx_http_ingress_port }}

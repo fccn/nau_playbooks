@@ -6,6 +6,7 @@ services:
   app:
     image: {{ coursecertificate_app_docker_image }}
     container_name: {{ coursecertificate_docker_deploy_compose_name }}_app
+    restart: unless-stopped
     ports:
       - target:    {{ coursecertificate_app_docker_port_target | default(5000) }}
         published: {{ coursecertificate_app_docker_port_published | default(5000) }}
@@ -38,7 +39,7 @@ services:
   nginx:
     image: {{ coursecertificate_nginx_image }}
     container_name: {{ coursecertificate_docker_deploy_compose_name }}_nginx
-    restart: always
+    restart: unless-stopped
     ports:
       - target: 80
         published: {{ coursecertificate_nginx_http_ingress_port }}

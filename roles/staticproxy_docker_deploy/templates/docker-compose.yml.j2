@@ -6,6 +6,7 @@ services:
   nginx:
     image: {{ staticproxy_nginx_image }}
     container_name: {{ staticproxy_docker_deploy_compose_name }}_nginx
+    restart: unless-stopped
     ports:
       - target: 80
         published: {{ staticproxy_nginx_http_ingress_port }}
@@ -16,7 +17,6 @@ services:
         protocol: tcp
         mode: ingress
     deploy:
-      replicas: 1
       resources:
         limits:
           memory: 128M

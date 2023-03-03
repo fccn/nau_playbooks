@@ -7,8 +7,8 @@ services:
   fluentbit:
     image: {{ observability_fluentbit_docker_image }}
     container_name: {{ observability_docker_deploy_compose_name }}_fluentbit
+    restart: unless-stopped
     deploy:
-      replicas: 1
       resources:
         limits:
           memory: 100M
