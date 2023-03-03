@@ -27,7 +27,6 @@
 - name: Execute command in docker container
   shell: docker exec -it {{ docker_container_name }} {{ docker_exec_command }}
   ignore_errors: True
-  delegate_to: "{{ node_output.stdout }}"
   register: exec_output
   no_log: true # don't print the log, because it isn't formatted, we print it on the next tasks
 

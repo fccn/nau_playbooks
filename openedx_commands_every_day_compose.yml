@@ -49,7 +49,7 @@
   tasks:
     - name: Execute discovery and lms refresh jobs
       include_role:
-        name: docker_exec_in_swarm
+        name: docker_execute
       vars:
         docker_exec_name: "{{ exec.docker_exec_name }}"
         docker_container_name: "{{ exec.docker_container_name }}"
