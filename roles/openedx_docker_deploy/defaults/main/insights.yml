@@ -149,5 +149,5 @@ INSIGHTS_TIME_ZONE: UTC # 'Europe/Lisbon'
 INSIGHTS_REDIS_USERNAME: "{{ OPENEDX_REDIS_USERNAME }}"
 INSIGHTS_REDIS_PASSWORD: "{{ OPENEDX_REDIS_PASSWORD }}"
 INSIGHTS_REDIS_HOST: "{{ openedx_docker_deploy_cache_redis_host }}"
-INSIGHTS_REDIS_PRIMARY_PORT: "{{ openedx_docker_deploy_redis_port }}"
+INSIGHTS_REDIS_PRIMARY_PORT: "{{ openedx_docker_deploy_cache_redis_port }}"
 INSIGHTS_CACHE_REDIS_DB: 6
