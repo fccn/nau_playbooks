@@ -31,6 +31,8 @@
     docker_deploy_secrets:             "{{ elasticsearch_docker_deploy_secrets | default([]) }}"
     docker_deploy_services_additional: "{{ elasticsearch_docker_deploy_services_additional | default([]) }}"
     docker_deploy_shell: true
+    docker_deploy_stack_verify_retries: "{{ elasticsearch_docker_deploy_stack_verify_retries }}"
+    docker_deploy_stack_verify_delay:   "{{ elasticsearch_docker_deploy_stack_verify_delay }}"
   tags:
     - docker_deploy
 
