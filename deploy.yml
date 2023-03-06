@@ -98,6 +98,9 @@
 #   To deploy Openedx MySQL Database
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit openedx_mysql_docker_servers -e openedx_mysql_deploy=true
 #
+#   To deploy Openedx MySQL Application
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit openedx_docker_servers -e openedx_docker_deploy=true
+#
 
 # - name: Bootstrap instances of 16.04
 #   hosts: all,!idpproxy_servers,!nau_docker_swarm_managers,!nau_docker_swarm_workers,!support_server,!build_server
