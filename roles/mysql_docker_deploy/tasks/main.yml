@@ -1,8 +1,13 @@
 ---
-- name: Install make
+- name: Install packages
   package:
-    name: make
+    name: "{{ pack }}"
     state: present
+  loop:
+    - make
+    - python3-pip
+  loop_control:
+    loop_var: pack
   tags:
     - docker_deploy
 
