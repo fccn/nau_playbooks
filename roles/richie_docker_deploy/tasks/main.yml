@@ -1,4 +1,15 @@
 ---
+- name: Install packages
+  package:
+    name: "{{ pack }}"
+    state: present
+  loop:
+    - make
+  loop_control:
+    loop_var: pack
+  tags:
+    - docker_deploy
+
 - name: Generate basic-authentication for each site
   include_role:
     name: basic-authentication
