@@ -33,6 +33,7 @@ services:
   nginx:
     image: {{ coursecertificate_nginx_image }}
     container_name: {{ coursecertificate_docker_deploy_compose_name }}_nginx
+    hostname: {{ inventory_hostname }}
     restart: unless-stopped
     ports:
       - target: 80
