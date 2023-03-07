@@ -16,10 +16,6 @@ services:
           memory: 50M
     # used to collect node metrics
     environment:
-      # Define an environment variable with the docker node hostname,
-      # The fluentbit then appends that value to all log records.
-      # https://forums.docker.com/t/example-usage-of-docker-swarm-template-placeholders/73859
-      DOCKER_NODE_HOSTNAME: "{% raw %}{{.Node.Hostname}}{% endraw %}"
       # Ceph S3 credentials to store some log files.
       AWS_ACCESS_KEY_ID: "{{ EDXAPP_AWS_ACCESS_KEY_ID }}"
       AWS_SECRET_ACCESS_KEY: "{{ EDXAPP_AWS_SECRET_ACCESS_KEY }}"
