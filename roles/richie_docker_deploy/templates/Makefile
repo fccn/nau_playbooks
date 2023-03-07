@@ -79,8 +79,12 @@ healthcheck: \
 	healthcheck-mysql-port \
 	healthcheck-redis-port \
 	healthcheck-docker-containers \
-	healthcheck-elasticsearch \
-	{{ ['healthcheck-'] | product(richie_sites.keys()|list) | map('join') | product(['_app_job']) | map('join') | join(' \\\n\t') }}
+{% for _site, config in richie_sites.items() %}
+{% if config.deploy_job %}
+	healthcheck-{{ _site }}_app_job \
+{% endif %}
+{% endfor %}
+	healthcheck-elasticsearch
 	@echo "Everything looks: OK"
 .PHONY: healthcheck
 
@@ -154,6 +158,7 @@ healthcheck-redis-port: ## check redis port
 ########################
 
 {% for _site, config in richie_sites.items() %}
+{% if config.deploy_job %}
 # check if last job run has finished with complete stateand without any error
 healthcheck-{{ _site }}_app_job: ## check if the migrate and bootstrap_elasticsearch django commands have finished with success for {{ _site }} site
 	@echo -n "Check {{ _site }}_app_job with django migrate and bootstrap elasticsearch commands: "
@@ -161,4 +166,5 @@ healthcheck-{{ _site }}_app_job: ## check if the migrate and bootstrap_elasticse
 	@echo "OK"
 .PHONY: healthcheck-{{ _site }}_app_job
 
+{% endif %}
 {% endfor %}
