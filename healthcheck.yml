@@ -95,29 +95,29 @@
       when: openedx_docker_deploy_base_folder is defined and openedx_docker_deploy_base_folder in _docker_stacks
       tags: nau_check_urls
 
-    - name: Check urls for staticproxy
-      import_role:
-        name: staticproxy_deploy
-      vars:
-        staticproxy_deploy_run: false
-        healthcheck: true
-      when: staticproxy_docker_deploy_base_folder is defined and staticproxy_docker_deploy_base_folder in _docker_stacks
-      tags: nau_check_urls
+    # - name: Check urls for staticproxy
+    #   import_role:
+    #     name: staticproxy_deploy
+    #   vars:
+    #     staticproxy_deploy_run: false
+    #     healthcheck: true
+    #   when: staticproxy_docker_deploy_base_folder is defined and staticproxy_docker_deploy_base_folder in _docker_stacks
+    #   tags: nau_check_urls
 
-    - name: Check urls for coursecertificate
-      import_role:
-        name: coursecertificate_deploy
-      vars:
-        coursecertificate_deploy_run: false
-        healthcheck: true
-      when: coursecertificate_docker_deploy_base_folder is defined and coursecertificate_docker_deploy_base_folder in _docker_stacks
-      tags: nau_check_urls
+    # - name: Check urls for coursecertificate
+    #   import_role:
+    #     name: coursecertificate_deploy
+    #   vars:
+    #     coursecertificate_deploy_run: false
+    #     healthcheck: true
+    #   when: coursecertificate_docker_deploy_base_folder is defined and coursecertificate_docker_deploy_base_folder in _docker_stacks
+    #   tags: nau_check_urls
 
-    - name: Check urls for richie
-      import_role:
-        name: richie_deploy
-      vars:
-        richie_deploy_run: false
-        healthcheck: true
-      when: richie_docker_deploy_base_folder is defined and richie_docker_deploy_base_folder in _docker_stacks
-      tags: nau_check_urls
+    # - name: Check urls for richie
+    #   import_role:
+    #     name: richie_deploy
+    #   vars:
+    #     richie_deploy_run: false
+    #     healthcheck: true
+    #   when: richie_docker_deploy_base_folder is defined and richie_docker_deploy_base_folder in _docker_stacks
+    #   tags: nau_check_urls
