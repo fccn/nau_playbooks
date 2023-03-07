@@ -61,6 +61,7 @@
   hosts: all
   become: True
   gather_facts: True
+  serial: "{{ serial_number | default(1) }}" # check in sequence
   tasks:
     - name: Run Makefile healthcheck
       shell: make --no-print-directory -C {{ item }} healthcheck
