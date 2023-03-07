@@ -70,6 +70,7 @@ services:
   {{ richie_site }}_nginx:
     image: {{ richie_site_config.nginx_image }}
     container_name: {{ richie_docker_deploy_compose_name }}_{{ richie_site }}_nginx
+    hostname: {{ inventory_hostname }}
     restart: unless-stopped
     ports:
       - target: 80
