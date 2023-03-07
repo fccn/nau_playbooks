@@ -627,6 +627,8 @@
   serial: "{{ serial_number | default(1) }}" # deploy in sequence
   become: True
   gather_facts: True
+  vars:
+    rolling_deploy_docker: true
   tasks:
     - name: Start rolling deploy - block load balancer connections
       import_role:
@@ -675,6 +677,8 @@
   serial: "{{ serial_number | default(1) }}" # deploy in sequence
   become: True
   gather_facts: True
+  vars:
+    rolling_deploy_docker: true
   tasks:
     - name: Start rolling deploy - block load balancer connections
       import_role:
@@ -711,6 +715,8 @@
   serial: "{{ serial_number | default(1) }}" # deploy in sequence
   become: True
   gather_facts: True
+  vars:
+    rolling_deploy_docker: true
   tasks:
     - name: Start rolling deploy - block load balancer connections
       import_role:
@@ -811,6 +817,8 @@
   serial: "{{ serial_number | default(1) }}" # deploy in sequence
   become: True
   gather_facts: True
+  vars:
+    rolling_deploy_docker: true
   tasks:
     - name: Start rolling deploy - block load balancer connections
       import_role:
