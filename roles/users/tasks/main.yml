@@ -35,3 +35,4 @@
       
       {{ sudoers_line }}
     backup: yes
+  tags: users
