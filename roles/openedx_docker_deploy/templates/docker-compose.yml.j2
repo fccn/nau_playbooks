@@ -115,6 +115,7 @@ services:
     image: {{ openedx_nginx_image }}
     container_name: {{ openedx_docker_deploy_compose_name }}_nginx
     restart: unless-stopped
+    hostname: {{ inventory_hostname }}
     ports:
       - target:    {{ openedx_nginx_http }}
         published: {{ openedx_nginx_http_ingress_port }}
