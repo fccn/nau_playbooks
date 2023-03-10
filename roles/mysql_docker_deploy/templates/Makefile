@@ -60,7 +60,7 @@ healthcheck-mysql-port: ## check mysql port
 healthcheck: ## Overall healthcheck
 healthcheck: \
 	healthcheck-mysql-port \
-{% if richie_mysql_docker_primary %}
+{% if mysql_docker_primary %}
 	healthcheck-mysql-primary
 {% else %}
 	healthcheck-mysql-replica
@@ -68,7 +68,7 @@ healthcheck: \
 	@echo "Everything looks: OK"
 .PHONY: healthcheck
 
-{% if richie_mysql_docker_primary %}
+{% if mysql_docker_primary %}
 healthcheck-mysql-primary: ## show primary master status
 	@echo -n "Check mysql master status: "
 	@echo 'show master status \G' | MYSQL_PWD="{{ openark_orchestrator_client_password }}" mysql -u {{ openark_orchestrator_client_user }} --host 127.0.0.1 --port {{ mysql_docker_port }} > /dev/null
@@ -84,7 +84,7 @@ mysql-shell: ## open mysl shell to run SQL commands
 	@MYSQL_PWD="{{ mysql_root_password }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ mysql_docker_port }}
 .PHONY: mysql-shell
 
-{% if not richie_mysql_docker_primary %}
+{% if not mysql_docker_primary %}
 healthcheck-mysql-replica: ## show replica slave status
 	@echo -n "Check mysql replica {{ mysql_docker_container_name }} seconds behind primary is lower than 600 seconds (< 10 minutes): "
 	@echo 'show slave status \G' | MYSQL_PWD="{{ openark_orchestrator_client_password }}" mysql -u {{ openark_orchestrator_client_user }} --host 127.0.0.1 --port {{ mysql_docker_port }} | egrep "Seconds_Behind_Master: [0-5]?[0-9]?[0-9]$$" > /dev/null
