@@ -748,18 +748,6 @@
         rolling_deploy_starting: false
       when: ( groups['staticproxy_docker_servers'] | length ) > 1 and ( staticproxy_docker_deploy | default(false) | bool )
 
-- name: Deploy observability docker servers
-  hosts: observability_docker_servers
-  serial: "{{ serial_number | default(1) }}" # deploy in sequence
-  become: True
-  gather_facts: True
-  tasks:
-    - name: Deploy observability as docker compose file
-      import_role:
-        name: observability_docker_deploy
-      vars:
-        observability_docker_deploy_run: "{{ observability_docker_deploy | default(false) }}"
-
 - name: Deploy openedx mysql docker servers
   hosts: openedx_mysql_docker_servers
   serial: "{{ serial_number | default(1) }}" # deploy in sequence
@@ -860,3 +848,16 @@
       vars:
         rolling_deploy_starting: false
       when: ( groups['openedx_docker_servers'] | length ) > 1 and ( openedx_docker_deploy | default(false) | bool )
+
+# Should be the last, because it depends on the docker, and the business projects are the ones that install docker
+- name: Deploy observability docker servers
+  hosts: observability_docker_servers
+  serial: "{{ serial_number | default(1) }}" # deploy in sequence
+  become: True
+  gather_facts: True
+  tasks:
+    - name: Deploy observability as docker compose file
+      import_role:
+        name: observability_docker_deploy
+      vars:
+        observability_docker_deploy_run: "{{ observability_docker_deploy | default(false) }}"
