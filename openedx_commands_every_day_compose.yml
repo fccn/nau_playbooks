@@ -12,7 +12,7 @@
 
 ---
 - name: Run daily openedx tasks
-  hosts: openedx_docker_servers
+  hosts: "{{ (groups['openedx_docker_servers'] | shuffle)[0] }}"
   become: True
   gather_facts: True
   order: shuffle # run on a random server
@@ -56,7 +56,6 @@
         docker_exec_command: "{{ exec.docker_exec_command }}"
         docker_exec_ignore_errors: "{{ exec.docker_exec_ignore_errors | default(True) }}"
         docker_exec_output_fact: "{{ exec.docker_exec_output_fact | default(None) }}"
-      run_once: true # run only on 1 of the hosts and not on all servers to prevent duplicate execution
       when: exec.when | default(true)
       loop_control:
         loop_var: exec
@@ -69,7 +68,6 @@
       assert:
         that: hostvars[inventory_hostname][check_cmd.docker_exec_output_fact].rc == 0 and "ERROR" not in hostvars[inventory_hostname][check_cmd.docker_exec_output_fact].stdout
         quiet: true
-      run_once: true # run only on 1 of the hosts and not on all servers to prevent duplicate execution
       when: ( check_cmd.when | default(true) ) and not ansible_check_mode
       loop_control:
         loop_var: check_cmd
