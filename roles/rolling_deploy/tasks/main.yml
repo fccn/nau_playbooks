@@ -10,6 +10,7 @@
   iptables: 
     ip_version: ipv4
     action: insert # rule should be inserted at the top
+    rule_num: 1
     chain: "{{ rolling_deploy_chain }}"
     source: "{{ rolling_deploy_parent_servers_ipv4 | join(',') }}"
     jump: DROP
@@ -25,6 +26,7 @@
   iptables: 
     ip_version: ipv6
     action: insert # rule should be inserted at the top
+    rule_num: 1
     chain: "{{ rolling_deploy_chain }}"
     source: "{{ rolling_deploy_parent_servers_ipv6 | join(',') }}"
     jump: DROP
