@@ -1,8 +1,0 @@
----
-- name: Configure app servers postfix queue
-  hosts: app_servers
-  become: True
-  gather_facts: True
-  roles:
-    - role: postfix_queue
-      when: POSTFIX_QUEUE_EXTERNAL_SMTP_HOST is defined and POSTFIX_QUEUE_EXTERNAL_SMTP_HOST != ""

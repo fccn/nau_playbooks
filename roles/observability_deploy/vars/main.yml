@@ -1,2 +1,0 @@
----
-docker_deploy_stack_name: "{{ observability_docker_deploy_stack_name }}"

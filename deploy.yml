@@ -35,39 +35,6 @@
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --tags keepalived --limit slave_persistence_servers -e keepalived_priority=1
 #   To mark a server back to normal state, run the same command without the --limit.
 #
-#   To update the OpenedX MySQL database grants run:
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml -e openedx_mysql_initialization=true --limit nau_docker_swarm_servers --tags docker_mysql_replication_additional_users
-#
-#   To deploy the openedx docker stack
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_managers -e openedx_deploy=true
-#
-#   To deploy the static proxy docker stack
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_managers -e staticproxy_deploy=true
-#
-#   To deploy the coursecertificate docker stack
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_managers -e coursecertificate_deploy=true
-#
-#   To deploy the richie stack
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_servers -e richie_deploy=true
-#
-#   To deploy the observability stack
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_servers -e observability_deploy=true
-#
-#   To install/upgrade or configure docker daemon on docker swarm nodes on a rolling deploy approach exec stack's health check
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_servers -e docker_deploy=true
-#
-#   To install/upgrade or configure docker daemon without health check
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_servers -e docker_deploy=true -e docker_deploy_healthcheck=false
-#
-#   To deploy the openedx docker stack and build the web server docker image
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_managers -e openedx_deploy=true -e openedx_nginx_build=true
-#
-#   To update the openedx databases and mysql user grants
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_servers -e openedx_deploy=true -e openedx_mysql_initialization=true --tags docker_mysql_replication_additional
-#
-#   To update the docker swarm configuration like docker node labels
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_docker_swarm_servers -e docker_swarm_deploy=true
-#
 #   To deploy the docker registry mirror
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit registry_mirror_server -e registrymirror_deploy=true
 #
@@ -103,7 +70,7 @@
 #
 
 # - name: Bootstrap instances of 16.04
-#   hosts: all,!idpproxy_servers,!nau_docker_swarm_managers,!nau_docker_swarm_workers,!support_server,!build_server
+#   hosts: all,!idpproxy_servers,!support_server,!build_server
 #   gather_facts: no
 #   become: true
 #   tasks:
@@ -318,127 +285,6 @@
       import_role:
         name: registry_mirror_deploy
       when: _registry_mirror_deploy
-
-# We need to install/upgrade/configure docker service, one docker swarm node at a time and
-# executing all docker stacks health checks before we upgrade the next docker node. Using this
-# approach we can upgrade all the cluster with minimal service unavailability.
-- name: Install Docker on docker swarm nodes using a rolling approach executing health check on each stack
-  hosts: nau_docker_swarm_managers,nau_docker_swarm_workers
-  serial: 1
-  become: True
-  gather_facts: True
-  vars:
-    _docker_deploy: "{{ docker_deploy | default(false) | bool }}"
-    _docker_deploy_healthcheck: "{{ docker_deploy_healthcheck | default(true) | bool }}"
-  tasks:
-    - name: installs docker software
-      import_role:
-        name: geerlingguy.docker
-      when: _docker_deploy
-
-    - name: Run healthcheck Makefile target on each stack
-      shell: make --no-print-directory -C {{ item }} healthcheck
-      retries: "{{ healthcheck_retries | default(50) }}"
-      delay: "{{ healthcheck_delay | default(30) }}"
-      register: result
-      until: result.rc == 0
-      when: _docker_deploy and _docker_deploy_healthcheck and not ansible_check_mode
-      changed_when: False
-      with_items: "{{ docker_stacks }}"
-      # Run only on the first primary manager
-      delegate_to: "{{ groups['nau_docker_swarm_managers'][0] }}"
-
-- name: Configure 1st docker swarm manager
-  hosts: nau_docker_swarm_managers[0]
-  # serial: "{{ serial_number | default(1) }}"
-  become: True
-  gather_facts: True
-  vars:
-    _docker_swarm_deploy: "{{ docker_swarm_deploy | default(false) | bool }}"
-  tasks:
-    - name: configures the swarm
-      import_role:
-        name: docker_swarm
-      when: _docker_swarm_deploy
-      vars:
-        docker_swarm_manager: "{{ groups['nau_docker_swarm_managers'] }}"
-        docker_swarm_worker: "{{ groups['nau_docker_swarm_workers'] }}"
-        configure_labels: false
-        # on ansible inventory each host has its IPv4 address on the `ansible_host` variable
-        docker_swarm_node_advertise_addr: "{{ hostvars[inventory_hostname].ansible_host }}"
-
-    - name: Create ops folder
-      file:
-        name: /nau/ops
-        state: directory
-        recurse: true
-
-    - name: Copy multi stack healthcheck Makefile script
-      template:
-        src: "templates/global/Makefile"
-        dest: "/nau/ops/Makefile"
-      tags: global_healthcheck
-
-- name: Configure other snmpd and docker swarm
-  hosts: nau_docker_swarm_managers,nau_docker_swarm_workers
-  become: True
-  gather_facts: True
-  vars:
-    _docker_swarm_deploy: "{{ docker_swarm_deploy | default(false) | bool }}"
-  tasks:
-    - import_role:
-        name: snmpd
-    - import_role:
-        name: snmpd_docker
-    - name: configures the swarm
-      import_role:
-        name: docker_swarm
-      when: _docker_swarm_deploy
-      vars:
-        docker_swarm_manager: "{{ groups['nau_docker_swarm_managers'] }}"
-        docker_swarm_worker: "{{ groups['nau_docker_swarm_workers'] }}"
-        # on ansible inventory each host has its IPv4 address on the `ansible_host` variable
-        docker_swarm_node_advertise_addr: "{{ hostvars[inventory_hostname].ansible_host }}"
-
-- name: Deploy docker stacks to the 1st docker swarm manager
-  hosts: nau_docker_swarm_managers,nau_docker_swarm_workers
-  become: True
-  gather_facts: True
-  vars:
-    docker_swarm_manager_to_deploy: "{{ groups['nau_docker_swarm_managers'][0] }}"
-    docker_swarm_cluster_group_length: "{{ groups['nau_docker_swarm_servers'] | length }}"
-  roles:
-    - name: Deploy openedx stack
-      role: openedx_deploy
-      vars:
-        openedx_deploy_run: "{{ openedx_deploy | default(false) }}"
-        openedx_deploy_create_volumes: "{{ openedx_deploy | default(false) }}"
-        docker_swarm_build_node: "{{ hostvars[groups['build_server'][0]].ansible_host }}"
-
-    - name: Deploy staticproxy stack
-      role: staticproxy_deploy
-      vars:
-        staticproxy_deploy_run: "{{ staticproxy_deploy | default(false) }}"
-        staticproxy_deploy_create_volumes: "{{ staticproxy_deploy | default(false) }}"
-
-    - name: Deploy coursecertificate stack
-      role: coursecertificate_deploy
-      vars:
-        coursecertificate_deploy_run: "{{ coursecertificate_deploy | default(false) }}"
-        coursecertificate_deploy_create_volumes: "{{ coursecertificate_deploy | default(false) }}"
-
-    - name: Deploy richie stack
-      role: richie_deploy
-      vars:
-        richie_deploy_run: "{{ richie_deploy | default(false) }}"
-        richie_deploy_create_volumes: "{{ richie_deploy | default(false) }}"
-        docker_swarm_build_node: "{{ hostvars[groups['build_server'][0]].ansible_host }}"
-
-    - name: Deploy observability stack
-      role: observability_deploy
-      vars:
-        observability_deploy_run: "{{ observability_deploy | default(false) }}"
-        observability_deploy_create_volumes: "{{ observability_deploy | default(false) }}"
 
 - name: Deploy Mongo servers
   hosts: mongo_docker_servers

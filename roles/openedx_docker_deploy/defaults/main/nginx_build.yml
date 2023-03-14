@@ -10,7 +10,6 @@ openedx_nginx_build: false
 openedx_build_web_server_docker_registry: docker.io
 openedx_build_web_server_docker_repository: nauedu
 openedx_build_web_server_docker_image: openedx-nginx
-openedx_build_web_server_docker_swarm_service: openedx_nginx
 openedx_build_web_server_docker_image_with_hash_fact_name: "openedx_nginx_image"
 
 openedx_build_web_server_services_root: /openedx/staticfiles
