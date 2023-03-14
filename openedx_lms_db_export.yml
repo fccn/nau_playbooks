@@ -8,7 +8,7 @@
 ---
 - name: Exports information to excel from Open EDX LMS/Studio databases
   # by default  run on the last swarm server on the inventory
-  hosts: "nau_docker_swarm_servers:&{{ target | default('nau_docker_swarm_servers') }}[-1]"
+  hosts: "openedx_docker_servers:&{{ target | default('openedx_docker_servers') }}[-1]"
   become: True
   gather_facts: True
   vars: 
