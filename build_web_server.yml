@@ -1,41 +1,25 @@
-# Build web server nginx docker image for openedx and richie stacks.
-# This playbook will get the current in execution docker images, 
-# copy the current in execution static assets and the new to be deployed
-# static assets.
+# Build web server nginx docker image for openedx.
+#
 # It will push a new docker image to Docker Hub, one per NAU environment (dev, stage and prod).
 #
 # Example for dev:
 #   docker.io/nauedu/openedx-nginx:dev
 #
 # Open edX: https://hub.docker.com/r/nauedu/openedx-nginx/tags
-# Richie:   https://hub.docker.com/r/nauedu/richie-nginx/tags
 #
 # This playbook should be called before each deploy, or the deploy playbook should enable the
 # build parameter.
 #
 # Example to build openedx:
-#   ansible-playbook -i nau-data/envs/development/hosts.ini build_web_server.yml --limit nau_docker_swarm_servers -e openedx_nginx_build=true
-# 
-# Example to build richie:
-#   ansible-playbook -i nau-data/envs/development/hosts.ini build_web_server.yml --limit nau_docker_swarm_servers -e richie_nginx_build=true
+#   ansible-playbook -i nau-data/envs/development/hosts.ini build_web_server.yml -e openedx_nginx_build=true
 #
 ---
 - name: Build web server nginx with static assets
-  # hosts: nau_docker_swarm_managers,nau_docker_swarm_workers
-  # hosts:  nau_docker_swarm_managers[0]
-  hosts: "nau_docker_swarm_managers:&{{ target | default( groups['nau_docker_swarm_managers'][0] ) }}"
+  hosts: "openedx_docker_servers:&{{ target | default( groups['openedx_docker_servers'][0] ) }}"
   become: True
   gather_facts: True
-  vars:
-    docker_swarm_manager_to_deploy: "{{ target | default(groups['nau_docker_swarm_managers'][0]) }}"
-    docker_swarm_cluster_group_length: "{{ groups['nau_docker_swarm_servers'] | length }}"
   roles:
-    - name: Build openedx stack
-      role: openedx_deploy
+    - name: Build openedx project
+      role: openedx_docker_deploy
       vars:
-        docker_swarm_build_node: "{{ hostvars[groups['build_server'][0]].ansible_host }}"
-
-    - name: Build richie stack
-      role: richie_deploy
-      vars:
-        docker_swarm_build_node: "{{ hostvars[groups['build_server'][0]].ansible_host }}"
+        openedx_build_web_server_node: "{{ hostvars[groups['build_server'][0]].ansible_host }}"
