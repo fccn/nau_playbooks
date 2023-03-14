@@ -88,13 +88,6 @@
       when: ansible_distribution == 'Ubuntu'
     - import_role:
         name: ssh_authorized_keys
-    - import_role:
-        name: ansible_pakiti_client
-
-    - name: Install pip
-      import_role:
-        name: geerlingguy.pip
-      when: ansible_distribution == 'Ubuntu' and (ansible_distribution_major_version|int) >= 20
 
     - name: On Ubuntu 20.04 or later, you need to install the acl package to becoming non privileged user.
       # Fix of this error:
@@ -103,6 +96,16 @@
       #   https://github.com/georchestra/ansible/issues/55
       package:
         name: acl
+      # need this package so pakiti is installed correctly on NAU
+      tags: pakiti
+      when: ansible_distribution == 'Ubuntu' and (ansible_distribution_major_version|int) >= 20
+
+    - import_role:
+        name: ansible_pakiti_client
+
+    - name: Install pip
+      import_role:
+        name: geerlingguy.pip
       when: ansible_distribution == 'Ubuntu' and (ansible_distribution_major_version|int) >= 20
 
 - name: Bootstrap cnc with Ubuntu 20.04
