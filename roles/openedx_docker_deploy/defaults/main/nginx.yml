@@ -135,6 +135,8 @@ openedx_nginx_cms_servers:
     ssl_certificate_key: "{{ openedx_nginx_ssl_certificate_key_docker_target }}"
     http2: "{{ openedx_nginx_cms_http2 | default(openedx_nginx_http2) }}"
 
+openedx_nginx_admin_access_trusted_ip_cidrs: "{{ NGINX_TRUSTED_IP_CIDRS }}"
+
 # from the old ansible configuration repository
 COMMON_ENABLE_BASIC_AUTH: False
 EDXAPP_LMS_ENABLE_BASIC_AUTH: "{{ COMMON_ENABLE_BASIC_AUTH }}"
