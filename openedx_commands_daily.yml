@@ -2,13 +2,13 @@
 #
 # Examples:
 # To run all run the playbook with:
-#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_commands_every_day_compose.yml -e run_all=true
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_commands_daily.yml -e run_all=true
 #
 # To run specific step use:
-#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_commands_every_day_compose.yml -e lms_schedules_send_course_next_section_update=true
-#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_commands_every_day_compose.yml -e lms_schedules_send_course_update=true
-#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_commands_every_day_compose.yml -e lms_schedules_send_recurring_nudge=true
-#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_commands_every_day_compose.yml -e lms_nau_openedx_extensions_add_archived_course_message=true
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_commands_daily.yml -e lms_schedules_send_course_next_section_update=true
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_commands_daily.yml -e lms_schedules_send_course_update=true
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_commands_daily.yml -e lms_schedules_send_recurring_nudge=true
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_commands_daily.yml -e lms_nau_openedx_extensions_add_archived_course_message=true
 
 ---
 - name: Run daily openedx tasks
