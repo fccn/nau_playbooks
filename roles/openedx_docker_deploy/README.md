@@ -2,13 +2,13 @@
 
 ## Initialize Elasticsearch
 To initialize the elasticsearch cluster use the `openedx_elasticsearch_initialization` parameter.
-Run ansible with `-e openedx_deploy=true -e openedx_elasticsearch_initialization=true`.
+Run ansible with `-e openedx_docker_deploy=true -e openedx_elasticsearch_initialization=true`.
 
 ## Initialize MySQL
 To initialize the mysql cluster use the `openedx_mysql_initialization` parameter.
 Before run a normal deploy that will stop on the health check steps.
 
-Run ansible with `-e openedx_deploy=true -e openedx_mysql_initialization=true --tags docker_mysql_replication`
+Run ansible with `-e openedx_docker_deploy=true -e openedx_mysql_initialization=true --tags docker_mysql_replication`
 
 ## Database Migrations
 The database migrations are configured per application using the next ansible extra variables:
@@ -22,12 +22,12 @@ The database migrations are configured per application using the next ansible ex
 
 Example to run the lms migrations:
 ```bash
--e openedx_deploy=true -e openedx_lms_migrate=true
+-e openedx_docker_deploy=true -e openedx_lms_migrate=true
 ```
 If you need to run multiple database migrations on multiple containers, then add each variable.
 For example to run on lms and studio migrations use:
 ```bash
--e openedx_deploy=true -e openedx_lms_migrate=true -e openedx_cms_migrate=true
+-e openedx_docker_deploy=true -e openedx_lms_migrate=true -e openedx_cms_migrate=true
 ```
 
 ## Re-index
@@ -35,12 +35,12 @@ For example to run on lms and studio migrations use:
 To re-index the courses on the new elastic search cluster instance, deploy with this extra ansible parameters:
 
 ```bash
--e openedx_deploy=true -e openedx_cms_reindex_all_courses=true
+-e openedx_docker_deploy=true -e openedx_cms_reindex_all_courses=true
 ```
 
 To re-index the content library:
 ```bash
--e openedx_deploy=true -e openedx_cms_reindex_content_library=true
+-e openedx_docker_deploy=true -e openedx_cms_reindex_content_library=true
 ```
 
 To re-index the library you need to run this command directly on the cms container.
