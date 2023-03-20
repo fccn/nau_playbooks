@@ -625,8 +625,8 @@
         mysql_docker_image: docker.io/mysql:5.7.37-debian
         mysql_major_release_number: 5
 
-        # The `max-allowed-packet` is to allow the mysqldump execute a backup
-        mysql_docker_command_extra: --character-set-server=utf8 --collation-server=utf8_general_ci --innodb-buffer-pool-size=4G --innodb-log-file-size=1G --innodb-log-buffer-size=256M --max-allowed-packet=1G {{ '--slave-skip-errors=1062,1032' if not openedx_mysql_docker_primary else '' }}
+        # The `--max-allowed-packet=1G` is to allow the mysqldump execute a backup. Trying to put it on the mysqldump command directly.
+        mysql_docker_command_extra: --character-set-server=utf8 --collation-server=utf8_general_ci --innodb-buffer-pool-size=4G --innodb-log-file-size=1G --innodb-log-buffer-size=256M {{ '--slave-skip-errors=1062,1032' if not openedx_mysql_docker_primary else '' }}
         # Older DB had: --slave-skip-errors=1032,1062,1451,1452
         # mysql_replication_login_user: "{{ COMMON_MYSQL_ADMIN_USER }}"
 
