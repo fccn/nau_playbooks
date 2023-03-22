@@ -246,11 +246,11 @@ services:
           memory: {{ worker.deploy_resources_reservations_memory }}
     healthcheck:
       test: celery --app={{ worker.service_variant }}.celery inspect ping -d celery@edx.{{ worker.service_variant }}.core.{{ worker.queue }}.%$$HOSTNAME
-      start_period: 120s
+      start_period: 240s # 4 minutes
       retries: 10
       # Big interval because each ping uses much memory and takes a couple of seconds to execute.
-      interval: 600s # 10 minutes
-      timeout: 120s
+      interval: 300s # 5 minutes
+      timeout: 120s  # 2 minutes
 {{ helper.service_configs(service='edxapp') }}
 {{ helper.service_secrets(service='edxapp') }}
 
