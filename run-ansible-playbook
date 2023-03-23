@@ -26,13 +26,13 @@ git -C "nau-data" pull
 git -C "nau-data" checkout ${BRANCH_SECURE_DATA}
 
 # Create the virtual environment
-rm -rf venv_ops
+# rm -rf venv_ops
 python3.8 -m venv venv_ops
 . venv_ops/bin/activate
 
 # Install pip requirements including the upstream Open edX configuration repo requirements
 # including specific pip version, setuptools and other pip modules
-pip install -r requirements.txt --exists-action w
+pip install -r requirements.txt --exists-action w --no-compile --disable-pip-version-check
 
 # Install additional roles from ansible galaxy and directly from git
 ansible-galaxy install -p vendor/roles -r requirements.yml --force --ignore-errors
