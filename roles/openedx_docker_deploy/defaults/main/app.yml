@@ -628,6 +628,7 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
       fail_silently: False
       pipeline:
         - nau_openedx_extensions.filters.pipeline.FilterEnrollmentByDomain
+        - nau_openedx_extensions.filters.pipeline.FilterEnrollmentRequireUserActive
 
   # Log exceptions when ignoring exceptions with IGNORE_EXCEPTIONS or DJANGO_REDIS_IGNORE_EXCEPTIONS
   # In reality can't be included because if redis is down, the LMS shows a message to the user
