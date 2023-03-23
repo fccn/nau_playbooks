@@ -51,22 +51,22 @@ bash: ## Open bash on the current node for the {{ elasticsearch_docker_container
 silent-%:
 	@$(MAKE) $* > /dev/null && echo "OK"
 
+healthcheck: healthcheck-parallel ## Overall healthcheck - for parallel execution run `make --jobs 10 healthcheck`
+	@echo "Everything looks: OK"
+.PHONY: healthcheck-parallel
+
 healthcheck-elasticsearch-port: ## Check the elasticsearch port is up
-	@echo -n "Check elasticsearch port: "
-	@nc -z 127.0.0.1 {{ elasticsearch_http_port }}
-	@echo "OK"
+	@nc -z 127.0.0.1 {{ elasticsearch_http_port }} || ( echo "Check elasticsearch port: error" ; exit 1)
+	@echo "Check elasticsearch port: OK"
 .PHONY: healthcheck-elasticsearch-port
 
 healthcheck-elasticsearch-replication: ## Check elastic search cluster replication status
-	@echo -n "Check elasticsearch cluster: "
-	@test $$(curl --silent 'http://localhost:{{ elasticsearch_http_port }}/_cluster/health?pretty' | grep 'number_of_nodes' | egrep -o '[0-9]+') -eq {{ elasticsearch_discovery_seed_hosts | length }}
-	@test $$(curl --silent 'http://localhost:{{ elasticsearch_http_port }}/_cluster/health?level=shards&pretty' | egrep -o "status.*\," | sort | uniq | egrep -o "\"[^\ ]+\"") = "\"green\""
-	@echo "OK"
+	@test $$(curl --silent 'http://localhost:{{ elasticsearch_http_port }}/_cluster/health?pretty' | grep 'number_of_nodes' | egrep -o '[0-9]+') -eq {{ elasticsearch_discovery_seed_hosts | length }}  || ( echo "Check elasticsearch cluster: error failed number of healthy nodes" ; exit 1 )
+	@test $$(curl --silent 'http://localhost:{{ elasticsearch_http_port }}/_cluster/health?level=shards&pretty' | egrep -o "status.*\," | sort | uniq | egrep -o "\"[^\ ]+\"") = "\"green\"" || ( echo "Check elasticsearch cluster: error shards not green" ; exit 1 )
+	@echo "Check elasticsearch cluster: OK"
 .PHONY: healthcheck-elasticsearch-replication
 
-healthcheck: ## Overall healthcheck
-healthcheck: \
+healthcheck-parallel: \
 	healthcheck-elasticsearch-port \
 	healthcheck-elasticsearch-replication
-	@echo "Everything looks: OK"
-.PHONY: healthcheck
+.PHONY: healthcheck-parallel

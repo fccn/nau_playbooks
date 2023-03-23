@@ -51,22 +51,24 @@ bash: ## Open bash on the current node for the {{ mysql_docker_container_name }}
 silent-%:
 	@$(MAKE) $* > /dev/null && echo "OK"
 
-healthcheck-mysql-port: ## check mysql port
-	@echo -n "Check mysql port for {{ mysql_docker_container_name }}: "
-	@nc -z 127.0.0.1 {{ mysql_docker_port }}
-	@echo "OK"
-.PHONY: healthcheck-mysql-port
+healthcheck: healthcheck-parallel ## Overall healthcheck - for parallel execution run `make --jobs 10 healthcheck`
+	@echo "Everything looks: OK"
+.PHONY: healthcheck-parallel
 
-healthcheck: ## Overall healthcheck
-healthcheck: \
+healthcheck-parallel: \
 	healthcheck-mysql-port \
 {% if mysql_docker_primary %}
 	healthcheck-mysql-primary
 {% else %}
 	healthcheck-mysql-replica
 {% endif %}
-	@echo "Everything looks: OK"
-.PHONY: healthcheck
+.PHONY: healthcheck-parallel
+
+healthcheck-mysql-port: ## check mysql port
+	@echo -n "Check mysql port for {{ mysql_docker_container_name }}: "
+	@nc -z 127.0.0.1 {{ mysql_docker_port }}
+	@echo "OK"
+.PHONY: healthcheck-mysql-port
 
 {% if mysql_docker_primary %}
 healthcheck-mysql-primary: ## show primary master status

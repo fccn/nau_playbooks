@@ -65,29 +65,20 @@ silent-%:
 	@$(MAKE) $* > /dev/null && echo "OK"
 
 healthcheck-docker-containers: ## check that docker containers are on running state
-	@echo -n "Check docker containers status: "
-	@test $$(docker ps --filter "name={{ richie_docker_deploy_compose_name }}-*" --format {% raw %}'{{.Names}}\t{{.Status}}'{% endraw %} -a | grep -v "_job" | grep "Up " | wc -l) -eq $$(docker ps --filter "name={{ richie_docker_deploy_compose_name }}-*" {% raw %}--format '{{.Names}}\t{{.Status}}'{% endraw %} -a | grep -v "_job" | wc -l)
-	@echo "OK"
+	@test $$(docker ps --filter "name={{ richie_docker_deploy_compose_name }}-*" --format {% raw %}'{{.Names}}\t{{.Status}}'{% endraw %} -a | grep -v "_job" | grep "Up " | wc -l) -eq $$(docker ps --filter "name={{ richie_docker_deploy_compose_name }}-*" {% raw %}--format '{{.Names}}\t{{.Status}}'{% endraw %} -a | grep -v "_job" | wc -l) || ( echo "Check docker containers status: error" ; exit 1 )
+	@echo "Check docker containers status: OK"
 .PHONY: healthcheck-docker-containers
+
+healthcheck: healthcheck-parallel ## Overall healthcheck - for parallel execution run `make --jobs 10 healthcheck`
+	@echo "Everything looks: OK"
+.PHONY: healthcheck-parallel
 
 #######################
 # Specific
 #######################
 
-healthcheck: ## Overall healthcheck
-healthcheck: \
-	healthcheck-mysql-port \
-	healthcheck-redis-port \
-	healthcheck-docker-containers \
-{% for _site, config in richie_sites.items() %}
-{% if config.deploy_job %}
-	healthcheck-{{ _site }}_app_job \
-{% endif %}
-{% endfor %}
-	healthcheck-elasticsearch
-	@echo "Everything looks: OK"
-.PHONY: healthcheck
-
+healthcheck-parallel: healthcheck-mysql-port healthcheck-redis-port healthcheck-docker-containers {% for _site, config in richie_sites.items() %}{% if config.deploy_job %}healthcheck-{{ _site }}_app_job {% endif %}{% endfor %}healthcheck-elasticsearch
+.PHONY: healthcheck-parallel
 
 #######################
 # MySQL 
@@ -124,9 +115,8 @@ restore-mysql-{{ _site }}: ## restore mysql db of {{ _site }} site
 {% endfor %}
 
 healthcheck-mysql-port: ## check mysql port
-	@echo -n "Check mysql port {{ richie_docker_deploy_mysql_host }}:{{ richie_docker_deploy_mysql_port }}: "
-	@nc -z {{ richie_docker_deploy_mysql_host }} {{ richie_docker_deploy_mysql_port }}
-	@echo "OK"
+	@nc -z {{ richie_docker_deploy_mysql_host }} {{ richie_docker_deploy_mysql_port }} || ( echo "Check mysql port {{ richie_docker_deploy_mysql_host }}:{{ richie_docker_deploy_mysql_port }}: error" ; exit 1 )
+	@echo "Check mysql port {{ richie_docker_deploy_mysql_host }}:{{ richie_docker_deploy_mysql_port }}: OK"
 .PHONY: healthcheck-mysql-port
 
 #######################
@@ -134,13 +124,12 @@ healthcheck-mysql-port: ## check mysql port
 #######################
 
 healthcheck-elasticsearch: ## Run elastic search healthcheck cluster
-	@echo -n "Check elasticsearch cluster: "
-	@test $$(curl --silent '{{ richie_docker_deploy_elasticsearch_cluster_hosts_url[0] }}/_cluster/health?pretty' | grep 'number_of_nodes' | egrep -o '[0-9]+') -eq {{ richie_docker_deploy_elasticsearch_cluster_hosts_url | length }}
-	@test $$(curl --silent '{{ richie_docker_deploy_elasticsearch_cluster_hosts_url[0] }}/_cluster/health?level=shards&pretty' | egrep -o "status.*\," | sort | uniq | egrep -o "\"[^\ ]+\"") = "\"green\""
+	@test $$(curl --silent '{{ richie_docker_deploy_elasticsearch_cluster_hosts_url[0] }}/_cluster/health?pretty' | grep 'number_of_nodes' | egrep -o '[0-9]+') -eq {{ richie_docker_deploy_elasticsearch_cluster_hosts_url | length }} || ( echo "Check elasticsearch cluster: error failed number of healthy nodes" ; exit 1 )
+	@test $$(curl --silent '{{ richie_docker_deploy_elasticsearch_cluster_hosts_url[0] }}/_cluster/health?level=shards&pretty' | egrep -o "status.*\," | sort | uniq | egrep -o "\"[^\ ]+\"") = "\"green\"" || ( echo "Check elasticsearch cluster: error shards not green" ; exit 1 )
 {% for es in richie_docker_deploy_elasticsearch_cluster_hosts_url %}
-	@test $$(curl -sLI {{ es }} -o /dev/null -w '%{http_code}\n') -eq 200
+	@test $$(curl -sLI {{ es }} -o /dev/null -w '%{http_code}\n') -eq 200 || ( echo "Check elasticsearch cluster: error node {es} not ok" ; exit 1 )
 {% endfor %}
-	@echo "OK"
+	@echo "Check elasticsearch cluster: OK"
 .PHONY: healthcheck-elasticsearch
 
 #######################
@@ -148,9 +137,8 @@ healthcheck-elasticsearch: ## Run elastic search healthcheck cluster
 #######################
 
 healthcheck-redis-port: ## check redis port
-	@echo -n "Check redis port: "
-	@nc -z {{ richie_docker_deploy_redis_host }} {{ richie_docker_deploy_redis_port }}
-	@echo "OK"
+	@nc -z {{ richie_docker_deploy_redis_host }} {{ richie_docker_deploy_redis_port }} || ( echo "Check redis port: error" ; exit 1; )
+	@echo "Check redis port: OK"
 .PHONY: healthcheck-redis-port
 
 ########################
@@ -161,9 +149,8 @@ healthcheck-redis-port: ## check redis port
 {% if config.deploy_job %}
 # check if last job run has finished with complete stateand without any error
 healthcheck-{{ _site }}_app_job: ## check if the migrate and bootstrap_elasticsearch django commands have finished with success for {{ _site }} site
-	@echo -n "Check {{ _site }}_app_job with django migrate and bootstrap elasticsearch commands: "
-	@test $$(docker ps --filter "name={{ richie_docker_deploy_compose_name }}_{{ _site }}_app_job" -a | grep "Exited (0)" | wc -l) -eq 1
-	@echo "OK"
+	@test $$(docker ps --filter "name={{ richie_docker_deploy_compose_name }}_{{ _site }}_app_job" -a | grep "Exited (0)" | wc -l) -eq 1 || ( echo "Check {{ _site }}_app_job with django migrate and bootstrap elasticsearch commands: error" ; exit 1)
+	@echo "Check {{ _site }}_app_job with django migrate and bootstrap elasticsearch commands: OK"
 .PHONY: healthcheck-{{ _site }}_app_job
 
 {% endif %}

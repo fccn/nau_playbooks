@@ -71,9 +71,11 @@ healthcheck-port: # Check mongo port is up
 silent-%:
 	@$(MAKE) $* > /dev/null && echo "OK"
 
-healthcheck: ## Overall healthcheck
-healthcheck: \
+healthcheck: healthcheck-parallel ## Overall healthcheck - for parallel execution run `make --jobs 10 healthcheck`
+	@echo "Everything looks: OK"
+.PHONY: healthcheck-parallel
+
+healthcheck-parallel: \
 	healthcheck-port \
 	healthcheck-replication
-	@echo "Everything looks: OK"
-.PHONY: healthcheck
+.PHONY: healthcheck-parallel

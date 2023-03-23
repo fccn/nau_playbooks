@@ -65,26 +65,25 @@ silent-%:
 	@$(MAKE) $* > /dev/null && echo "OK"
 
 healthcheck-docker-containers: ## check that docker containers are on running state
-	@echo -n "Check docker containers status: "
-	@test $$(docker ps --filter "name={{ coursecertificate_docker_deploy_compose_name }}-*" --format {% raw %}'{{.Names}}\t{{.Status}}'{% endraw %} -a | grep -v "_job" | grep "Up " | wc -l) -eq $$(docker ps --filter "name={{ coursecertificate_docker_deploy_compose_name }}-*" {% raw %}--format '{{.Names}}\t{{.Status}}'{% endraw %} -a | grep -v "_job" | wc -l)
-	@echo "OK"
+	@test $$(docker ps --filter "name={{ coursecertificate_docker_deploy_compose_name }}-*" --format {% raw %}'{{.Names}}\t{{.Status}}'{% endraw %} -a | grep -v "_job" | grep "Up " | wc -l) -eq $$(docker ps --filter "name={{ coursecertificate_docker_deploy_compose_name }}-*" {% raw %}--format '{{.Names}}\t{{.Status}}'{% endraw %} -a | grep -v "_job" | wc -l) || ( echo "Check docker containers status: error" ; exit 1 )
+	@echo "Check docker containers status: OK"
 .PHONY: healthcheck-docker-containers
 
+healthcheck: healthcheck-parallel ## Overall healthcheck - for parallel execution run `make --jobs 10 healthcheck`
+	@echo "Everything looks: OK"
+.PHONY: healthcheck-parallel
 
 #######################
 # Specific
 #######################
 
-healthcheck: ## Overall healthcheck
-healthcheck: \
+healthcheck-parallel: \
 	healthcheck-docker-containers \
 	healthcheck-nginx-ports
-	@echo "Everything looks: OK"
-.PHONY: healthcheck
+.PHONY: healthcheck-parallel
 
 healthcheck-nginx-ports: ## check nginx ports
-	@echo -n "Check nginx ports: "
-	@nc -z 127.0.0.1 {{ coursecertificate_nginx_http_ingress_port }}
-	@nc -z 127.0.0.1 {{ coursecertificate_nginx_https_ingress_port }}
-	@echo "OK"
+	@nc -z 127.0.0.1 {{ coursecertificate_nginx_http_ingress_port }}  || ( echo "Check nginx http port {{ coursecertificate_nginx_http_ingress_port }}: error not available!" ; exit 1 )
+	@nc -z 127.0.0.1 {{ coursecertificate_nginx_https_ingress_port }} || ( echo "Check nginx https port {{ coursecertificate_nginx_https_ingress_port }}: error not available!" ; exit 1 )
+	@echo "Check nginx ports: OK"
 .PHONY: healthcheck-nginx-ports
