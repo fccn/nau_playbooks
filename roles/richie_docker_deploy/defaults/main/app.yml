@@ -57,9 +57,7 @@ richie_nau_app_environment_variables_default:
 
   # Elastic search
   RICHIE_ES_INDICES_PREFIX: richie_nau
-  # Temporary use only the 1st elasticsearch server until next release ( > 1.18 ) of NAU Richie.
-  RICHIE_ES_HOST: "{{ richie_docker_deploy_elasticsearch_cluster_hosts_url[0] }}"
-  # RICHIE_ES_HOST: "{{ richie_docker_deploy_elasticsearch_cluster_hosts_url | join(',') }}"
+  RICHIE_ES_HOST: "{{ richie_docker_deploy_elasticsearch_cluster_hosts_url | join(',') }}"
   #- discovery.type: single-node
 
   # App database configuration
