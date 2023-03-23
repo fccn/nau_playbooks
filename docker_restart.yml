@@ -1,0 +1,61 @@
+# Update operating system packages.
+# If need reboot the server.
+#
+# On docker swarm cluster, run health check on each docker stack before continue on the next server.
+#
+# Inspired by:
+# - https://luktom.net/en/e1497-how-to-update-centos-rhel-using-ansible
+# - https://www.cyberciti.biz/faq/ansible-apt-update-all-packages-on-ubuntu-debian-linux/
+# 
+---
+- hosts: all
+  serial: 1 # run update in sequence
+  become: True
+  gather_facts: True
+  vars:
+    rolling_deploy_enabled: true
+  tasks:
+    - import_role: 
+        name: keepalived
+      vars: 
+        keepalived_priority_override: 1
+      when: keepalived_vrrp_instances is defined and ( keepalived_vrrp_instances|length > 0 )
+    - name: force all notified handlers to run at this point
+      meta: flush_handlers
+    - import_role:
+        name: rolling_deploy
+      when: rolling_deploy_enabled | bool
+      vars:
+        rolling_deploy_docker: true
+        rolling_deploy_starting: true
+
+    # real stuff to do
+    - name: Restart service docker
+      service: 
+        name: docker
+        state: restarted
+
+    - import_role:
+        name: nau_check_urls
+    - import_role:
+        name: rolling_deploy
+      vars:
+        rolling_deploy_docker: true
+        rolling_deploy_starting: false
+      when: rolling_deploy_enabled | bool
+    - import_role: 
+        name: keepalived
+      vars:
+        keepalived_priority_override: ""
+      when: keepalived_vrrp_instances is defined and ( keepalived_vrrp_instances|length > 0 )
+
+    - name: Run Makefile healthcheck
+      shell: make --no-print-directory -C {{ item }} healthcheck
+      retries: "{{ healthcheck_retries | default(50) }}"
+      delay: "{{ healthcheck_delay | default(30) }}"
+      register: result
+      until: result.rc == 0
+      check_mode: no # execute even when ansible is run with --check
+      when: makefile_healthcheck is defined
+      changed_when: False
+      with_items: "{{ makefile_healthcheck }}"
