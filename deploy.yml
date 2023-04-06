@@ -607,6 +607,14 @@
   become: True
   gather_facts: True
   tasks:
+    - name: Lower keepalived priority to force VIP swap
+      import_role:
+        name: keepalived
+      vars: 
+        keepalived_priority_override: 1 # Lower priority so the VIPs can swap to other machine.
+      tags: keepalived
+      when: ( openedx_mysql_deploy | default(false) | bool ) and openedx_mysql_read_replica_keepalived_vrrp_instances is defined and ( groups['openedx_mysql_docker_servers'] | length ) > 1
+
     - name: Install or upgrade docker daemon
       import_role:
         name: geerlingguy.docker
@@ -653,6 +661,14 @@
         mysql_replication_init_databases: [ edxapp ]
         mysql_replication_additional_databases: "{{ edxlocal_databases }}" # Used by docker_mysql_replication role
         mysql_replication_additional_users: "{{ edxlocal_database_users }}" # Used by docker_mysql_replication role
+
+    - name: Restore keepalived priority
+      import_role:
+        name: keepalived
+      vars:
+        keepalived_priority_override: ""
+      tags: keepalived
+      when: ( openedx_mysql_deploy | default(false) | bool ) and openedx_mysql_read_replica_keepalived_vrrp_instances is defined and ( groups['openedx_mysql_docker_servers'] | length ) > 1
 
 - name: Deploy openedx application docker servers
   hosts: openedx_docker_servers
