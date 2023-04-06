@@ -15,7 +15,7 @@ mysql_docker_deploy_base_folder: "{{ mysql_docker_deploy_parent_folder }}/{{ mys
 mysql_docker_deploy_compose_template: templates/docker-compose.yml.j2
 
 mysql_docker_container_name: "{{ mysql_docker_deploy_base_folder | basename }}"
-mysql_docker_deploy_stack_verify_delay: 5
+mysql_docker_deploy_stack_verify_delay: 30
 mysql_docker_deploy_stack_verify_retries: 50
 
 # Files to be templated during deployment
