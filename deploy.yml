@@ -351,6 +351,7 @@
         name: keepalived
       vars: 
         keepalived_priority_override: 1 # Lower priority so the VIPs can swap to other machine.
+      tags: keepalived
       when: ( redis_deploy | default(false) | bool ) and redis_keepalived_vrrp_instances is defined and ( groups['redis_docker_servers'] | length ) > 1
 
     - name: Install or upgrade docker daemon
@@ -377,6 +378,7 @@
         name: keepalived
       vars:
         keepalived_priority_override: ""
+      tags: keepalived
       when: ( redis_deploy | default(false) | bool ) and redis_keepalived_vrrp_instances is defined and ( groups['redis_docker_servers'] | length ) > 1
 
 - name: Deploy richie mysql docker servers
@@ -390,6 +392,7 @@
         name: keepalived
       vars: 
         keepalived_priority_override: 1 # Lower priority so the VIPs can swap to other machine.
+      tags: keepalived
       when: ( richie_mysql_deploy | default(false) | bool ) and richie_mysql_keepalived_vrrp_instances is defined and ( groups['richie_mysql_docker_servers'] | length ) > 1
 
     - name: Install or upgrade docker daemon
@@ -469,6 +472,7 @@
         name: keepalived
       vars:
         keepalived_priority_override: ""
+      tags: keepalived
       when: ( richie_mysql_deploy | default(false) | bool ) and richie_mysql_keepalived_vrrp_instances is defined and ( groups['richie_mysql_docker_servers'] | length ) > 1
 
 - name: Deploy richie app servers
