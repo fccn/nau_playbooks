@@ -35,7 +35,7 @@
         state: restarted
 
     - name: Run Makefile healthcheck
-      shell: make --no-print-directory -C {{ item }} healthcheck
+      shell: make --jobs 20 --no-print-directory --directory {{ item }} healthcheck
       retries: "{{ healthcheck_retries | default(50) }}"
       delay: "{{ healthcheck_delay | default(30) }}"
       register: result

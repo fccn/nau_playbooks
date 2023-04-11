@@ -112,7 +112,7 @@
       when: keepalived_vrrp_instances is defined and ( keepalived_vrrp_instances|length > 0 )
 
     - name: Run Makefile healthcheck
-      shell: make --no-print-directory -C {{ item }} healthcheck
+      shell: make --jobs 20 --no-print-directory --directory {{ item }} healthcheck
       retries: "{{ healthcheck_retries | default(50) }}"
       delay: "{{ healthcheck_delay | default(30) }}"
       register: result
