@@ -571,9 +571,9 @@
   tasks:
     - name: Start rolling deploy - block load balancer connections
       import_role:
-        rolling_deploy_docker: true
         name: rolling_deploy
       vars:
+        rolling_deploy_docker: true
         rolling_deploy_starting: true
       when: ( groups['staticproxy_docker_servers'] | length ) > 1 and ( staticproxy_docker_deploy | default(false) | bool )
     - name: Install or upgrade docker daemon
