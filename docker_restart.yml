@@ -1,53 +1,38 @@
-# Update operating system packages.
-# If need reboot the server.
+# Playbook that restarts the docker daemon and its running containers on a rolling restart manner.
 #
-# On docker swarm cluster, run health check on each docker stack before continue on the next server.
-#
-# Inspired by:
-# - https://luktom.net/en/e1497-how-to-update-centos-rhel-using-ansible
-# - https://www.cyberciti.biz/faq/ansible-apt-update-all-packages-on-ubuntu-debian-linux/
-# 
+# Example:
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini docker_restart.yml --limit <group>
 ---
 - hosts: all
-  serial: 1 # run update in sequence
+  serial: "{{ serial_number | default(1) }}"
   become: True
   gather_facts: True
   vars:
     rolling_deploy_enabled: true
   tasks:
-    - import_role: 
+    - name: Lower keepalived priority to force VIP swap
+      import_role:
         name: keepalived
-      vars: 
+      vars:
         keepalived_priority_override: 1
       when: keepalived_vrrp_instances is defined and ( keepalived_vrrp_instances|length > 0 )
+    
     - name: force all notified handlers to run at this point
       meta: flush_handlers
-    - import_role:
+    
+    - name: Start rolling deploy - block load balancer connections
+      import_role:
         name: rolling_deploy
       when: rolling_deploy_enabled | bool
       vars:
         rolling_deploy_docker: true
         rolling_deploy_starting: true
 
-    # real stuff to do
+    # Real stuff to do restart docker and its containers
     - name: Restart service docker
-      service: 
+      service:
         name: docker
         state: restarted
-
-    - import_role:
-        name: nau_check_urls
-    - import_role:
-        name: rolling_deploy
-      vars:
-        rolling_deploy_docker: true
-        rolling_deploy_starting: false
-      when: rolling_deploy_enabled | bool
-    - import_role: 
-        name: keepalived
-      vars:
-        keepalived_priority_override: ""
-      when: keepalived_vrrp_instances is defined and ( keepalived_vrrp_instances|length > 0 )
 
     - name: Run Makefile healthcheck
       shell: make --no-print-directory -C {{ item }} healthcheck
@@ -59,3 +44,21 @@
       when: makefile_healthcheck is defined
       changed_when: False
       with_items: "{{ makefile_healthcheck }}"
+
+    - import_role:
+        name: nau_check_urls
+
+    - name: End rolling deploy - open load balancer connections
+      import_role:
+        name: rolling_deploy
+      vars:
+        rolling_deploy_docker: true
+        rolling_deploy_starting: false
+      when: rolling_deploy_enabled | bool
+
+    - name: Restore keepalived priority
+      import_role:
+        name: keepalived
+      vars:
+        keepalived_priority_override: ""
+      when: keepalived_vrrp_instances is defined and ( keepalived_vrrp_instances|length > 0 )

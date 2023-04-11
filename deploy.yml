@@ -480,13 +480,12 @@
   serial: "{{ serial_number | default(1) }}" # deploy in sequence
   become: True
   gather_facts: True
-  vars:
-    rolling_deploy_docker: true
   tasks:
     - name: Start rolling deploy - block load balancer connections
       import_role:
         name: rolling_deploy
       vars:
+        rolling_deploy_docker: true
         rolling_deploy_starting: true
       when: ( groups['richie_docker_servers'] | length ) > 1 and ( richie_docker_deploy | default(false) | bool )
     
@@ -522,6 +521,7 @@
       import_role:
         name: rolling_deploy
       vars:
+        rolling_deploy_docker: true
         rolling_deploy_starting: false
       when: ( groups['richie_docker_servers'] | length ) > 1 and ( richie_docker_deploy | default(false) | bool )
 
@@ -530,13 +530,12 @@
   serial: "{{ serial_number | default(1) }}" # deploy in sequence
   become: True
   gather_facts: True
-  vars:
-    rolling_deploy_docker: true
   tasks:
     - name: Start rolling deploy - block load balancer connections
       import_role:
         name: rolling_deploy
       vars:
+        rolling_deploy_docker: true
         rolling_deploy_starting: true
       when: ( groups['coursecertificate_docker_servers'] | length ) > 1 and ( coursecertificate_docker_deploy | default(false) | bool )
     - name: Install or upgrade docker daemon
@@ -560,6 +559,7 @@
       import_role:
         name: rolling_deploy
       vars:
+        rolling_deploy_docker: true
         rolling_deploy_starting: false
       when: ( groups['coursecertificate_docker_servers'] | length ) > 1 and ( coursecertificate_docker_deploy | default(false) | bool )
 
@@ -568,11 +568,10 @@
   serial: "{{ serial_number | default(1) }}" # deploy in sequence
   become: True
   gather_facts: True
-  vars:
-    rolling_deploy_docker: true
   tasks:
     - name: Start rolling deploy - block load balancer connections
       import_role:
+        rolling_deploy_docker: true
         name: rolling_deploy
       vars:
         rolling_deploy_starting: true
@@ -598,6 +597,7 @@
       import_role:
         name: rolling_deploy
       vars:
+        rolling_deploy_docker: true
         rolling_deploy_starting: false
       when: ( groups['staticproxy_docker_servers'] | length ) > 1 and ( staticproxy_docker_deploy | default(false) | bool )
 
@@ -675,13 +675,12 @@
   serial: "{{ serial_number | default(1) }}" # deploy in sequence
   become: True
   gather_facts: True
-  vars:
-    rolling_deploy_docker: true
   tasks:
     - name: Start rolling deploy - block load balancer connections
       import_role:
         name: rolling_deploy
       vars:
+        rolling_deploy_docker: true
         rolling_deploy_starting: true
       when: ( groups['openedx_docker_servers'] | length ) > 1 and ( openedx_docker_deploy | default(false) | bool )
     - name: Install or upgrade docker daemon
@@ -716,6 +715,7 @@
       import_role:
         name: rolling_deploy
       vars:
+        rolling_deploy_docker: true
         rolling_deploy_starting: false
       when: ( groups['openedx_docker_servers'] | length ) > 1 and ( openedx_docker_deploy | default(false) | bool )
 
