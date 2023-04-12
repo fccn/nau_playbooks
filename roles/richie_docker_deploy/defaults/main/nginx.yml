@@ -10,12 +10,14 @@ richie_sites_nginx:
     nginx_ssl_certificate_key: "{{ richie_nau_nginx_ssl_certificate_key }}"
     nginx_ssl_certificate_crt: "{{ richie_nau_nginx_ssl_certificate_crt }}"
 
-    # Configuration to protect your site using basic authentication.
+    # Example of configuration to protect your site using basic authentication.
+    # nginx_basic_authentication_enable: true
     # nginx_basic_authentication_users:
-    #   - path: "{{ docker_deploy_base_folder }}/nginx/nginx.htpasswd"
+    #   - path: "{{ richie_docker_deploy_base_folder }}/nau/nginx/nginx.htpasswd"
     #     name: "{{ COMMON_HTPASSWD_USER | default(omit) }}"
     #     password: "{{ COMMON_HTPASSWD_PASS | default(omit) }}"
-
+    # nginx_basic_authentication_user_file: /etc/nginx/nau_nginx.htpasswd
+    
     # Default configuration to protect the django-cms admin pages
     nginx_admin_access_locations:
       # to match /pt/admin... /en/admin... or other new language added in future
@@ -52,7 +54,7 @@ richie_nginx_docker_deploy_files:
     docker_target: /etc/ssl/certs/certificate.crt.pem
     secret_name: certificate_crt
     service: nau_nginx
-  - dest: "{{ docker_deploy_base_folder }}/nau/nginx/nginx.htpasswd"
+  - dest: "{{ richie_docker_deploy_base_folder }}/nau/nginx/nginx.htpasswd"
     # don't copy the file because it is already there.
     docker_target: /etc/nginx/nau_nginx.htpasswd
     secret_name: nau_nginx_htpasswd
