@@ -149,7 +149,7 @@ healthcheck-redis-port: ## check redis port
 {% if config.deploy_job %}
 # check if last job run has finished with complete stateand without any error
 healthcheck-{{ _site }}_app_job: ## check if the migrate and bootstrap_elasticsearch django commands have finished with success for {{ _site }} site
-	@test $$(docker ps --filter "name={{ richie_docker_deploy_compose_name }}_{{ _site }}_app_job" -a | grep "Exited (0)" | wc -l) -eq 1 || ( echo "Check {{ _site }}_app_job with django migrate and bootstrap elasticsearch commands: error" ; exit 1)
+	@test $$(docker ps --filter "name={{ richie_docker_deploy_compose_name }}_{{ _site }}_app_job" -aq | wc -l) -eq 0 || test $$(docker ps --filter "name={{ richie_docker_deploy_compose_name }}_{{ _site }}_app_job" -a | grep "Exited (0)" | wc -l) -eq 1 || ( echo "Check {{ _site }}_app_job with django migrate and bootstrap elasticsearch commands: error" ; exit 1)
 	@echo "Check {{ _site }}_app_job with django migrate and bootstrap elasticsearch commands: OK"
 .PHONY: healthcheck-{{ _site }}_app_job
 
