@@ -14,7 +14,9 @@ staticproxy_docker_deploy_templates:
     service: nginx
 
 staticproxy_nginx_ssl_certificate_folder: "{{ COMMON_PATH_CUSTOM_FILES }}/static/ssl"
+staticproxy_nginx_enable_https: true
 staticproxy_nginx_proxy_protocol: true
+staticproxy_nginx_hsts_max_age: 31536000
 staticproxy_nginx_http2: true
 staticproxy_nginx_image: docker.io/nginx:1.22.1
 staticproxy_nginx_http_ingress_port:  22080
