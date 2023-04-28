@@ -12,6 +12,8 @@ server {
   ssl_certificate_key {{ openedx_discovery_nginx_ssl_certificate_key_docker_target }};
 {% endif %}
 
+{% include "real_ip.j2" %}
+
 {% if NGINX_ENABLE_SSL or NGINX_REDIRECT_TO_HTTPS %}
   # request the browser to use SSL for all connections
   add_header Strict-Transport-Security "max-age={{ NGINX_HSTS_MAX_AGE }}; includeSubDomains";
@@ -33,6 +35,16 @@ server {
 
   {% import 'static-files.j2' as static_files with context %}
   {{ static_files.generate_static_files(openedx_nginx_discovery_staticfiles_folders) }}
+
+{% if NGINX_ADMIN_ACCESS_CIDRS and EDXAPP_ENABLE_DJANGO_ADMIN_RESTRICTION %}
+  location /admin {
+    {% for cidr in NGINX_ADMIN_ACCESS_CIDRS %}
+      allow {{ cidr }};
+    {% endfor %}
+      deny all;
+      try_files $uri @proxy_to_app;
+  }
+{% endif %}
 
   location / {
     try_files $uri @proxy_to_app;
