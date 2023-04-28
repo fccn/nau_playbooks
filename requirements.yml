@@ -21,7 +21,7 @@
 
 # Manage iptables
 - src: git+https://github.com/fccn/ansible-firewall.git
-  version: 0cf719a0899e705b3e5dfe1782c727bb36777c9e
+  version: 9c668aa89edc0ffe84a83f194de3975fcb9c92d5
 
 # Utility to deploy apps to docker compose or swarm
 - src: git+https://github.com/fccn/ansible-docker-deploy.git
