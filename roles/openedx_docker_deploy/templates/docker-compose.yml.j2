@@ -117,12 +117,19 @@ services:
     restart: unless-stopped
     hostname: {{ inventory_hostname }}
     ports:
-      - target:    {{ openedx_nginx_http }}
-        published: {{ openedx_nginx_http_ingress_port }}
+      # http
+      - target:    {{ openedx_nginx_http_port }}
+        published: {{ openedx_nginx_http_port }}
         protocol:  tcp
         mode:      ingress
-      - target:    {{ openedx_nginx_https }}
-        published: {{ openedx_nginx_https_ingress_port }}
+      # https without http2
+      - target:    {{ openedx_nginx_https_port }}
+        published: {{ openedx_nginx_https_port }}
+        protocol:  tcp
+        mode:      ingress
+      # https with http2
+      - target:    {{ openedx_nginx_http2s_port }}
+        published: {{ openedx_nginx_http2s_port }}
         protocol:  tcp
         mode:      ingress
     deploy:

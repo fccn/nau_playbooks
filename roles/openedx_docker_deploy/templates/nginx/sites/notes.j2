@@ -4,10 +4,13 @@
 
 server {
   server_name notes.*;
-  listen 80{{ ' http2' if ( openedx_notes_nginx_http2 | default(false) | bool ) else '' }};
+  listen {{ openedx_nginx_http_port }};
 
 {% if NGINX_ENABLE_SSL %}
-  listen 443 ssl{% if haproxy_tcp %} proxy_protocol{% endif %}{{ ' http2' if ( openedx_notes_nginx_http2 | default(false) | bool ) else '' }};
+  listen {{ openedx_nginx_https_port }} ssl{% if haproxy_tcp %} proxy_protocol{% endif %};
+{% if openedx_notes_nginx_http2 | default(false) | bool %}
+  listen {{ openedx_nginx_http2s_port }} ssl{% if haproxy_tcp %} proxy_protocol{% endif %} http2;
+{% endif %}
 
 {% include "real_ip.j2" %}
 

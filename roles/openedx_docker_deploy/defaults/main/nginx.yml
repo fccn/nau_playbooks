@@ -3,12 +3,16 @@
 openedx_nginx_image: "docker.io/{{ openedx_build_web_server_docker_repository }}/{{ openedx_build_web_server_docker_image }}:{{ openedx_build_web_server_docker_tag }}"
 openedx_nginx_deploy: true
 
-openedx_nginx_http: 80
-openedx_nginx_http_ingress_port: 80
+openedx_nginx_http_port: 80
 
-openedx_nginx_https: 443
-openedx_nginx_https_ingress_port: 443
+openedx_nginx_https_port: 443
 
+# port to connect using ssl with http2
+# nginx will activate http2 for all pairs of <IP>:<port> site
+# when 1 on its sites has http2 activated
+# so we split normal on different ports the traffic of
+# https http1.1 vs https http2
+openedx_nginx_http2s_port: 8443
 openedx_nginx_http2: false
 
 openedx_nginx_docker_deploy_templates:
@@ -69,6 +73,20 @@ openedx_nginx_docker_deploy_templates:
     docker_target: /etc/nginx/sites-enabled/insights
 
 openedx_nginx_docker_deploy_files:
+  # wildcard ssl crt
+  - src: "{{ openedx_nginx_wildcard_ssl_certificate }}"
+    dest: "{{ openedx_docker_deploy_base_folder }}/nginx/ssl/wildcard_certificate.crt.pem"
+    secret_name: nginx_wildcard_certificate_crt
+    service: nginx
+    docker_target: "{{ openedx_nginx_wildcard_ssl_certificate_docker_target }}"
+    when: "{{ openedx_nginx_wildcard_ssl_certificate is defined }}"
+  # wildcard ssl key
+  - src: "{{ openedx_nginx_wildcard_ssl_certificate_key }}"
+    dest: "{{ openedx_docker_deploy_base_folder }}/nginx/ssl/wildcard_certificate.key.pem"
+    secret_name: nginx_wildcard_certificate_key
+    service: nginx
+    docker_target: "{{ openedx_nginx_wildcard_ssl_certificate_key_docker_target }}"
+    when: "{{ openedx_nginx_wildcard_ssl_certificate_key is defined }}"
   # ssl crt
   - src: "{{ openedx_nginx_ssl_certificate }}"
     dest: "{{ openedx_docker_deploy_base_folder }}/nginx/ssl/certificate.crt.pem"
@@ -116,6 +134,8 @@ openedx_nginx_docker_deploy_files:
 # openedx_nginx_basic_authentication_users: !!null
 openedx_nginx_ssl_certificate_docker_target: /etc/ssl/certs/certificate.crt.pem
 openedx_nginx_ssl_certificate_key_docker_target: /etc/ssl/private/certificate.key.pem
+openedx_nginx_wildcard_ssl_certificate_docker_target: /etc/ssl/certs/wildcard_certificate.crt.pem
+openedx_nginx_wildcard_ssl_certificate_key_docker_target: /etc/ssl/private/wildcard_certificate.key.pem
 openedx_nginx_htpasswd_file: /etc/nginx/nginx.htpasswd
 
 openedx_notes_nginx_ssl_certificate_docker_target: /etc/ssl/certs/certificate_notes.crt.pem
