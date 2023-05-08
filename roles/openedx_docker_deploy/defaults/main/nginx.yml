@@ -5,14 +5,17 @@ openedx_nginx_deploy: true
 
 openedx_nginx_http_port: 80
 
-openedx_nginx_https_port: 443
+# port to connect using ssl without http2
+openedx_nginx_https_port: 8443
 
 # port to connect using ssl with http2
 # nginx will activate http2 for all pairs of <IP>:<port> site
 # when 1 on its sites has http2 activated
 # so we split normal on different ports the traffic of
 # https http1.1 vs https http2
-openedx_nginx_http2s_port: 8443
+openedx_nginx_http2s_port: 443
+
+# By default we don't activate http2
 openedx_nginx_http2: false
 
 openedx_nginx_docker_deploy_templates:
