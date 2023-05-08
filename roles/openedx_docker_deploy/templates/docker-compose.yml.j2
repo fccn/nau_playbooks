@@ -141,6 +141,8 @@ services:
 {% endif %}
         reservations:
           memory: 50M
+    volumes:
+      - "{{ openedx_nginx_certificates_folder }}:{{ openedx_nginx_certificates_docker_target_folder }}/:ro"
     healthcheck:
       test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/80", "&&", "echo", "''", ">", "/dev/tcp/127.0.0.1/443", "||", "exit", "1"]
       start_period: 30s

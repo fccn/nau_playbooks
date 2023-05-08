@@ -79,30 +79,18 @@ openedx_nginx_docker_deploy_files:
   # wildcard ssl crt
   - src: "{{ openedx_nginx_wildcard_ssl_certificate }}"
     dest: "{{ openedx_docker_deploy_base_folder }}/nginx/ssl/wildcard_certificate.crt.pem"
-    secret_name: nginx_wildcard_certificate_crt
-    service: nginx
-    docker_target: "{{ openedx_nginx_wildcard_ssl_certificate_docker_target }}"
     when: "{{ openedx_nginx_wildcard_ssl_certificate is defined }}"
   # wildcard ssl key
   - src: "{{ openedx_nginx_wildcard_ssl_certificate_key }}"
     dest: "{{ openedx_docker_deploy_base_folder }}/nginx/ssl/wildcard_certificate.key.pem"
-    secret_name: nginx_wildcard_certificate_key
-    service: nginx
-    docker_target: "{{ openedx_nginx_wildcard_ssl_certificate_key_docker_target }}"
     when: "{{ openedx_nginx_wildcard_ssl_certificate_key is defined }}"
   # ssl crt
   - src: "{{ openedx_nginx_ssl_certificate }}"
     dest: "{{ openedx_docker_deploy_base_folder }}/nginx/ssl/certificate.crt.pem"
-    secret_name: nginx_certificate_crt
-    service: nginx
-    docker_target: "{{ openedx_nginx_ssl_certificate_docker_target }}"
     when: "{{ openedx_nginx_ssl_certificate is defined }}"
   # ssl key
   - src: "{{ openedx_nginx_ssl_certificate_key }}"
     dest: "{{ openedx_docker_deploy_base_folder }}/nginx/ssl/certificate.key.pem"
-    secret_name: nginx_certificate_key
-    service: nginx
-    docker_target: "{{ openedx_nginx_ssl_certificate_key_docker_target }}"
     when: "{{ openedx_nginx_ssl_certificate_key is defined }}"
   - dest: "{{ openedx_docker_deploy_base_folder }}/nginx/nginx.htpasswd"
     # don't copy the file because it is already there.
@@ -133,16 +121,18 @@ openedx_nginx_docker_deploy_files:
     config_name: nginx_insights_favicon
     docker_target: /openedx/staticfiles/insights/next/images/favicon.ico
 
+# folder inside nginx docker container where the certificates will be mounted.
+openedx_nginx_certificates_docker_target_folder: /etc/ssl/certs
 
 # openedx_nginx_basic_authentication_users: !!null
-openedx_nginx_ssl_certificate_docker_target: /etc/ssl/certs/certificate.crt.pem
-openedx_nginx_ssl_certificate_key_docker_target: /etc/ssl/private/certificate.key.pem
-openedx_nginx_wildcard_ssl_certificate_docker_target: /etc/ssl/certs/wildcard_certificate.crt.pem
-openedx_nginx_wildcard_ssl_certificate_key_docker_target: /etc/ssl/private/wildcard_certificate.key.pem
+openedx_nginx_ssl_certificate_docker_target: "{{ openedx_nginx_certificates_docker_target_folder }}/certificate.crt.pem"
+openedx_nginx_ssl_certificate_key_docker_target: "{{ openedx_nginx_certificates_docker_target_folder }}/certificate.key.pem"
+openedx_nginx_wildcard_ssl_certificate_docker_target: "{{ openedx_nginx_certificates_docker_target_folder }}/wildcard_certificate.crt.pem"
+openedx_nginx_wildcard_ssl_certificate_key_docker_target: "{{ openedx_nginx_certificates_docker_target_folder }}/wildcard_certificate.key.pem"
 openedx_nginx_htpasswd_file: /etc/nginx/nginx.htpasswd
 
-openedx_notes_nginx_ssl_certificate_docker_target: /etc/ssl/certs/certificate_notes.crt.pem
-openedx_notes_nginx_ssl_certificate_key_docker_target: /etc/ssl/private/certificate_notes.key.pem
+openedx_notes_nginx_ssl_certificate_docker_target: /etc/ssl/certs/notes.crt.pem
+openedx_notes_nginx_ssl_certificate_key_docker_target: /etc/ssl/certs/notes.key.pem
 
 # a default site
 openedx_nginx_lms_servers:
@@ -178,3 +168,11 @@ openedx_nginx_cms_robot_rules: []
 openedx_nginx_forum_robot_rules: []
 openedx_nginx_insights_robot_rules: []
 openedx_nginx_notes_robot_rules: []
+
+openedx_nginx_certificates_folder: "{{ openedx_docker_deploy_base_folder }}/nginx/ssl"
+
+# Root folder where the s3 certificates of Let's Encrypt are put.
+openedx_nginx_s3_certificates_folder: "/letsencrypt_certificates"
+
+# The list of s3 certificates (certificate and its key)
+openedx_docker_deploy_s3_files: []

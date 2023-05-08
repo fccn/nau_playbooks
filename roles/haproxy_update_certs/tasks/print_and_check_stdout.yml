@@ -1,0 +1,27 @@
+- name: Print HaProxy update certs commands stdout
+  debug:
+    msg: "{{ hostvars[inventory_hostname][variable_to_print].stdout_lines }}"
+  when: hostvars[inventory_hostname][variable_to_print].stdout_lines is defined
+  tags: haproxy_update_certs
+
+- name: Print HaProxy update certs commands stderr
+  debug:
+    msg: "{{ hostvars[inventory_hostname][variable_to_print].stderr_lines }}"
+  when: hostvars[inventory_hostname][variable_to_print].stderr_lines is defined and ( hostvars[inventory_hostname][variable_to_print].stderr_lines | length > 0 )
+  tags: haproxy_update_certs
+
+- name: Check output not contains 'Unknown command'
+  assert:
+    that: "{{ 'Unknown command' not in hostvars[inventory_hostname][variable_to_print].stdout }}"
+    fail_msg: Something when wrong with socat command!
+    quiet: true
+  when: stdout_contains_string is defined
+  tags: haproxy_update_certs
+
+- name: Check output
+  assert:
+    that: "{{ stdout_contains_string in hostvars[inventory_hostname][variable_to_print].stdout }}"
+    fail_msg: Something when wrong with socat command!
+    quiet: true
+  when: stdout_contains_string is defined
+  tags: haproxy_update_certs

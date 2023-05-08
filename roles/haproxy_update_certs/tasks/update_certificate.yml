@@ -1,0 +1,67 @@
+---
+# Add certificate and its key to HaProxy at runtime using unix socket
+- name: Add new certificates to HaProxy
+  shell: echo "new ssl cert /certs/{{ domain }}.pem" | {{ socat_cmd }}
+  args:
+    executable: /bin/bash
+  register: haproxy_socat_output
+  tags: haproxy_update_certs
+
+- name: Print variable
+  include_tasks: print_and_check_stdout.yml
+  vars:
+    variable_to_print: haproxy_socat_output
+    stdout_contains_string: Certificate
+  tags: always
+
+- name: Add certificates to HaProxy
+  shell: 'echo -e "set ssl cert /certs/{{ domain }}.pem <<\n$(cat {{ docker_deploy_base_folder }}/certs/{{ domain }}.pem {{ docker_deploy_base_folder }}/certs/{{ domain }}.pem.key)\n" | {{ socat_cmd }}'
+  args:
+    executable: /bin/bash
+  register: haproxy_socat_output
+  tags: haproxy_update_certs
+
+- name: Print variable
+  include_tasks: print_and_check_stdout.yml
+  vars:
+    variable_to_print: haproxy_socat_output
+    stdout_contains_string: Transaction created for certificate
+  tags: always
+
+# - name: Add certificate keys to HaProxy
+#   shell: echo -e "set ssl cert /certs/{{ domain }}.pem.key <<\n$(cat ./certs/{{ domain }}.pem.key)\n" | {{ socat_cmd }}
+#   loop: "{{ letsencrypt_domains_to_issue_certs }}"
+#   loop_control:
+#     loop_var: domain
+#   register: haproxy_socat_output
+  
+# - name: Print
+  # include_tasks: print_and_check_stdout.yml
+
+- name: Add certificate keys to HaProxy - commit changes
+  shell: echo "commit ssl cert /certs/{{ domain }}.pem" | {{ socat_cmd }}
+  args:
+    executable: /bin/bash
+  register: haproxy_socat_output
+  tags: haproxy_update_certs
+  
+- name: Print variable
+  include_tasks: print_and_check_stdout.yml
+  vars:
+    variable_to_print: haproxy_socat_output
+    stdout_contains_string: Success!
+  tags: always
+
+- name: Show certificate details on HaProxy
+  shell: echo "show ssl cert /certs/{{ domain }}.pem" | {{ socat_cmd }}
+  args:
+    executable: /bin/bash
+  register: haproxy_socat_output
+  tags: haproxy_update_certs
+
+- name: Print variable
+  include_tasks: print_and_check_stdout.yml
+  vars:
+    variable_to_print: haproxy_socat_output
+    stdout_contains_string: "Subject: /CN={{ domain }}"
+  tags: always

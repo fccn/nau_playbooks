@@ -1,0 +1,80 @@
+---
+
+- name: Check that are domains to issue certificates
+  assert:
+    that: letsencrypt_domains_to_issue_certs is defined
+    fail_msg: No domains to issue certificates
+    quiet: true
+  tags:
+    - letsencrypt_issue
+
+- name: Create let's encrypt certbot conf directory
+  file:
+    path: "{{ letsencrypt_certbot_root_folder }}"
+    state: directory
+  tags: 
+    - letsencrypt_issue
+
+- name: Print which domains we will issue the certs
+  debug:
+    msg: "(Re)Issue ssl https certificates using Let's Encrypt for domains: {{ letsencrypt_domains_to_issue_certs | join(', ') }}"
+  when: letsencrypt_domains_to_issue_certs is defined
+  tags: 
+    - letsencrypt_issue
+
+- name: Run the Let's Encrypt certbot
+  shell: |
+    docker run --rm \
+    --volume {{ letsencrypt_certbot_root_folder }}/:/etc/letsencrypt/ \
+    -p {{ letsencrypt_certbot_port }}:{{ letsencrypt_certbot_port }} \
+    --cpus 1 --memory 100M \
+    --name certbot certbot/certbot:latest \
+    certonly --standalone --non-interactive --agree-tos --email {{ letsencrypt_certbot_email }} --http-01-port={{ letsencrypt_certbot_port }} \
+    -d {{ domain }} 2>&1
+  loop: "{{ letsencrypt_domains_to_issue_certs }}"
+  loop_control:
+    loop_var: domain
+  register: letsencrypt_certbot_outputs
+  tags: 
+    - letsencrypt_issue
+
+- name: Print Let's Encrypt certbot stdout
+  debug:
+    msg: "{{ cert_out.stdout_lines }}"
+  when: cert_out.stdout_lines is defined
+  loop: "{{ letsencrypt_certbot_outputs.results }}"
+  loop_control:
+    label: "{{ cert_out.domain }}"
+    loop_var: cert_out
+  tags: 
+    - letsencrypt_issue
+
+- name: Print Let's Encrypt certbot stderr
+  debug:
+    msg: "{{ cert_out.stderr_lines }}"
+  when: cert_out.stderr_lines is defined
+  loop: "{{ letsencrypt_certbot_outputs.results }}"
+  loop_control:
+    label: "{{ cert_out.domain }}"
+    loop_var: cert_out
+  tags: 
+    - letsencrypt_issue
+
+- name: Install s3cmd
+  package:
+    name: s3cmd
+    state: present
+  tags: 
+    - letsencrypt_issue
+
+- name: Send certificate and its key to bucket using s3cmd
+  shell: "{{ s3cmd_prefix }} {{ letsencrypt_certbot_root_folder }}/live/{{ domain }}/fullchain.pem s3://{{ s3_host_bucket }}{{ s3_path_prefix }}/{{ domain }}.pem && \
+          {{ s3cmd_prefix }} {{ letsencrypt_certbot_root_folder }}/live/{{ domain }}/privkey.pem   s3://{{ s3_host_bucket }}{{ s3_path_prefix }}/{{ domain }}.pem.key "
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ s3_access_key_id }}"
+    AWS_SECRET_ACCESS_KEY: "{{ s3_secret_access_key }}"
+  loop: "{{ letsencrypt_domains_to_issue_certs }}"
+  loop_control:
+    loop_var: domain
+  tags: 
+    - letsencrypt_issue

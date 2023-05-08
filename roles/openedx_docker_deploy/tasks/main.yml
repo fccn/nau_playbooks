@@ -46,6 +46,11 @@
     docker_deploy_shell: true
     docker_deploy_healthcheck_delay :  "{{ openedx_docker_deploy_stack_verify_delay }}"
     docker_deploy_healthcheck_retries: "{{ openedx_docker_deploy_stack_verify_retries }}"
+    docker_deploy_s3_files:            "{{ openedx_docker_deploy_s3_files }}"
+    docker_deploy_s3_host:             "{{ openedx_docker_deploy_s3_host }}"
+    docker_deploy_s3_bucket:           "{{ openedx_docker_deploy_s3_bucket }}"
+    docker_deploy_s3_access_key_id:    "{{ openedx_docker_deploy_s3_access_key_id }}"
+    docker_deploy_s3_secret_access_key: "{{ openedx_docker_deploy_s3_secret_access_key }}"
   when: openedx_docker_deploy_run | default(false)
   tags:
     - docker_deploy

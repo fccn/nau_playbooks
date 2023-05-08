@@ -209,3 +209,14 @@ healthcheck-mongo-hosts-port: # Check if all mongo hosts port is up
 {% endfor %}
 	@echo "Check mongo cluster ports: OK"
 .PHONY: healthcheck-mongo-hosts-port
+
+#######################
+# Nginx
+#######################
+check-config-nginx: # Check nginx configuration and its certificates
+	@docker-compose exec nginx nginx -t
+.PHONY: check-config-nginx
+
+reload-nginx: # Reload nginx configuration and its certificates
+	@docker-compose exec nginx nginx -s reload
+.PHONY: check-config-nginx
