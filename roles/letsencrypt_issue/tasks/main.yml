@@ -22,6 +22,18 @@
   tags: 
     - letsencrypt_issue
 
+# warn about the limit of 5 certificates in 7 days per domain.
+- name: Delete certbot configuration and historic certificates
+  file:
+    path: "{{ letsencrypt_certbot_root_folder }}"
+    state: absent
+  when: letsencrypt_force_issue | bool
+  loop: "{{ letsencrypt_domains_to_issue_certs }}"
+  loop_control:
+    loop_var: domain
+  tags: 
+    - letsencrypt_issue
+
 - name: Run the Let's Encrypt certbot
   shell: |
     docker run --rm \

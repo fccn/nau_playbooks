@@ -1,11 +1,31 @@
+# Issue Let's Encrypt https ssl certificates.
 #
+# It is used the certbot on standalone mode on the HAProxy load balancer.
+# After the certificates are issued or renewed, they are copied to a Ceph S3 bucket.
+# Then all certificates are downloaded on all HAProxy load balancer instances
+# and the HAProxy is updated live to know new certificate and key.
+# The certificate and its key is also downloaded on Open edX app servers,
+# so they can be used by nginx using a docker volume. It's run nginx check
+# configuration and then it's run nginx reload configuration command.
 #
-# Example:
+# The domains that we are going to issue the certificate are defined on 
+# `letsencrypt_domains_to_issue_certs` variable.
+#
+# Example to run Let's Encrypt for all configured domains:
+#    ansible-playbook -i nau-data/envs/<env>/hosts.ini letsencrypt.yml
+#
+# Example to run Let's Encrypt to a single domain, 
+# nevertheless all certificates are updated on HAProxy and Open edX nginx.
 #    ansible-playbook -i nau-data/envs/<env>/hosts.ini letsencrypt.yml -e '{"letsencrypt_domains_to_issue_certs": ["custom-domain.example.com"]}'
 #
-# Add the new domain to the `letsencrypt_domains_to_issue_certs` environment variable.
+# Add the new domain to the `letsencrypt_domains_to_issue_certs` variable.
 # Configure the new domain to copy certificate and key on the `openedx_docker_servers.yml` file 
 # on the environment.
+#
+# To force the re-issue of the certificates.
+# Warning about Let's Encrypt limit of 5 certificates in 7 days per domain.
+#    -e letsencrypt_force_issue=true
+#
 ---
 - name: (Re)Issue ssl https certificates using Let's Encrypt
   hosts: balancer_servers[0]
@@ -18,10 +38,6 @@
       vars:
         letsencrypt_certbot_email: alertas@nau.edu.pt
         letsencrypt_certbot_root_folder: /nau/ops/certbot/conf
-
-        # letsencrypt_domains_to_issue_certs:
-        #   - cursos-ssi.stage.nau.fccn.pt
-
         s3_host: "{{ AWS_S3_DBS_BACKUP_HOST }}"
         s3_host_bucket: "{{ AWS_S3_DBS_BACKUP_BUCKET_NAME }}"
         s3_path_prefix: "/letsencrypt_certificates"

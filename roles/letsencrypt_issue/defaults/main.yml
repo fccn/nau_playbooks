@@ -4,5 +4,7 @@
 
 letsencrypt_certbot_root_folder: /nau/ops/certbot/conf
 letsencrypt_certbot_port: 8888
+letsencrypt_force_issue: false
+
 s3_path_prefix: /
 s3cmd_prefix: s3cmd put --acl-private --follow-symlinks --host {{ s3_host }} --host-bucket {{ s3_host_bucket }}
