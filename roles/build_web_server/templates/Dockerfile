@@ -48,7 +48,7 @@ RUN mv {{ service.folder_origin }} /tmp/static_assets
 RUN mkdir -p {{ service.folder_destination }}
 
 # move folder from its temporary destionation to its final destionation
-RUN mv /tmp/static_assets {{ service.folder_destination }}
+RUN mv /tmp/static_assets/* {{ service.folder_destination }}
 
 # find duplicate static assets and replace duplicates with symbolic links
 RUN rdfind -makesymlinks true {{ service.folder_destination }}

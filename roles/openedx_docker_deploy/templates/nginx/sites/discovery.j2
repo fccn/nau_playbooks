@@ -38,7 +38,7 @@ server {
 {% endif %}
 
   {% import 'static-files.j2' as static_files with context %}
-  {{ static_files.generate_static_files(openedx_nginx_discovery_staticfiles_folders) }}
+  {{ static_files.generate_static_files(openedx_nginx_discovery_staticfiles_folder) }}
 
 {% if NGINX_ADMIN_ACCESS_CIDRS and EDXAPP_ENABLE_DJANGO_ADMIN_RESTRICTION %}
   location /admin {

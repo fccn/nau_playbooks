@@ -19,36 +19,26 @@ openedx_build_web_server_services:
   - service: openedx_analyticsapi
     docker_image: "{{ openedx_analyticsapi_image }}"
     folder_origin: /openedx/analyticsapi/assets
-    folder_destination: "{{ openedx_build_web_server_services_root }}/analyticsapi"
+    folder_destination: "{{ openedx_nginx_analyticsapi_staticfiles_folder }}"
   - service: openedx_discovery
     docker_image: "{{ openedx_discovery_docker_image }}"
     folder_origin: /openedx/discovery/course_discovery/assets
-    folder_destination: "{{ openedx_build_web_server_services_root }}/discovery"
+    folder_destination: "{{ openedx_nginx_discovery_staticfiles_folder }}"
   - service: openedx_insights
     docker_image: "{{ openedx_insights_image }}"
     folder_origin: /openedx/insights/assets
-    folder_destination: "{{ openedx_build_web_server_services_root }}/insights"
+    folder_destination: "{{ openedx_nginx_insights_staticfiles_folder }}"
   - service: openedx_cms
     docker_image: "{{ openedx_app_image }}"
     folder_origin: /openedx/staticfiles/
-    folder_destination: "{{ openedx_build_web_server_services_root }}/cms"
+    folder_destination: "{{ openedx_nginx_cms_staticfiles_folder }}"
   - service: openedx_lms
     docker_image: "{{ openedx_app_image }}"
     folder_origin: /openedx/staticfiles/
-    folder_destination: "{{ openedx_build_web_server_services_root }}/lms"
+    folder_destination: "{{ openedx_nginx_lms_staticfiles_folder }}"
 
-openedx_nginx_lms_staticfiles_folders:
-  - lms/next
-  - lms/previous
-
-openedx_nginx_cms_staticfiles_folders:
-  - cms/next
-  - cms/previous
-
-openedx_nginx_insights_staticfiles_folders:
-  - insights/next
-  - insights/previous
-
-openedx_nginx_discovery_staticfiles_folders:
-  - discovery/previous
-  - discovery/next
+openedx_nginx_lms_staticfiles_folder: "{{ openedx_build_web_server_services_root }}/lms"
+openedx_nginx_cms_staticfiles_folder: "{{ openedx_build_web_server_services_root }}/cms"
+openedx_nginx_insights_staticfiles_folder: "{{ openedx_build_web_server_services_root }}/insights"
+openedx_nginx_discovery_staticfiles_folder: "{{ openedx_build_web_server_services_root }}/discovery"
+openedx_nginx_analyticsapi_staticfiles_folder: "{{ openedx_build_web_server_services_root }}/analyticsapi"
