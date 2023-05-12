@@ -158,6 +158,7 @@ services:
     image: {{ openedx_app_image }}
     container_name: {{ openedx_docker_deploy_compose_name }}_lms
     restart: unless-stopped
+    command: {{ openedx_lms_command }}
     environment:
 {% for env_var_name, env_var_value in openedx_lms_env_var.items() %}
       {{ env_var_name }}: "{{ env_var_value }}"
@@ -208,6 +209,7 @@ services:
     image: {{ openedx_app_image }}
     container_name: {{ openedx_docker_deploy_compose_name }}_cms
     restart: unless-stopped
+    command: {{ openedx_cms_command }}
     environment:
 {% for env_var_name, env_var_value in openedx_cms_env_var.items() %}
       {{ env_var_name }}: "{{ env_var_value }}"
