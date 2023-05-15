@@ -23,7 +23,7 @@ openedx_cms_uwsgi_workers: 2
 #   --buffer-size=8192        # increase the maximum size of a request
 #   --wsgi-file lms/uwsgi.py  # the default file to start the application
 #
-# NAU Custom parameters:
+# Other custom parameters:
 #   --strict                  # This option tells uWSGI to fail to start if any parameter in the configuration file isn’t explicitly understood by uWSGI
 #   --master                  # The master uWSGI process is necessary to gracefully re-spawn and pre-fork workers.
 #   --stats /tmp/stats.socket # Start uWSGI Stat Server on a socket; then install `uwsgitop` using pip and run `uwsgitop /tmp/stats.socket` to view the uwsgi statistics has top.
@@ -33,8 +33,8 @@ openedx_cms_uwsgi_workers: 2
 #   --http-timeout=60         # 
 #   --need-app                # This parameter prevents uWSGI from starting if it is unable to find or load your application module
 # 
-openedx_uwsgi_timeout: 60
-openedx_app_command: uwsgi --static-map /static=/openedx/staticfiles/ --static-map /media=/openedx/media/ --http 0.0.0.0:8000 --thunder-lock --single-interpreter --enable-threads --processes={{ openedx_lms_uwsgi_workers }} --buffer-size=8192 --strict --master --stats /tmp/stats.socket --vacuum --die-on-term --harakiri={{ openedx_uwsgi_timeout }} --need-app --http-timeout={{ openedx_uwsgi_timeout }}
+openedx_app_command: uwsgi --static-map /static=/openedx/staticfiles/ --static-map /media=/openedx/media/ --http 0.0.0.0:8000 --thunder-lock --single-interpreter --enable-threads --processes={{ openedx_lms_uwsgi_workers }} --buffer-size=8192 --strict --master --stats /tmp/stats.socket --vacuum --die-on-term --need-app {{ openedx_app_command_extra }}
+openedx_app_command_extra: ""
 openedx_lms_command: "{{ openedx_app_command }} --wsgi-file lms/wsgi.py"
 openedx_cms_command: "{{ openedx_app_command }} --wsgi-file cms/wsgi.py"
 
