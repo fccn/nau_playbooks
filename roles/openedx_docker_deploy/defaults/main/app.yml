@@ -23,16 +23,21 @@ openedx_cms_uwsgi_workers: 2
 #   --buffer-size=8192        # increase the maximum size of a request
 #   --wsgi-file lms/uwsgi.py  # the default file to start the application
 #
-# Other custom parameters:
-#   --strict                  # This option tells uWSGI to fail to start if any parameter in the configuration file isn’t explicitly understood by uWSGI
+# NAU custom parameters for monitoring uWSGI:
 #   --stats :1717             # Start uWSGI Stat Server on a port; then install `uwsgitop` using pip and run `uwsgitop http://localost:1717` to view the uwsgi statistics has top.
 #   --stats-http              # uWSGI Stat Server with http;
+#
+# Other parameters:
+#   --strict                  # This option tells uWSGI to fail to start if any parameter in the configuration file isn’t explicitly understood by uWSGI
 #   --vacuum                  # This option will instruct uWSGI to clean up any temporary files or UNIX sockets it created, such as HTTP sockets, pidfiles, or admin FIFOs.
 #   --die-on-term             # Make uWSGI respect SIGTERM.
 #   --need-app                # This parameter prevents uWSGI from starting if it is unable to find or load your application module
-# 
+#   --master                  # The master uWSGI process is necessary to gracefully re-spawn and pre-fork workers.
+#   --harakiri=60             # Respawn processes taking more than 60 seconds, same default value of nginx client timeout
+#   --http-timeout=60         # 
+
 openedx_app_uwsgi_stats_http_port: 1717
-openedx_app_command: uwsgi --static-map /static=/openedx/staticfiles/ --static-map /media=/openedx/media/ --http 0.0.0.0:8000 --thunder-lock --single-interpreter --enable-threads --processes={{ openedx_lms_uwsgi_workers }} --buffer-size=8192 --strict --stats :{{ openedx_app_uwsgi_stats_http_port }} --stats-http --vacuum --die-on-term --need-app {{ openedx_app_command_extra }}
+openedx_app_command: uwsgi --static-map /static=/openedx/staticfiles/ --static-map /media=/openedx/media/ --http 0.0.0.0:8000 --thunder-lock --single-interpreter --enable-threads --processes={{ openedx_lms_uwsgi_workers }} --buffer-size=8192 --stats :{{ openedx_app_uwsgi_stats_http_port }} --stats-http {{ openedx_app_command_extra }}
 openedx_app_command_extra: ""
 openedx_lms_command: "{{ openedx_app_command }} --wsgi-file lms/wsgi.py"
 openedx_cms_command: "{{ openedx_app_command }} --wsgi-file cms/wsgi.py"
