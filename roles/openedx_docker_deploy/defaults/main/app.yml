@@ -37,10 +37,10 @@ openedx_cms_uwsgi_workers: 2
 #   --http-timeout=60         # 
 
 openedx_app_uwsgi_stats_http_port: 1717
-openedx_app_command: uwsgi --static-map /static=/openedx/staticfiles/ --static-map /media=/openedx/media/ --http 0.0.0.0:8000 --thunder-lock --single-interpreter --enable-threads --processes={{ openedx_lms_uwsgi_workers }} --buffer-size=8192 --stats :{{ openedx_app_uwsgi_stats_http_port }} --stats-http {{ openedx_app_command_extra }}
+openedx_app_command: uwsgi --static-map /static=/openedx/staticfiles/ --static-map /media=/openedx/media/ --http 0.0.0.0:8000 --thunder-lock --single-interpreter --enable-threads --buffer-size=8192 --stats :{{ openedx_app_uwsgi_stats_http_port }} --stats-http {{ openedx_app_command_extra }}
 openedx_app_command_extra: ""
-openedx_lms_command: "{{ openedx_app_command }} --wsgi-file lms/wsgi.py"
-openedx_cms_command: "{{ openedx_app_command }} --wsgi-file cms/wsgi.py"
+openedx_lms_command: "{{ openedx_app_command }} --processes={{ openedx_lms_uwsgi_workers }} --wsgi-file lms/wsgi.py"
+openedx_cms_command: "{{ openedx_app_command }} --processes={{ openedx_cms_uwsgi_workers }} --wsgi-file cms/wsgi.py"
 
 openedx_app_docker_deploy_templates:
   - src_data:  "{{ openedx_lms_env_file | to_nice_yaml(indent=2, width=1337) }}" # default_flow_style=False didn't work
