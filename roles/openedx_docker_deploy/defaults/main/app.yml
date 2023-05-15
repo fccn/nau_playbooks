@@ -33,7 +33,7 @@ openedx_cms_uwsgi_workers: 2
 #   --http-timeout=60         # 
 #   --need-app                # This parameter prevents uWSGI from starting if it is unable to find or load your application module
 # 
-openedx_app_command: uwsgi --static-map /static=/openedx/staticfiles/ --static-map /media=/openedx/media/ --http 0.0.0.0:8000 --thunder-lock --single-interpreter --enable-threads --processes={{ openedx_lms_uwsgi_workers }} --buffer-size=8192 --strict --master --stats /tmp/stats.socket --vacuum --die-on-term --need-app {{ openedx_app_command_extra }}
+openedx_app_command: uwsgi --static-map /static=/openedx/staticfiles/ --static-map /media=/openedx/media/ --http 0.0.0.0:8000 --thunder-lock --single-interpreter --enable-threads --processes={{ openedx_lms_uwsgi_workers }} --buffer-size=8192 --strict --stats /tmp/stats.socket --vacuum --die-on-term --need-app {{ openedx_app_command_extra }}
 openedx_app_command_extra: ""
 openedx_lms_command: "{{ openedx_app_command }} --wsgi-file lms/wsgi.py"
 openedx_cms_command: "{{ openedx_app_command }} --wsgi-file cms/wsgi.py"
