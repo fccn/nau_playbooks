@@ -24,7 +24,7 @@ openedx_cms_uwsgi_workers: 2
 #   --wsgi-file lms/uwsgi.py  # the default file to start the application
 #
 # NAU custom parameters for monitoring uWSGI:
-#   --stats :1717             # Start uWSGI Stat Server on a port; then install `uwsgitop` using pip and run `uwsgitop http://localost:1717` to view the uwsgi statistics has top.
+#   --stats :1717             # Start uWSGI Stat Server on a port; then install `uwsgitop` using pip and run `uwsgitop http://localhost:1717` to view the uwsgi statistics has top.
 #   --stats-http              # uWSGI Stat Server with http;
 #
 # Other parameters:
