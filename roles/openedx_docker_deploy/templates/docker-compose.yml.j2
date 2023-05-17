@@ -166,8 +166,8 @@ services:
     deploy:
       resources:
         limits:
-          # Tutor in docs: "each worker requires upwards of 500 Mb of RAM" so we give 1G per uwsgi worker
-          memory: {{ openedx_lms_uwsgi_workers * 1000 }}M
+          # Tutor in docs: "each worker requires upwards of 500 Mb of RAM" so we give 750 Mb per uwsgi worker
+          memory: {{ openedx_lms_uwsgi_workers * 750 }}M
 {% if openedx_analyticsapi_limit_cpus is defined %}
           cpus: "{{ openedx_analyticsapi_limit_cpus }}"
 {% endif %}
@@ -217,8 +217,8 @@ services:
     deploy:
       resources:
         limits:
-          # Tutor in docs: "each worker requires upwards of 500 Mb of RAM" so we give 1G per uwsgi worker
-          memory: {{ openedx_cms_uwsgi_workers * 1000 }}M
+          # Tutor in docs: "each worker requires upwards of 500 Mb of RAM" so we give 750 Mb per uwsgi worker
+          memory: {{ openedx_cms_uwsgi_workers * 750 }}M
 {% if openedx_cms_limit_cpus is defined %}
           cpus: "{{ openedx_cms_limit_cpus }}"
 {% endif %}
