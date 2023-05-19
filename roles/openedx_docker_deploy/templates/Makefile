@@ -230,6 +230,6 @@ reload-nginx: # Reload nginx configuration and its certificates
 # uWSGI
 #######################
 
-usage-perc-lms:
+metrics-lms-uwsgi-usage-percentage: ## LMS uWSGI workers usage in percentage
 	@busy=$$(docker exec -it {{ openedx_docker_deploy_compose_name }}_lms curl http://localhost:1717 | jq '.workers[].status' | grep busy | wc -l); total=$$(docker exec -it openedx_lms curl http://localhost:1717 | jq '.workers[].requests' | egrep -v '^0$$'  | wc -l); echo "scale=1 ; $$busy / $$total * 100" | bc
 .PHONY: usage-perc-lms
