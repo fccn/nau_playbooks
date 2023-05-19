@@ -71,11 +71,16 @@ healthcheck-port: # Check mongo port is up
 silent-%:
 	@$(MAKE) $* > /dev/null && echo "OK"
 
+healthcheck-memory: ## check that containers doesn't use more than 90% of its available memory
+	@docker stats --no-stream --format "table {% raw %}{{.Name}}\t{{.MemPerc}}{% endraw %}" | egrep "^{{ mongo_docker_container_name }}" | awk '{print $$2}' | sed 's/%//g' | LC_NUMERIC=POSIX awk '$$0 > 90.0 {exit 1}'
+.PHONY: healthcheck-memory
+
 healthcheck: healthcheck-parallel ## Overall healthcheck - for parallel execution run `make --jobs 10 healthcheck`
 	@echo "Everything looks: OK"
 .PHONY: healthcheck-parallel
 
 healthcheck-parallel: \
 	healthcheck-port \
-	healthcheck-replication
+	healthcheck-replication \
+	healthcheck-memory
 .PHONY: healthcheck-parallel

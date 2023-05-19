@@ -64,6 +64,10 @@ bash-{{ _service }}: _{{ _service }}-bash ## Open bash on the current node for t
 silent-%:
 	@$(MAKE) $* > /dev/null && echo "OK"
 
+healthcheck-memory: ## check that containers doesn't use more than 90% of its available memory
+	@docker stats --no-stream --format "table {% raw %}{{.Name}}\t{{.MemPerc}}{% endraw %}" | egrep "^{{ richie_docker_deploy_compose_name }}" | awk '{print $$2}' | sed 's/%//g' | LC_NUMERIC=POSIX awk '$$0 > 90.0 {exit 1}'
+.PHONY: healthcheck-memory
+
 healthcheck-docker-containers: ## check that docker containers are on running state
 	@test $$(docker ps --filter "name={{ richie_docker_deploy_compose_name }}-*" --format {% raw %}'{{.Names}}\t{{.Status}}'{% endraw %} -a | grep -v "_job" | grep "Up " | wc -l) -eq $$(docker ps --filter "name={{ richie_docker_deploy_compose_name }}-*" {% raw %}--format '{{.Names}}\t{{.Status}}'{% endraw %} -a | grep -v "_job" | wc -l) || ( echo "Check docker containers status: error" ; exit 1 )
 	@echo "Check docker containers status: OK"
@@ -76,8 +80,17 @@ healthcheck: healthcheck-parallel ## Overall healthcheck - for parallel executio
 #######################
 # Specific
 #######################
-
-healthcheck-parallel: healthcheck-mysql-port healthcheck-redis-port healthcheck-docker-containers {% for _site, config in richie_sites.items() %}{% if config.deploy_job %}healthcheck-{{ _site }}_app_job {% endif %}{% endfor %}healthcheck-elasticsearch
+healthcheck-parallel: \
+	healthcheck-mysql-port \
+	healthcheck-redis-port \
+	healthcheck-docker-containers \
+{% for _site, config in richie_sites.items() %}
+{% if config.deploy_job %}
+	healthcheck-{{ _site }}_app_job \
+{% endif %}
+{% endfor %}
+	healthcheck-elasticsearch \
+	healthcheck-memory
 .PHONY: healthcheck-parallel
 
 #######################

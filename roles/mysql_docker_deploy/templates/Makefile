@@ -51,6 +51,10 @@ bash: ## Open bash on the current node for the {{ mysql_docker_container_name }}
 silent-%:
 	@$(MAKE) $* > /dev/null && echo "OK"
 
+healthcheck-memory: ## check that containers doesn't use more than 90% of its available memory
+	@docker stats --no-stream --format "table {% raw %}{{.Name}}\t{{.MemPerc}}{% endraw %}" | egrep "^{{ mysql_docker_container_name }}" | awk '{print $$2}' | sed 's/%//g' | LC_NUMERIC=POSIX awk '$$0 > 90.0 {exit 1}'
+.PHONY: healthcheck-memory
+
 healthcheck: healthcheck-parallel ## Overall healthcheck - for parallel execution run `make --jobs 10 healthcheck`
 	@echo "Everything looks: OK"
 .PHONY: healthcheck-parallel
@@ -58,10 +62,11 @@ healthcheck: healthcheck-parallel ## Overall healthcheck - for parallel executio
 healthcheck-parallel: \
 	healthcheck-mysql-port \
 {% if mysql_docker_primary %}
-	healthcheck-mysql-primary
+	healthcheck-mysql-primary \
 {% else %}
-	healthcheck-mysql-replica
+	healthcheck-mysql-replica \
 {% endif %}
+	healthcheck-memory
 .PHONY: healthcheck-parallel
 
 healthcheck-mysql-port: ## check mysql port

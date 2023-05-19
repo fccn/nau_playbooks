@@ -51,6 +51,10 @@ bash: ## Open bash on the current node for the {{ elasticsearch_docker_container
 silent-%:
 	@$(MAKE) $* > /dev/null && echo "OK"
 
+healthcheck-memory: ## check that containers doesn't use more than 90% of its available memory
+	@docker stats --no-stream --format "table {% raw %}{{.Name}}\t{{.MemPerc}}{% endraw %}" | egrep "^{{ elasticsearch_docker_container_name }}" | awk '{print $$2}' | sed 's/%//g' | LC_NUMERIC=POSIX awk '$$0 > 90.0 {exit 1}'
+.PHONY: healthcheck-memory
+
 healthcheck: healthcheck-parallel ## Overall healthcheck - for parallel execution run `make --jobs 10 healthcheck`
 	@echo "Everything looks: OK"
 .PHONY: healthcheck-parallel
@@ -68,5 +72,6 @@ healthcheck-elasticsearch-replication: ## Check elastic search cluster replicati
 
 healthcheck-parallel: \
 	healthcheck-elasticsearch-port \
-	healthcheck-elasticsearch-replication
+	healthcheck-elasticsearch-replication \
+	healthcheck-memory
 .PHONY: healthcheck-parallel
