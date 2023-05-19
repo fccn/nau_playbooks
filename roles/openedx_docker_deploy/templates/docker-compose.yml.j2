@@ -167,12 +167,12 @@ services:
       resources:
         limits:
           # Tutor in docs: "each worker requires upwards of 500 Mb of RAM" so we give 750 Mb per uwsgi worker
-          memory: {{ openedx_lms_uwsgi_workers * 750 }}M
-{% if openedx_analyticsapi_limit_cpus is defined %}
-          cpus: "{{ openedx_analyticsapi_limit_cpus }}"
+          memory: {{ openedx_lms_memory_maximum_megabytes }}M
+{% if openedx_lms_limit_cpus is defined %}
+          cpus: "{{ openedx_lms_limit_cpus }}"
 {% endif %}
         reservations:
-          memory: {{ openedx_lms_uwsgi_workers * 500 }}M    
+          memory: {{ openedx_lms_memory_reservation_megabytes }}M    
     healthcheck:
       # Check if heartbeat is ok
       test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/8000", "||", "exit", "1"]
@@ -218,12 +218,12 @@ services:
       resources:
         limits:
           # Tutor in docs: "each worker requires upwards of 500 Mb of RAM" so we give 750 Mb per uwsgi worker
-          memory: {{ openedx_cms_uwsgi_workers * 750 }}M
+          memory: {{ openedx_cms_memory_maximum_megabytes }}M
 {% if openedx_cms_limit_cpus is defined %}
           cpus: "{{ openedx_cms_limit_cpus }}"
 {% endif %}
         reservations:
-          memory: {{ openedx_cms_uwsgi_workers * 500 }}M
+          memory: {{ openedx_cms_memory_reservation_megabytes }}M
     healthcheck:
       # Check if heartbeat is ok
       test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/8000", "||", "exit", "1"]
