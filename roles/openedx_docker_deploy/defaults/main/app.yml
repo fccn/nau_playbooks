@@ -11,36 +11,13 @@ openedx_cms_deploy: true
 openedx_lms_uwsgi_workers: 2
 openedx_cms_uwsgi_workers: 2
 
-# Open edX app uwsgi configuration
-# Default configurations present on upstream tutor docker image:
-#   --static-map /static=/openedx/staticfiles/  # make uwsgi more performant for static assets
-#   --static-map /media=/openedx/media/         # make uwsgi more performant for media assets, not needed on our installation
-#   --http 0.0.0.0:8000                         # listen on 8000 port from any location
-#   --thunder-lock
-#   --single-interpreter      # do not use multiple interpreters
-#   --enable-threads          # to use threads on python code we need to activate it explicitly on uwsgi
-#   --processes=2             # the number of process workers that will run the work
-#   --buffer-size=8192        # increase the maximum size of a request
-#   --wsgi-file lms/uwsgi.py  # the default file to start the application
-#
-# NAU custom parameters for monitoring uWSGI:
-#   --stats :1717             # Start uWSGI Stat Server on a port; then install `uwsgitop` using pip and run `uwsgitop http://localhost:1717` to view the uwsgi statistics has top.
-#   --stats-http              # uWSGI Stat Server with http;
-#
-# Other parameters:
-#   --strict                  # This option tells uWSGI to fail to start if any parameter in the configuration file isn’t explicitly understood by uWSGI
-#   --vacuum                  # This option will instruct uWSGI to clean up any temporary files or UNIX sockets it created, such as HTTP sockets, pidfiles, or admin FIFOs.
-#   --die-on-term             # Make uWSGI respect SIGTERM.
-#   --need-app                # This parameter prevents uWSGI from starting if it is unable to find or load your application module
-#   --master                  # The master uWSGI process is necessary to gracefully re-spawn and pre-fork workers.
-#   --harakiri=60             # Respawn processes taking more than 60 seconds, same default value of nginx client timeout
-#   --http-timeout=60         # 
-
 openedx_app_uwsgi_stats_http_port: 1717
-openedx_app_command: uwsgi --static-map /static=/openedx/staticfiles/ --static-map /media=/openedx/media/ --http 0.0.0.0:8000 --thunder-lock --single-interpreter --enable-threads --buffer-size=8192 --stats :{{ openedx_app_uwsgi_stats_http_port }} --stats-http {{ openedx_app_command_extra }}
+openedx_app_command: uwsgi --ini uwsgi.ini
+openedx_lms_command: "{{ openedx_app_command }} {{ openedx_lms_command_extra }}"
+openedx_cms_command: "{{ openedx_app_command }} {{ openedx_cms_command_extra }}"
 openedx_app_command_extra: ""
-openedx_lms_command: "{{ openedx_app_command }} --processes={{ openedx_lms_uwsgi_workers }} --wsgi-file lms/wsgi.py"
-openedx_cms_command: "{{ openedx_app_command }} --processes={{ openedx_cms_uwsgi_workers }} --wsgi-file cms/wsgi.py"
+openedx_lms_command_extra: "{{ openedx_app_command_extra }}"
+openedx_cms_command_extra: "{{ openedx_app_command_extra }}"
 
 openedx_app_docker_deploy_templates:
   - src_data:  "{{ openedx_lms_env_file | to_nice_yaml(indent=2, width=1337) }}" # default_flow_style=False didn't work
@@ -53,6 +30,21 @@ openedx_app_docker_deploy_templates:
     service: edxapp
     config_name: studio_env
     docker_target: /openedx/config/cms.env.yml
+  - src:  templates/app/uwsgi.ini
+    dest: "{{ openedx_docker_deploy_base_folder }}/app/uwsgi.ini"
+    service: edxapp
+    config_name: app_wsgi_ini
+    docker_target: /openedx/edx-platform/uwsgi.ini
+  - src:  templates/app/lms/wsgi.py
+    dest: "{{ openedx_docker_deploy_base_folder }}/app/lms/wsgi.py"
+    service: edxapp
+    config_name: lms_wsgi_py
+    docker_target: /openedx/edx-platform/lms/wsgi.py
+  - src:  templates/app/cms/wsgi.py
+    dest: "{{ openedx_docker_deploy_base_folder }}/app/cms/wsgi.py"
+    service: edxapp
+    config_name: cms_wsgi_py
+    docker_target: /openedx/edx-platform/cms/wsgi.py
 
 openedx_app_docker_deploy_files:
   - src: files/app/nau_production.py
