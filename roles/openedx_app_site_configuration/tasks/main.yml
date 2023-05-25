@@ -1,0 +1,12 @@
+---
+
+- name: Create or update SiteConfiguration
+  include: site_configuration.yml
+  when: openedx_app_site_configuration is defined
+  loop: "{{ openedx_app_site_configuration }}"
+  loop_control:
+    loop_var: site_configuration
+    label: "Updating Open edX site configuration: {{ site_configuration.domain if site_configuration.domain is defined else '' }}{{ site_configuration.site_id if site_configuration.site_id is defined else '' }}" 
+  tags:
+    - openedx_app_site_configuration
+    - create_or_update_site_configuration

@@ -68,6 +68,8 @@
 #   To deploy Openedx Application and build nginx
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit openedx_docker_servers -e openedx_docker_deploy=true -e openedx_nginx_build=true
 #
+#   To update OpenedX app site configuration
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit openedx_docker_servers -e openedx_app_site_configuration_deploy=true --tags openedx_app_site_configuration
 
 # - name: Bootstrap instances of 16.04
 #   hosts: all,!idpproxy_servers,!support_server,!build_server
@@ -725,6 +727,15 @@
         rolling_deploy_docker: true
         rolling_deploy_starting: false
       when: ( groups['openedx_docker_servers'] | length ) > 1 and ( openedx_docker_deploy | default(false) | bool )
+
+    - name: Update openedx site configurations
+      import_role:
+        name: openedx_app_site_configuration
+      when: ( openedx_app_site_configuration_deploy | default(false) | bool )
+      run_once: yes
+      tags:
+        - openedx_app_site_configuration
+        - create_or_update_site_configuration
 
 # Should be the last, because it depends on the docker, and the business projects are the ones that install docker
 - name: Deploy observability docker servers

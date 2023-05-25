@@ -1,0 +1,25 @@
+---
+openedx_app_site_configuration_docker_container: openedx_lms
+openedx_app_site_configuration_docker_exec: docker exec --env SERVICE_VARIANT=lms {{ openedx_app_site_configuration_docker_container }}
+openedx_app_site_configuration_docker_command_prefix: "{{ openedx_app_site_configuration_docker_exec }} python manage.py lms --settings nau_production"
+openedx_app_site_configuration_tmp_site_configuration_path: /tmp/site_configuration.json
+
+# Accepts a list of dictionaries of the following form.
+# openedx_app_site_configuration:
+#   - site_id: 1
+#     values:
+#       foo: true
+#       bar: false
+#   - domain: example.com
+#     values:
+#       abc: true
+#   - values:
+#       xyz: true
+#
+# In each dictionary, the 'site_id' and the 'domain' keys are optional and the 'values' key
+# is required. However, only one of 'site_id', 'domain' can be specified due to the behaviour
+# of the 'create_or_update_site_configuration' management command. The 'values' key accepts a
+# dictionary of keys and values corresponding to the SiteConfiguration paramters to be added to the
+# SiteConfiguration instance.
+
+openedx_app_site_configuration: []
