@@ -254,15 +254,8 @@ error_page {{ k }} {{ v }};
   }
 {% endif %}
 
-{% if NGINX_ADMIN_ACCESS_CIDRS and EDXAPP_ENABLE_DJANGO_ADMIN_RESTRICTION %}
-  location /admin {
-    {% for cidr in NGINX_ADMIN_ACCESS_CIDRS %}
-      allow {{ cidr }};
-    {% endfor %}
-      deny all;
-      try_files $uri @proxy_to_app;
-  }
-{% endif %}
+  {% include "scorm-s3.j2" %}
+  {% include "django-admin.j2" %}
 
   {% import 'robots.j2' as robots with context %}
   {{ robots.generate_robots_txt(openedx_nginx_lms_robot_rules) }}

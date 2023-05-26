@@ -683,6 +683,24 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
   RESET_PASSWORD_TOKEN_VALIDATE_API_RATELIMIT: 30/h
   RESET_PASSWORD_API_RATELIMIT: 30/h
 
+  XBLOCK_SETTINGS:
+    ScormXBlock:
+      LOCATION: "{{ NAU_SCORM_S3_LOCATION }}"
+
+  # NAU custom configuration for SCORM Xblock that allows to configure a custom storage
+  # based on Ceph S3 and that support the multi site feature of the Open edX.
+  NAU_SCORM_XBLOCK_STORAGE:
+    STORAGE_CLASS: storages.backends.s3boto3.S3Boto3Storage
+    STORAGE_KWARGS:
+      bucket_name: "{{ NAU_SCORM_S3_BUCKET_NAME }}"
+      default_acl: public-read
+      querystring_expire: 86400
+      endpoint_url: https://{{ nau_ceph_host }}
+
+NAU_SCORM_S3_LOCATION: scorm
+NAU_SCORM_S3_BUCKET_NAME: "{{ EDXAPP_AWS_STORAGE_BUCKET_NAME }}"
+NAU_SCORM_S3_BUCKET_ENDPOINT: https://{{ nau_ceph_host }}/{{ NAU_SCORM_S3_LOCATION }}/
+
 ##################
 # LMS
 ##################
