@@ -776,6 +776,10 @@ openedx_lms_env_file_default:
                 default_class: 'xmodule.hidden_module.HiddenDescriptor'
                 fs_root:  "{{ edxapp_course_data_dir }}"
                 render_template: 'common.djangoapps.edxmako.shortcuts.render_to_string'
+  
+  # Maximum number of students allowed in a CCX (Custom Courses for edX).
+  # Increased from the default `200`
+  CCX_MAX_STUDENTS_ALLOWED: 500
 
 ##################
 # CMS / Studio
