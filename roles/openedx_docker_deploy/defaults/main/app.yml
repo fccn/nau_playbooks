@@ -1,6 +1,6 @@
 ---
 
-openedx_app_image: nauedu/edxapp-prod:nau-lilac.master
+openedx_app_image: nauedu/edxapp-prod:nau-nutmeg.master
 
 # By default we deploy both lms and studio application
 openedx_lms_deploy: true
@@ -97,7 +97,7 @@ OPENEDX_CELERY_BROKER_VHOST: "{{ OPENEDX_CELERY_REDIS_DB }}"
 OPENEDX_CELERY_BROKER_USER: "{{ OPENEDX_REDIS_USERNAME }}"
 OPENEDX_CELERY_BROKER_PASSWORD: "{{ OPENEDX_REDIS_PASSWORD }}"
 
-OPENEDX_LANGUAGE_CODE: pt-PT
+OPENEDX_LANGUAGE_CODE: pt
 
 ###################################
 # Yaml reusable blocks
@@ -209,8 +209,8 @@ COMMON_JWT_AUTH_COOKIE_SIGNATURE: 'edx-jwt-cookie-signature'
 EDXAPP_JWT_AUTH_REFRESH_COOKIE: '{{ COMMON_JWT_AUTH_REFRESH_COOKIE }}'
 COMMON_JWT_AUTH_REFRESH_COOKIE: 'edx-jwt-refresh-cookie'
 
-# configure with top domain of the platform, if lms domain is lms.example.com, configure it with `.example.com`
-EDXAPP_SESSION_COOKIE_DOMAIN: ".{{ EDXAPP_LMS_BASE }}"
+# Change session cookie domain
+EDXAPP_SESSION_COOKIE_DOMAIN: ""
 EDXAPP_AWS_S3_CUSTOM_DOMAIN: ""
 
 EDXAPP_CELERY_TIMEZONE: UTC
@@ -326,7 +326,6 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
   ACE_ROUTING_KEY: "edx.lms.core.default"
   HTTPS: "on"
   LANGUAGE_CODE: "{{ OPENEDX_LANGUAGE_CODE }}"
-  SESSION_COOKIE_DOMAIN: "{{ EDXAPP_SESSION_COOKIE_DOMAIN }}"
 
   # Install richie synchronization package
   ADDL_INSTALLED_APPS:
@@ -546,8 +545,6 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
     JWT_AUTH_COOKIE_SIGNATURE: "{{ EDXAPP_JWT_AUTH_COOKIE_SIGNATURE }}"
     JWT_AUTH_REFRESH_COOKIE: "{{ EDXAPP_JWT_AUTH_REFRESH_COOKIE }}"
     
-  CSRF_COOKIE_SECURE: true
-  
   # Elastic search connection configuration
   #ELASTIC_SEARCH_CONFIG:
   ELASTIC_SEARCH_CONFIG_ES7: "{{ openedx_docker_deploy_elasticsearch_cluster_hosts_url }}"
@@ -612,7 +609,22 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
     - employment_situation
     - goals
   RETIREMENT_STATES: "{{ EDXAPP_RETIREMENT_STATES }}"
+
+  # Cookies
+  SESSION_COOKIE_SECURE: "{{ EDXAPP_SESSION_COOKIE_SECURE }}"
+  CSRF_COOKIE_SECURE: true
+  SESSION_COOKIE_SAMESITE: "{{ OPENEDX_SESSION_COOKIE_SAMESITE | default('None') }}"
   SESSION_COOKIE_NAME: "{{ EDXAPP_SESSION_COOKIE_NAME }}"
+  SESSION_COOKIE_DOMAIN: "{{ EDXAPP_SESSION_COOKIE_DOMAIN }}"
+  # This is the domain that is used to set shared cookies between various sub-domains, like logged in and language cookies.
+  SHARED_COOKIE_DOMAIN: "{{ OPENEDX_SHARED_COOKIE_DOMAIN | default('') }}"
+
+  # List of logout URIs for each IDA that the learner should be logged out of when they logout of the LMS. Only applies to
+  # IDA for which the social auth flow uses DOT (Django OAuth Toolkit).
+  IDA_LOGOUT_URI_LIST:
+    - "https://{{ EDXAPP_CMS_BASE }}/logout/"
+    - "{{ INSIGHTS_BASE_URL }}/logout/"
+
   SOCIAL_AUTH_OAUTH_SECRETS: "{{ EDXAPP_SOCIAL_AUTH_OAUTH_SECRETS }}"
   SOCIAL_AUTH_TPA_SAML_PIPELINE:
     - common.djangoapps.third_party_auth.pipeline.parse_query_params
@@ -859,6 +871,12 @@ openedx_cms_env_file_default:
   STUDIO_SHORT_NAME: "{{ EDXAPP_STUDIO_SHORT_NAME | default('Studio') }}"
   COURSE_IMPORT_EXPORT_BUCKET: "{{ EDXAPP_IMPORT_EXPORT_BUCKET | default('') }}"
   COURSE_AUTHORING_MICROFRONTEND_URL: "{{ EDXAPP_COURSE_AUTHORING_MICROFRONTEND_URL | default('null') }}"
+
+  SOCIAL_AUTH_EDX_OAUTH2_KEY: "{{ CMS_OAUTH2_KEY_SSO | default('cms-sso') }}"
+  SOCIAL_AUTH_EDX_OAUTH2_SECRET: "{{ CMS_OAUTH2_SECRET }}"
+  SOCIAL_AUTH_EDX_OAUTH2_URL_ROOT: http://lms:8000
+  SOCIAL_AUTH_EDX_OAUTH2_PUBLIC_URL_ROOT: https://{{ OPENEDX_LMS_HOST }}
+  SESSION_COOKIE_NAME: studio_session_id
 
 ######################################
 # Open edx app job

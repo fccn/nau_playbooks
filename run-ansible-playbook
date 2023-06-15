@@ -7,8 +7,8 @@ export LC_ALL='en_US.UTF-8'
 
 # Prepare the upstream Open edX configuration repository
 # clone if not exists and checkout the branch defined on the environment variable `BRANCH_CONFIGURATION`
-# or use the default `nau-release/lilac` branch
-BRANCH_CONFIGURATION="${BRANCH_CONFIGURATION:=nau-release/lilac}"
+# or use the default `nau-release/nutmeg` branch
+BRANCH_CONFIGURATION="${BRANCH_CONFIGURATION:=nau/nutmeg.master}"
 [ -d configuration ] || rm -f configuration
 [ -d configuration ] || git clone -b ${BRANCH_CONFIGURATION} git@github.com:fccn/configuration.git configuration
 git -C configuration clean -fdx

@@ -18,7 +18,7 @@
   become: True
   gather_facts: True
   vars:
-    _tubular_version: "{{ version | default('open-release/lilac.master') }}"
+    _tubular_version: "{{ version | default('open-release/nutmeg.master') }}"
     _tubular_repo: "{{ repo | default('https://github.com/openedx/tubular.git') }}"
     _tubular_base_directory: /tmp/openedx-tubular
     _tubular_git_directory: "/tmp/openedx-tubular/tubular"

@@ -68,7 +68,7 @@ healthcheck-memory: ## check that containers doesn't use more than 90% of its av
 .PHONY: healthcheck-memory
 
 healthcheck-docker-containers: ## check that docker containers are on running state
-	@test $$(docker ps --filter "name={{ openedx_docker_deploy_compose_name }}-*" --format {% raw %}'{{.Names}}\t{{.Status}}'{% endraw %} -a | grep -v "_job" | grep "Up " | wc -l) -eq $$(docker ps --filter "name={{ openedx_docker_deploy_compose_name }}-*" {% raw %}--format '{{.Names}}\t{{.Status}}'{% endraw %} -a | grep -v "_job" | wc -l) || ( echo "Check docker containers status: error" ; exit 1 )
+	@test $$(docker ps --filter "name={{ openedx_docker_deploy_compose_name }}-*" --format {% raw %}'{{.Names}}\t{{.Status}}'{% endraw %} -a | egrep -v "[_-]job" | grep "Up " | wc -l) -eq $$(docker ps --filter "name={{ openedx_docker_deploy_compose_name }}-*" {% raw %}--format '{{.Names}}\t{{.Status}}'{% endraw %} -a | egrep -v "[_-]job" | wc -l) || ( echo "Check docker containers status: error" ; exit 1 )
 	@echo "Check docker containers status: OK"
 .PHONY: healthcheck-docker-containers
 

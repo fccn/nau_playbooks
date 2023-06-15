@@ -2,10 +2,7 @@
 # If the analyticsapi is to be installed
 openedx_analyticsapi_deploy: true
 
-# last commit on open-release/lilac.master that the docker build has been executed: d5f12d33d86cfcc57e1f6662890dbe784cfdce23
-# last commit on open-release/maple.master that the docker build has been executed: e0c4aa3f20f869ad7d680ef90b62f7800acaa844 
-# openedx_analyticsapi_image: nauedu/openedx-analytics-data-api:nau-lilac.master-d6833bb03a5a7275c0a529878760cd1947e9b538-build-5
-openedx_analyticsapi_image: nauedu/openedx-analytics-data-api:nau-maple.master-fb37ebc8d99124ae87867148fc53120800a12b10-build-10
+openedx_analyticsapi_image: nauedu/openedx-analytics-data-api:nau-nutmeg.master-925eb6f251e1bfe17de7f11eb00f387d25b5ad9d-build-11
 
 openedx_analyticsapi_port: 8100
 
@@ -135,7 +132,6 @@ ANALYTICS_API_REPORTS_MYSQL_OPTIONS:
 
 ANALYTICS_API_CACHE_REDIS_DB: 7
 
-# analytics api on lilac is still using elasticsearch v6, so we have installed the maple release
 OPENEDX_ANALYTICS_API_ELASTICSEARCH_LEARNERS_HOST: "{{ openedx_docker_deploy_elasticsearch_cluster_hosts_url[0] }}"
 OPENEDX_ANALYTICS_API_ELASTICSEARCH_LEARNERS_INDEX: 'roster'
 OPENEDX_ANALYTICS_API_ELASTICSEARCH_LEARNERS_INDEX_ALIAS: roster_alias

@@ -1,7 +1,7 @@
 ---
 openedx_forum_deploy: true
 openedx_forum_job_deploy: false
-openedx_forum_docker_image: overhangio/openedx-forum:12.2.0
+openedx_forum_docker_image: overhangio/openedx-forum:14.0.0
 openedx_forum_docker_wait_for: dockerize -wait tcp://{{ FORUM_MONGO_HOSTS[0] }}:{{ FORUM_MONGO_PORT }} -wait {{ FORUM_ELASTICSEARCH_URL }} -wait-retry-interval 5s -timeout 600s
 openedx_forum_docker_entrypoint:     bash -c "{{ openedx_forum_docker_wait_for }} && ./bin/unicorn -c config/unicorn_tcp.rb -I '.' "
 openedx_forum_job_docker_entrypoint: bash -c "{{ openedx_forum_docker_wait_for }} && bundle exec rake search:initialize && bundle exec rake search:rebuild_indices"
