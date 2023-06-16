@@ -42,7 +42,7 @@ openedx_celery_workers:
     environment_variables_dict: "{{ openedx_lms_worker_env_var }}"
     processes: "{{ openedx_lms_worker_celery_processes }}"
     deploy: "{{ openedx_lms_worker_default_deploy | default(true) }}"
-    deploy_resources_limit_memory: "{{ openedx_lms_worker_celery_processes * 1000 }}M"
+    deploy_resources_limit_memory: "{{ openedx_lms_worker_celery_processes * 1500 }}M"
     deploy_resources_limit_cpus: "{{ openedx_lms_worker_limit_cpus }}"
     deploy_resources_reservations_memory: "{{ openedx_lms_worker_celery_processes * 400 }}M"
   - service_variant: lms
@@ -51,7 +51,7 @@ openedx_celery_workers:
     environment_variables_dict: "{{ openedx_lms_worker_env_var }}"
     processes: "{{ openedx_lms_worker_celery_processes }}"
     deploy: "{{ openedx_lms_worker_high_deploy | default(true) }}"
-    deploy_resources_limit_memory: "{{ openedx_lms_worker_celery_processes * 1000 }}M"
+    deploy_resources_limit_memory: "{{ openedx_lms_worker_celery_processes * 1500 }}M"
     deploy_resources_limit_cpus: "{{ openedx_lms_worker_limit_cpus }}"
     deploy_resources_reservations_memory: "{{ openedx_lms_worker_celery_processes * 400 }}M"
   - service_variant: lms
@@ -60,7 +60,7 @@ openedx_celery_workers:
     environment_variables_dict: "{{ openedx_lms_worker_env_var }}"
     processes: "{{ openedx_lms_worker_celery_processes }}"
     deploy: "{{ openedx_lms_worker_high_mem_deploy | default(true) }}"
-    deploy_resources_limit_memory: "{{ openedx_lms_worker_celery_processes * 1000 }}M"
+    deploy_resources_limit_memory: "{{ openedx_lms_worker_celery_processes * 1500 }}M"
     deploy_resources_limit_cpus: "{{ openedx_lms_worker_limit_cpus }}"
     deploy_resources_reservations_memory: "{{ openedx_lms_worker_celery_processes * 400 }}M"
   - service_variant: cms
@@ -69,7 +69,7 @@ openedx_celery_workers:
     environment_variables_dict: "{{ openedx_cms_worker_env_var }}"
     processes: "{{ openedx_cms_worker_celery_processes }}"
     deploy: "{{ openedx_cms_worker_default_deploy | default(true) }}"
-    deploy_resources_limit_memory: "{{ openedx_cms_worker_celery_processes * 1000 }}M"
+    deploy_resources_limit_memory: "{{ openedx_cms_worker_celery_processes * 1500 }}M"
     deploy_resources_limit_cpus: "{{ openedx_cms_worker_limit_cpus }}"
     deploy_resources_reservations_memory: "{{ openedx_cms_worker_celery_processes * 400 }}M"
   - service_variant: cms
@@ -78,6 +78,6 @@ openedx_celery_workers:
     environment_variables_dict: "{{ openedx_cms_worker_env_var }}"
     processes: "{{ openedx_cms_worker_celery_processes }}"
     deploy: "{{ openedx_cms_worker_high_deploy | default(true) }}"
-    deploy_resources_limit_memory: "{{ openedx_cms_worker_celery_processes * 1000 }}M"
+    deploy_resources_limit_memory: "{{ openedx_cms_worker_celery_processes * 1500 }}M"
     deploy_resources_limit_cpus: "{{ openedx_cms_worker_limit_cpus }}"
     deploy_resources_reservations_memory: "{{ openedx_cms_worker_celery_processes * 400 }}M"
