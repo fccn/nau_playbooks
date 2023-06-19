@@ -1,0 +1,25 @@
+# Write to a csv file with all servers information about cpu's, memory and disk.
+#
+# Example:
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini server_facts_report.yml -e env=<env>
+#
+# Example append to exiting file:
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini server_facts_report.yml -e env=<env> -e append=true
+#
+---
+- hosts: all
+  gather_facts: yes
+  vars:
+    delimiter: ","
+    server_facts_file_path: "server_facts_report.csv"
+    root_mount: "{{ ansible_mounts | selectattr ('mount', 'equalto', '/') | first }}"
+    occupied_size: "{{ root_mount.size_total - root_mount.size_available }}"
+    root_occupied_ratio: "{{ ( ( occupied_size | int ) / root_mount.size_total) | round(3) }}"
+  pre_tasks:
+    - shell: echo 'hostname{{ delimiter }}processor_vcpus{{ delimiter }}memory_gb{{ delimiter }}root_mount_available_size_gb{{ delimiter }}root_mount_total_size_gb{{ delimiter }}root_occupied_ratio{{ delimiter }}{{ 'environment' if env is defined else '' }}' > {{ server_facts_file_path }}
+      when: not (append | default(false) | bool)
+      run_once: true
+      delegate_to: localhost
+  tasks:
+    - shell: echo '{{ inventory_hostname }}{{ delimiter }}{{ ansible_processor_vcpus }}{{ delimiter }}{{ ( ansible_memtotal_mb / 1024 ) | round(0) }}{{ delimiter }}{{ root_mount.size_available | human_readable(unit="G") | replace(' GB','') }}{{ delimiter }}{{ root_mount.size_total | human_readable(unit="G") | replace(' GB','') }}{{ delimiter }}{{ root_occupied_ratio }}{{ delimiter }}{{ env|default('') }}' >> {{ server_facts_file_path }}
+      delegate_to: localhost

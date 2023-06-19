@@ -1,0 +1,48 @@
+# Export the disk space for each mount.
+# 
+# Example for one environment:
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini disk_space.yml
+#
+# Example to append output to previous environment:
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini disk_space.yml -e append=true
+# 
+---
+- hosts: all
+  gather_facts: yes
+  vars:
+    disk_space_threshold_default:
+      /: 0.9
+    disk_space_threshold: "{{ disk_space_threshold_default | combine(disk_space_threshold_override) }}"
+    disk_space_threshold_override: []
+    csv_delimiter: ","
+    disk_space_file_path: "{{ playbook_dir }}/disk_space_report.csv"
+    disk_space_file_columns:
+      - hostname
+      - mount
+      - size_total
+      - size_available
+      - threshold_ratio
+      - environment
+    disk_space_threshold_file_path: "{{ playbook_dir }}/disk_space_threshold_report.csv"
+    disk_space_threshold_file_columns: 
+      - hostname
+      - mount
+      - occupied_percentage
+      - threshold_ratio
+      - environment
+      - groups
+  pre_tasks:
+    - shell: echo '{{ disk_space_file_columns | join(csv_delimiter) }}' > "{{ disk_space_file_path }}"
+      when: not (append | default(false) | bool)
+      run_once: true
+      delegate_to: localhost
+    - shell: echo '{{ disk_space_threshold_file_columns | join(csv_delimiter) }}' > "{{ disk_space_threshold_file_path }}"
+      when: not (append | default(false) | bool)
+      run_once: true
+      delegate_to: localhost
+  tasks:
+    - include_tasks: tasks/disk_space_mount.yml
+      loop: "{{ ansible_mounts | flatten }}"
+      loop_control:
+        loop_var: ansible_mount
+        label: "{{ ansible_mount.mount }}"

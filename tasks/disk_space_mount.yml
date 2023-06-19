@@ -1,0 +1,27 @@
+---
+- set_fact:
+    #threshold: "{{ disk_space_threshold[ansible_mount.mount] if disk_space_threshold is defined and (disk_space_threshold | selectattr(ansible_mount.mount, 'defined')) else '' }}"
+    threshold: "{{ disk_space_threshold[ansible_mount.mount]|default('') if disk_space_threshold is defined else '' }}"
+
+- shell: echo '{{ inventory_hostname }}{{ csv_delimiter }}{{ ansible_mount.mount }}{{ csv_delimiter }}{{ ansible_mount.size_total }}{{ csv_delimiter }}{{ ansible_mount.size_available }}{{ csv_delimiter }}{{ threshold }}{{ csv_delimiter }}{{ env|default('') }}' >> "{{ disk_space_file_path }}"
+  delegate_to: localhost
+
+- when: disk_space_threshold is defined and disk_space_threshold[ansible_mount.mount] is defined
+  block:
+  - set_fact: 
+      occupied_ratio: "{{ (( ansible_mount.size_total - ansible_mount.size_available) / ansible_mount.size_total) }}"
+  - set_fact:
+      disk_space_occupied_percentage: "{{ (occupied_ratio|float * 100) | round(1,'floor') }}"
+      reached_threshold: "{{ (occupied_ratio|float) > (threshold|float) }}"
+  - debug:
+      var: threshold
+      verbosity: 1
+  - debug:
+      var: reached_threshold
+      verbosity: 1
+  - shell: echo '{{ inventory_hostname }}{{ csv_delimiter }}{{ ansible_mount.mount }}{{ csv_delimiter }}{{ disk_space_occupied_percentage }}{{ csv_delimiter }}{{ threshold }}{{ csv_delimiter }}{{ env|default('') }}{{ csv_delimiter }}{{ group_names | join(',') }}' >> "{{ disk_space_threshold_file_path }}"
+    when: reached_threshold|bool
+    delegate_to: localhost
+  - assert:
+      that: not reached_threshold
+      fail_msg: disk space on {{ ansible_mount.mount }} with current value of {{ disk_space_occupied_percentage|float }}% is greater than its {{ disk_space_threshold[ansible_mount.mount]|float * 100 }}% threshold
