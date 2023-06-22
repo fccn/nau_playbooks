@@ -721,7 +721,7 @@ openedx_lms_env_var: "{{ openedx_lms_env_var_default | combine(openedx_lms_env_v
 openedx_lms_env_var_overrides: {}
 openedx_lms_env_var_default:
   SERVICE_VARIANT: lms
-  SETTINGS: nau_production
+  DJANGO_SETTINGS_MODULE: lms.envs.nau_production
   LMS_CFG: /openedx/config/lms.env.yml
   UWSGI_WORKERS: "{{ openedx_lms_uwsgi_workers }}"
   # Use custom timezone
@@ -800,7 +800,7 @@ openedx_cms_env_var: "{{ openedx_cms_env_var_default | combine(openedx_cms_env_v
 openedx_cms_env_var_overrides: {}
 openedx_cms_env_var_default:
   SERVICE_VARIANT: cms
-  SETTINGS: nau_production
+  DJANGO_SETTINGS_MODULE: cms.envs.nau_production
   STUDIO_CFG: /openedx/config/cms.env.yml
   UWSGI_WORKERS: "{{ openedx_cms_uwsgi_workers }}"
   # Use custom timezone
