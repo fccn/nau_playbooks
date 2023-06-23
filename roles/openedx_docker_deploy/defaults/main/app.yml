@@ -1,6 +1,6 @@
 ---
 
-openedx_app_image: nauedu/edxapp-prod:nau-nutmeg.master
+openedx_app_image: nauedu/openedx:nau-nutmeg.master
 
 # By default we deploy both lms and studio application
 openedx_lms_deploy: true
