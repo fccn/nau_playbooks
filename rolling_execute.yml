@@ -1,7 +1,11 @@
-# Playbook that restarts the docker daemon and its running containers on a rolling restart manner.
+# Playbook that executes a shell command using a rolling restart approach.
+# This can be useful to apply a rolling docker restart or to download/pull a new docker image.
 #
 # Example:
-#   ansible-playbook -i nau-data/envs/<env>/hosts.ini docker_restart.yml --limit <group>
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini rolling_execute.yml --limit <group> -e command='ls /tmp'
+#
+# Example that executes multiple commands:
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini rolling_execute.yml --limit openedx_docker_servers -e "command='docker pull overhangio/openedx-forum:14.0.0 && docker pull overhangio/openedx-notes:14.0.1 && docker pull overhangio/openedx-discovery:14.0.2 && docker pull nauedu/openedx-analytics-data-api:nau-nutmeg.master-XXXXXX-build-yy && docker pull nauedu/openedx-insights:nau-nutmeg.master-XXXXX-build-yy && docker pull nauedu/openedx:nau-nutmeg.master-build-XXX-YYYYYYY'"
 ---
 - hosts: all
   serial: "{{ serial_number | default(1) }}"
@@ -28,11 +32,24 @@
         rolling_deploy_docker: true
         rolling_deploy_starting: true
 
-    # Real stuff to do restart docker and its containers
-    - name: Restart service docker
-      service:
-        name: docker
-        state: restarted
+    - name: Print stdout of command output
+      debug:
+        msg: "Executing command: {{ command }}"
+
+    # Real execute the command
+    - name: Real execute command
+      shell: "{{ command }}"
+      register: exec_output
+
+    - name: Print stdout of command output
+      debug:
+        msg: "{{ exec_output.stdout_lines }}"
+      when: exec_output is defined and exec_output.stdout_lines is defined
+
+    - name: Print stderr of command output
+      debug:
+        msg: "{{ exec_output.stderr_lines }}"
+      when: exec_output is defined and exec_output.stderr_lines is defined
 
     - name: Run Makefile healthcheck
       shell: make --jobs 20 --no-print-directory --directory {{ item }} healthcheck
