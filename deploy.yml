@@ -29,7 +29,7 @@
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit balancer_servers
 #
 #   To deploy IdP proxy servers run:
-#     ansible-playbook -i nau-data/:nvs/<env>/hosts.ini deploy.yml --limit idpproxy_servers
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit idpproxy_servers
 #
 #   To mark a server for maintenance, like load balancer or mysql server, append to the shell command arguments:
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --tags keepalived --limit slave_persistence_servers -e keepalived_priority=1
