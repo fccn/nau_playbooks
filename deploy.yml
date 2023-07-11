@@ -215,6 +215,8 @@
     - role: remove_edx_apt_ppa_repo
     - role: swapfile
     - role: edxlocal
+    # Sometimes we need to comment the next line to run the configuration,
+    # because the ensure everything is up and running is broken.
     - analytics_pipeline
     - analytics_pipeline_configuration
 
