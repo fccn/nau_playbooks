@@ -1,8 +1,8 @@
 # Openedx deploy role
 
 ## Initialize Elasticsearch
-To initialize the elasticsearch cluster use the `openedx_elasticsearch_initialization` parameter.
-Run ansible with `-e openedx_docker_deploy=true -e openedx_elasticsearch_initialization=true`.
+To initialize the elasticsearch cluster use the `elasticsearch_initialization` parameter.
+Run ansible with `-e openedx_docker_deploy=true -e elasticsearch_initialization=true`.
 
 ## Initialize MySQL
 To initialize the mysql cluster use the `openedx_mysql_initialization` parameter.
