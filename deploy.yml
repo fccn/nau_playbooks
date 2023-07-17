@@ -739,6 +739,34 @@
         - openedx_app_site_configuration
         - create_or_update_site_configuration
 
+- name: Deploy tutor aspects
+  hosts: tutor_aspects_docker_servers
+  serial: "{{ serial_number | default(1) }}" # deploy in sequence
+  become: True
+  gather_facts: True
+  tasks:
+
+    - name: Install docker
+      import_role:
+        name: geerlingguy.docker
+    - name: Install pip to build python based software
+      import_role:
+        name: geerlingguy.pip
+    - name: Install virtualenv pip package to build python based software
+      pip:
+        name: virtualenv
+    - name: Install python3.8-venv package to build python based software
+      package:
+        name: python3.8-venv
+
+    - name: Deploy tutor aspects
+      import_role:
+        name: openedx_tutor_aspects_docker_deploy
+      vars:
+        openedx_tutor_aspects_docker_deploy_run: "{{ openedx_tutor_aspects_docker_deploy | default(false) }}"
+
+        # TUTOR_OPENEDX_MYSQL_PASSWORD: "{{ openedx_ }}"
+
 # Should be the last, because it depends on the docker, and the business projects are the ones that install docker
 - name: Deploy observability docker servers
   hosts: observability_docker_servers

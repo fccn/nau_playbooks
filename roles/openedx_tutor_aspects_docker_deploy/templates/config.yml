@@ -1,0 +1,1 @@
+{{ openedx_tutor_aspects_config | to_nice_yaml(indent=2, width=1337) }}

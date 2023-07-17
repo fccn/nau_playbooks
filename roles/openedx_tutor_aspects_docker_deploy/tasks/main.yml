@@ -1,0 +1,26 @@
+# steps that will be executed
+---
+# we are assuming that this softwares are already installed
+# python 3
+# pip
+# virtualenv
+# docker
+
+# Template shell script installs:
+# - tvm
+# - init tvm
+# - tvm activate
+# - install tutor plugins for aspects
+# - enable tutor plugins
+# - tutor local ...
+
+# Template of tutor config
+# template a file with all tutor config variables including the openedx mysql connection, etc.
+- name: Template of tutor config
+  template:
+    src: config.yml
+    dest: "{{ openedx_tutor_template_config_dest }}"
+
+# Execute shell script
+- name: Install and execute tutor
+  shell: "{{ openedx_tutor_aspects_shell_script }}"

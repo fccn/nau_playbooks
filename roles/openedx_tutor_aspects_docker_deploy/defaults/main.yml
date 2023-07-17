@@ -1,0 +1,33 @@
+# default variables
+---
+
+# Add variables with an hash value.
+
+# Required variables:
+# TUTOR_MYSQL_HOST: 
+# TUTOR_OPENEDX_MYSQL_PASSWORD: 
+
+# TUTOR_CLICKHOUSE_PASSWORD: 
+
+openedx_tutor_tvm_version: 15.2
+
+openedx_tutor_plugin_aspects: 0.14.1
+
+
+openedx_tutor_base_folder: /nau/ops/openedx_tutor_aspects
+openedx_tutor_template_config_dest: "{{ openedx_tutor_base_folder }}/AAAA/config.yml"
+
+openedx_tutor_aspects_shell_script: "{{ openedx_tutor_base_folder }}/AAAA/aspects.sh"
+
+# We only put in ansible only the strictly needed variables and not all tutor config variables.
+# That is why we need to run tutor config save command.
+openedx_tutor_aspects_config: "{{ openedx_tutor_aspects_config_default | combine(openedx_tutor_aspects_config_overrides, recursive=True) }}"
+openedx_tutor_aspects_config_default:
+  OPENEDX_MYSQL_PASSWORD: "{{ TUTOR_OPENEDX_MYSQL_PASSWORD }}"
+  CLICKHOUSE_PASSWORD: "{{ TUTOR_CLICKHOUSE_PASSWORD }}"
+
+  # Run MySQL ?
+  MYSQL_HOST: "{{ TUTOR_MYSQL_HOST }}"
+
+
+openedx_tutor_aspects_config_overrides: {}
