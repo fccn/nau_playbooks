@@ -1,0 +1,16 @@
+# Import the daily Open edX tracking logs to the ClickHouse using Ralph as a transformer from
+# json tracking log to a xAPI events.
+#
+# Example:
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini openedx_aspects_import_trackinglogs.yml
+#
+- name: Import tracking logs
+  hosts: "{{ (groups['tutor_aspects_docker_servers'] )[0] }}"
+  become: True
+  gather_facts: True
+  tasks:
+    - name: Execute script that imports tracking logs 
+      import_role:
+        name: openedx_aspects_import_trackinglogs
+      vars:
+        openedx_aspects_import_trackinglogs_run: "{{ openedx_aspects_import_trackinglogs | default(false) }}"

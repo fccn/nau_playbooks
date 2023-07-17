@@ -1,0 +1,15 @@
+---
+openedx_aspects_import_tracking_logs_install: false
+openedx_aspects_import_tracking_logs_run: false
+
+openedx_aspects_import_tracking_logs_config_env_path: /nau/ops/openedx_aspects_import_trackinglogs/.env
+
+openedx_aspects_import_trackinglogs_envs:
+  ACCESS_KEY: "{{ openedx_aspects_import_trackinglogs_access_key }}"
+  SECRET_KEY: secret_key_s3
+  ENDPOINT_URL: endpoints3
+  BUCKET_NAME: bucket_name
+  RALPH_ENDPOINT_URL: https://example.com/upload
+  # Don't forgot to add the / at the end on PATH_S3_TO_TRACKINGLOG
+  PATH_S3_TO_TRACKINGLOG: trackinglog/
+  SHOW_PRINTS: True

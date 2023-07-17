@@ -1,0 +1,23 @@
+---
+
+# git clone
+- name: Clone import trackinglogs tool
+  git:
+    repo: "{{ _import_trackinglogs_repo }}"
+    dest: "{{ _import_trackinglogs_base_directory }}"
+    version: "{{ _import_trackinglogs_version }}"
+    force: yes
+  when: "{{ openedx_aspects_import_tracking_logs_install }}"
+
+# virtualenv
+# when: "{{ openedx_aspects_import_tracking_logs_install }}"
+
+
+# variables generate an .env file.
+- template:
+    src: config_env.j2
+    dest: "{{ openedx_aspects_import_tracking_logs_config_env_path }}"
+  when: "{{ openedx_aspects_import_tracking_logs_install }}"
+
+# activate && execute
+  # when: "{{ openedx_aspects_import_tracking_logs_run }}"
