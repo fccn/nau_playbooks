@@ -9,6 +9,9 @@
         src: "site_configuration.json.j2"
         dest: "{{ openedx_app_site_configuration_tmp_site_configuration_path }}"
 
+    - name: Change owner of {{ openedx_app_site_configuration_tmp_site_configuration_path }}
+      shell: chown 1000:1000 {{ openedx_app_site_configuration_tmp_site_configuration_path }}
+
     - name: Copy site_configuration to docker container
       shell: docker cp {{ openedx_app_site_configuration_tmp_site_configuration_path }} {{ openedx_app_site_configuration_docker_container }}:{{ openedx_app_site_configuration_tmp_site_configuration_path }}
 
