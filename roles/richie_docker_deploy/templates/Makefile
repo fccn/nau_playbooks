@@ -128,7 +128,7 @@ restore-mysql-{{ _site }}: ## restore mysql db of {{ _site }} site
 {% endfor %}
 
 healthcheck-mysql-port: ## check mysql port
-	@nc -z {{ richie_docker_deploy_mysql_host }} {{ richie_docker_deploy_mysql_port }} || ( echo "Check mysql port {{ richie_docker_deploy_mysql_host }}:{{ richie_docker_deploy_mysql_port }}: error" ; exit 1 )
+	@mysqladmin ping --silent --host {{ richie_docker_deploy_mysql_host }} --user {{ richie_mysql_health_check_user }} --port {{ richie_docker_deploy_mysql_port }} || ( echo "Check mysql port {{ richie_docker_deploy_mysql_host }}:{{ richie_docker_deploy_mysql_port }}: error" ; exit 1 )
 	@echo "Check mysql port {{ richie_docker_deploy_mysql_host }}:{{ richie_docker_deploy_mysql_port }}: OK"
 .PHONY: healthcheck-mysql-port
 

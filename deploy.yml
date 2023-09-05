@@ -466,8 +466,8 @@
             }
           - {
               db: "*",
-              user: "{{ richie_load_balancer_haproxy_health_check_user }}",
-              host: "{{ richie_load_balancer_haproxy_health_check_host | default('%') }}",
+              user: "{{ richie_mysql_health_check_user }}",
+              host: "{{ richie_mysql_health_check_host | default('%') }}",
             }
       when: richie_mysql_deploy | default(false) | bool
 

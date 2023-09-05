@@ -176,12 +176,12 @@ healthcheck-smtp-port: ## check openedx smtp health
 # MySQL
 #######################
 healthcheck-mysql-default-port: ## check mysql port for default primary
-	@nc -z {{ openedx_docker_deploy_mysql_default_host }} {{ openedx_docker_deploy_mysql_default_port }} || ( echo "Check mysql primary: error connecting {{ openedx_docker_deploy_mysql_default_host }}:{{ openedx_docker_deploy_mysql_default_port }}" ; exit 1 )
+	@mysqladmin ping --silent --host {{ openedx_docker_deploy_mysql_default_host }} --user {{ openedx_mysql_health_check_user }} --port {{ openedx_docker_deploy_mysql_default_port }} || ( echo "Check mysql primary: error connecting {{ openedx_docker_deploy_mysql_default_host }}:{{ openedx_docker_deploy_mysql_default_port }}" ; exit 1 )
 	@echo "Check mysql primary port: OK"
 .PHONY: healthcheck-mysql-default-port
 
 healthcheck-mysql-read-replica-port: ## check mysql port for read replica
-	@nc -z {{ openedx_docker_deploy_mysql_read_replica_host }} {{ openedx_docker_deploy_mysql_read_replica_port }} || ( echo "Check mysql read replica port: error connecting {{ openedx_docker_deploy_mysql_read_replica_host }}:{{ openedx_docker_deploy_mysql_read_replica_port }}" ; exit 1 )
+	@mysqladmin ping --silent --host {{ openedx_docker_deploy_mysql_read_replica_host }} --user {{ openedx_mysql_health_check_user }} --port {{ openedx_docker_deploy_mysql_read_replica_port }} || ( echo "Check mysql read replica port: error connecting {{ openedx_docker_deploy_mysql_read_replica_host }}:{{ openedx_docker_deploy_mysql_read_replica_port }}" ; exit 1 )
 	@echo "Check mysql read replica port: OK"
 .PHONY: healthcheck-mysql-read-replica-port
 
