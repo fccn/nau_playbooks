@@ -70,10 +70,19 @@ def main():
     for organization in results:
         org_code = organization.get('short_name')
         org_logo = organization.get('logo')
-        organization_logos_config[org_code]={
+        dict_value = {
             'alt': org_code,
-            'src': org_logo,
         }
+        if org_logo:
+            dict_value['src'] = org_logo
+        organization_logos_config[org_code] = dict_value
+
+    # print header
+    yaml_header = """# Open edX organizations configuration
+# Please do not update this file by hand, run the export_openedx_organization.py script
+# that exist in the `nau_playbooks` repository.
+"""
+    print(yaml_header, file=output)
 
     # write
     org_export = {'NAU_HEADER_ORGANIZATION_LOGOS': organization_logos_config}
