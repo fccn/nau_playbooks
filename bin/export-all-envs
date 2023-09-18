@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# Shell script that runs some playbook on each environment.
+# Can be used for example to export information to a csv file and append that same
+# information on other environment. So you can have a consolidated file with all
+# machines for every environment.
+
+# Example:
+# $ bin/export-all-envs disk_space.yml
+
+# Delete exiting csv report files
+rm -f *.csv
+
+PLAYBOOK=$1
+test -f "$PLAYBOOK" || { 
+    echo "Missing playbook file '$PLAYBOOK'.";
+    echo "You should run it, for example has:";
+    echo "$ bin/server-facts-report disk_space.yml" ; 
+    exit 1; 
+}
+shift
+
+ansible-playbook -i nau-data/envs/development/hosts.ini $PLAYBOOK -e append=false -e env=dev $@
+DEV_STATUS=$?
+
+ansible-playbook -i nau-data/envs/staging/hosts.ini $PLAYBOOK -e append=true -e env=stage $@
+STAGING_STATUS=$?
+
+ansible-playbook -i nau-data/envs/production/hosts.ini $PLAYBOOK -e append=true -e env=prod $@
+PROD_STATUS=$?
+
+if [[ $DEV_STATUS != 0 || $STAGING_STATUS != 0 || $PROD_STATUS != 0 ]]; then
+	exit -1;
+fi

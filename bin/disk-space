@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# Shell script that exports the disk space status of the 3 NAU environments to a single csv file.
+# Raises an error if it is bigger than the default 90% threshold. 
+#
+# From the root of `nau_playbooks` run this script like for example:
+#
+# $ bin/disk-space
+#
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+$SCRIPT_DIR/export-all-envs disk_space.yml
+EXPORT_STATUS=$?
+
+if [[ $EXPORT_STATUS != 0 ]]; then
+	cat disk_space_threshold_report.csv;
+	exit -1;
+fi

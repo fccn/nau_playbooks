@@ -1,0 +1,7 @@
+#!/bin/bash
+
+#  a csv file with all servers information about cpu's, memory and disk.
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+$SCRIPT_DIR/export-all-envs server_facts_report.yml
