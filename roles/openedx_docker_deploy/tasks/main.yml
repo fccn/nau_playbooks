@@ -18,7 +18,7 @@
 
 - name: Build web server nginx docker image with static assets
   include_role:
-    name: build_web_server
+    name: build_web_server_simpler
   vars:
     build_web_server_docker_registry: "{{ openedx_build_web_server_docker_registry }}"
     build_web_server_docker_repository: "{{ openedx_build_web_server_docker_repository }}"
