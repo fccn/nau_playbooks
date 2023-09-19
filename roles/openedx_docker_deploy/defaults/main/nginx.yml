@@ -104,22 +104,22 @@ openedx_nginx_docker_deploy_files:
     dest: "{{ openedx_docker_deploy_base_folder }}/nginx/files/images/lms/favicon.ico"
     service: nginx
     config_name: nginx_lms_favicon
-    docker_target: /openedx/staticfiles/lms/images/favicon.ico
+    docker_target: /openedx/staticfiles/images/favicon.ico
   - src: files/nginx/favicon.ico
     dest: "{{ openedx_docker_deploy_base_folder }}/nginx/files/images/cms/favicon.ico"
     service: nginx
     config_name: nginx_cms_favicon
-    docker_target: /openedx/staticfiles/cms/images/favicon.ico
+    docker_target: /openedx/staticfiles/images/favicon.ico
   - src: files/nginx/logo_nau_short_w557.png
     dest: "{{ openedx_docker_deploy_base_folder }}/nginx/files/images/insights/logo_nau_short_w557.png"
     service: nginx
     config_name: nginx_insights_logo_nau
-    docker_target: /openedx/staticfiles/insights/images/openedx-logo-v2.png
+    docker_target: /openedx/insights/images/openedx-logo-v2.png
   - src: files/nginx/favicon.ico
     dest: "{{ openedx_docker_deploy_base_folder }}/nginx/files/images/insights/favicon.ico"
     service: nginx
     config_name: nginx_insights_favicon
-    docker_target: /openedx/staticfiles/insights/images/favicon.ico
+    docker_target: /openedx/insights/images/favicon.ico
 
 # folder inside nginx docker container where the certificates will be mounted.
 openedx_nginx_certificates_docker_target_folder: /etc/ssl/certs
