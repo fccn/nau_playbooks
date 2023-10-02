@@ -23,11 +23,13 @@
     _tubular_base_directory: /tmp/openedx-tubular
     _tubular_git_directory: "/tmp/openedx-tubular/tubular"
     _tubular_virtualenv_directory: "/tmp/openedx-tubular/venv"
+    _tubular_output_directory: "{{ _tubular_base_directory }}/output"
     _tubular_make_plan: "{{ make_plan | default(true) | bool }}"
     _tubular_prune: "{{ prune | default(false) | bool }}"
     _tubular_docker_image: openedx_tubular:latest
-    _tubular_docker_run: docker run -t --rm --name openedx-tubular -v {{ _tubular_base_directory }}/output:/data {{ _tubular_docker_image }}
+    _tubular_docker_run: docker run -t --rm --name openedx-tubular -v {{ _tubular_output_directory }}/:/data {{ _tubular_docker_image }}
     _tubular_mongodb_connection: mongodb://{{ EDXAPP_MONGO_USER }}:{{ EDXAPP_MONGO_PASSWORD }}@{%- for host in EDXAPP_MONGO_HOSTS -%}{{ host }}:{{ EDXAPP_MONGO_PORT }}{%- if not loop.last -%},{%- endif -%}{%- endfor -%}/{{ EDXAPP_MONGO_DB_NAME }}
+    _tubular_timestamp: "{{ ansible_date_time.iso8601_basic_short }}" # Example: 20181025T120844
   tasks:
 
     - name: Clone tubular tool
@@ -39,7 +41,7 @@
     
     - name: Create output folder
       file:
-        path: "{{ _tubular_base_directory }}/output"
+        path: "{{ _tubular_output_directory }}"
         state: directory
 
     # we need a custom Dockerfile because the one that exists in the repository is incompatible with
@@ -74,6 +76,17 @@
       debug:
         msg: "{{ make_plan_output.stderr_lines }}"
       when: make_plan_output.stderr_lines is defined and _tubular_make_plan
+
+    # Save the out.json to a S3 bucket.
+    - name: Save the plan to S3
+      command: "s3cmd put {{ _tubular_output_directory }}/out.json s3://{{ AWS_S3_DBS_BACKUP_BUCKET_NAME }}/tubular/{{ _tubular_timestamp }}/{{ item }} --host {{ AWS_S3_DBS_BACKUP_HOST }} --host-bucket {{ AWS_S3_DBS_BACKUP_BUCKET_NAME }}"
+      environment:
+        AWS_ACCESS_KEY_ID: "{{ EDXAPP_BACKUPS_AWS_ACCESS_KEY_ID }}"
+        AWS_SECRET_ACCESS_KEY: "{{ EDXAPP_BACKUPS_AWS_SECRET_ACCESS_KEY }}"
+      when: _tubular_make_plan
+      with_items:
+        - out.json
+        - details.txt
 
     - name: Runs prune on the structures.py to delete/prune the older course structures
       shell: |
