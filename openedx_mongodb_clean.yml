@@ -77,6 +77,12 @@
         msg: "{{ make_plan_output.stderr_lines }}"
       when: make_plan_output.stderr_lines is defined and _tubular_make_plan
 
+    - name: Install s3cmd
+      package:
+        name: s3cmd
+        state: present
+      when: _tubular_make_plan
+
     # Save the out.json to a S3 bucket.
     - name: Save the plan to S3
       command: "s3cmd put {{ _tubular_output_directory }}/out.json s3://{{ AWS_S3_DBS_BACKUP_BUCKET_NAME }}/tubular/{{ _tubular_timestamp }}/{{ item }} --host {{ AWS_S3_DBS_BACKUP_HOST }} --host-bucket {{ AWS_S3_DBS_BACKUP_BUCKET_NAME }}"
