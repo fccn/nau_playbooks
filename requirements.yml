@@ -29,4 +29,4 @@
 
 # Auditory of the installed packages and software
 - src: git+https://github.com/fccn/ansible_pakiti_client.git
-  version: f8edb9c2cfa77d7d075f18eb5bbde7704a20a4e3
+  version: c3bb28a74c34fadc3dab8df9f5c12173392e8312
