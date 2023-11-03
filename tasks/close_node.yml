@@ -1,0 +1,19 @@
+# task that can be used to close a node to apply some big change.
+
+- name: Lower keepalived priority to force VIP swap
+  import_role:
+    name: keepalived
+  vars:
+    keepalived_priority_override: 1
+  when: keepalived_vrrp_instances is defined and ( keepalived_vrrp_instances|length > 0 )
+
+- name: force all notified handlers to run at this point
+  meta: flush_handlers
+
+- name: Block load balancer connections
+  import_role:
+    name: rolling_deploy
+  when: rolling_deploy_enabled | default(true) | bool
+  vars:
+    rolling_deploy_docker: true
+    rolling_deploy_starting: true

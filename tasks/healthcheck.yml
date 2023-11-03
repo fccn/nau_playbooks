@@ -1,0 +1,14 @@
+
+- import_role:
+    name: nau_check_urls
+
+- name: Run Makefile healthcheck
+  shell: make --jobs 20 --no-print-directory --directory {{ item }} healthcheck
+  retries: "{{ healthcheck_retries | default(50) }}"
+  delay: "{{ healthcheck_delay | default(30) }}"
+  register: result
+  until: result.rc == 0
+  check_mode: no # execute even when ansible is run with --check
+  when: makefile_healthcheck is defined
+  changed_when: False
+  with_items: "{{ makefile_healthcheck }}"

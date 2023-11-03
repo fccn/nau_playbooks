@@ -17,23 +17,7 @@
   vars:
     rolling_deploy_enabled: true
   tasks:
-    - name: Lower keepalived priority to force VIP swap
-      import_role:
-        name: keepalived
-      vars:
-        keepalived_priority_override: 1
-      when: keepalived_vrrp_instances is defined and ( keepalived_vrrp_instances|length > 0 )
-    
-    - name: force all notified handlers to run at this point
-      meta: flush_handlers
-    
-    - name: Start rolling deploy - block load balancer connections
-      import_role:
-        name: rolling_deploy
-      when: rolling_deploy_enabled | bool
-      vars:
-        rolling_deploy_docker: true
-        rolling_deploy_starting: true
+    - import_tasks: tasks/close_node.yml
 
     - name: Print stdout of command output
       debug:
@@ -54,31 +38,5 @@
         msg: "{{ exec_output.stderr_lines }}"
       when: exec_output is defined and exec_output.stderr_lines is defined
 
-    - name: Run Makefile healthcheck
-      shell: make --jobs 20 --no-print-directory --directory {{ item }} healthcheck
-      retries: "{{ healthcheck_retries | default(50) }}"
-      delay: "{{ healthcheck_delay | default(30) }}"
-      register: result
-      until: result.rc == 0
-      check_mode: no # execute even when ansible is run with --check
-      when: makefile_healthcheck is defined
-      changed_when: False
-      with_items: "{{ makefile_healthcheck }}"
-
-    - import_role:
-        name: nau_check_urls
-
-    - name: End rolling deploy - open load balancer connections
-      import_role:
-        name: rolling_deploy
-      vars:
-        rolling_deploy_docker: true
-        rolling_deploy_starting: false
-      when: rolling_deploy_enabled | bool
-
-    - name: Restore keepalived priority
-      import_role:
-        name: keepalived
-      vars:
-        keepalived_priority_override: ""
-      when: keepalived_vrrp_instances is defined and ( keepalived_vrrp_instances|length > 0 )
+    - import_tasks: tasks/healthcheck.yml
+    - import_tasks: tasks/open_node.yml
