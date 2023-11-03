@@ -11,7 +11,7 @@
   gather_facts: yes
   vars:
     disk_space_threshold_default:
-      /: 0.9
+      /: "{{ root_threshold | default(0.8) }}"
     disk_space_threshold: "{{ disk_space_threshold_default | combine(disk_space_threshold_override) }}"
     disk_space_threshold_override: []
     csv_delimiter: ","
