@@ -1,17 +1,10 @@
-# Update operating system packages and reboot the server if required.
-# Optionally, you can only update, only reboot, or force a reboot, everything using
-# a rolling approach.
-# It changes the keepalived and iptables configuration during the update and the reboot.
+# Close a server from receiving traffic from load balancer or force VIP swap.
 #
-# Inspired by:
-# - https://luktom.net/en/e1497-how-to-update-centos-rhel-using-ansible
-# - https://www.cyberciti.biz/faq/ansible-apt-update-all-packages-on-ubuntu-debian-linux/
+# Example - remove a server from cluster:
+#   ansible-playbook -i nau-data/envs/<>/hosts.ini maintenance.yml -e close=true --limit <server>
 #
-# Example - update every server on inventory and reboot if needed:
-#   ansible-playbook -i nau-data/envs/<>/hosts.ini update_and_reboot.yml
-#
-# Example - 
-#   ansible-playbook -i nau-data/envs/<>/hosts.ini update_and_reboot.yml
+# Example - readd a server to the cluster:
+#   ansible-playbook -i nau-data/envs/<>/hosts.ini maintenance.yml -e open=true --limit <server>
 ---
 - hosts: all
   serial: 1 # run update in sequence
