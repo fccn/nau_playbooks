@@ -17,6 +17,12 @@
   vars:
     rolling_deploy_enabled: true
   tasks:
+    - name: Check if 'command' is defined
+      assert:
+        that: command is defined
+        fail_msg: You need to add a 'command' parameter
+        quiet: true
+
     - import_tasks: tasks/close_node.yml
 
     - name: Print stdout of command output
