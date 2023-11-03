@@ -34,7 +34,7 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "redis-cli -p {{ redis_docker_port }} ping | grep PONG"]
       start_period: 30s
-      retries: 10
+      retries: 100
       interval: 30s
       timeout: 30s
 {{ helper.service_configs(service='redis') }}
