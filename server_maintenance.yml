@@ -1,10 +1,10 @@
 # Close a server from receiving traffic from load balancer or force VIP swap.
 #
 # Example - remove a server from cluster:
-#   ansible-playbook -i nau-data/envs/<>/hosts.ini maintenance.yml -e close=true --limit <server>
+#   ansible-playbook -i nau-data/envs/<>/hosts.ini server_maintenance.yml -e close=true --limit <server>
 #
 # Example - readd a server to the cluster:
-#   ansible-playbook -i nau-data/envs/<>/hosts.ini maintenance.yml -e open=true --limit <server>
+#   ansible-playbook -i nau-data/envs/<>/hosts.ini server_maintenance.yml -e open=true --limit <server>
 ---
 - hosts: all
   serial: 1 # run update in sequence
