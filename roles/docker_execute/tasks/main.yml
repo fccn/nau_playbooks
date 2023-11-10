@@ -22,7 +22,7 @@
 
 - name: Printing name
   debug:
-    msg: "Running '{{ docker_exec_name }}'..."
+    msg: "Running '{{ docker_exec_name }}' on docker container '{{ docker_container_name }}' the command: {{ docker_exec_command }}"
 
 - name: Execute command in docker container
   shell: docker exec -it {{ docker_container_name }} {{ docker_exec_command }}
