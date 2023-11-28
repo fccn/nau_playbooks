@@ -40,15 +40,7 @@ server {
   {% import 'static-files.j2' as static_files with context %}
   {{ static_files.generate_static_files(openedx_nginx_discovery_staticfiles_folder) }}
 
-{% if NGINX_ADMIN_ACCESS_CIDRS and EDXAPP_ENABLE_DJANGO_ADMIN_RESTRICTION %}
-  location /admin {
-    {% for cidr in NGINX_ADMIN_ACCESS_CIDRS %}
-      allow {{ cidr }};
-    {% endfor %}
-      deny all;
-      try_files $uri @proxy_to_app;
-  }
-{% endif %}
+  {% include "django-admin.j2" %}
 
   location / {
     try_files $uri @proxy_to_app;

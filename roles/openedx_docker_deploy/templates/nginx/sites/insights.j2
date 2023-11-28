@@ -45,6 +45,7 @@ server {
 
   {% import 'robots.j2' as robots with context %}
   {{ robots.generate_robots_txt(openedx_nginx_insights_robot_rules) }}
+  {% include "django-admin.j2" %}
   
   location @proxy_to_app {
     proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
