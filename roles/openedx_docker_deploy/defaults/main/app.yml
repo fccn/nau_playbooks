@@ -748,6 +748,9 @@ openedx_lms_env_file_default:
     general:
       KEY_PREFIX: "general"
       <<: *default_openedx_generic_cache_config
+    blockstore:
+      KEY_PREFIX: "blockstore"
+      <<: *default_openedx_generic_cache_config
     mongo_metadata_inheritance:
       KEY_PREFIX: "mongo_metadata_inheritance"
       TIMEOUT: 300
@@ -826,6 +829,9 @@ openedx_cms_env_file_default:
       <<: *default_openedx_generic_cache_config
     general:
       KEY_PREFIX: "general"
+      <<: *default_openedx_generic_cache_config
+    blockstore:
+      KEY_PREFIX: "blockstore"
       <<: *default_openedx_generic_cache_config
     mongo_metadata_inheritance:
       KEY_PREFIX: "mongo_metadata_inheritance"
