@@ -19,6 +19,7 @@ The database migrations are configured per application using the next ansible ex
 - openedx_discovery_job_deploy
 - openedx_insights_job_deploy
 - openedx_analyticsapi_migrate
+- openedx_ecommerce_job_deploy
 
 Example to run the lms migrations:
 ```bash

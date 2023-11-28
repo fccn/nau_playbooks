@@ -11,6 +11,8 @@ openedx_docker_deploy_templates_default: "{{
   openedx_discovery_docker_deploy_templates +
   openedx_analyticsapi_docker_deploy_templates +
   openedx_insights_docker_deploy_templates +
+  openedx_ecommerce_docker_deploy_templates +
+  openedx_ecommerce_worker_docker_deploy_templates +
   openedx_docker_deploy_templates_additional
 }}"
 openedx_base_docker_deploy_templates: "{{ openedx_base_docker_deploy_templates_default }}"
@@ -27,6 +29,8 @@ openedx_docker_deploy_files_default: "{{
   openedx_discovery_docker_deploy_files +
   openedx_analyticsapi_docker_deploy_files +
   openedx_insights_docker_deploy_files +
+  openedx_ecommerce_docker_deploy_files +
+  openedx_ecommerce_worker_docker_deploy_files +
   openedx_docker_deploy_files_additional
 }}"
 openedx_docker_deploy_files_additional: []
@@ -50,9 +54,9 @@ openedx_docker_deploy_services_additional:
   - discovery
   - discovery-job
   - analyticsapi-job
+  - ecommerce
+  - ecommerce-worker
+  - ecommerce-job
 
 openedx_docker_deploy_stack_verify_retries: 120
 openedx_docker_deploy_stack_verify_delay: 60
-
-openedx_docker_images_to_prefetch:
-  - "{{ openedx_app_image }}"

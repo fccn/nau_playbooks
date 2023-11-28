@@ -710,6 +710,8 @@
         openedx_docker_deploy_cache_redis_port: "{{ hostvars[groups['redis_docker_servers'][0]].redis_docker_port }}"
         openedx_docker_deploy_celery_redis_host: "{{ hostvars[groups['redis_docker_servers'][0]].ansible_host }}" # don't use VIP, use host IP
         openedx_docker_deploy_celery_redis_port: "{{ hostvars[groups['redis_docker_servers'][0]].redis_docker_port }}"
+        openedx_docker_deploy_ecommerce_broker_host: "{{ hostvars[groups['redis_docker_servers'][0]].ansible_host }}" # don't use VIP, use host IP
+        openedx_docker_deploy_ecommerce_broker_port: "{{ hostvars[groups['redis_docker_servers'][0]].redis_docker_port }}"
         openedx_docker_deploy_mysql_default_host: "{{ hostvars[groups['openedx_mysql_docker_servers'][0]].ansible_host }}"
         openedx_docker_deploy_mysql_default_port: "{{ hostvars[groups['openedx_mysql_docker_servers'][0]].openedx_mysql_docker_port }}"
         openedx_docker_deploy_mysql_read_replica_host: "{{ hostvars[groups['openedx_mysql_docker_servers'][1]].openedx_mysql_read_replica_virtual_ipv4 | default( hostvars[groups['openedx_mysql_docker_servers'][1]].ansible_host ) }}"

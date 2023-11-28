@@ -443,5 +443,90 @@ services:
 
 {% endif %}{# comment if openedx_smtp_deploy #}
 
+
+
+{% if openedx_ecommerce_deploy %}
+  ecommerce:
+    image: {{ openedx_ecommerce_docker_image }}
+    container_name: {{ openedx_docker_deploy_compose_name }}_ecommerce
+    restart: unless-stopped
+    environment:
+{% for env_var_name, env_var_value in openedx_ecommerce_docker_environment_variables.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    deploy:
+      resources:
+        limits:
+          memory: {{ openedx_ecommerce_deploy_resources_limit_memory }}
+{% if openedx_ecommerce_limit_cpus is defined %}
+          cpus: "{{ openedx_ecommerce_limit_cpus }}"
+{% endif %}
+        reservations:
+          memory: 210M
+    healthcheck:
+      # Check if /health/ returns a HTTP status 200, meaning the service is ok
+      # test: curl --silent --fail --head --resolve ecommerce:8000:127.0.0.1 http://ecommerce:8000/health/ | egrep "HTTP/.*200 OK"
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/8000", "||", "exit", "1"]
+      start_period: 30s
+      retries: 10
+      interval: 30s
+      timeout: 30s
+{{ helper.service_configs(service='ecommerce') }}
+{{ helper.service_secrets(service='ecommerce') }}
+
+{% endif %}{# comment if openedx_ecommerce_deploy #}
+{% if openedx_ecommerce_job_deploy %}
+  ecommerce-job:
+    image: {{ openedx_ecommerce_docker_image }}
+    container_name: {{ openedx_docker_deploy_compose_name }}_ecommerce-job
+    restart: on-failure
+    environment:
+{% for env_var_name, env_var_value in openedx_ecommerce_docker_environment_variables.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    command: {{ openedx_ecommerce_job_command }}
+{% if openedx_ecommerce_limit_cpus is defined %}
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ openedx_ecommerce_limit_cpus }}"
+{% endif %}
+{{ helper.service_configs(service='ecommerce') }}
+{{ helper.service_secrets(service='ecommerce') }}
+{% endif %}{# comment if openedx_ecommerce_job_deploy #}
+
+{% if openedx_ecommerce_worker_deploy %}
+  ecommerce-worker:
+    image: {{ openedx_ecommerce_worker_docker_image }}
+    container_name: {{ openedx_docker_deploy_compose_name }}_ecommerce-worker
+    restart: unless-stopped
+    environment:
+{% for env_var_name, env_var_value in openedx_ecommerce_worker_docker_environment_variables.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+{% if openedx_ecommerce_worker_command is defined %}
+    command: {{ openedx_ecommerce_worker_command }}
+{% endif %}
+    deploy:
+      resources:
+        limits:
+          memory: {{ openedx_ecommerce_worker_deploy_resources_limit_memory }}
+{% if openedx_ecommerce_worker_deploy_resources_limit_cpus is defined %}
+          cpus: "{{ openedx_ecommerce_worker_deploy_resources_limit_cpus }}"
+{% endif %}
+        reservations:
+          memory: {{ openedx_ecommerce_worker_deploy_resources_reservations_memory }}
+    healthcheck:
+      test: celery --app=ecommerce_worker.celery_app:app inspect ping -d celery@$$HOSTNAME
+      start_period: 240s # 4 minutes
+      retries: 10
+      # Big interval because each ping uses much memory and takes a couple of seconds to execute.
+      interval: 300s # 5 minutes
+      timeout: 120s  # 2 minutes
+{{ helper.service_configs(service='ecommerce-worker') }}
+{{ helper.service_secrets(service='ecommerce-worker') }}
+
+{% endif %}{# comment if openedx_ecommerce_worker_deploy #}
+
 {{ helper.configs() }}
 {{ helper.secrets() }}

@@ -59,6 +59,9 @@ openedx_build_web_server_services:
   - service: openedx_edx_platform
     docker_image: "{{ openedx_app_image }}"
     folder: "{{ openedx_nginx_edx_platform_staticfiles_folder }}"
+  - service: openedx_ecommerce
+    docker_image: "{{ openedx_ecommerce_docker_image }}"
+    folder: "{{ openedx_nginx_ecommerce_staticfiles_folder }}"
 
 openedx_nginx_edx_platform_staticfiles_folder: /openedx/staticfiles
 
@@ -67,3 +70,4 @@ openedx_nginx_cms_staticfiles_folder: "{{ openedx_nginx_edx_platform_staticfiles
 openedx_nginx_insights_staticfiles_folder: /openedx/insights/assets
 openedx_nginx_discovery_staticfiles_folder: /openedx/discovery/course_discovery/assets
 openedx_nginx_analyticsapi_staticfiles_folder: /openedx/analyticsapi/assets
+openedx_nginx_ecommerce_staticfiles_folder: /openedx/ecommerce/assets
