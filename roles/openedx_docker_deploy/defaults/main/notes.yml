@@ -29,3 +29,6 @@ openedx_notes_docker_environment_variables_default:
   NOTES_OAUTH2_ID: "{{ EDX_NOTES_API_CLIENT_ID }}"
 
 EDX_NOTES_API_HOSTNAME: '~^((stage|prod)-)?notes.*'
+
+openedx_notes_nginx_ssl_certificate_docker_target: "{{ openedx_nginx_ssl_certificate_docker_target }}"
+openedx_notes_nginx_ssl_certificate_key_docker_target: "{{ openedx_nginx_ssl_certificate_key_docker_target }}"

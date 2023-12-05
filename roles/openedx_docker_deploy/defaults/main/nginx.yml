@@ -138,9 +138,6 @@ openedx_nginx_wildcard_ssl_certificate_docker_target: "{{ openedx_nginx_certific
 openedx_nginx_wildcard_ssl_certificate_key_docker_target: "{{ openedx_nginx_certificates_docker_target_folder }}/wildcard_certificate.key.pem"
 openedx_nginx_htpasswd_file: /etc/nginx/nginx.htpasswd
 
-openedx_notes_nginx_ssl_certificate_docker_target: /etc/ssl/certs/notes.crt.pem
-openedx_notes_nginx_ssl_certificate_key_docker_target: /etc/ssl/certs/notes.key.pem
-
 # a default site
 openedx_nginx_lms_servers:
   - server_name: _
