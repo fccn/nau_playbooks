@@ -144,7 +144,4 @@ financial_manager_env_var_default:
   # DJANGO_SETTINGS_MODULE
   # TZ: "{{ openedx_timezone | default('Europe/Lisbon') }}"
 
-financial_manager_admin_access_enable: True
-financial_manager_admin_access_locations:
-  - path: '"/"'
-    cidrs: "{{ NGINX_ADMIN_ACCESS_CIDRS }}"
+financial_manager_limit_access_locations: "{{ NGINX_ADMIN_ACCESS_CIDRS }}"
