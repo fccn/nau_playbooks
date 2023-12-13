@@ -1,0 +1,70 @@
+{% import '_docker_deploy_helper.j2' as helper with context %}
+# {{ ansible_managed }}
+#
+# Docker compose file for financial_manager.
+#
+version: '3.8'
+
+services:
+
+  app:
+    image: {{ financial_manager_docker_image }}
+    command: {{ financial_manager_docker_command }}
+    container_name: {{ financial_manager_docker_container_name_app }}
+    restart: always
+    environment:
+{% for env_var_name, env_var_value in financial_manager_env_var.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    ports:
+      - target:    8000
+        published: {{ financial_manager_app_docker_port }}
+        protocol:  tcp
+        mode:      ingress
+    deploy:
+      replicas: 1
+      placement:
+        max_replicas_per_node: 1
+    healthcheck:
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/8000", "||", "exit", "1"]
+      start_period: 30s
+      retries: 100
+      interval: 30s
+      timeout: 30s
+{{ helper.service_configs(service='app') }}
+{{ helper.service_secrets(service='app') }}
+
+  nginx:
+    image: {{ financial_manager_nginx_image }}
+    container_name: {{ financial_manager_docker_container_name_nginx }}
+    hostname: {{ inventory_hostname }}
+    restart: unless-stopped
+    ports:
+      - target: 80
+        published: {{ financial_manager_nginx_http_ingress_port }}
+        protocol: tcp
+        mode: ingress
+      - target: 443
+        published: {{ financial_manager_nginx_https_ingress_port }}
+        protocol: tcp
+        mode: ingress
+    environment:
+      # Use custom timezone
+      TZ: {{ financial_manager_timezone | default("Europe/Lisbon") }}
+    deploy:
+      resources:
+        limits:
+          memory: 50M
+        reservations:
+          memory: 10M
+    healthcheck:
+      test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/80", "&&", "echo", "''", ">", "/dev/tcp/127.0.0.1/443", "||", "exit", "1"]
+      start_period: 30s
+      retries: 10
+      interval: 90s
+      timeout: 90s
+{{ helper.service_configs(service='nginx') }}
+{{ helper.service_secrets(service='nginx') }}
+
+{{ helper.configs() }}
+{{ helper.secrets() }}

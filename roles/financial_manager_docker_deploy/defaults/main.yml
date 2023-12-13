@@ -1,0 +1,137 @@
+---
+financial_manager_docker_image: docker.io/nauedu/nau-financial-manager:main
+financial_manager_docker_instance_name: financial_manager
+financial_manager_docker_deploy_compose_name: financial_manager
+
+financial_manager_docker_deploy_parent_folder: /nau/ops
+financial_manager_docker_deploy_base_folder: /nau/ops/{{ financial_manager_docker_instance_name }}
+financial_manager_docker_deploy_compose_template: templates/docker-compose.yml.j2
+
+financial_manager_docker_deploy_healthcheck_delay: 5
+financial_manager_docker_deploy_healthcheck_retries: 50
+
+financial_manager_docker_command: gunicorn --workers 3 -c /usr/local/etc/gunicorn/app.py nau_financial_manager.wsgi:application
+
+financial_manager_docker_container_name_app: "{{ financial_manager_docker_deploy_compose_name }}_app"
+financial_manager_docker_container_name_nginx: "{{ financial_manager_docker_deploy_compose_name }}_nginx"
+
+financial_manager_app_docker_port: 13800
+
+financial_manager_docker_deploy_files: "{{ financial_manager_docker_deploy_files_default }}"
+financial_manager_docker_deploy_files_default:
+  - src: "{{ financial_manager_nginx_ssl_certificate_key }}"
+    dest: "{{ financial_manager_docker_deploy_base_folder }}/nginx/ssl/certificate.key.pem"
+    docker_target: /etc/ssl/certs/certificate.key.pem
+    secret_name: certificate_key
+    service: nginx
+  - src: "{{ financial_manager_nginx_ssl_certificate_crt }}"
+    dest: "{{ financial_manager_docker_deploy_base_folder }}/nginx/ssl/certificate.crt.pem"
+    docker_target: /etc/ssl/certs/certificate.crt.pem
+    secret_name: certificate_crt
+    service: nginx
+
+
+# Files to be templated during deployment
+financial_manager_docker_deploy_templates:
+  - src: templates/Makefile
+    dest: "{{ financial_manager_docker_deploy_base_folder }}/Makefile"
+  - src: "{{ financial_manager_nginx_conf_template }}"
+    dest: "{{ financial_manager_docker_deploy_base_folder }}/nginx/nginx.conf"
+    docker_target: /etc/nginx/nginx.conf
+    config_name: nginx_conf
+    service: nginx
+  - src_data:  "{{ financial_manager_configurations | to_nice_yaml(indent=2, width=1337) }}"
+    dest: "{{ docker_deploy_base_folder }}/app/config.yml"
+    docker_target: /app/config.yml
+    config_name: app_config
+    service: app
+
+financial_manager_docker_deploy_stack_verify_delay: 5
+financial_manager_docker_deploy_stack_verify_retries: 50
+
+# vars to easily override default templates
+financial_manager_nginx_conf_template: templates/nginx.conf
+financial_manager_app_config_template: templates/config.env
+
+# nginx configurations
+financial_manager_nginx_server_name: financial-manager.*
+financial_manager_nginx_image: docker.io/nauedu/nau-financial-manager-nginx:main
+financial_manager_nginx_static_assets_folder: /nau/nau-financial-manager/static
+financial_manager_nginx_http_ingress_port: 13080
+financial_manager_nginx_https_ingress_port: 13443
+financial_manager_nginx_enable_https: true
+financial_manager_nginx_force_https: true
+financial_manager_nginx_hsts_max_age: 31536000
+financial_manager_nginx_admin_access_trusted_ip_cidrs: "{{ NGINX_TRUSTED_IP_CIDRS }}"
+financial_manager_nginx_enable_s3_maintenance: "{{ NGINX_EDXAPP_ENABLE_S3_MAINTENANCE }}"
+financial_manager_nginx_enable_s3_maintenance_file: "{{ NGINX_EDXAPP_S3_MAINTENANCE_FILE }}"
+financial_manager_nginx_enable_s3_maintenance_host: "{{ NGINX_EDXAPP_S3_MAINTENANCE_HOST }}"
+financial_manager_nginx_enable_s3_maintenance_url: "{{ NGINX_EDXAPP_S3_MAINTENANCE_URL }}"
+financial_manager_nginx_proxy_protocol: true
+financial_manager_nginx_http2: true
+
+# configurations
+financial_manager_allowed_hosts:
+  - localhost
+  - 127.0.0.1
+  - "{{ financial_manager_nginx_server_name }}"
+
+financial_manager_mysql_database: nau_financial_manager
+financial_manager_mysql_user: nau_financial_manager
+# financial_manager_mysql_password: nau_password
+# financial_manager_mysql_root_password: nau_password
+financial_manager_mysql_docker_hostname: 127.0.0.1
+financial_manager_mysql_docker_port: 3306
+financial_manager_mysql_health_check_user: health_check_user
+
+financial_manager_caches:
+  default:
+    BACKEND: django.core.cache.backends.redis.RedisCache
+    LOCATION: "{{ financial_manager_caches_default_location }}"
+    KEY_PREFIX: nau_financial_manager
+    TIMEOUT: 900 # in seconds: 60 * 15 (15 minutes)
+
+financial_manager_caches_default_location: |
+  redis://{{ financial_manager_caches_default_redis_host }}:{{ financial_manager_caches_default_redis_port }}/{{ financial_manager_caches_default_redis_db }}
+# financial_manager_caches_default_redis_host: nau-redis
+# financial_manager_caches_default_redis_port: 6379
+# financial_manager_caches_default_redis_db: 0
+
+financial_manager_celery_broker_url: |
+  redis://{{ financial_manager_celery_broker_redis_host }}:{{ financial_manager_celery_broker_redis_port }}/{{ financial_manager_celery_broker_redis_db }}
+# financial_manager_celery_broker_redis_host
+# financial_manager_celery_broker_redis_port
+# financial_manager_celery_broker_redis_db
+
+financial_manager_configurations: "{{ financial_manager_configurations_default | combine(financial_manager_configurations_overrides, recursive=True) }}"
+financial_manager_configurations_overrides: {}
+financial_manager_configurations_default:
+  SECRET_KEY: "{{ financial_manager_secret_key }}"
+  DEBUG: False
+  ALLOWED_HOSTS: "{{ financial_manager_allowed_hosts }}"
+
+  # DATABASE
+  MYSQL_DATABASE: "{{ financial_manager_mysql_database }}"
+  MYSQL_USER: "{{ financial_manager_mysql_user }}"
+  MYSQL_PASSWORD: "{{ financial_manager_mysql_password }}"
+  DB_HOST: "{{ financial_manager_mysql_docker_hostname }}"
+  DB_PORT: "{{ financial_manager_mysql_docker_port }}"
+  CELERY_BROKER_URL: "{{ financial_manager_celery_broker_url }}"
+  CACHES:
+    default:
+      BACKEND: django.core.cache.backends.redis.RedisCache
+      LOCATION: "{{ financial_manager_caches_default_location }}"
+      KEY_PREFIX: nau_financial_manager
+      TIMEOUT: 900 # in seconds: 60 * 15 (15 minutes)
+
+financial_manager_env_var: "{{ financial_manager_env_var_default | combine(financial_manager_env_var_overrides, recursive=True) }}"
+financial_manager_env_var_overrides: {}
+financial_manager_env_var_default:
+  GUNICORN_WORKERS: 3
+  # DJANGO_SETTINGS_MODULE
+  # TZ: "{{ openedx_timezone | default('Europe/Lisbon') }}"
+
+financial_manager_admin_access_enable: True
+financial_manager_admin_access_locations:
+  - path: '"/"'
+    cidrs: "{{ NGINX_ADMIN_ACCESS_CIDRS }}"

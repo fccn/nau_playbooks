@@ -78,7 +78,7 @@ healthcheck-mysql-port: ## check mysql port
 {% if mysql_docker_primary %}
 healthcheck-mysql-primary: ## show primary master status
 	@echo -n "Check mysql master status: "
-	@echo 'show master status \G' | MYSQL_PWD="{{ openark_orchestrator_client_password }}" mysql -u {{ openark_orchestrator_client_user }} --host 127.0.0.1 --port {{ mysql_docker_port }} > /dev/null
+	@echo 'show master status \G' | MYSQL_PWD="{{ mysql_health_check_pass }}" mysql -u {{ mysql_health_check_user }} --host 127.0.0.1 --port {{ mysql_docker_port }} > /dev/null
 	@echo "OK"
 .PHONY: healthcheck-mysql-primary
 
@@ -94,17 +94,17 @@ mysql-shell: ## open mysl shell to run SQL commands
 {% if not mysql_docker_primary %}
 healthcheck-mysql-replica: ## show replica slave status
 	@echo -n "Check mysql replica {{ mysql_docker_container_name }} seconds behind primary is lower than 600 seconds (< 10 minutes): "
-	@echo 'show slave status \G' | MYSQL_PWD="{{ openark_orchestrator_client_password }}" mysql -u {{ openark_orchestrator_client_user }} --host 127.0.0.1 --port {{ mysql_docker_port }} | egrep "Seconds_Behind_Master: [0-5]?[0-9]?[0-9]$$" > /dev/null
+	@echo 'show slave status \G' | MYSQL_PWD="{{ mysql_health_check_pass }}" mysql -u {{ mysql_health_check_user }} --host 127.0.0.1 --port {{ mysql_docker_port }} | egrep "Seconds_Behind_Master: [0-5]?[0-9]?[0-9]$$" > /dev/null
 	@echo "OK"
 .PHONY: healthcheck-mysql-replica
 
 mysql-replica-seconds-behind: ## show how much seconds the replica in behind the primary
 	@echo -n "Seconds behind primary - should be lower than 600 seconds == ( < 10 minutes ): "
-	@echo 'show slave status \G' | MYSQL_PWD="{{ openark_orchestrator_client_password }}" mysql -u {{ openark_orchestrator_client_user }} --host 127.0.0.1 --port {{ mysql_docker_port }} | egrep -o "Seconds_Behind_Master: [0-5]?[0-9]?[0-9]$$" | egrep -o "[0-9]+"
+	@echo 'show slave status \G' | MYSQL_PWD="{{ mysql_health_check_pass }}" mysql -u {{ mysql_health_check_user }} --host 127.0.0.1 --port {{ mysql_docker_port }} | egrep -o "Seconds_Behind_Master: [0-5]?[0-9]?[0-9]$$" | egrep -o "[0-9]+"
 .PHONY: mysql-replica-seconds-behind
 
 mysql-replica-status: ## show the status of the replica
-	@echo 'show slave status \G' | MYSQL_PWD="{{ openark_orchestrator_client_password }}" mysql -u {{ openark_orchestrator_client_user }} --host 127.0.0.1 --port {{ mysql_docker_port }}
+	@echo 'show slave status \G' | MYSQL_PWD="{{ mysql_health_check_pass }}" mysql -u {{ mysql_health_check_user }} --host 127.0.0.1 --port {{ mysql_docker_port }}
 .PHONY: mysql-replica-status
 
 {% endif %}

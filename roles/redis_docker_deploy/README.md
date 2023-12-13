@@ -15,5 +15,5 @@ The Redis has 10 databases per default, next we list the use of each one.
 | 5         | Open edX ecommerce celery      |
 | 6         | Open edX Insights              |
 | 7         | Open edX Analytics API         |
-| 8         | ---                            |
-| 9         | ---                            |
+| 8         | Financial Manager Django cache |
+| 9         | Financial Manager Celery       |

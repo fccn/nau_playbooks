@@ -58,10 +58,31 @@
     priv: '*.*:ALL'
     host: "{{ mysql_replication_slave_server_ip }}"
     state: present
+  when: |
+    mysql_replication_user is defined 
+    and mysql_replication_password is defined 
+    and mysql_replication_login_host is defined
+    and mysql_replication_login_user is defined
+    and mysql_replication_login_password is defined
+    and mysql_replication_login_port is defined
+    and mysql_replication_slave_server_ip is defined
   tags: docker_mysql_replication
+
+- name: Skip create replication user
+  debug:
+    msg: Skipping create replication user
+  when: |
+    mysql_replication_user is not defined 
+    or mysql_replication_password is not defined 
+    or mysql_replication_login_host is not defined
+    or mysql_replication_login_user is not defined
+    or mysql_replication_login_password is not defined
+    or mysql_replication_login_port is not defined
+    or mysql_replication_slave_server_ip is not defined
 
 - name: Create data snapshot
   shell: docker exec -e MYSQL_PWD={{ mysql_replication_login_password }} {{ mysql_docker_container_name }} /usr/bin/mysqldump --user={{ mysql_replication_login_user }} {{ mysql_command_mysqldump_source_data }} --databases {{ _mysql_databases_to_dump | join(',') }} > {{ docker_mysql_replication_dump_file }}
+  when: mysql_replication_login_user is defined and mysql_replication_login_password is defined
   tags: docker_mysql_replication
 
 # - name: Copy data snapshot to localhost

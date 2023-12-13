@@ -439,6 +439,9 @@
         mysql_root_password: "{{ richie_MYSQL_ROOT_PASSWORD }}"
         mysql_server_id: "{{ groups.richie_mysql_docker_servers.index(inventory_hostname) +1 }}"
 
+        mysql_health_check_user: "{{ richie_mysql_health_check_user }}"
+        mysql_health_check_pass: "{{ richie_mysql_health_check_pass | default('') }}"
+
         # Advanced configuration that assumes that the first server is the primary replica.
         mysql_replication_login_password: "{{ richie_MYSQL_ROOT_PASSWORD }}"
         mysql_replication_master_server_ip: "{{ hostvars[groups.richie_mysql_docker_servers[0]].ansible_host }}"
@@ -656,6 +659,9 @@
         mysql_root_password: "{{ EDXAPP_MYSQL_PASSWORD_ADMIN }}"
         mysql_server_id: "{{ groups.openedx_mysql_docker_servers.index(inventory_hostname) +1 }}"
 
+        mysql_health_check_user: "{{ openedx_mysql_health_check_user | default('health_check_user') }}"
+        mysql_health_check_pass: "{{ openedx_mysql_health_check_pass | default('') }}"
+
         # Advanced configuration that assumes that the first server is the primary replica.
         mysql_replication_login_password: "{{ EDXAPP_MYSQL_PASSWORD_ADMIN }}"
         mysql_replication_master_server_ip: "{{ hostvars[groups.openedx_mysql_docker_servers[0]].ansible_host }}"
@@ -740,6 +746,113 @@
       tags:
         - openedx_app_site_configuration
         - create_or_update_site_configuration
+
+- name: Deploy financial manager mysql docker servers
+  hosts: financial_manager_mysql_docker_servers
+  serial: "{{ serial_number | default(1) }}" # deploy in sequence
+  become: True
+  gather_facts: True
+  tasks:
+    - name: Install or upgrade docker daemon
+      import_role:
+        name: geerlingguy.docker
+      when: financial_manager_mysql_deploy | default(false) | bool
+
+    - import_role:
+        name: snmpd
+      tags: snmpd
+      when: financial_manager_mysql_deploy | default(false) | bool
+    - import_role:
+        name: snmpd_docker
+      tags: snmpd
+      when: financial_manager_mysql_deploy | default(false) | bool
+
+    - name: Deploy financial manager mysql
+      import_role:
+        name: mysql_docker_deploy
+      vars:
+        # To fix Financial Manager MySQL authentication
+        # use legacy authentication plugin to fix: 
+        # django.db.utils.OperationalError: (2059, "Authentication plugin 'caching_sha2_password' 
+        # cannot be loaded: /usr/lib/x86_64-linux-gnu/mariadb18/plugin/caching_sha2_password.so: 
+        # cannot open shared object file: No such file or directory
+        mysql_docker_command_extra: --default-authentication-plugin=mysql_native_password
+
+        # Base configuration for the MySQL instance
+        mysql_docker_image: docker.io/mysql:8.0.29
+        mysql_major_release_number: 8
+        mysql_docker_hostname: "{{ financial_manager_mysql_docker_hostname | default('nau_financial_manager_mysql') }}"
+        mysql_docker_port: "{{ financial_manager_mysql_docker_port | default(3306) }}"
+        mysql_docker_instance_name: financial_manager_mysql
+        mysql_docker_primary: True
+        mysql_root_password: "{{ financial_manager_mysql_root_password }}"
+        mysql_server_id: "{{ groups.financial_manager_mysql_docker_servers.index(inventory_hostname) +1 }}"
+
+        mysql_health_check_user: "{{ financial_manager_mysql_health_check_user | default('health_check_user') }}"
+        mysql_health_check_pass: "{{ financial_manager_mysql_health_check_pass | default('') }}"
+
+        # Advanced configuration that assumes that the first server is the primary replica.
+        mysql_replication_login_password: "{{ financial_manager_mysql_root_password }}"
+        # mysql_replication_master_server_ip: "{{ hostvars[groups.financial_manager_mysql_docker_servers[0]].ansible_host }}"
+        # mysql_replication_master_port: "{{ hostvars[groups.financial_manager_mysql_docker_servers[0]].financial_manager_mysql_docker_port }}"
+        # mysql_replication_user: "{{ financial_manager_mysql_replication_user }}"
+        # mysql_replication_password: "{{ financial_manager_mysql_replication_password }}"
+        mysql_replication_init_databases: [ "{{ financial_manager_mysql_database }}" ]
+        mysql_replication_additional_databases:
+          - "{{ financial_manager_mysql_database | default(None) }}"
+        mysql_replication_additional_users:
+          # one per site
+          - {
+              db: "{{ financial_manager_mysql_database | default(None) }}",
+              user: "{{ financial_manager_mysql_user | default(None) }}",
+              pass: "{{ financial_manager_mysql_password | default(None) }}",
+              host: "%"
+            }
+          - {
+              db: "*",
+              user: "{{ financial_manager_mysql_health_check_user | default('health_check_user') }}",
+              host: "{{ financial_manager_mysql_health_check_host | default('%') }}",
+            }
+      when: financial_manager_mysql_deploy | default(false) | bool
+
+- name: Deploy financial manager servers
+  hosts: financial_manager_docker_servers
+  serial: "{{ serial_number | default(1) }}" # deploy in sequence
+  become: True
+  gather_facts: True
+  tasks:
+    - name: Install or upgrade docker daemon
+      import_role:
+        name: geerlingguy.docker
+      when: financial_manager_deploy | default(false) | bool
+
+    - import_role:
+        name: snmpd
+      tags: snmpd
+      when: financial_manager_deploy | default(false) | bool
+    - import_role:
+        name: snmpd_docker
+      tags: snmpd
+      when: financial_manager_deploy | default(false) | bool
+
+    - name: Deploy financial manager app
+      import_role:
+        name: financial_manager_docker_deploy
+      when: financial_manager_deploy | default(false) | bool
+      vars:
+        # MySQL DB
+        financial_manager_docker_deploy_mysql_host: "{{ hostvars[groups['financial_manager_mysql_docker_servers'][0]].ansible_host }}"
+        financial_manager_docker_deploy_mysql_port: "{{ hostvars[groups['financial_manager_mysql_docker_servers'][0]].financial_manager_mysql_docker_port }}"
+
+        # Django Cache
+        financial_manager_caches_default_redis_host: "{{ hostvars[groups['redis_docker_servers'][0]].redis_virtual_ipv4 }}"
+        financial_manager_caches_default_redis_port: "{{ hostvars[groups['redis_docker_servers'][0]].redis_docker_port }}"
+        financial_manager_caches_default_redis_db:   "8"
+
+        # Celery broker
+        financial_manager_celery_broker_redis_host: "{{ hostvars[groups['redis_docker_servers'][0]].ansible_host }}"
+        financial_manager_celery_broker_redis_port: "{{ hostvars[groups['redis_docker_servers'][0]].redis_docker_port }}"
+        financial_manager_celery_broker_redis_db:   "9"
 
 # Should be the last, because it depends on the docker, and the business projects are the ones that install docker
 - name: Deploy observability docker servers
