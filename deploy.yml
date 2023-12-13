@@ -70,6 +70,12 @@
 #
 #   To update OpenedX app site configuration
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit openedx_docker_servers -e openedx_app_site_configuration_deploy=true --tags openedx_app_site_configuration
+#
+#   To deploy Financial Manager MySQL database
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit financial_manager_mysql_docker_servers -e financial_manager_mysql_deploy=true
+#
+#   To deploy Financial Manager application
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit financial_manager_docker_servers -e financial_manager_deploy=true
 
 # - name: Bootstrap instances of 16.04
 #   hosts: all,!idpproxy_servers,!support_server,!build_server
