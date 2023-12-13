@@ -25,6 +25,14 @@ services:
       replicas: 1
       placement:
         max_replicas_per_node: 1
+      resources:
+        limits:
+          memory: {{ financial_manager_deploy_resources_limit_memory }}
+{% if financial_manager_limit_cpus is defined %}
+          cpus: "{{ financial_manager_limit_cpus }}"
+{% endif %}
+        reservations:
+          memory: {{ financial_manager_deploy_resources_reservations_memory }}
     healthcheck:
       test: ["CMD", "echo", "''", ">", "/dev/tcp/127.0.0.1/8000", "||", "exit", "1"]
       start_period: 30s

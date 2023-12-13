@@ -18,6 +18,9 @@ financial_manager_docker_container_name_nginx: "{{ financial_manager_docker_depl
 
 financial_manager_app_docker_port: 13800
 
+financial_manager_deploy_resources_limit_memory: "{{ financial_manager_gunicorn_workers * 150 }}MB"
+financial_manager_deploy_resources_reservations_memory: "{{ financial_manager_gunicorn_workers * 100 }}MB"
+
 financial_manager_docker_deploy_files: "{{ financial_manager_docker_deploy_files_default }}"
 financial_manager_docker_deploy_files_default:
   - src: "{{ financial_manager_nginx_ssl_certificate_key }}"
