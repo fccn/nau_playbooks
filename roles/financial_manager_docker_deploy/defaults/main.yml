@@ -10,7 +10,8 @@ financial_manager_docker_deploy_compose_template: templates/docker-compose.yml.j
 financial_manager_docker_deploy_healthcheck_delay: 5
 financial_manager_docker_deploy_healthcheck_retries: 50
 
-financial_manager_docker_command: gunicorn --workers 3 -c /usr/local/etc/gunicorn/app.py nau_financial_manager.wsgi:application
+financial_manager_gunicorn_workers: 3
+financial_manager_docker_command: gunicorn --workers {{ financial_manager_gunicorn_workers }} -c /usr/local/etc/gunicorn/app.py nau_financial_manager.wsgi:application
 
 financial_manager_docker_container_name_app: "{{ financial_manager_docker_deploy_compose_name }}_app"
 financial_manager_docker_container_name_nginx: "{{ financial_manager_docker_deploy_compose_name }}_nginx"
