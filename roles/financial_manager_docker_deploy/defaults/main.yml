@@ -120,13 +120,22 @@ financial_manager_configurations_default:
   MYSQL_PASSWORD: "{{ financial_manager_mysql_password }}"
   DB_HOST: "{{ financial_manager_mysql_docker_hostname }}"
   DB_PORT: "{{ financial_manager_mysql_docker_port }}"
+  
+  # Celery
   CELERY_BROKER_URL: "{{ financial_manager_celery_broker_url }}"
+  
+  # Django cache
   CACHES:
     default:
       BACKEND: django.core.cache.backends.redis.RedisCache
       LOCATION: "{{ financial_manager_caches_default_location }}"
       KEY_PREFIX: nau_financial_manager
       TIMEOUT: 900 # in seconds: 60 * 15 (15 minutes)
+  
+  # Sage X3 settings
+  TRANSACTION_PROCESSOR_URL: "{{ financial_manager_processor_transaction_url }}"
+  USER_PROCESSOR_AUTH: "{{ financial_manager_processor_sage_x3_auth_user }}"
+  USER_PROCESSOR_PASSWORD: "{{ financial_manager_processor_sage_x3_auth_password }}"
 
 financial_manager_env_var: "{{ financial_manager_env_var_default | combine(financial_manager_env_var_overrides, recursive=True) }}"
 financial_manager_env_var_overrides: {}
