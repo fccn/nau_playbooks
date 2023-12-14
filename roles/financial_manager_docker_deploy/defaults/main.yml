@@ -137,6 +137,11 @@ financial_manager_configurations_default:
   USER_PROCESSOR_AUTH: "{{ financial_manager_processor_sage_x3_auth_user }}"
   USER_PROCESSOR_PASSWORD: "{{ financial_manager_processor_sage_x3_auth_password }}"
 
+  # iLink settings
+  RECEIPT_HOST_URL: "{{ financial_manager_receipt_host_url }}"
+  RECEIPT_HOST_AUTH: "{{ financial_manager_receipt_host_auth }}"
+  RECEIPT_HOST_PASSWORD: "{{ financial_manager_receipt_host_password }}"
+
 financial_manager_env_var: "{{ financial_manager_env_var_default | combine(financial_manager_env_var_overrides, recursive=True) }}"
 financial_manager_env_var_overrides: {}
 financial_manager_env_var_default:
