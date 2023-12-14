@@ -42,6 +42,26 @@ services:
 {{ helper.service_configs(service='app') }}
 {{ helper.service_secrets(service='app') }}
 
+{% if financial_manager_deploy_job %}
+  app_job:
+    image: {{ financial_manager_docker_image }}
+    container_name: {{ financial_manager_docker_container_name_app }}_job
+    restart: on-failure
+    environment:
+{% for env_var_name, env_var_value in financial_manager_env_var.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    deploy:
+      resources:
+        limits:
+          memory: {{ financial_manager_deploy_job_resources_limit_memory }}
+        reservations:
+          memory: {{ financial_manager_deploy_job_resources_reservations_memory }}
+    command: {{ financial_manager_docker_command_job }}
+{{ helper.service_configs(service='app') }}
+{{ helper.service_secrets(service='app') }}
+
+{% endif %}
   nginx:
     image: {{ financial_manager_nginx_image }}
     container_name: {{ financial_manager_docker_container_name_nginx }}

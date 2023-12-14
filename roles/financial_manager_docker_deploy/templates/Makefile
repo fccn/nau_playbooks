@@ -30,7 +30,7 @@ restart-{{ _service }}: _{{ _service }}-restart ## Restart the {{ _service }} se
 {% endfor %}
 
 ps: ## list containers
-	docker ps -a --filter name=^{{ financial_manager_docker_container_name_app }}
+	docker ps -a --filter name=^{{ financial_manager_docker_deploy_compose_name }}
 .PHONY: ps
 
 logs: ## View logs
@@ -103,6 +103,6 @@ healthcheck-celery-broker-redis-port: ## check celery broker redis port
 # MySQL
 #######################
 healthcheck-mysql-port: ## check mysql port
-	@mysqladmin ping --silent --host {{ financial_manager_docker_deploy_mysql_host }} --user {{ financial_manager_mysql_health_check_user }} --port {{ financial_manager_docker_deploy_mysql_port }} || ( echo "Check mysql port {{ financial_manager_docker_deploy_mysql_host }}:{{ financial_manager_docker_deploy_mysql_port }}: error" ; exit 1 )
-	@echo "Check mysql port {{ financial_manager_docker_deploy_mysql_host }}:{{ financial_manager_docker_deploy_mysql_port }}: OK"
+	@mysqladmin ping --silent --host {{ financial_manager_mysql_docker_hostname }} --user {{ financial_manager_mysql_health_check_user }} --port {{ financial_manager_mysql_docker_port }} || ( echo "Check mysql port {{ financial_manager_mysql_docker_hostname }}:{{ financial_manager_mysql_docker_port }}: error" ; exit 1 )
+	@echo "Check mysql port {{ financial_manager_mysql_docker_hostname }}:{{ financial_manager_mysql_docker_port }}: OK"
 .PHONY: healthcheck-mysql-port

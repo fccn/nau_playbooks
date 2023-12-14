@@ -847,8 +847,8 @@
       when: financial_manager_deploy | default(false) | bool
       vars:
         # MySQL DB
-        financial_manager_docker_deploy_mysql_host: "{{ hostvars[groups['financial_manager_mysql_docker_servers'][0]].ansible_host }}"
-        financial_manager_docker_deploy_mysql_port: "{{ hostvars[groups['financial_manager_mysql_docker_servers'][0]].financial_manager_mysql_docker_port }}"
+        financial_manager_mysql_docker_hostname: "{{ hostvars[groups['financial_manager_mysql_docker_servers'][0]].ansible_host }}"
+        financial_manager_mysql_docker_port: "{{ hostvars[groups['financial_manager_mysql_docker_servers'][0]].financial_manager_mysql_docker_port }}"
 
         # Django Cache
         financial_manager_caches_default_redis_host: "{{ hostvars[groups['redis_docker_servers'][0]].redis_virtual_ipv4 }}"

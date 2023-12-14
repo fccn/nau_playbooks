@@ -21,6 +21,13 @@ financial_manager_app_docker_port: 13800
 financial_manager_deploy_resources_limit_memory: "{{ financial_manager_gunicorn_workers * 150 }}MB"
 financial_manager_deploy_resources_reservations_memory: "{{ financial_manager_gunicorn_workers * 100 }}MB"
 
+# Job related variables
+financial_manager_docker_command_job: wait-for-it {{ financial_manager_mysql_docker_hostname }}:{{ financial_manager_mysql_docker_port }} -- /bin/bash -c "python manage.py migrate"
+financial_manager_deploy_job: true
+financial_manager_deploy_job_resources_limit_memory: 500M
+financial_manager_deploy_job_resources_reservations_memory: 500M
+
+# Files to be copied furing deployment
 financial_manager_docker_deploy_files: "{{ financial_manager_docker_deploy_files_default }}"
 financial_manager_docker_deploy_files_default:
   - src: "{{ financial_manager_nginx_ssl_certificate_key }}"
@@ -33,7 +40,6 @@ financial_manager_docker_deploy_files_default:
     docker_target: /etc/ssl/certs/certificate.crt.pem
     secret_name: certificate_crt
     service: nginx
-
 
 # Files to be templated during deployment
 financial_manager_docker_deploy_templates:
@@ -95,14 +101,12 @@ financial_manager_caches:
     KEY_PREFIX: nau_financial_manager
     TIMEOUT: 900 # in seconds: 60 * 15 (15 minutes)
 
-financial_manager_caches_default_location: |
-  redis://{{ financial_manager_caches_default_redis_host }}:{{ financial_manager_caches_default_redis_port }}/{{ financial_manager_caches_default_redis_db }}
+financial_manager_caches_default_location: redis://{{ financial_manager_caches_default_redis_host }}:{{ financial_manager_caches_default_redis_port }}/{{ financial_manager_caches_default_redis_db }}
 # financial_manager_caches_default_redis_host: nau-redis
 # financial_manager_caches_default_redis_port: 6379
 # financial_manager_caches_default_redis_db: 0
 
-financial_manager_celery_broker_url: |
-  redis://{{ financial_manager_celery_broker_redis_host }}:{{ financial_manager_celery_broker_redis_port }}/{{ financial_manager_celery_broker_redis_db }}
+financial_manager_celery_broker_url: redis://{{ financial_manager_celery_broker_redis_host }}:{{ financial_manager_celery_broker_redis_port }}/{{ financial_manager_celery_broker_redis_db }}
 # financial_manager_celery_broker_redis_host
 # financial_manager_celery_broker_redis_port
 # financial_manager_celery_broker_redis_db
@@ -114,13 +118,8 @@ financial_manager_configurations_default:
   DEBUG: False
   ALLOWED_HOSTS: "{{ financial_manager_allowed_hosts }}"
 
-  # DATABASE
-  MYSQL_DATABASE: "{{ financial_manager_mysql_database }}"
-  MYSQL_USER: "{{ financial_manager_mysql_user }}"
-  MYSQL_PASSWORD: "{{ financial_manager_mysql_password }}"
-  DB_HOST: "{{ financial_manager_mysql_docker_hostname }}"
-  DB_PORT: "{{ financial_manager_mysql_docker_port }}"
-  
+  DATABASES: "{{ financial_manager_databases }}"
+
   # Celery
   CELERY_BROKER_URL: "{{ financial_manager_celery_broker_url }}"
   
@@ -141,6 +140,15 @@ financial_manager_configurations_default:
   RECEIPT_HOST_URL: "{{ financial_manager_receipt_host_url }}"
   RECEIPT_BEARER_TOKEN: "{{ financial_manager_receipt_bearer_token }}"
   RECEIPT_ENTITY_PUBLIC_KEY: "{{ financial_manager_receipt_entity_public_key }}"
+
+financial_manager_databases:
+  default:
+    ENGINE: django.db.backends.mysql
+    NAME: "{{ financial_manager_mysql_database }}"
+    USER: "{{ financial_manager_mysql_user }}"
+    PASSWORD: "{{ financial_manager_mysql_password }}"
+    HOST: "{{ financial_manager_mysql_docker_hostname }}"
+    PORT: "{{ financial_manager_mysql_docker_port }}"
 
 financial_manager_env_var: "{{ financial_manager_env_var_default | combine(financial_manager_env_var_overrides, recursive=True) }}"
 financial_manager_env_var_overrides: {}
