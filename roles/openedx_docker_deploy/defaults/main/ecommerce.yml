@@ -84,8 +84,8 @@ openedx_ecommerce_cfg_settings_default:
   SOCIAL_AUTH_EDX_OAUTH2_PUBLIC_URL_ROOT: "{{ COMMON_LMS_BASE_URL }}"
   SOCIAL_AUTH_REDIRECT_IS_HTTPS: '{{ ECOMMERCE_SOCIAL_AUTH_REDIRECT_IS_HTTPS }}'
 
-  LOGO_URL: "/static/nau/images/nau_azul.svg"
-  FAVICON_URL: "/static/nau/images/favicon.ico"
+  LOGO_URL: "{{ COMMON_LMS_BASE_URL }}/static/nau-basic/images/nau_azul.svg"
+  FAVICON_URL: "{{ COMMON_LMS_BASE_URL }}/static/nau-basic/images/favicon.ico"
 
   OSCAR_DEFAULT_CURRENCY: "{{ ECOMMERCE_OSCAR_DEFAULT_CURRENCY | default('EUR') }}"
 
