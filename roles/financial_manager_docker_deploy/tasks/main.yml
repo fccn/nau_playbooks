@@ -6,6 +6,12 @@
   tags:
     - docker_deploy
 
+- name: Install MySQL client for health check
+  package:
+    name: mysql-client
+  tags:
+    - docker_deploy
+
 - name: Deploy
   include_role:
     name: ansible-docker-deploy
