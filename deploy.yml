@@ -827,6 +827,14 @@
   become: True
   gather_facts: True
   tasks:
+    - name: Start rolling deploy - block load balancer connections
+      import_role:
+        name: rolling_deploy
+      vars:
+        rolling_deploy_docker: true
+        rolling_deploy_starting: true
+      when: ( groups['financial_manager_docker_servers'] | length ) > 1 and ( financial_manager_docker_servers | default(false) | bool )
+
     - name: Install or upgrade docker daemon
       import_role:
         name: geerlingguy.docker
@@ -863,6 +871,14 @@
         financial_manager_celery_broker_redis_host: "{{ hostvars[groups['redis_docker_servers'][0]].ansible_host }}"
         financial_manager_celery_broker_redis_port: "{{ hostvars[groups['redis_docker_servers'][0]].redis_docker_port }}"
         financial_manager_celery_broker_redis_db:   "9"
+
+    - name: End rolling deploy - open load balancer connections
+      import_role:
+        name: rolling_deploy
+      vars:
+        rolling_deploy_docker: true
+        rolling_deploy_starting: false
+      when: ( groups['financial_manager_docker_servers'] | length ) > 1 and ( financial_manager_docker_servers | default(false) | bool )
 
 # Should be the last, because it depends on the docker, and the business projects are the ones that install docker
 - name: Deploy observability docker servers
