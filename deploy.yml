@@ -849,6 +849,10 @@
         # MySQL DB
         financial_manager_mysql_docker_hostname: "{{ hostvars[groups['financial_manager_mysql_docker_servers'][0]].ansible_host }}"
         financial_manager_mysql_docker_port: "{{ hostvars[groups['financial_manager_mysql_docker_servers'][0]].financial_manager_mysql_docker_port }}"
+        financial_manager_mysql_database: "{{ hostvars[groups['financial_manager_mysql_docker_servers'][0]].financial_manager_mysql_database }}"
+        financial_manager_mysql_user: "{{ hostvars[groups['financial_manager_mysql_docker_servers'][0]].financial_manager_mysql_user }}"
+        financial_manager_mysql_password: "{{ hostvars[groups['financial_manager_mysql_docker_servers'][0]].financial_manager_mysql_password }}"
+        financial_manager_mysql_root_password: "{{ hostvars[groups['financial_manager_mysql_docker_servers'][0]].financial_manager_mysql_root_password }}"
 
         # Django Cache
         financial_manager_caches_default_redis_host: "{{ hostvars[groups['redis_docker_servers'][0]].redis_virtual_ipv4 }}"
