@@ -517,6 +517,10 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
     # And other apps that log into Open edX via OAuth.
     # From MIT Office of Digital Learning
     ENABLE_EDX_USERNAME_CHANGER: True
+    # Set to True to enable changing a user password through django admin.
+    # This is disabled by default because enabling allows a method to bypass password policy.
+    # This allows the support team to change manually a password for an user directly from the admin.
+    ENABLE_CHANGE_USER_PASSWORD_ADMIN: True
   FILE_UPLOAD_STORAGE_BUCKET_NAME: "{{ EDXAPP_FILE_UPLOAD_STORAGE_BUCKET_NAME | default(EDXAPP_AWS_STORAGE_BUCKET_NAME) }}"
   GRADES_DOWNLOAD:
     STORAGE_CLASS: "{{ EDXAPP_GRADE_STORAGE_CLASS | default(None) }}"
