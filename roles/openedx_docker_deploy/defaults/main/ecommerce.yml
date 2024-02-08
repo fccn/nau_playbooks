@@ -2,7 +2,7 @@
 
 openedx_ecommerce_deploy: true
 openedx_ecommerce_job_deploy: false
-openedx_ecommerce_docker_image: nauedu/openedx-ecommerce:latest
+openedx_ecommerce_docker_image: nauedu/openedx-ecommerce:main
 openedx_ecommerce_job_command: bash -c "python manage.py migrate --noinput && python manage.py oscar_populate_countries --initial-only"
 
 openedx_ecommerce_deploy_resources_limit_memory: 500M
