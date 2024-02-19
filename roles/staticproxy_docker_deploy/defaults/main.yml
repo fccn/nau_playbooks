@@ -67,7 +67,7 @@ staticproxy_nau_urls_to_check:
     host: "shared.{{ nau_ceph_host_public }}"
     protocol: https
     page: maintenance-site/index.html
-    content: ajuda@nau.edu.pt
+    content: ajuda.nau.edu.pt
     retries: 5
     port: "{{ staticproxy_nginx_https_ingress_port }}"
     haproxy_protocol: true
