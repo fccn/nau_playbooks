@@ -91,7 +91,8 @@ openedx_ecommerce_cfg_settings_default:
 
   # Configure the NAU custom extension point on ecommerce.
   # Use different Django Oscar strategy for VAT.
-  NAU_EXTENSION_OSCAR_STRATEGY_CLASS: "nau_extensions.strategy.DefaultStrategy"
+  # NAU_EXTENSION_OSCAR_STRATEGY_CLASS: "nau_extensions.strategy.DefaultStrategy"
+  NAU_EXTENSION_OSCAR_RATE_TAX_STRATEGY_CLASS: nau_extensions.strategy.SettingFixedRateTax
   NAU_EXTENSION_TAX_RATE: "0.298701299" # = 0.23/0.77
 
   ADDL_INSTALLED_APPS:
