@@ -3,7 +3,7 @@
 # This is not shared with ecommerce, because they are different applications.
 
 openedx_ecommerce_worker_deploy: true
-openedx_ecommerce_worker_docker_image: nauedu/openedx-ecommerce-worker:nau/nutmeg.master
+openedx_ecommerce_worker_docker_image: nauedu/openedx-ecommerce-worker:nau-nutmeg.master
 
 openedx_ecommerce_worker_deploy_resources_limit_memory: 500M
 openedx_ecommerce_worker_deploy_resources_reservations_memory: 100M
