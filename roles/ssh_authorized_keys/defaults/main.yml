@@ -1,2 +1,3 @@
 ---
 authorized_keys_for_user: []
+users_without_authorized_keys: []

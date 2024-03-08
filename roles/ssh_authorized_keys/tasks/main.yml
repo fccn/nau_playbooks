@@ -11,3 +11,14 @@
   ignore_errors: "{{ ansible_check_mode }}"
   tags: 
     - ssh
+
+- name: Delete authorized keys
+  file:
+    path: ~/.ssh/authorized_keys
+    state: absent
+  become: yes
+  become_user: "{{ item }}"
+  with_items: "{{ users_without_authorized_keys }}"
+  ignore_errors: "{{ ansible_check_mode }}"
+  tags:
+    - ssh
