@@ -463,6 +463,12 @@ services:
 {% endif %}
         reservations:
           memory: 210M
+{% if openedx_ecommerce_extra_hosts is defined and openedx_ecommerce_extra_hosts | length > 0 %}
+    extra_hosts:
+{% for extra_host in openedx_ecommerce_extra_hosts %}
+      - {{ extra_host }}
+{% endfor %}
+{% endif %}
     healthcheck:
       # Check if /health/ returns a HTTP status 200, meaning the service is ok
       # test: curl --silent --fail --head --resolve ecommerce:8000:127.0.0.1 http://ecommerce:8000/health/ | egrep "HTTP/.*200 OK"
