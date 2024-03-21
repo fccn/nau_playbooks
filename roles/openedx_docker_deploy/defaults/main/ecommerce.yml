@@ -113,6 +113,10 @@ openedx_ecommerce_cfg_settings_default:
   #   nau: 
   #     url: "http://financial-manager.local.nau.fccn.pt:8000/api/billing/transaction-complete/",
   #     token: "abcdABCD1234",
+  NAU_FINANCIAL_MANAGER:
+    openedx:
+      url: https://{{ financial_manager_nginx_server_name }}/api/billing/transaction-complete/
+      receipt-link-url: https://{{ financial_manager_nginx_server_name }}/api/billing/receipt-link/
 
 
 openedx_ecommerce_docker_environment_variables: "{{ openedx_ecommerce_docker_environment_variables_default }}"
