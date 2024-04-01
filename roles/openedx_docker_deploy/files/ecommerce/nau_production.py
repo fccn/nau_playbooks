@@ -27,10 +27,10 @@ from os import environ
 from sentry_sdk.integrations.django import DjangoIntegration
 SENTRY_DSN = environ.get('SENTRY_DSN', config_from_yaml.get('SENTRY_DSN', None))
 SENTRY_ENVIRONMENT = environ.get('SENTRY_ENVIRONMENT', config_from_yaml.get('SENTRY_ENVIRONMENT', None))
-SENTRY_ENABLE_TRACKING = environ.get('SENTRY_ENABLE_TRACKING', config_from_yaml.get('SENTRY_ENABLE_TRACKING', None))
+SENTRY_TRACES_SAMPLE_RATE = environ.get('SENTRY_TRACES_SAMPLE_RATE', config_from_yaml.get('SENTRY_TRACES_SAMPLE_RATE', None))
 sentry_sdk.init(
     dsn=SENTRY_DSN,
     integrations=[DjangoIntegration()],
     environment=SENTRY_ENVIRONMENT,
-    enable_tracing=SENTRY_ENABLE_TRACKING,
+    traces_sample_rate=SENTRY_TRACES_SAMPLE_RATE,
 )

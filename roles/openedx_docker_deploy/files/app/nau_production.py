@@ -60,10 +60,10 @@ import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
 SENTRY_DSN = ENV_TOKENS.get('SENTRY_DSN', SENTRY_DSN)
 SENTRY_ENVIRONMENT = ENV_TOKENS.get('SENTRY_ENVIRONMENT', SENTRY_ENVIRONMENT)
-SENTRY_ENABLE_TRACKING = ENV_TOKENS.get('SENTRY_ENABLE_TRACKING', SENTRY_ENABLE_TRACKING)
+SENTRY_TRACES_SAMPLE_RATE = ENV_TOKENS.get('SENTRY_TRACES_SAMPLE_RATE', SENTRY_TRACES_SAMPLE_RATE)
 sentry_sdk.init(
     dsn=SENTRY_DSN,
     integrations=[DjangoIntegration()],
     environment=SENTRY_ENVIRONMENT,
-    enable_tracing=SENTRY_ENABLE_TRACKING,
+    traces_sample_rate=SENTRY_TRACES_SAMPLE_RATE,
 )
