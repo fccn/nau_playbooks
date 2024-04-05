@@ -71,7 +71,7 @@ healthcheck-parallel: \
 
 healthcheck-mysql-port: ## check mysql port
 	@echo -n "Check mysql port for {{ mysql_docker_container_name }}: "
-	@nc -z 127.0.0.1 {{ mysql_docker_port }}
+	@nc -z -w 5 127.0.0.1 {{ mysql_docker_port }}
 	@echo "OK"
 .PHONY: healthcheck-mysql-port
 

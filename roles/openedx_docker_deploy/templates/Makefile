@@ -189,7 +189,7 @@ healthcheck-mysql-read-replica-port: ## check mysql port for read replica
 # Redis
 #######################
 healthcheck-redis-port: ## check Redis port
-	@nc -z {{ openedx_docker_deploy_cache_redis_host }} {{ openedx_docker_deploy_cache_redis_port }} || ( echo "Check redis port: error connecting to {{ openedx_docker_deploy_cache_redis_host }}:{{ openedx_docker_deploy_cache_redis_port }}" ; exit 1 )
+	@nc -z -w 5 {{ openedx_docker_deploy_cache_redis_host }} {{ openedx_docker_deploy_cache_redis_port }} || ( echo "Check redis port: error connecting to {{ openedx_docker_deploy_cache_redis_host }}:{{ openedx_docker_deploy_cache_redis_port }}" ; exit 1 )
 	@echo "Check redis port: OK"
 .PHONY: healthcheck-redis-port
 
@@ -210,7 +210,7 @@ healthcheck-elasticsearch: ## Run elastic search healthcheck cluster
 #######################
 healthcheck-mongo-hosts-port: # Check if all mongo hosts port is up
 {% for mongo_host in EDXAPP_MONGO_HOSTS %}
-	@nc -z {{ mongo_host }} {{ EDXAPP_MONGO_PORT }} || ( echo "Check mongo port: error connecting {{ mongo_host }}:{{ EDXAPP_MONGO_PORT }}" ; exit 1)
+	@nc -z -w 5 {{ mongo_host }} {{ EDXAPP_MONGO_PORT }} || ( echo "Check mongo port: error connecting {{ mongo_host }}:{{ EDXAPP_MONGO_PORT }}" ; exit 1)
 {% endfor %}
 	@echo "Check mongo cluster ports: OK"
 .PHONY: healthcheck-mongo-hosts-port

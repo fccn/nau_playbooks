@@ -150,7 +150,7 @@ healthcheck-elasticsearch: ## Run elastic search healthcheck cluster
 #######################
 
 healthcheck-redis-port: ## check redis port
-	@nc -z {{ richie_docker_deploy_redis_host }} {{ richie_docker_deploy_redis_port }} || ( echo "Check redis port: error" ; exit 1; )
+	@nc -z -w 5 {{ richie_docker_deploy_redis_host }} {{ richie_docker_deploy_redis_port }} || ( echo "Check redis port: error" ; exit 1; )
 	@echo "Check redis port: OK"
 .PHONY: healthcheck-redis-port
 

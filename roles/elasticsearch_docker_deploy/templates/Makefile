@@ -60,7 +60,7 @@ healthcheck: healthcheck-parallel ## Overall healthcheck - for parallel executio
 .PHONY: healthcheck-parallel
 
 healthcheck-elasticsearch-port: ## Check the elasticsearch port is up
-	@nc -z 127.0.0.1 {{ elasticsearch_http_port }} || ( echo "Check elasticsearch port: error" ; exit 1)
+	@nc -z -w 5 127.0.0.1 {{ elasticsearch_http_port }} || ( echo "Check elasticsearch port: error" ; exit 1)
 	@echo "Check elasticsearch port: OK"
 .PHONY: healthcheck-elasticsearch-port
 

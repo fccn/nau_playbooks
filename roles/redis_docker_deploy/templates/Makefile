@@ -57,7 +57,7 @@ healthcheck-memory: ## check that containers doesn't use more than 90% of its av
 
 healthcheck-port: ## Check redis port
 	@echo -n "Check redis port: "
-	@nc -z 127.0.0.1 {{ redis_docker_port }}
+	@nc -z -w 5 127.0.0.1 {{ redis_docker_port }}
 	@echo "OK"
 .PHONY: healthcheck-port
 

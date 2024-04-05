@@ -88,7 +88,7 @@ healthcheck-parallel: \
 .PHONY: healthcheck-parallel
 
 healthcheck-nginx-ports: ## check nginx ports
-	@nc -z 127.0.0.1 {{ coursecertificate_nginx_http_ingress_port }}  || ( echo "Check nginx http port {{ coursecertificate_nginx_http_ingress_port }}: error not available!" ; exit 1 )
-	@nc -z 127.0.0.1 {{ coursecertificate_nginx_https_ingress_port }} || ( echo "Check nginx https port {{ coursecertificate_nginx_https_ingress_port }}: error not available!" ; exit 1 )
+	@nc -z -w 5 127.0.0.1 {{ coursecertificate_nginx_http_ingress_port }}  || ( echo "Check nginx http port {{ coursecertificate_nginx_http_ingress_port }}: error not available!" ; exit 1 )
+	@nc -z -w 5 127.0.0.1 {{ coursecertificate_nginx_https_ingress_port }} || ( echo "Check nginx https port {{ coursecertificate_nginx_https_ingress_port }}: error not available!" ; exit 1 )
 	@echo "Check nginx ports: OK"
 .PHONY: healthcheck-nginx-ports

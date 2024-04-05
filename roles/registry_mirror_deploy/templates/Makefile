@@ -33,6 +33,6 @@ bash: ## open bash on registry container
 
 healthcheck: ## Check the health of the registry service
 	@echo -n "Check port: "
-	@nc -z 127.0.0.1 {{ registry_mirror_port }}
+	@nc -z -w 5 127.0.0.1 {{ registry_mirror_port }}
 	@echo "OK"
 .PHONY: healthcheck

@@ -61,7 +61,7 @@ healthcheck-replication: ## Check mongo replication
 
 healthcheck-port: # Check mongo port is up
 	@echo -n "Check mongo port: "
-	@nc -z 127.0.0.1 {{ mongo_docker_port }}
+	@nc -z -w 5 127.0.0.1 {{ mongo_docker_port }}
 	@echo "OK"
 .PHONY: healthcheck-port
 
