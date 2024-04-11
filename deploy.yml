@@ -325,6 +325,8 @@
         mongo_docker_admin_password: "{{ MONGO_ADMIN_PASSWORD }}"
         mongo_docker_replSet: "{{ MONGO_REPL_SET }}"
         mongo_docker_keyFile_value: "{{ MONGO_CLUSTER_KEY | default('') }}"
+        mongo_docker_command_bind_ip_additional_list:
+          - "{{ ansible_additional_ipv4 | default('') }}"
       when: mongo_deploy | default(false) | bool
 
 - name: Deploy Elasticsearch servers
@@ -348,6 +350,9 @@
     - name: Deploy elasticsearch
       import_role:
         name: elasticsearch_docker_deploy
+      vars:
+        elasticsearch_network_hosts_additional_list:
+          - "{{ ansible_additional_ipv4 | default('') }}"
       when: elasticsearch_deploy | default(false) | bool
 
 - name: Deploy cache redis docker servers

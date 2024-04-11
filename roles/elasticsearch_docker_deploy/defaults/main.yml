@@ -1,14 +1,19 @@
 ---
-
 elasticsearch_docker_image: docker.elastic.co/elasticsearch/elasticsearch:7.17.4
-
+elasticsearch_discovery_seed_hosts_tmp: "{% for elastic_host in groups['elasticsearch_docker_servers'] %}{{ hostvars[elastic_host].ansible_host }}:{{ hostvars[elastic_host].elasticsearch_transport_port }}{{ ',' if not loop.last else '' }}{% endfor %}"
+elasticsearch_discovery_seed_hosts: "{{ elasticsearch_discovery_seed_hosts_tmp.split(',') | list }}"
 elasticsearch_node_name: "{{ inventory_hostname }}"
+elasticsearch_initial_master_nodes: "{{ hostvars[groups['elasticsearch_docker_servers'][0]].ansible_host + ':' + ( hostvars[groups['elasticsearch_docker_servers'][0]].elasticsearch_transport_port | string ) }}"
 
 elasticsearch_http_port: 9200
 elasticsearch_transport_port: 9300
 elasticsearch_docker_container_name: elasticsearch
 
-elasticsearch_network_host: "{{ ansible_host }}" # "0.0.0.0"
+elasticsearch_network_hosts: "{{ elasticsearch_network_hosts_default_list + elasticsearch_network_hosts_additional_list }}"
+elasticsearch_network_hosts_default_list:
+  - _local_
+  - "{{ ansible_host }}"
+elasticsearch_network_hosts_additional_list: []
 
 elasticsearch_docker_deploy_parent_folder: /nau/ops
 elasticsearch_docker_deploy_base_folder: "{{ elasticsearch_docker_deploy_parent_folder }}/{{ elasticsearch_docker_container_name }}"

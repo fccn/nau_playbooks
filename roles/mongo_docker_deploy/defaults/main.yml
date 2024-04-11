@@ -9,7 +9,13 @@ mongo_docker_image: docker.io/mongo:4.2.24
 # docker.io/mongo:4.0.28
 # docker.io/mongo:3.6.23
 
-mongo_docker_command: "{{ mongo_docker_command_keyfile }}--replSet {{ mongo_docker_replSet }} --port {{ mongo_docker_port }} --bind_ip localhost,{{ mongo_docker_container_name }},{{ ansible_host }}"
+mongo_docker_command: "{{ mongo_docker_command_keyfile }}--replSet {{ mongo_docker_replSet }} --port {{ mongo_docker_port }} {{ mongo_docker_command_bind_ip }}"
+mongo_docker_command_bind_ip: --bind_ip {{ (mongo_docker_command_bind_ip_default_list + mongo_docker_command_bind_ip_additional_list) | select() | join(',') }}
+mongo_docker_command_bind_ip_default_list:
+  - localhost
+  - "{{ mongo_docker_container_name }}"
+  - "{{ ansible_host }}"
+mongo_docker_command_bind_ip_additional_list: []
 mongo_docker_command_keyfile: "{{ '--keyFile ' + mongo_docker_keyfile_path + ' ' if mongo_docker_keyfile_is_defined | bool else '' }}"
 mongo_docker_keyfile_is_defined: "{{ mongo_docker_keyFile_value is defined and ( mongo_docker_keyFile_value | length > 0 ) }}"
 mongo_docker_keyfile_path: /run/secrets/mongodb_key
