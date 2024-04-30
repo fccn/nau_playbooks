@@ -111,10 +111,10 @@
     - import_role:
         name: ansible_pakiti_client
 
-    - name: Install pip
-      import_role:
-        name: geerlingguy.pip
-      when: ansible_distribution == 'Ubuntu' and (ansible_distribution_major_version|int) >= 20
+    # - name: Install pip
+    #   import_role:
+    #     name: geerlingguy.pip
+    #   when: ansible_distribution == 'Ubuntu' and (ansible_distribution_major_version|int) >= 20
 
 - name: Bootstrap cnc with Ubuntu 20.04
   hosts: command_and_control_2004
@@ -884,6 +884,21 @@
         rolling_deploy_docker: true
         rolling_deploy_starting: false
       when: ( groups['financial_manager_docker_servers'] | length ) > 1 and ( financial_manager_docker_servers | default(false) | bool )
+
+- name: Deploy to Kubernetes nodes
+  hosts: kubernetes_servers
+  serial: "{{ serial_number | default(1) }}" # deploy in sequence
+  become: True
+  gather_facts: True
+  tasks:
+    - import_role:
+        name: snmpd
+      tags: snmpd
+      when: kubernetes_deploy | default(false) | bool
+    - import_role:
+        name: snmpd_docker
+      tags: snmpd
+      when: kubernetes_deploy | default(false) | bool
 
 # Should be the last, because it depends on the docker, and the business projects are the ones that install docker
 - name: Deploy observability docker servers

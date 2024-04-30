@@ -35,4 +35,5 @@
       
       {{ sudoers_line }}
     backup: yes
+  when: sudoers_line is defined
   tags: users
