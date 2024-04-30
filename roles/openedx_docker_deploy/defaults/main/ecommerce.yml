@@ -103,7 +103,7 @@ openedx_ecommerce_cfg_settings_default:
   
   # Add theme locale path, before the default locale path
   LOCALE_PATHS:
-    - /openedx/ecommerce/ecommerce/themes/nau/conf/locale/
+    - /openedx/ecommerce/ecommerce/themes/nau/conf/locale
     - /openedx/ecommerce/ecommerce/conf/locale
 
   PAYMENT_PROCESSOR_CONFIG: '{{ ECOMMERCE_PAYMENT_PROCESSOR_CONFIG }}'
