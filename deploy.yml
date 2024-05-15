@@ -652,7 +652,7 @@
         name: mysql_docker_deploy
       when: openedx_mysql_deploy | default(false) | bool
       vars:
-        mysql_docker_image: docker.io/mysql:5.7.37-debian
+        mysql_docker_image: docker.io/mysql:5.7.44
         mysql_major_release_number: 5
 
         mysql_docker_configurations_dict_default:
