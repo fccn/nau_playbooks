@@ -28,15 +28,6 @@ services:
     volumes:
       - {{ mysql_docker_volume_path }}:/var/lib/mysql
     network_mode: host
-    deploy:
-      replicas: 1
-      resources:
-        limits:
-          memory: 4G
-        reservations:
-          memory: 1G
-      placement:
-        max_replicas_per_node: 1
 {{ helper.service_configs(service='mysql') }}
 {{ helper.service_secrets(service='mysql') }}
 
