@@ -655,10 +655,48 @@
         mysql_docker_image: docker.io/mysql:5.7.37-debian
         mysql_major_release_number: 5
 
+        mysql_docker_configurations_dict_default:
+          character_set_server: utf8
+          collation_server: utf8_general_ci
+          # The number of days for automatic binary log file removal.
+          # The default is 0, which means "no automatic removal."
+          expire_logs_days: 30
+          # If a write to the binary log causes the current log file size to exceed the value of this variable,
+          # the server rotates the binary logs (closes the current file and opens the next one).
+          # The minimum value is 4096 bytes. The maximum and default value is 1GB.
+          max_binlog_size:  100M
+          # The maximum permitted number of simultaneous client connections.
+          # Default value is 151.
+          max_connections:  500
+          # Parallel replication
+          # When using a multithreaded replica (slave_parallel_workers is greater than 0), 
+          # this variable specifies the policy used to decide which transactions are allowed
+          # to execute in parallel on the replica.
+          #  - LOGICAL_CLOCK - Transactions that are part of the same binary log group commit 
+          #                    on a source are applied in parallel on a replica.
+          slave_parallel_type: LOGICAL_CLOCK
+          # Sets the number of applier threads for executing replication transactions in parallel.
+          slave_parallel_workers: 4
+          # For multithreaded replicas, the setting 1 for this variable ensures that transactions
+          # are externalized on the replica in the same order as they appear in the replica's relay log,
+          # and prevents gaps in the sequence of transactions that have been executed from the relay log.
+          slave_preserve_commit_order: 1
+          # The size in bytes of the buffer pool, the memory area where InnoDB caches table and index data.
+          # From default 128MB to 2G
+          innodb_buffer_pool_size: "{{ openedx_mysql_innodb_buffer_pool_size | default('128MB') }}"
+
+          # In future when on local attached SSDs
+          # innodb_io_capacity: 1000
+
+        mysql_docker_configurations_dict_replica:
+          # Older DB had: --slave-skip-errors=1032,1062,1451,1452
+          slave_skip_errors: 1062,1032
+
+        mysql_docker_configurations_dict: "{{ mysql_docker_configurations_dict_default | combine(mysql_docker_configurations_dict_replica, recursive=True) if not openedx_mysql_docker_primary else mysql_docker_configurations_dict_default }}"
+
         # The `--max-allowed-packet=1G` is to allow the mysqldump execute a backup. Trying to put it on the mysqldump command directly.
         # The extra command have been removed: `--innodb-buffer-pool-size=4G --innodb-log-file-size=1G --innodb-log-buffer-size=256M`
-        mysql_docker_command_extra: --character-set-server=utf8 --collation-server=utf8_general_ci {{ '--slave-skip-errors=1062,1032' if not openedx_mysql_docker_primary else '' }}
-        # Older DB had: --slave-skip-errors=1032,1062,1451,1452
+        # mysql_docker_command_extra: {{ '--slave-skip-errors=1062,1032' if not openedx_mysql_docker_primary else '' }}
         # mysql_replication_login_user: "{{ COMMON_MYSQL_ADMIN_USER }}"
 
         # Base configuration for the MySQL instance
