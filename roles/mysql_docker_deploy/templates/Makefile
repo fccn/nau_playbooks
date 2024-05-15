@@ -91,6 +91,14 @@ mysql-shell: ## open mysl shell to run SQL commands
 	@MYSQL_PWD="{{ mysql_root_password }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ mysql_docker_port }}
 .PHONY: mysql-shell
 
+mysql-connections-count: ## Number of connections
+	@echo 'SELECT COUNT(1) FROM information_schema.PROCESSLIST;' | MYSQL_PWD="" mysql -u {{ mysql_health_check_user }} --host 127.0.0.1 --port {{ mysql_docker_port }} --skip-column-names
+.PHONY: mysql-connections-count
+
+mysql-connections-active-count: ## Number of active connections
+	@echo 'SELECT COUNT(1) FROM information_schema.PROCESSLIST WHERE INFO IS NOT NULL;' | MYSQL_PWD="" mysql -u {{ mysql_health_check_user }} --host 127.0.0.1 --port {{ mysql_docker_port }} --skip-column-names
+.PHONY: mysql-connections-active-count
+
 {% if not mysql_docker_primary %}
 healthcheck-mysql-replica: ## show replica slave status
 	@echo -n "Check mysql replica {{ mysql_docker_container_name }} seconds behind primary is lower than 600 seconds (< 10 minutes): "
@@ -98,8 +106,7 @@ healthcheck-mysql-replica: ## show replica slave status
 	@echo "OK"
 .PHONY: healthcheck-mysql-replica
 
-mysql-replica-seconds-behind: ## show how much seconds the replica in behind the primary
-	@echo -n "Seconds behind primary - should be lower than 600 seconds == ( < 10 minutes ): "
+mysql-replica-seconds-behind: ## show how much seconds the replica in behind the primary should be lower than 600 seconds == ( < 10 minutes )
 	@echo 'show slave status \G' | MYSQL_PWD="{{ mysql_health_check_pass }}" mysql -u {{ mysql_health_check_user }} --host 127.0.0.1 --port {{ mysql_docker_port }} | egrep -o "Seconds_Behind_Master: [0-5]?[0-9]?[0-9]$$" | egrep -o "[0-9]+"
 .PHONY: mysql-replica-seconds-behind
 
