@@ -11,3 +11,6 @@ read_only         = 1
 {% if ( mysql_super_read_only ) %}
 super_read_only         = 1
 {% endif %}
+{% for key,value in mysql_docker_configurations_dict.items() %}
+{{ key }} = {{ value }}
+{% endfor %}

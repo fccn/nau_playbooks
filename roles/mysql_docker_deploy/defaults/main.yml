@@ -74,3 +74,6 @@ mysql_replication_login_user: root
 mysql_replication_slave_server_ip: "%"
 mysql_replication_login_host: 127.0.0.1
 mysql_replication_login_port: "{{ mysql_docker_port }}"
+
+# Additional configuration for mysql service
+mysql_docker_configurations_dict: []
