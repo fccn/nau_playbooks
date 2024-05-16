@@ -107,7 +107,7 @@ healthcheck-mysql-replica: ## show replica slave status
 .PHONY: healthcheck-mysql-replica
 
 mysql-replica-seconds-behind: ## show how much seconds the replica in behind the primary should be lower than 600 seconds == ( < 10 minutes )
-	@echo 'show slave status \G' | MYSQL_PWD="{{ mysql_health_check_pass }}" mysql -u {{ mysql_health_check_user }} --host 127.0.0.1 --port {{ mysql_docker_port }} | egrep -o "Seconds_Behind_Master: [0-5]?[0-9]?[0-9]$$" | egrep -o "[0-9]+"
+	@echo 'show slave status \G' | MYSQL_PWD="{{ mysql_health_check_pass }}" mysql -u {{ mysql_health_check_user }} --host 127.0.0.1 --port {{ mysql_docker_port }} | egrep -o "Seconds_Behind_Master: [0-9]+$$" | egrep -o "[0-9]+"
 .PHONY: mysql-replica-seconds-behind
 
 mysql-replica-status: ## show the status of the replica
