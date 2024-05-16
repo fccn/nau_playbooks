@@ -1,8 +1,8 @@
 ---
 richie_sites_app:
   nau:
-    app_image: nauedu/nau:{{ richie_nau_version }}
-    nginx_image: nauedu/nau-nginx:{{ richie_nau_version }}
+    app_image: docker.io/nauedu/nau:{{ richie_nau_version }}
+    nginx_image: docker.io/nauedu/nau-nginx:{{ richie_nau_version }}
     app_replicas: 1
     app_environment_variables: "{{ richie_nau_app_environment_variables }}"
     app_gunicorn_workers: 3 # the same default upstream workers

@@ -2,7 +2,7 @@
 # If the analyticsapi is to be installed
 openedx_analyticsapi_deploy: true
 
-openedx_analyticsapi_image: nauedu/openedx-analytics-data-api:nau-nutmeg.master-925eb6f251e1bfe17de7f11eb00f387d25b5ad9d-build-11
+openedx_analyticsapi_image: docker.io/nauedu/openedx-analytics-data-api:nau-nutmeg.master-925eb6f251e1bfe17de7f11eb00f387d25b5ad9d-build-11
 
 openedx_analyticsapi_port: 8100
 

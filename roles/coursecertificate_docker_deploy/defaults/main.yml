@@ -56,7 +56,7 @@ coursecertificate_nginx_proxy_protocol: true
 coursecertificate_nginx_http2: true
 
 # app configuration
-coursecertificate_app_docker_image: nauedu/nau-course-certificate:latest
+coursecertificate_app_docker_image: docker.io/nauedu/nau-course-certificate:latest
 coursecertificate_app_replicas: 1
 coursecertificate_app_lms_server_url: https://{{ EDXAPP_LMS_SITE_NAME }}
 

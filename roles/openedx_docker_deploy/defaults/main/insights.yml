@@ -1,6 +1,6 @@
 ---
 openedx_insights_deploy: true
-openedx_insights_image: nauedu/openedx-insights:nau-nutmeg.master-3d6ddef3fe2f86adde13fbd88e9b3671c3676715-build-7
+openedx_insights_image: docker.io/nauedu/openedx-insights:nau-nutmeg.master-3d6ddef3fe2f86adde13fbd88e9b3671c3676715-build-7
 
 openedx_insights_port: 8000
 openedx_insights_nginx_ssl_certificate_docker_target: "{{ openedx_nginx_ssl_certificate_docker_target }}"
