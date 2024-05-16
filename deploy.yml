@@ -682,7 +682,7 @@
           # and prevents gaps in the sequence of transactions that have been executed from the relay log.
           slave_preserve_commit_order: 1
           # The size in bytes of the buffer pool, the memory area where InnoDB caches table and index data.
-          # From default 128MB to 2G
+          # Defaults to 128MB
           innodb_buffer_pool_size: "{{ openedx_mysql_innodb_buffer_pool_size | default('128MB') }}"
 
           # In future when on local attached SSDs
