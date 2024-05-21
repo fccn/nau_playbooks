@@ -597,7 +597,7 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
     confirm_email: "hidden"
     country: "required"
     gender: "optional"
-    honor_code: "required"
+    honor_code: "hidden"
     level_of_education: "optional"
     mailing_address: "hidden"
     year_of_birth: "optional"
@@ -621,7 +621,6 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
     - allow_newsletter
     - data_authorization
     - terms_of_service
-    - honor_code
   RETIREMENT_STATES: "{{ EDXAPP_RETIREMENT_STATES }}"
 
   # Cookies
