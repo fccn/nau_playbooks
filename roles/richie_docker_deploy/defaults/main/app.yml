@@ -44,7 +44,7 @@ richie_nau_app_environment_variables_default:
   # Use custom timezone
   TZ: "{{ openedx_timezone | default('Europe/Lisbon') }}"
 
-  DJANGO_STATICFILES_STORAGE: django.contrib.staticfiles.storage.ManifestStaticFilesStorage
+  # DJANGO_STATICFILES_STORAGE: django.contrib.staticfiles.storage.ManifestStaticFilesStorage
   DJANGO_SETTINGS_MODULE: nau.settings
   DJANGO_CONFIGURATION: Production
 
