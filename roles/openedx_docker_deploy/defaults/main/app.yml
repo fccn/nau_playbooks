@@ -334,6 +334,7 @@ openedx_app_common_env_file: &openedx_app_common_env_file_reuse
   RICHIE_OPENEDX_SYNC_COURSE_HOOKS: 
     - url: "{{ nau_marketing_site_root }}/api/v1.0/course-runs-sync/"
       secret: "{{ richie_DJANGO_RICHIE_COURSE_RUN_SYNC_SECRETS }}"
+      resource_link_template: http://{lms_domain}/course_modes/choose/{course_id}/
       timeout: 20
 
   AUTH_PASSWORD_VALIDATORS:
