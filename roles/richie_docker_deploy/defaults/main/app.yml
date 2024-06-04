@@ -78,7 +78,7 @@ richie_nau_app_environment_variables_default:
   EDX_BACKEND: richie.apps.courses.lms.edx.EdXLMSBackend
   EDX_JS_BACKEND: openedx-hawthorn
   # the double $$ is required so docker don't try to interpolate
-  EDX_COURSE_REGEX: "^(?P<protocol>.*)://(?P<domain>[^\\/]+)/course_modes/choose/(?P<course_id>.*)/$$"
+  EDX_COURSE_REGEX: "^(?P<protocol>.*)://(?P<domain>[^\\\\/]+)/course_modes/choose/(?P<course_id>.*)/$$"
   EDX_JS_COURSE_REGEX: "^.*/course_modes/choose/(.*)/$$"
   EDX_BASE_URL: "{{ richie_nau_app_openedx_lms_url }}"
   DJANGO_RICHIE_COURSE_RUN_SYNC_SECRETS: "{{ richie_nau_app_DJANGO_RICHIE_COURSE_RUN_SYNC_SECRETS }}"
