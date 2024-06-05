@@ -139,6 +139,7 @@ financial_manager_configurations_default:
   TRANSACTION_PROCESSOR_URL: "{{ financial_manager_processor_transaction_url }}"
   USER_PROCESSOR_AUTH: "{{ financial_manager_processor_sage_x3_auth_user }}"
   USER_PROCESSOR_PASSWORD: "{{ financial_manager_processor_sage_x3_auth_password }}"
+  POOL_ALIAS: "{{ financial_manager_processor_sage_x3_pool_alias }}"
 
   # iLink settings
   RECEIPT_HOST_URL: "{{ financial_manager_receipt_host_url }}"
