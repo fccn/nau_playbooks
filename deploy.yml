@@ -668,22 +668,15 @@
           # The maximum permitted number of simultaneous client connections.
           # Default value is 151.
           max_connections:  500
-          # Parallel replication
-          # When using a multithreaded replica (slave_parallel_workers is greater than 0), 
-          # this variable specifies the policy used to decide which transactions are allowed
-          # to execute in parallel on the replica.
-          #  - LOGICAL_CLOCK - Transactions that are part of the same binary log group commit 
-          #                    on a source are applied in parallel on a replica.
-          slave_parallel_type: LOGICAL_CLOCK
-          # Sets the number of applier threads for executing replication transactions in parallel.
-          slave_parallel_workers: 4
-          # For multithreaded replicas, the setting 1 for this variable ensures that transactions
-          # are externalized on the replica in the same order as they appear in the replica's relay log,
-          # and prevents gaps in the sequence of transactions that have been executed from the relay log.
-          slave_preserve_commit_order: 1
+
+          # Whether to use compression of the source/replica protocol if both source and replica support it.
+          slave_compressed_protocol: "ON"
+
           # The size in bytes of the buffer pool, the memory area where InnoDB caches table and index data.
           # Defaults to 128MB
           innodb_buffer_pool_size: "{{ openedx_mysql_innodb_buffer_pool_size | default('128MB') }}"
+
+          # innodb_flush_log_at_trx_commit: 2
 
           # In future when on local attached SSDs
           # innodb_io_capacity: 1000

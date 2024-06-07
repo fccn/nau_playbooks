@@ -3,7 +3,6 @@ server-id         = {{ mysql_server_id }}
 log-bin           = bin.log
 log-bin-index     = bin-log.index
 binlog_format     = row
-log_slave_updates = 1
 master-info-repository = TABLE
 {% if ( mysql_read_only ) %}
 read_only         = 1
