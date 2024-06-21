@@ -54,6 +54,8 @@ richie_nau_app_environment_variables_default:
   # Django
   DJANGO_SECRET_KEY: "{{ richie_nau_app_richie_django_secret_key }}"
   DJANGO_ALLOWED_HOSTS: "{{ richie_nau_app_richie_site }}"
+  DJANGO_CSRF_TRUSTED_ORIGINS: "https://{{ richie_nau_app_richie_site }}"
+  DJANGO_CSRF_COOKIE_DOMAIN: "{{ richie_nau_app_richie_site }}"
 
   # Elastic search
   RICHIE_ES_INDICES_PREFIX: richie_nau
