@@ -16,10 +16,10 @@ services:
     deploy:
       resources:
         limits:
-          # 200MB per worker
-          memory: {{ richie_site_config.app_gunicorn_workers * 200 }}M
+          # 300MB per worker
+          memory: {{ richie_site_config.app_gunicorn_workers * 300 }}M
         reservations:
-          memory: {{ richie_site_config.app_gunicorn_workers * 150 }}M
+          memory: {{ richie_site_config.app_gunicorn_workers * 200 }}M
     # volumes:
       # Used to increase log verbosity of the gunicorn and to add a Gunicorn worker abort handler
       # - ./app.py:/usr/local/etc/gunicorn/app.py
