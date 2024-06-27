@@ -90,7 +90,7 @@ healthcheck-parallel: \
 # Redis
 #######################
 healthcheck-django-cache-redis-port: ## check django cache redis port
-	@nc -z -w 5 {{ financial_manager_caches_default_redis_host }} {{ financial_manager_caches_default_redis_port }} || ( echo "Check django cachew redis port: error" ; exit 1; )
+	@nc -z -w 5 {{ financial_manager_caches_default_redis_host }} {{ financial_manager_caches_default_redis_port }} || ( echo "Check django cache redis port: error" ; exit 1; )
 	@echo "Check redis port: OK"
 .PHONY: healthcheck-redis-port
 
