@@ -1,12 +1,15 @@
 ---
 
-- name: Configure the application server group
-  hosts: app_servers
+- name: Print vars
+  hosts: all
   serial: "{{ serial_number | default(1) }}"
   become: True
   gather_facts: True
-  roles:
-    - remove_edx_apt_ppa_repo
-    - server_utils
-    - security
-    - common
+  tasks:
+    - debug:
+        var: ansible_interfaces
+    - debug:
+        var: ansible_all_ipv4_addresses
+    - debug: 
+        msg: "item: {{  item }} "
+      with_items: "{{ ansible_interfaces }}"
