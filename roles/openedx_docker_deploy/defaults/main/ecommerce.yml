@@ -93,7 +93,7 @@ openedx_ecommerce_cfg_settings_default:
   # Use different Django Oscar strategy for VAT.
   # NAU_EXTENSION_OSCAR_STRATEGY_CLASS: "nau_extensions.strategy.DefaultStrategy"
   NAU_EXTENSION_OSCAR_RATE_TAX_STRATEGY_CLASS: nau_extensions.strategy.SettingFixedRateTax
-  NAU_EXTENSION_TAX_RATE: "0.298701299" # = 0.23/0.77
+  NAU_EXTENSION_TAX_RATE: "0.23"
 
   ADDL_INSTALLED_APPS:
     - nau_extensions
