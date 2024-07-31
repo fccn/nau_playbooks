@@ -764,8 +764,8 @@
         openedx_docker_deploy_mysql_default_port: "{{ hostvars[groups['openedx_mysql_docker_servers'][0]].openedx_mysql_docker_port }}"
         openedx_docker_deploy_mysql_read_replica_host: "{{ hostvars[groups['openedx_mysql_docker_servers'][1]].openedx_mysql_read_replica_virtual_ipv4 | default( hostvars[groups['openedx_mysql_docker_servers'][1]].ansible_host ) }}"
         openedx_docker_deploy_mysql_read_replica_port: "{{ hostvars[groups['openedx_mysql_docker_servers'][1]].openedx_mysql_docker_port }}"
-        # s3 to copy Let's Encrypt issued certificates
-        openedx_nginx_s3_certificates_folder: "/letsencrypt_certificates"
+        # s3 to copy ACME issued certificates
+        openedx_nginx_s3_certificates_folder: "/acme_certificates"
         openedx_docker_deploy_s3_host: "{{ AWS_S3_DBS_BACKUP_HOST }}"
         openedx_docker_deploy_s3_bucket: "{{ AWS_S3_DBS_BACKUP_BUCKET_NAME }}"
         openedx_docker_deploy_s3_access_key_id: "{{ EDXAPP_BACKUPS_AWS_ACCESS_KEY_ID }}"

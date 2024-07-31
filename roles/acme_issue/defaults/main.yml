@@ -1,0 +1,10 @@
+---
+acme_domains_to_issue_certs: []
+# acme_certbot_email: alertas@nau.edu.pt
+
+acme_certbot_root_folder: /nau/ops/certbot/conf
+acme_certbot_port: 8888
+acme_force_issue: false
+
+s3_path_prefix: /
+s3cmd_prefix: s3cmd put --acl-private --follow-symlinks --host {{ s3_host }} --host-bucket {{ s3_host_bucket }}

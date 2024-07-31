@@ -6,23 +6,25 @@
   with_items: "{{ packages_to_install }}"
   tags: haproxy_update_certs
 
-- name: Download Let's Encrypt certificates
+- name: Download ACME certificates
   vars:
     s3cmd_prefix: s3cmd get --acl-private --follow-symlinks --force --host {{ s3_host }} --host-bucket {{ s3_host_bucket }}
-  shell: "{{ s3cmd_prefix }} s3://{{ s3_host_bucket }}{{ s3_path_prefix }}/{{ domain }}.pem     {{ haproxy_certs_folder }}/{{ domain }}.pem && \
-          {{ s3cmd_prefix }} s3://{{ s3_host_bucket }}{{ s3_path_prefix }}/{{ domain }}.pem.key {{ haproxy_certs_folder }}/{{ domain }}.pem.key"
+  shell: "{{ s3cmd_prefix }} s3://{{ s3_host_bucket }}{{ s3_path_prefix }}/{{ domain_config['cert-name'] | default(domain_config.domain) }}.pem     {{ haproxy_certs_folder }}/{{ domain_config['cert-name'] | default(domain_config.domain) }}.pem && \
+          {{ s3cmd_prefix }} s3://{{ s3_host_bucket }}{{ s3_path_prefix }}/{{ domain_config['cert-name'] | default(domain_config.domain) }}.pem.key {{ haproxy_certs_folder }}/{{ domain_config['cert-name'] | default(domain_config.domain) }}.pem.key"
   environment:
     AWS_ACCESS_KEY_ID: "{{ s3_access_key_id }}"
     AWS_SECRET_ACCESS_KEY: "{{ s3_secret_access_key }}"
-  loop: "{{ letsencrypt_domains_to_issue_certs }}"
+  loop: "{{ acme_domains_to_issue_certs }}"
   loop_control:
-    loop_var: domain
+    loop_var: domain_config
+    label: "{{ domain_config.domain }}"
   tags: haproxy_update_certs
 
 - include_tasks: update_certificate.yml
-  loop: "{{ letsencrypt_domains_to_issue_certs }}"
+  loop: "{{ acme_domains_to_issue_certs }}"
   loop_control:
-    loop_var: domain
+    loop_var: domain_config
+    label: "{{ domain_config.domain }}"
   register: haproxy_socat_outputs
   tags: haproxy_update_certs
 

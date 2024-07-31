@@ -1,0 +1,101 @@
+---
+
+- name: Check that are domains to issue certificates
+  assert:
+    that: acme_domains_to_issue_certs is defined
+    fail_msg: No domains to issue certificates
+    quiet: true
+  tags:
+    - acme_issue
+
+- name: Create ACME certbot conf directory
+  file:
+    path: "{{ acme_certbot_root_folder }}"
+    state: directory
+  tags: 
+    - acme_issue
+
+- name: Print which domains we will issue the certs
+  debug:
+    msg: "(Re)Issue ssl https certificates using ACME for domains: {{ acme_domains_to_issue_certs | map(attribute='domain') | join(', ') }}"
+  when: acme_domains_to_issue_certs is defined
+  tags: 
+    - acme_issue
+
+# warn about the limit of 5 certificates in 7 days per domain.
+- name: Delete certbot configuration and historic certificates
+  file:
+    path: "{{ acme_certbot_root_folder }}/live/{{ domain_config['cert-name'] | default(domain_config.domain) }}"
+    state: absent
+  when: acme_force_issue | bool
+  loop: "{{ acme_domains_to_issue_certs }}"
+  loop_control:
+    loop_var: domain_config
+    label: "{{ domain_config.domain }}"
+  tags: 
+    - acme_issue
+
+- name: Run the ACME certbot
+  shell: |
+    docker run --rm \
+    --volume {{ acme_certbot_root_folder }}/:/etc/letsencrypt/ \
+    -p {{ acme_certbot_port }}:{{ acme_certbot_port }} \
+    --cpus 1 --memory 100M \
+    --name certbot certbot/certbot:latest \
+    certonly --standalone --non-interactive --agree-tos \
+    {{ '--server ' + domain_config.server if domain_config.server is defined else '' }} \
+    {{ '--eab-kid ' + domain_config['eab-kid'] if domain_config['eab-kid'] is defined else '' }} \
+    {{ '--eab-hmac-key ' + domain_config['eab-hmac-key'] if domain_config['eab-hmac-key'] is defined else '' }} \
+    {{ '--cert-name ' + domain_config['cert-name'] if domain_config['cert-name'] is defined else '' }} \
+    --email {{ domain_config.email | default(acme_certbot_email) }} \
+    --http-01-port={{ acme_certbot_port }} \
+    -d {{ domain_config.domain }} 2>&1
+  loop: "{{ acme_domains_to_issue_certs }}"
+  loop_control:
+    loop_var: domain_config
+    label: "{{ domain_config.domain }}"
+  register: acme_certbot_outputs
+  tags: 
+    - acme_issue
+
+- name: Print ACME certbot stdout
+  debug:
+    msg: "{{ cert_out.stdout_lines }}"
+  when: cert_out.stdout_lines is defined
+  loop: "{{ acme_certbot_outputs.results }}"
+  loop_control:
+    loop_var: cert_out
+    label: "{{ cert_out.domain_config.domain }}"
+  tags: 
+    - acme_issue
+
+- name: Print ACME certbot stderr
+  debug:
+    msg: "{{ cert_out.stderr_lines }}"
+  when: cert_out.stderr_lines is defined
+  loop: "{{ acme_certbot_outputs.results }}"
+  loop_control:
+    loop_var: cert_out
+    label: "{{ cert_out.domain_config.domain }}"
+  tags: 
+    - acme_issue
+
+- name: Install s3cmd
+  package:
+    name: s3cmd
+    state: present
+  tags: 
+    - acme_issue
+
+- name: Send certificate and its key to bucket using s3cmd
+  shell: "{{ s3cmd_prefix }} {{ acme_certbot_root_folder }}/live/{{ domain_config['cert-name'] | default(domain_config.domain) }}/fullchain.pem s3://{{ s3_host_bucket }}{{ s3_path_prefix }}/{{ domain_config['cert-name'] | default(domain_config.domain) }}.pem && \
+          {{ s3cmd_prefix }} {{ acme_certbot_root_folder }}/live/{{ domain_config['cert-name'] | default(domain_config.domain) }}/privkey.pem   s3://{{ s3_host_bucket }}{{ s3_path_prefix }}/{{ domain_config['cert-name'] | default(domain_config.domain) }}.pem.key "
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ s3_access_key_id }}"
+    AWS_SECRET_ACCESS_KEY: "{{ s3_secret_access_key }}"
+  loop: "{{ acme_domains_to_issue_certs }}"
+  loop_control:
+    loop_var: domain_config
+    label: "{{ domain_config.domain }}"
+  tags: 
+    - acme_issue

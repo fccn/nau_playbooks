@@ -179,7 +179,7 @@ openedx_nginx_ecommerce_robot_rules:
 openedx_nginx_certificates_folder: "{{ openedx_docker_deploy_base_folder }}/nginx/ssl"
 
 # Root folder where the s3 certificates of Let's Encrypt are put.
-openedx_nginx_s3_certificates_folder: "/letsencrypt_certificates"
+openedx_nginx_s3_certificates_folder: "/acme_certificates"
 
 # The list of s3 certificates (certificate and its key)
 openedx_docker_deploy_s3_files: []
