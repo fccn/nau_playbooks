@@ -1,0 +1,43 @@
+{% import '_docker_deploy_helper.j2' as helper with context %}
+# {{ ansible_managed }}
+#
+# Docker compose file for xtradb.
+#
+version: '3.8'
+
+services:
+
+  xtradb:
+    image: {{ xtradb_docker_image }}
+    container_name: {{ xtradb_docker_container_name }}
+    restart: always
+    environment:
+{% for env_var_name, env_var_value in xtradb_docker_environment_variables.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    volumes:
+      - {{ xtradb_mysql_docker_volume_path }}:/var/lib/mysql
+    network_mode: host
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: {{ xtradb_docker_deploy_limit_memory }}
+{% if xtradb_limit_cpus is defined %}
+          cpus: "{{ xtradb_limit_cpus }}"
+{% endif %}
+        reservations:
+          memory: {{ xtradb_docker_deploy_reservations_memory }}
+      placement:
+        max_replicas_per_node: 1
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=`$$MYSQL_ROOT_PASSWORD` mysqladmin ping --silent || exit 1"]
+      interval: 90s
+      timeout: 60s
+      retries: 60
+      start_period: 60s
+{{ helper.service_configs(service='xtradb') }}
+{{ helper.service_secrets(service='xtradb') }}
+
+{{ helper.configs() }}
+{{ helper.secrets() }}

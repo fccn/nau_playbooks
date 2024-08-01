@@ -76,7 +76,10 @@
 #
 #   To deploy Financial Manager application
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit financial_manager_docker_servers -e financial_manager_deploy=true
-
+#
+#   To deploy Percona XtraDB databases
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit xtradb_servers -e xtradb_deploy=true
+#
 # - name: Bootstrap instances of 16.04
 #   hosts: all,!idpproxy_servers,!support_server,!build_server
 #   gather_facts: no
@@ -915,6 +918,46 @@
         rolling_deploy_docker: true
         rolling_deploy_starting: false
       when: ( groups['financial_manager_docker_servers'] | length ) > 1 and ( financial_manager_docker_servers | default(false) | bool )
+
+
+- name: Deploy to XtraDB database
+  hosts: xtradb_servers
+  serial: "{{ serial_number | default(1) }}" # deploy in sequence
+  become: True
+  gather_facts: True
+  tasks:
+    - name: Install or upgrade docker daemon
+      import_role:
+        name: geerlingguy.docker
+      when: xtradb_deploy | default(false) | bool
+    - name: Install snmpd
+      import_role:
+        name: snmpd
+      tags: snmpd
+      when: xtradb_deploy | default(false) | bool
+    - name: Install snmpd docker bridge
+      import_role:
+        name: snmpd_docker
+      tags: snmpd
+      when: xtradb_deploy | default(false) | bool
+    - name: Deploy Percona XtraDB
+      import_role:
+        name: xtradb_docker_deploy
+      vars:
+        # To initialize the xtradb cluster, only 1st node, 1st time with:
+        #   -e xtradb_cluster_initialization=true
+        xtradb_cluster_hosts_tmp: "{% for host in groups['xtradb_servers'] %}{{ hostvars[host].ansible_host }}{{ ',' if not loop.last else '' }}{% endfor %}"
+        xtradb_cluster_hosts: "{{ xtradb_cluster_hosts_tmp.split(',') | list }}"
+        xtradb_certs_ca_key: "{{ COMMON_PATH_CUSTOM_FILES }}/xtradb/cert/ca-key.pem"
+        xtradb_certs_ca: "{{ COMMON_PATH_CUSTOM_FILES }}/xtradb/cert/ca.pem"
+        xtradb_certs_client_cert: "{{ COMMON_PATH_CUSTOM_FILES }}/xtradb/cert/client-cert.pem"
+        xtradb_certs_client: "{{ COMMON_PATH_CUSTOM_FILES }}/xtradb/cert/client-key.pem"
+        xtradb_certs_private_key: "{{ COMMON_PATH_CUSTOM_FILES }}/xtradb/cert/private_key.pem"
+        xtradb_certs_public_key: "{{ COMMON_PATH_CUSTOM_FILES }}/xtradb/cert/public_key.pem"
+        xtradb_certs_server_cert: "{{ COMMON_PATH_CUSTOM_FILES }}/xtradb/cert/server-cert.pem"
+        xtradb_certs_server_key: "{{ COMMON_PATH_CUSTOM_FILES }}/xtradb/cert/server-key.pem"
+      when: xtradb_deploy | default(false) | bool
+
 
 - name: Deploy to Kubernetes nodes
   hosts: kubernetes_servers

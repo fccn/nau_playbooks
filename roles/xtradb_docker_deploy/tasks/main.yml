@@ -1,0 +1,40 @@
+---
+- name: Install make
+  package:
+    name: make
+    state: present
+  tags:
+    - docker_deploy
+
+- name: Deploy
+  include_role:
+    name: ansible-docker-deploy
+  vars:
+    docker_deploy_base_folder:         "{{ xtradb_docker_deploy_base_folder }}"
+    docker_deploy_compose_template:    "{{ xtradb_docker_deploy_compose_template }}"
+    docker_deploy_templates:           "{{ xtradb_docker_deploy_templates | default([]) }}"
+    docker_deploy_files:               "{{ xtradb_docker_deploy_files | default([]) }}"
+    docker_deploy_folders_additional:  "{{ xtradb_docker_deploy_folders_additional | default([]) }}"
+    docker_deploy_configs:             "{{ xtradb_docker_deploy_configs | default([]) }}"
+    docker_deploy_secrets:             "{{ xtradb_docker_deploy_secrets | default([]) }}"
+    docker_deploy_services_additional: "{{ xtradb_docker_deploy_services_additional | default([]) }}"
+    docker_deploy_shell: true
+    docker_deploy_healthcheck_retries: "{{ xtradb_docker_deploy_healthcheck_retries }}"
+    docker_deploy_healthcheck_delay:   "{{ xtradb_docker_deploy_healthcheck_delay }}"
+  tags:
+    - docker_deploy
+
+- name: Run healthcheck
+  shell: make healthcheck
+  args:
+    chdir: "{{ xtradb_docker_deploy_base_folder }}"
+  delay: "{{ xtradb_docker_deploy_healthcheck_delay }}"
+  register: result
+  until: result.rc == 0
+  retries: "{{ xtradb_docker_deploy_healthcheck_retries }}"
+  # run it only when deploying or when on healthcheck mode.
+  changed_when: False
+  when: not ansible_check_mode
+  tags: 
+    - healthcheck
+    - docker_deploy

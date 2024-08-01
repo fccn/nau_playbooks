@@ -1,0 +1,102 @@
+---
+xtradb_docker_image: docker.io/percona/percona-xtradb-cluster:8.0.36
+xtradb_cluster_name: pxc-cluster1
+xtradb_node_name: "{{ inventory_hostname }}"
+
+# By default when we deploy we won't initialize a new cluster.
+xtradb_cluster_initialization: false
+
+xtradb_mysql_port: 3306
+xtradb_ports:
+- "{{ xtradb_mysql_port }}" # 3306 is used for MySQL client connections and SST (State Snapshot Transfer) via mysqldump.
+- 4444 # 4444 is used for SST via rsync and Percona XtraBackup.
+- 4567 # 4567 is used for write-set replication traffic (over TCP) and multicast replication (over TCP and UDP).
+- 4568 # 4568 is used for IST (Incremental State Transfer).
+
+xtradb_docker_deploy_limit_memory: 6G
+xtradb_docker_deploy_reservations_memory: 2G
+
+xtradb_docker_container_name: xtradb
+
+xtradb_docker_deploy_base_folder: "/nau/ops/{{ xtradb_docker_container_name }}"
+xtradb_docker_deploy_compose_template: templates/docker-compose.yml.j2
+
+xtradb_docker_deploy_healthcheck_retries: 120
+xtradb_docker_deploy_healthcheck_delay: 10
+
+# Files to be templated during deployment
+xtradb_docker_deploy_templates:
+  - src: templates/Makefile
+    dest: "{{ xtradb_docker_deploy_base_folder }}/Makefile"
+  - src:  templates/custom.cnf
+    dest: "{{ docker_deploy_base_folder }}/custom.cnf"
+    config_name: xtradb_cnf
+    service: xtradb
+    docker_target: /etc/percona-xtradb-cluster.conf.d/custom.cnf
+
+xtradb_mysql_docker_volume_path: /data/{{ xtradb_docker_container_name }}/
+
+xtradb_certs_folder: "{{ xtradb_docker_deploy_base_folder }}/certs"
+xtradb_docker_certs_folder: /cert
+
+xtradb_docker_deploy_files: 
+- src: "{{ xtradb_certs_ca_key }}"
+  dest: "{{ xtradb_certs_folder }}/ca-key.pem"
+  service: xtradb
+  secret_name: xtradb_certs_ca_key
+  docker_target: "{{ xtradb_docker_certs_folder }}/ca.pem"
+- src: "{{ xtradb_certs_ca }}"
+  dest: "{{ xtradb_certs_folder }}/ca.pem"
+  service: xtradb
+  secret_name: xtradb_certs_ca
+  docker_target: "{{ xtradb_docker_certs_folder }}/ca.pem"
+- src: "{{ xtradb_certs_client_cert }}"
+  dest: "{{ xtradb_certs_folder }}/client-cert.pem"
+  service: xtradb
+  secret_name: xtradb_certs_client_cert
+  docker_target: "{{ xtradb_docker_certs_folder }}/client-cert.pem"
+- src: "{{ xtradb_certs_client }}"
+  dest: "{{ xtradb_certs_folder }}/client-key.pem"
+  service: xtradb
+  secret_name: xtradb_certs_client-key
+  docker_target: "{{ xtradb_docker_certs_folder }}/client-key.pem"
+- src: "{{ xtradb_certs_private_key }}"
+  dest: "{{ xtradb_certs_folder }}/private_key.pem"
+  service: xtradb
+  secret_name: xtradb_certs_private_key
+  docker_target: "{{ xtradb_docker_certs_folder }}/private_key.pem"
+- src: "{{ xtradb_certs_public_key }}"
+  dest: "{{ xtradb_certs_folder }}/public_key.pem"
+  service: xtradb
+  secret_name: xtradb_certs_public_key
+  docker_target: "{{ xtradb_docker_certs_folder }}/public_key.pem"
+- src: "{{ xtradb_certs_server_cert }}"
+  dest: "{{ xtradb_certs_folder }}/server-cert.pem"
+  service: xtradb
+  secret_name: xtradb_certs_server_cert
+  docker_target: "{{ xtradb_docker_certs_folder }}/server-cert.pem"
+- src: "{{ xtradb_certs_server_key }}"
+  dest: "{{ xtradb_certs_folder }}/server-key.pem"
+  service: xtradb
+  secret_name: xtradb_certs_server_key
+  docker_target: "{{ xtradb_docker_certs_folder }}/server-key.pem"
+
+xtradb_docker_user_id: 1001
+xtradb_docker_group_id: 1001
+
+xtradb_docker_deploy_folders_additional:
+  - dest: "{{ xtradb_mysql_docker_volume_path }}"
+    dir_owner: "{{ xtradb_docker_user_id }}"
+    dir_group: "{{ xtradb_docker_group_id }}"
+    dir_mode: "755"
+
+xtradb_docker_environment_variables: "{{ xtradb_docker_environment_variables_default | combine(xtradb_docker_environment_variables_default_join if not xtradb_cluster_initialization else {}) | combine(xtradb_docker_environment_variables_overrides, recursive=True) }}"
+xtradb_docker_environment_variables_overrides: {}
+xtradb_docker_environment_variables_default:
+  TZ: "{{ xtradb_timezone | default('Europe/Lisbon') }}"
+  MYSQL_ROOT_PASSWORD: "{{ xtradb_mysql_root_password }}"
+  CLUSTER_NAME: "{{ xtradb_cluster_name }}"
+
+# CLUSTER_JOIN is not present when deploying the 1st node at 1st time
+xtradb_docker_environment_variables_default_join:
+  CLUSTER_JOIN: "{{ xtradb_cluster_hosts | join(',') }}"
