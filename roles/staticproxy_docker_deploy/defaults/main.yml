@@ -72,5 +72,5 @@ staticproxy_nau_urls_to_check:
     port: "{{ staticproxy_nginx_https_ingress_port }}"
     haproxy_protocol: true
 
-staticproxy_docker_deploy_stack_verify_retries: 120
-staticproxy_docker_deploy_stack_verify_delay: 60
+staticproxy_docker_deploy_healthcheck_retries: 120
+staticproxy_docker_deploy_healthcheck_delay: 60

@@ -26,5 +26,5 @@ richie_docker_deploy_folders_additional: []
 richie_docker_deploy_services_additional:
   - nau_app_job
 
-richie_docker_deploy_stack_verify_retries: 120
-richie_docker_deploy_stack_verify_delay: 60
+richie_docker_deploy_healthcheck_retries: 120
+richie_docker_deploy_healthcheck_delay: 60

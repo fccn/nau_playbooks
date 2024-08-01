@@ -31,8 +31,8 @@
     docker_deploy_secrets:             "{{ elasticsearch_docker_deploy_secrets | default([]) }}"
     docker_deploy_services_additional: "{{ elasticsearch_docker_deploy_services_additional | default([]) }}"
     docker_deploy_shell: true
-    docker_deploy_stack_verify_retries: "{{ elasticsearch_docker_deploy_stack_verify_retries }}"
-    docker_deploy_stack_verify_delay:   "{{ elasticsearch_docker_deploy_stack_verify_delay }}"
+    docker_deploy_healthcheck_retries: "{{ elasticsearch_docker_deploy_healthcheck_retries }}"
+    docker_deploy_healthcheck_delay:   "{{ elasticsearch_docker_deploy_healthcheck_delay }}"
   tags:
     - docker_deploy
 
@@ -40,10 +40,10 @@
   shell: make healthcheck
   args:
     chdir: "{{ elasticsearch_docker_deploy_base_folder }}"
-  delay: "{{ elasticsearch_docker_deploy_stack_verify_delay }}"
+  delay: "{{ elasticsearch_docker_deploy_healthcheck_delay }}"
   register: result
   until: result.rc == 0
-  retries: "{{ elasticsearch_docker_deploy_stack_verify_retries }}"
+  retries: "{{ elasticsearch_docker_deploy_healthcheck_retries }}"
   # run it only when deploying or when on healthcheck mode.
   changed_when: False
   when: not ansible_check_mode

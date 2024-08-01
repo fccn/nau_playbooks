@@ -58,5 +58,5 @@ openedx_docker_deploy_services_additional:
   - ecommerce-worker
   - ecommerce-job
 
-openedx_docker_deploy_stack_verify_retries: 120
-openedx_docker_deploy_stack_verify_delay: 60
+openedx_docker_deploy_healthcheck_retries: 120
+openedx_docker_deploy_healthcheck_delay: 60

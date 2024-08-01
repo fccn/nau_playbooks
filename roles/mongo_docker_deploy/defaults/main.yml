@@ -25,8 +25,8 @@ mongo_docker_deploy_base_folder: "{{ mongo_docker_deploy_parent_folder }}/{{ mon
 mongo_docker_deploy_compose_template: templates/docker-compose.yml.j2
 
 mongo_docker_container_name: "{{ mongo_docker_deploy_base_folder | basename }}"
-mongo_docker_deploy_stack_verify_delay: 5
-mongo_docker_deploy_stack_verify_retries: 50
+mongo_docker_deploy_healthcheck_delay: 5
+mongo_docker_deploy_healthcheck_retries: 50
 
 # Files to be templated during deployment
 mongo_docker_deploy_templates:

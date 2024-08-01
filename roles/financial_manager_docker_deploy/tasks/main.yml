@@ -34,10 +34,10 @@
   shell: make healthcheck
   args:
     chdir: "{{ financial_manager_docker_deploy_base_folder }}"
-  delay: "{{ financial_manager_docker_deploy_stack_verify_delay }}"
+  delay: "{{ financial_manager_docker_deploy_healthcheck_delay }}"
   register: result
   until: result.rc == 0
-  retries: "{{ financial_manager_docker_deploy_stack_verify_retries }}"
+  retries: "{{ financial_manager_docker_deploy_healthcheck_retries }}"
   # run it only when deploying or when on healthcheck mode.
   changed_when: False
   when: not ansible_check_mode

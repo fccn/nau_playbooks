@@ -12,8 +12,8 @@
     docker_deploy_secrets:             "{{ staticproxy_docker_deploy_secrets | default([]) }}"
     docker_deploy_services_additional: "{{ staticproxy_docker_deploy_services_additional | default([]) }}"
     docker_deploy_shell: true
-    docker_deploy_healthcheck_delay :  "{{ staticproxy_docker_deploy_stack_verify_delay }}"
-    docker_deploy_healthcheck_retries: "{{ staticproxy_docker_deploy_stack_verify_retries }}"
+    docker_deploy_healthcheck_delay :  "{{ staticproxy_docker_deploy_healthcheck_delay }}"
+    docker_deploy_healthcheck_retries: "{{ staticproxy_docker_deploy_healthcheck_retries }}"
   when: staticproxy_docker_deploy_run | default(false)
   tags:
     - docker_deploy
@@ -22,10 +22,10 @@
   shell: make healthcheck
   args:
     chdir: "{{ staticproxy_docker_deploy_base_folder }}"
-  delay: "{{ staticproxy_docker_deploy_stack_verify_delay }}"
+  delay: "{{ staticproxy_docker_deploy_healthcheck_delay }}"
   register: result
   until: result.rc == 0
-  retries: "{{ staticproxy_docker_deploy_stack_verify_retries }}"
+  retries: "{{ staticproxy_docker_deploy_healthcheck_retries }}"
   # run it only when deploying or when on healthcheck mode.
   when: not ansible_check_mode and (staticproxy_docker_deploy_run | default(false)) or (healthcheck | default(false))
   changed_when: False

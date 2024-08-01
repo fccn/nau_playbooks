@@ -56,9 +56,6 @@ financial_manager_docker_deploy_templates:
     config_name: app_config
     service: app
 
-financial_manager_docker_deploy_stack_verify_delay: 5
-financial_manager_docker_deploy_stack_verify_retries: 50
-
 # vars to easily override default templates
 financial_manager_nginx_conf_template: templates/nginx.conf
 financial_manager_app_config_template: templates/config.env
