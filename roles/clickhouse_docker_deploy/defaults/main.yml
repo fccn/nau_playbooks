@@ -1,0 +1,59 @@
+---
+clickhouse_docker_image: docker.io/clickhouse/clickhouse-server:24.3
+clickhouse_node_name: "{{ inventory_hostname }}"
+
+clickhouse_port_http: 8123
+clickhouse_port_native: 9000
+
+clickhouse_docker_deploy_limit_memory: 6G
+clickhouse_docker_deploy_reservations_memory: 2G
+
+clickhouse_docker_container_name: clickhouse
+
+clickhouse_docker_deploy_base_folder: "/nau/ops/{{ clickhouse_docker_container_name }}"
+clickhouse_docker_deploy_compose_template: templates/docker-compose.yml.j2
+
+clickhouse_docker_deploy_healthcheck_verify_delay: 5
+clickhouse_docker_deploy_healthcheck_verify_retries: 50
+
+# Files to be templated during deployment
+clickhouse_docker_deploy_templates:
+  - src: templates/Makefile
+    dest: "{{ clickhouse_docker_deploy_base_folder }}/Makefile"
+  - src:  templates/config/server_config.xml
+    dest: "{{ docker_deploy_base_folder }}/config/server_config.xml"
+    config_name: clickhouse_config_server_config
+    service: clickhouse
+    docker_target: /etc/clickhouse-server/config.d/server_config.xml
+  - src:  templates/users/user_config.xml
+    dest: "{{ docker_deploy_base_folder }}/users/user_config.xml"
+    config_name: clickhouse_users_default_user
+    service: clickhouse
+    docker_target: /etc/clickhouse-server/users.d/user_config.xml
+
+clickhouse_docker_volume_path: /data/{{ clickhouse_docker_container_name }}/
+
+clickhouse_certs_folder: "{{ clickhouse_docker_deploy_base_folder }}/certs"
+clickhouse_docker_certs_folder: /cert
+
+clickhouse_docker_user_id: 101
+clickhouse_docker_group_id: 101
+
+clickhouse_docker_deploy_folders_additional:
+  - dest: "{{ clickhouse_docker_volume_path }}"
+    dir_owner: "{{ clickhouse_docker_user_id }}"
+    dir_group: "{{ clickhouse_docker_group_id }}"
+    dir_mode: "0755"
+
+clickhouse_db: xapi
+clickhouse_user: ch_admin
+clickhouse_default_access_management: 1
+
+clickhouse_docker_environment_variables: "{{ clickhouse_docker_environment_variables_default | combine(clickhouse_docker_environment_variables_overrides, recursive=True) }}"
+clickhouse_docker_environment_variables_overrides: {}
+clickhouse_docker_environment_variables_default:
+  TZ: "{{ clickhouse_timezone | default('Europe/Lisbon') }}"
+  CLICKHOUSE_DB: "{{ clickhouse_db }}"
+  CLICKHOUSE_USER: "{{ clickhouse_user }}"
+  CLICKHOUSE_PASSWORD: "{{ clickhouse_password }}"
+  CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "{{ clickhouse_default_access_management }}"

@@ -1,0 +1,47 @@
+{% import '_docker_deploy_helper.j2' as helper with context %}
+# {{ ansible_managed }}
+#
+# Docker compose file for clickhouse.
+#
+version: '3.8'
+
+services:
+
+  clickhouse:
+    image: {{ clickhouse_docker_image }}
+    container_name: {{ clickhouse_docker_container_name }}
+    restart: always
+    environment:
+{% for env_var_name, env_var_value in clickhouse_docker_environment_variables.items() %}
+      {{ env_var_name }}: "{{ env_var_value }}"
+{% endfor %}
+    volumes:
+      - {{ clickhouse_docker_volume_path }}:/var/lib/clickhouse
+    network_mode: host
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: {{ clickhouse_docker_deploy_limit_memory }}
+{% if clickhouse_limit_cpus is defined %}
+          cpus: "{{ clickhouse_limit_cpus }}"
+{% endif %}
+        reservations:
+          memory: {{ clickhouse_docker_deploy_reservations_memory }}
+      placement:
+        max_replicas_per_node: 1
+    healthcheck:
+      test: wget --verbose --tries=1 --spider http://localhost:8123/ping || exit 1
+      interval: 90s
+      timeout: 60s
+      retries: 10
+      start_period: 60s
+{{ helper.service_configs(service='clickhouse') }}
+{{ helper.service_secrets(service='clickhouse') }}
+
+{{ helper.configs() }}
+{{ helper.secrets() }}

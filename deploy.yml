@@ -80,6 +80,9 @@
 #   To deploy Percona XtraDB databases
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit xtradb_servers -e xtradb_deploy=true
 #
+#   To deploy ClickHouse databases
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit clickhouse_servers -e clickhouse_deploy=true
+#
 # - name: Bootstrap instances of 16.04
 #   hosts: all,!idpproxy_servers,!support_server,!build_server
 #   gather_facts: no
@@ -957,6 +960,32 @@
         xtradb_certs_server_cert: "{{ COMMON_PATH_CUSTOM_FILES }}/xtradb/cert/server-cert.pem"
         xtradb_certs_server_key: "{{ COMMON_PATH_CUSTOM_FILES }}/xtradb/cert/server-key.pem"
       when: xtradb_deploy | default(false) | bool
+
+
+- name: Deploy to ClickHouse database
+  hosts: clickhouse_servers
+  serial: "{{ serial_number | default(1) }}" # deploy in sequence
+  become: True
+  gather_facts: True
+  tasks:
+    - name: Install or upgrade docker daemon
+      import_role:
+        name: geerlingguy.docker
+      when: clickhouse_deploy | default(false) | bool
+    - name: Install snmpd
+      import_role:
+        name: snmpd
+      tags: snmpd
+      when: clickhouse_deploy | default(false) | bool
+    - name: Install snmpd docker bridge
+      import_role:
+        name: snmpd_docker
+      tags: snmpd
+      when: clickhouse_deploy | default(false) | bool
+    - name: Deploy ClickHouse
+      import_role:
+        name: clickhouse_docker_deploy
+      when: clickhouse_deploy | default(false) | bool
 
 
 - name: Deploy to Kubernetes nodes
