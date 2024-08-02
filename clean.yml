@@ -7,7 +7,8 @@
   hosts: all,!command_and_control
   become: True
   gather_facts: True
-  serial: 1 # execute in sequence so we don't stress the same environment in parallel
+  # ansible by default run parallel for every server, but we change this to run on synchronous mode.
+  serial: "{{ serial_number | default(1) }}"
 
   pre_tasks:
     - name: check storage space - before

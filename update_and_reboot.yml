@@ -12,7 +12,8 @@
 #
 ---
 - hosts: all
-  serial: 1 # run update in sequence
+  # ansible by default run parallel for every server, but we change this to run on synchronous mode.
+  serial: "{{ serial_number | default(1) }}"
   become: True
   gather_facts: True
   vars:
