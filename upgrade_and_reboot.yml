@@ -1,14 +1,18 @@
 # Update operating system packages and reboot the server if required.
-# Optionally, you can only update, only reboot, or force a reboot, everything using
-# a rolling approach.
-# It changes the keepalived and iptables configuration during the update and the reboot.
+# Optionally, you can only update, only upgrade, only reboot, or force a reboot,
+# everything using a rolling approach.
+#
+# The rolling deploy strategy is:
+# - keepalived - change weigh setting
+# - iptables - close traffic that comes from load balancer
+# - health check - runs Makefile `healthcheck` target before going to next node
 #
 # Inspired by:
 # - https://luktom.net/en/e1497-how-to-update-centos-rhel-using-ansible
 # - https://www.cyberciti.biz/faq/ansible-apt-update-all-packages-on-ubuntu-debian-linux/
 #
 # Example - update a group of servers and reboot if needed:
-#   ansible-playbook -i nau-data/envs/<>/hosts.ini update_and_reboot.yml --limit <some group of servers>
+#   ansible-playbook -i nau-data/envs/<>/hosts.ini upgrade_and_reboot.yml --limit <some group of servers>
 #
 ---
 - hosts: all
@@ -20,7 +24,9 @@
     reboot_enabled: true
     force_reboot: false
     rolling_deploy_enabled: true
+    upgrade_enabled: true
     update_enabled: true
+    wait_next_node_in_seconds: 5
   tasks:
     - import_tasks: tasks/close_node.yml
 
@@ -33,12 +39,12 @@
           args:
             warn: false
           register: updates
-          when: (update_enabled | bool)
+          when: (upgrade_enabled | bool)
         - name: display count
           debug:
             msg: "Found {{ updates.stdout_lines | length }} packages to be updated:\n\n{{ updates.stdout }}"
-          when: (update_enabled | bool)
-        - when: (update_enabled | bool) and ( updates.stdout_lines | length > 0 )
+          when: (upgrade_enabled | bool)
+        - when: (upgrade_enabled | bool) and ( updates.stdout_lines | length > 0 )
           block:
             - name: install updates using yum
               yum:
@@ -52,7 +58,7 @@
               failed_when: false
               register: reboot_required
               changed_when: false
-        - when: (update_enabled | bool) and ( force_reboot or ( updates.stdout_lines | length > 0 and reboot_required.rc != 0 ) )
+        - when: (reboot_enabled | bool) and ( force_reboot or ( updates.stdout_lines | length > 0 and reboot_required.rc != 0 ) )
           block:
             - name: reboot the server if required
               shell: sleep 3; reboot
@@ -71,19 +77,36 @@
 
     - when: ansible_distribution == 'Ubuntu'
       block:
-        - name: Update apt-get repo and cache
+        - name: Update cache packages list
           apt:
             update_cache: yes
-            force_apt_get: yes
-            cache_valid_time: 3600
           when: (update_enabled | bool)
+
+        - name: List upgradable packages
+          shell: apt list --upgradable
+          register: updates
+          when: (update_enabled | bool)
+        - name: Display upgradable count
+          debug:
+            msg: "Found {{ updates.stdout_lines | length }} packages to be upgradable"
+          when: (update_enabled | bool)
+        - name: List upgradable packages
+          debug:
+            var: updates.stdout_lines
+          when: (update_enabled | bool) and ( updates.stdout_lines | length > 0)
+
+        - name: Upgrade packages
+          apt:
+            upgrade: yes
+            autoremove: yes
+          when: (upgrade_enabled | bool)
 
         - name: Check if a reboot is needed for Debian and Ubuntu boxes
           register: reboot_required_file
           stat:
             path: /var/run/reboot-required 
             get_md5: no
-          when: (update_enabled | bool)
+          when: (reboot_enabled | bool)
 
         - name: Reboot the Debian or Ubuntu server
           reboot:
@@ -97,3 +120,7 @@
 
     - import_tasks: tasks/healthcheck.yml
     - import_tasks: tasks/open_node.yml
+
+    - name: sleep for {{ wait_next_node_in_seconds }} seconds and continue for next node
+      wait_for:
+        timeout: "{{ wait_next_node_in_seconds }}"
