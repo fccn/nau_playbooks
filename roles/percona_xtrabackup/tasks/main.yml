@@ -1,0 +1,43 @@
+---
+
+- name: Clean artifact path
+  file:
+    state: absent
+    path: "{{ artifact_path }}/"
+  when: >
+    artifact_path is defined
+    and artifact_path != ""
+    and DBS_BACKUP_EXTERNAL_STORAGE != ""
+
+- name: Create backup directory
+  file:
+    path: "{{BACKUP_LOCATION}}"
+    state: directory
+
+- name: Create compressed Backup
+  shell: >
+    docker run --rm --network=host
+    --name percona-xtrabackup
+    --volumes-from {{ mysql_database_container_name }}
+    -v {{BACKUP_LOCATION}}:/xtrabackup_backupfiles
+    {{docker_percona_xtrabackup_image}}
+    /bin/bash
+    -c "xtrabackup \
+        --backup \
+        --galera-info \
+        --stream=xbstream \
+        --compress \
+        --datadir=/var/lib/mysql \
+        --user={{backup_mysql_login_user}} \
+        --password={{backup_mysql_login_password}} \
+        --host=127.0.0.1 \
+          > /xtrabackup_backupfiles/{{ BACKUP_DATE }}_mysql.xbstream"
+
+- name: Give the server time to recover
+  pause:
+    minutes: 2
+    prompt: Pausing to give the server time to recover
+
+# Upload backups to CEPH
+- include: ceph.yml
+  when: DBS_BACKUP_EXTERNAL_STORAGE == 'ceph'

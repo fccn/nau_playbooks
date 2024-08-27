@@ -1,0 +1,8 @@
+---
+BACKUP_ROOT: "/var/nau_tmp"
+BACKUP_DATE: "{{ ansible_date_time.date }}"
+BACKUP_LOCATION: "{{BACKUP_ROOT}}/{{BACKUP_DATE}}.d"
+artifact_path: "{{BACKUP_ROOT}}"
+backup_mysql_user: ""
+backup_mysql_password: ""
+percona_xtrabackup_image: "percona/percona-xtrabackup:8.0.34"
