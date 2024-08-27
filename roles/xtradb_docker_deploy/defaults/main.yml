@@ -39,7 +39,7 @@ xtradb_mysql_docker_volume_path: /data/{{ xtradb_docker_container_name }}/
 xtradb_certs_folder: "{{ xtradb_docker_deploy_base_folder }}/certs"
 xtradb_docker_certs_folder: /cert
 
-xtradb_docker_deploy_files: 
+xtradb_docker_deploy_files:
 - src: "{{ xtradb_certs_ca_key }}"
   dest: "{{ xtradb_certs_folder }}/ca-key.pem"
   service: xtradb
@@ -100,3 +100,6 @@ xtradb_docker_environment_variables_default:
 # CLUSTER_JOIN is not present when deploying the 1st node at 1st time
 xtradb_docker_environment_variables_default_join:
   CLUSTER_JOIN: "{{ xtradb_cluster_hosts | join(',') }}"
+
+xtradb_docker_max_connections: 500
+xtradb_docker_innodb_buffer_pool_size: 5934M
