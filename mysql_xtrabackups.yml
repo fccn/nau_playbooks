@@ -8,7 +8,5 @@
       import_role:
         name: percona_xtrabackup
       vars:
-        mysql_database_container_name: xtradb
-        backup_mysql_login_user: "{{ backup_mysql_user }}"
-        backup_mysql_login_password: "{{ backup_mysql_password }}"
-        docker_percona_xtrabackup_image: "{{ percona_xtrabackup_image }}"
+        backup_mysql_login_user: root
+        backup_mysql_login_password: "{{ xtradb_mysql_root_password }}"

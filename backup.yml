@@ -66,3 +66,16 @@
         backup_mysql_login_password: "{{ richie_backup_mysql_login_password }}"
         backup_mysql_port: "{{ richie_mysql_docker_port }}"
       when: backup_richie_mysql | default(true) | bool
+
+---
+- name: Backup Percona XtraDB Cluster with Percona XtraBackup
+  hosts: xtradb_servers[-1]
+  become: True
+  gather_facts: True
+  tasks:
+    - name: Backup Percona XtraDB Cluster Database
+      import_role:
+        name: percona_xtrabackup
+      vars:
+        backup_mysql_login_user: root
+        backup_mysql_login_password: "{{ xtradb_mysql_root_password }}"
