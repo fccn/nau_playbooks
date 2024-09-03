@@ -11,7 +11,7 @@
     {{ BACKUP_LOCATION }}/{{ BACKUP_DATE }}_mysql.xbstream
     s3://{{ AWS_S3_DBS_BACKUP_BUCKET_NAME }}/
     --host {{ AWS_S3_DBS_BACKUP_HOST }}
-    --host-bucket {{ AWS_S3_DBS_BACKUP_BUCKET_NAME }}"
+    --host-bucket {{ AWS_S3_DBS_BACKUP_BUCKET_NAME }}
   environment:
     AWS_ACCESS_KEY_ID: "{{ EDXAPP_BACKUPS_AWS_ACCESS_KEY_ID }}"
     AWS_SECRET_ACCESS_KEY: "{{ EDXAPP_BACKUPS_AWS_SECRET_ACCESS_KEY }}"

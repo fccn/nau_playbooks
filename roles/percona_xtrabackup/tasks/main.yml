@@ -13,6 +13,7 @@
   file:
     path: "{{BACKUP_LOCATION}}"
     state: directory
+    owner: "{{ BACKUP_LOCATION_OWNER }}"
 
 - name: Create compressed Backup
   shell: >
@@ -20,7 +21,7 @@
     --name percona-xtrabackup
     --volumes-from {{ mysql_database_container_name }}
     -v {{BACKUP_LOCATION}}:/xtrabackup_backupfiles
-    {{docker_percona_xtrabackup_image}}
+    {{ percona_xtrabackup_image }}
     /bin/bash
     -c "xtrabackup \
         --backup \
