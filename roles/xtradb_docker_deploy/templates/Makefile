@@ -60,6 +60,9 @@ healthcheck: healthcheck-parallel ## Overall healthcheck - for parallel executio
 .PHONY: healthcheck-parallel
 
 healthcheck-parallel: \
+	healthcheck-xtradb-wsrep-cluster-status \
+	healthcheck-xtradb-wsrep-connected \
+	healthcheck-xtradb-wsrep-ready \
 	healthcheck-xtradb-mysql-port \
 	healthcheck-xtradb-node-ready \
 	healthcheck-memory
@@ -70,9 +73,28 @@ healthcheck-xtradb-mysql-port: ## Check XtraDB MySQL port
 	@echo "Check xtradb mysql port: OK"
 .PHONY: healthcheck-xtradb-mysql-port
 
+healthcheck-xtradb-wsrep-cluster-status:
+	@docker exec -i {{ xtradb_docker_container_name }} bash -c 'MYSQL_PWD="{{ xtradb_mysql_root_password }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} --execute="show status like \"wsrep_cluster_status\";"' | grep -q Primary || ( echo "Check xtradb wsrep cluster status: error" ; exit 1 )
+	@echo "Check xtradb wsrep cluster status: OK"
+.PHONY: healthcheck-xtradb-wsrep-cluster-status
+
+healthcheck-xtradb-wsrep-connected:
+	@docker exec -i {{ xtradb_docker_container_name }} bash -c 'MYSQL_PWD="{{ xtradb_mysql_root_password }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} --execute="show status like \"wsrep_connected\";"' | grep -q ON || ( echo "Check xtradb wsrep connected: error" ; exit 1 )
+	@echo "Check xtradb wsrep connected: OK"
+.PHONY: healthcheck-xtradb-wsrep-connected
+
+healthcheck-xtradb-wsrep-ready:
+	@docker exec -i {{ xtradb_docker_container_name }} bash -c 'MYSQL_PWD="{{ xtradb_mysql_root_password }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} --execute="show status like \"wsrep_ready\";"' | grep -q ON || ( echo "Check xtradb wsrep ready: error" ; exit 1 )
+	@echo "Check xtradb wsrep ready: OK"
+.PHONY: healthcheck-xtradb-wsrep-ready
+
 xtradb-showprocess-list: ## show the processes inside xtradb
 	@docker exec -i {{ xtradb_docker_container_name }} bash -c 'MYSQL_PWD="{{ xtradb_mysql_root_password }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} --execute="show processlist;"'
 .PHONY: xtradb-showprocess-list
+
+xtradb-status: ## show mysql status
+	@docker exec -i {{ xtradb_docker_container_name }} bash -c 'MYSQL_PWD="{{ xtradb_mysql_root_password }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} --execute="show status;"'
+.PHONY: xtradb-status
 
 xtradb-shell: ## open mysl shell to run SQL commands
 	@docker exec -it {{ xtradb_docker_container_name }} bash -c 'MYSQL_PWD="{{ xtradb_mysql_root_password }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }}'
