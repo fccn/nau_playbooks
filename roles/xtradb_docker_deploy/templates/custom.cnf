@@ -10,6 +10,9 @@ expire_logs_days = 30
 max_binlog_size = 100M
 max_connections = {{ xtradb_docker_max_connections }}
 innodb_buffer_pool_size = {{ xtradb_docker_innodb_buffer_pool_size }}
+{% if xtradb_docker_wsrep_sst_donor is defined %}
+wsrep_sst_donor = {{ xtradb_docker_wsrep_sst_donor }}
+{% endif %}
 
 [client]
 ssl-ca = /cert/ca.pem
