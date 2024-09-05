@@ -8,22 +8,16 @@
 # so they can be used by nginx using a docker volume. It's run nginx check
 # configuration and then it's run nginx reload configuration command.
 #
-# The domains that we are going to issue the certificate are defined on 
-# `acme_domains_to_issue_certs` variable.
+# The domains that we are going to issue the certificate are defined on
+# the `acme_domains_to_issue_certs` variable.
+# To issue new certificates add that domain to the `acme_domains_to_issue_certs` variable.
 #
-# Example to run auto issue certificates using ACME for all configured domains:
+# Examples:
+# To run auto issue certificates using ACME for all configured domains:
 #    ansible-playbook -i nau-data/envs/<env>/hosts.ini acme.yml
 #
-# Example to run auto issue certificates using ACME to a single domain, 
-# nevertheless all certificates are updated on HAProxy and Open edX nginx.
-#    ansible-playbook -i nau-data/envs/<env>/hosts.ini acme.yml -e '{"acme_domains_to_issue_certs": [{ domain: "custom-domain.example.com" } ]}'
-#
-# Add the new domain to the `acme_domains_to_issue_certs` variable.
-# Configure the new domain to copy certificate and key on the `openedx_docker_servers.yml` file 
-# on the environment.
-#
-# To force the re-issue of the certificates.
-# Warning about auto issue certificates using ACME limit of 5 certificates in 7 days per domain.
+# To force the re-issue of the certificates. Warning about the Let's Encrypt limits
+# of 5 certificates in 7 days per domain.
 #    -e acme_force_issue=true
 #
 ---
