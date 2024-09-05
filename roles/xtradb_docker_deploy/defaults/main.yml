@@ -13,9 +13,6 @@ xtradb_ports:
 - 4567 # 4567 is used for write-set replication traffic (over TCP) and multicast replication (over TCP and UDP).
 - 4568 # 4568 is used for IST (Incremental State Transfer).
 
-xtradb_docker_deploy_limit_memory: 6G
-xtradb_docker_deploy_reservations_memory: 2G
-
 xtradb_docker_container_name: xtradb
 
 xtradb_docker_deploy_base_folder: "/nau/ops/{{ xtradb_docker_container_name }}"
