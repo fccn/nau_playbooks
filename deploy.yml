@@ -959,6 +959,10 @@
         xtradb_certs_public_key: "{{ COMMON_PATH_CUSTOM_FILES }}/xtradb/cert/public_key.pem"
         xtradb_certs_server_cert: "{{ COMMON_PATH_CUSTOM_FILES }}/xtradb/cert/server-cert.pem"
         xtradb_certs_server_key: "{{ COMMON_PATH_CUSTOM_FILES }}/xtradb/cert/server-key.pem"
+        # Prefer the last node in the cluster to be used for state transfer from the cluster.
+        # If the list contains a trailing comma, the remaining nodes in the cluster
+        # will also be considered if the nodes from the list are not available.
+        xtradb_docker_wsrep_sst_donor: "{{ groups['xtradb_servers'][-1] }},"
       when: xtradb_deploy | default(false) | bool
 
 
