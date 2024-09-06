@@ -71,6 +71,6 @@ healthcheck-clickhouse-port: ## Check ClickHouse port
 .PHONY: healthcheck-clickhouse-port
 
 healthcheck-clickhouse-ping: ## Check ClickHouse ping
-	@wget --quiet --tries=1 -o /dev/null http://localhost:{{ clickhouse_port_http }}/ping || ( echo "Check clickhouse ping: error" ; exit 1 )
+	@curl --silent http://localhost:8123/ping | grep --quiet "Ok" || ( echo "Check clickhouse ping: error" ; exit 1 )
 	@echo "Check clickhouse ping: OK"
 .PHONY: healthcheck-clickhouse-ping
