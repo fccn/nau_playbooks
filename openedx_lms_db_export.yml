@@ -7,8 +7,7 @@
 #   ansible-playbook -i nau-data/envs/production/hosts.ini openedx_lms_db_export.yml -e nau_db_exporter_report_script=report_google.py -e nau_database_exporter_sheets_to_copy=organizations,course_runs,course_run_by_date,enrollments_year_of_birth,enrollments_gender,enrollments_level_of_education,enrollments_country,enrollments_employment_situation,registered_users_by_day,distinct_users_by_day,distinct_users_by_month,final_summary
 ---
 - name: Exports information to excel from Open EDX LMS/Studio databases
-  # by default  run on the last swarm server on the inventory
-  hosts: "openedx_docker_servers:&{{ target | default('openedx_docker_servers') }}[-1]"
+  hosts: "staticproxy_docker_servers:&{{ target | default('staticproxy_docker_servers') }}[-1]"
   become: True
   gather_facts: True
   vars: 
