@@ -11,10 +11,10 @@ ansible-playbook -i nau-data/envs/development/hosts.ini mysql_xtrabackups.yml --
 
 ## 1. Unpacking the Backup
 
-Unpacks the `backup.xbstream` file to the specified location.
+Unpack the `backup.xbstream` file to the specified location.
 
 ```bash
-docker run --rm --network=host --name percona-xtrabackup --volumes-from xtradb -v /root/xtrabackups:/xtrabackup_backupfiles percona/percona-xtrabackup:8.0.34 /bin/bash -c "cat /xtrabackup_backupfiles/backup.xbstream | xbstream -x -C /xtrabackup_backupfiles"
+docker run --rm --network=host --name percona-xtrabackup -v /root/xtrabackups:/xtrabackup_backupfiles percona/percona-xtrabackup:8.0.34 /bin/bash -c "xbstream -x -C /xtrabackup_backupfiles < /xtrabackup_backupfiles/backup.xbstream"
 ```
 
 ### Options:
@@ -24,10 +24,10 @@ docker run --rm --network=host --name percona-xtrabackup --volumes-from xtradb -
 
 ## 2. Decompressing the Backup
 
-To decompress the files within the unpacked backup, use the following command. This also removes the original compressed files.
+Use the following command to decompress the files within the unpacked backup. This also removes the original compressed files.
 
 ```bash
-docker run --rm --network=host --name percona-xtrabackup --volumes-from xtradb -v /root/xtrabackups:/xtrabackup_backupfiles percona/percona-xtrabackup:8.0.34 /bin/bash -c "xtrabackup --decompress --remove-original --target-dir=/xtrabackup_backupfiles"
+docker run --rm --network=host --name percona-xtrabackup -v /root/xtrabackups:/xtrabackup_backupfiles percona/percona-xtrabackup:8.0.34 /bin/bash -c "xtrabackup --decompress --remove-original --target-dir=/xtrabackup_backupfiles"
 ```
 
 ### Options:
@@ -41,7 +41,7 @@ docker run --rm --network=host --name percona-xtrabackup --volumes-from xtradb -
 This step applies any pending transactions and makes the backup consistent for restoration.
 
 ```bash
-docker run --rm --network=host --name percona-xtrabackup --volumes-from xtradb -v /root/xtrabackups:/xtrabackup_backupfiles percona/percona-xtrabackup:8.0.34 /bin/bash -c "xtrabackup --prepare --target-dir=/xtrabackup_backupfiles"
+docker run --rm --network=host --name percona-xtrabackup -v /root/xtrabackups:/xtrabackup_backupfiles percona/percona-xtrabackup:8.0.34 /bin/bash -c "xtrabackup --prepare --target-dir=/xtrabackup_backupfiles"
 ```
 
 ### Options:
@@ -54,9 +54,8 @@ docker run --rm --network=host --name percona-xtrabackup --volumes-from xtradb -
 Finally, the following command restores the backup to the specified data directory.
 
 ```bash
-docker run --rm --network=host --name percona-xtrabackup --volumes-from xtradb -v /root/xtrabackups:/xtrabackup_backupfiles percona/percona-xtrabackup:8.0.34 /bin/bash -c "xtrabackup --copy-back --datadir=/xtrabackup_backupfiles/restored --target-dir=/xtrabackup_backupfiles"
+docker run --rm --network=host --name percona-xtrabackup --volumes-from xtradb -v /root/xtrabackups:/xtrabackup_backupfiles percona/percona-xtrabackup:8.0.34 /bin/bash -c "xtrabackup --copy-back --datadir=/var/lib/mysql --target-dir=/xtrabackup_backupfiles"
 ```
-
 ### Options:
 
 - `--copy-back`: Copies the backup files to the MySQL data directory.
@@ -68,7 +67,7 @@ docker run --rm --network=host --name percona-xtrabackup --volumes-from xtradb -
 - Ensure that the permissions and ownership of the restored data directory are correctly set for MySQL.
 
 ```bash
-chown -R 1001:1001 /xtrabackup_backupfiles/restored
+chown -R 1001:1001 /var/lib/mysql
 ```
 
 - After restoration, verify the integrity and functionality of the database to confirm that everything has been restored successfully.
