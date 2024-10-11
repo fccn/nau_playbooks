@@ -40,7 +40,7 @@
         backup_mysql_login_password: "{{ openedx_backup_mysql_login_password }}"
         backup_mysql_port: "{{ openedx_mysql_docker_port }}"
       when: backup_openedx_mysql | default(true) | bool
-    
+
 - name: Backup Richie Mysql data
   # by default run the backup on the instance that should be a read replica
   hosts: richie_mysql_docker_servers[-1]
@@ -78,3 +78,24 @@
       vars:
         backup_mysql_login_user: root
         backup_mysql_login_password: "{{ xtradb_mysql_root_password }}"
+
+- name: Backup Financial Manager Mysql data
+  # by default run the backup on the instance that should be a read replica
+  hosts: financial_manager_mysql_docker_servers[-1]
+  become: True
+  gather_facts: True
+  tasks:
+    - debug:
+        msg: Backing up Financial Manager Mysql Database
+      when: backup_financial_manager_mysql | default(true)
+
+    - name: Backup Financial Manager Mysql Database
+      import_role:
+        name: backups
+      vars:
+        backup_mysql: True
+        backup_mysql_container_name: financial_manager_mysql
+        backup_mysql_login_user: root
+        backup_mysql_login_password: financial_manager_mysql_root_password
+        backup_mysql_port: "{{ financial_manager_mysql_docker_port }}"
+      when: backup_financial_manager_mysql | default(true) | bool

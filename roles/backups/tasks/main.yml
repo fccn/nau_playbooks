@@ -31,7 +31,7 @@
     | nice -n 10 gzip -c \
     | ionice -c2 -n 7 tee {{ BACKUP_LOCATION }}/{{ BACKUP_DATE }}_{{ backup_mysql_container_name }}_mysql.sql.gz \
     > /dev/null
-  when: backup_mysql
+  when: backup_mysql and mysql_container_id.stdout is defined
 
 - name: Give the server time to recover
   pause:
