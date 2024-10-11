@@ -67,7 +67,6 @@
         backup_mysql_port: "{{ richie_mysql_docker_port }}"
       when: backup_richie_mysql | default(true) | bool
 
----
 - name: Backup Percona XtraDB Cluster with Percona XtraBackup
   hosts: xtradb_servers[-1]
   become: True
