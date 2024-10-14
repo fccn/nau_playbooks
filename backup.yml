@@ -7,7 +7,7 @@
   gather_facts: True
   tasks:
     - debug:
-        msg: Backing up OpenEdx Mysql Database
+        msg: Backing up OpenEdx MongoDB
       when: backup_mongo | default(true)
 
     - import_role:
