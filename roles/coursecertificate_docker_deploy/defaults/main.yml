@@ -47,7 +47,7 @@ coursecertificate_nginx_https_ingress_port: 23443
 coursecertificate_nginx_enable_https: true
 coursecertificate_nginx_force_https: true
 coursecertificate_nginx_hsts_max_age: 31536000
-coursecertificate_nginx_admin_access_trusted_ip_cidrs: "{{ NGINX_TRUSTED_IP_CIDRS }}"
+coursecertificate_nginx_admin_access_trusted_ip_cidrs: "{{ NGINX_TRUSTED_IP_CIDRS_LIST }}"
 coursecertificate_nginx_enable_s3_maintenance: "{{ NGINX_EDXAPP_ENABLE_S3_MAINTENANCE }}"
 coursecertificate_nginx_enable_s3_maintenance_file: "{{ NGINX_EDXAPP_S3_MAINTENANCE_FILE }}"
 coursecertificate_nginx_enable_s3_maintenance_host: "{{ NGINX_EDXAPP_S3_MAINTENANCE_HOST }}"

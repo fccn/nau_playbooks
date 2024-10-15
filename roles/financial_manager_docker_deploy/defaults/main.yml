@@ -69,7 +69,7 @@ financial_manager_nginx_https_ingress_port: 13443
 financial_manager_nginx_enable_https: true
 financial_manager_nginx_force_https: true
 financial_manager_nginx_hsts_max_age: 31536000
-financial_manager_nginx_admin_access_trusted_ip_cidrs: "{{ NGINX_TRUSTED_IP_CIDRS }}"
+financial_manager_nginx_admin_access_trusted_ip_cidrs: "{{ NGINX_TRUSTED_IP_CIDRS_LIST }}"
 financial_manager_nginx_enable_s3_maintenance: "{{ NGINX_EDXAPP_ENABLE_S3_MAINTENANCE }}"
 financial_manager_nginx_enable_s3_maintenance_file: "{{ NGINX_EDXAPP_S3_MAINTENANCE_FILE }}"
 financial_manager_nginx_enable_s3_maintenance_host: "{{ NGINX_EDXAPP_S3_MAINTENANCE_HOST }}"
