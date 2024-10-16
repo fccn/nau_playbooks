@@ -5,11 +5,11 @@
 # Example:
 #   ansible-playbook -i nau-data/envs/production/hosts.ini openedx_lms_db_export.yml -e "extra_params: -t"
 #
-# Example that doesn't update data, but exports only the organization table on google sheets:
-#   ansible-playbook -i nau-data/envs/production/hosts.ini openedx_lms_db_export.yml -e update_data=false -e nau_db_exporter_report_script=report_google.py -e export_sheets=organizations
+# Example exports only the organization table to google sheets:
+#   ansible-playbook -i nau-data/envs/production/hosts.ini openedx_lms_db_export.yml -e export=google_sheets -e export_sheets=organizations
 #
-# Example that doesn't export anything to google sheets but updates the organization intermediate table of organizations.
-#   ansible-playbook -i nau-data/envs/production/hosts.ini openedx_lms_db_export.yml -e export=false -e nau_db_exporter_report_script=report_google.py -e update_data_sheets=organizations
+# Example exports everything to xlsx file:
+#   ansible-playbook -i nau-data/envs/production/hosts.ini openedx_lms_db_export.yml -e export=google_sheets
 ---
 - name: Exports information to excel from Open EDX LMS/Studio databases
   hosts: "staticproxy_docker_servers:&{{ target | default('staticproxy_docker_servers') }}[-1]"
@@ -19,8 +19,9 @@
     _nau_db_exporter_version: "{{ nau_db_exporter_version | default('master') }}"
     nau_db_exporter_extra_params: "{{ extra_params | default('') }}"
     nau_db_exporter_base_directory: /tmp/nau-database-exporter-{{ _nau_db_exporter_version }}
-    update_data: true
-    export: true
+    export_sheets: organizations,course_runs,course_run_by_date,enrollments_year_of_birth,enrollments_gender,enrollments_level_of_education,enrollments_country,enrollments_employment_situation,registered_users_by_day,distinct_users_by_day,distinct_users_by_month,final_summary
+    export_sheets_as_list: "{{ (export_sheets.split(',') | list) }}"
+    export: xlsx
   
   tasks:
     - name: Create folder
@@ -36,40 +37,16 @@
     - name: Pull docker image
       shell: docker pull nauedu/nau-database-exporter:{{ _nau_db_exporter_version }}
 
-    - name: Runs the python the report script that updates the intermediate database on a docker container
+    - name: Runs the python that exports data
       shell: |
         docker run -t --rm \
         --name nau-database-exporter-{{ _nau_db_exporter_version }} \
         --mount type=bind,source={{ nau_db_exporter_base_directory }}/config.ini,target=/usr/src/app/config.ini \
         -v {{ nau_db_exporter_base_directory }}/output:/usr/src/app/output \
         nauedu/nau-database-exporter:{{ _nau_db_exporter_version }} \
-        timeout 8h python update_data.py {{ nau_db_exporter_extra_params }}
+        timeout 1h python export.py --config config.ini --export {{ export | default('xlsx') }} {{ nau_db_exporter_extra_params }}
       args:
         chdir: "{{ nau_db_exporter_base_directory }}"
-      when: update_data | bool
-      register: update_data_output
-
-    - name: Print stdout of export output
-      debug:
-        msg: "{{ update_data_output.stdout_lines }}"
-      when: update_data_output.stdout_lines is defined
-
-    - name: Print stderr of export output
-      debug:
-        msg: "{{ update_data_output.stderr_lines }}"
-      when: update_data_output.stderr_lines is defined
-
-    - name: Runs the python the report script that exports from intermediate database on a docker container
-      shell: |
-        docker run -t --rm \
-        --name nau-database-exporter-{{ _nau_db_exporter_version }} \
-        --mount type=bind,source={{ nau_db_exporter_base_directory }}/config.ini,target=/usr/src/app/config.ini \
-        -v {{ nau_db_exporter_base_directory }}/output:/usr/src/app/output \
-        nauedu/nau-database-exporter:{{ _nau_db_exporter_version }} \
-        timeout 1h python {{ nau_db_exporter_report_script | default('report_xlsx.py') }} {{ nau_db_exporter_extra_params }}
-      args:
-        chdir: "{{ nau_db_exporter_base_directory }}"
-      when: export | bool
       register: export_data_output
 
     - name: Print stdout of export output
