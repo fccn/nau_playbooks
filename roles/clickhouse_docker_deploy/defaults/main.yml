@@ -1,5 +1,5 @@
 ---
-clickhouse_docker_image: docker.io/clickhouse/clickhouse-server:24.3
+clickhouse_docker_image: docker.io/clickhouse/clickhouse-server:24.8
 clickhouse_node_name: "{{ inventory_hostname }}"
 
 clickhouse_port_http: 8123
