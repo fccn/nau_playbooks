@@ -24,10 +24,10 @@ services:
       - {{ mongo_docker_volume_path }}:/data/db
     network_mode: host
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongo localhost:{{ mongo_docker_port }}/test --quiet
+      test: echo 'db.runCommand("ping").ok' | {{ mongo_shell_command }} localhost:{{ mongo_docker_port }}/test --quiet
       interval: 60s
       timeout: 50s
-      retries: 10
+      retries: 1000
       start_period: 30s
 {{ helper.service_configs(service='mongo') }}
 {{ helper.service_secrets(service='mongo') }}

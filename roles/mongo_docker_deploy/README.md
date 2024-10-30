@@ -99,3 +99,18 @@ https://www.mongodb.com/docs/manual/tutorial/expand-replica-set/
 
 Upgrade a Replica Set to 4.0
 https://www.mongodb.com/docs/manual/release-notes/4.0-upgrade-replica-set/
+
+## Upgrade existing MongoDB Cluster
+
+To upgrade existing MongoDB Cluster from 4.2 -> 4.4 -> 5.0 -> 6.0 -> 7.0
+
+```bash
+ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit mongo_docker_servers -e mongo_deploy=true -e mongo_docker_image=docker.io/mongo:4.4 -e mongo_feature_compatibility_version=4.4 -v
+ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit mongo_docker_servers -e mongo_deploy=true -e mongo_docker_image=docker.io/mongo:5.0 -e mongo_feature_compatibility_version=5.0 -v
+ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit mongo_docker_servers -e mongo_deploy=true -e mongo_docker_image=docker.io/mongo:6.0 -e mongo_feature_compatibility_version=6.0 -e mongo_shell_command=mongosh -v
+ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit mongo_docker_servers -e mongo_deploy=true -e mongo_docker_image=docker.io/mongo:7.0 -e mongo_feature_compatibility_version=7.0 -e mongo_shell_command=mongosh -e mongo_feature_compatibility_confirm=true -v
+```
+
+This role doesn't  change the "Feature Compatibility Version" of the MongoDB, because this needs to applied after changing the docker image on all existing nodes.
+
+The `deploy.yml` ansible playbook also has a new task, with the same group of MongoDB servers, to update the "Feature Compatibility Version" after the deploy.

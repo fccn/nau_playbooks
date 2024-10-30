@@ -314,11 +314,14 @@
     - name: Install or upgrade docker daemon
       import_role:
         name: geerlingguy.docker
+      when: mongo_deploy | default(false) | bool
 
     - import_role:
         name: snmpd
+      when: mongo_deploy | default(false) | bool
     - import_role:
         name: snmpd_docker
+      when: mongo_deploy | default(false) | bool
 
     - name: Deploy mongo
       import_role:
@@ -327,13 +330,48 @@
         # mongo_docker_instance_name
         mongo_docker_initdb_root_username: "{{ MONGO_ADMIN_USER | default('admin') if (mongo_docker_init | default(false) | bool) else None }}"
         mongo_docker_initdb_root_password: "{{ MONGO_ADMIN_PASSWORD if (mongo_docker_init | default(false) | bool) else None }}"
-        mongo_docker_admin_username: "{{ MONGO_ADMIN_USER | default('admin') }}"
-        mongo_docker_admin_password: "{{ MONGO_ADMIN_PASSWORD }}"
         mongo_docker_replSet: "{{ MONGO_REPL_SET }}"
         mongo_docker_keyFile_value: "{{ MONGO_CLUSTER_KEY | default('') }}"
         mongo_docker_command_bind_ip_additional_list:
           - "{{ ansible_additional_ipv4 | default('') }}"
       when: mongo_deploy | default(false) | bool
+
+- name: Set Mongo Feature compatibility
+  hosts: mongo_docker_servers
+  serial: "{{ serial_number | default(1) }}" # deploy in sequence
+  become: True
+  gather_facts: True
+  tasks:
+    - name: Get Primary MongoDB Node
+      shell: |
+        make --no-print-directory --directory {{ mongo_docker_deploy_base_folder }} mongo-primary-node
+      register: get_primary_mongodb_node_output
+      when: mongo_feature_compatibility_version | default(False)
+
+    - name: Set Mongo Feature compatibility
+      shell: |
+        docker exec {{ mongo_docker_container_name }} {{ mongo_shell_command }} --username {{ mongo_docker_admin_username }} --password {{ mongo_docker_admin_password }} --eval "db.adminCommand( { setFeatureCompatibilityVersion: '{{ mongo_feature_compatibility_version }}'{% if mongo_feature_compatibility_confirm | default(False) %}, confirm: true{% endif %} } )"
+      delegate_to: "{{ get_primary_mongodb_node_output.stdout }}"
+      run_once: true
+      when: mongo_feature_compatibility_version | default(False)
+
+    - name: Get Mongo Feature compatibility
+      shell: |
+        docker exec {{ mongo_docker_container_name }} {{ mongo_shell_command }} --username {{ mongo_docker_admin_username }} --password {{ mongo_docker_admin_password }} --eval "JSON.stringify(db.adminCommand( { getParameter: 1, featureCompatibilityVersion: 1 } ))" | tail -n1 | jq -r '.featureCompatibilityVersion.version'
+      register: get_mongo_feature_compatibility_version_output
+      delegate_to: "{{ get_primary_mongodb_node_output.stdout }}"
+      run_once: true
+      when: mongo_feature_compatibility_version | default(False)
+
+    - name: Check Mongo Feature compatibility
+      fail:
+        msg: Incorrect Mongo feature compatibility version, current '{{ get_mongo_feature_compatibility_version_output.stdout }}' expected '{{ mongo_feature_compatibility_version }}'
+      delegate_to: "{{ get_primary_mongodb_node_output.stdout }}"
+      run_once: true
+      when: mongo_feature_compatibility_version | default(False) and get_mongo_feature_compatibility_version_output.stdout != mongo_feature_compatibility_version
+
+    - import_tasks: tasks/healthcheck.yml
+      when: mongo_feature_compatibility_version | default(False)
 
 - name: Deploy Elasticsearch servers
   hosts: elasticsearch_docker_servers

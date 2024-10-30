@@ -21,15 +21,7 @@
   gather_facts: True
   serial: "{{ serial_number | default(1) }}" # check in sequence
   tasks:
-    - name: Run Makefile healthcheck
-      shell: make --jobs 20 --no-print-directory --directory {{ item }} healthcheck
-      retries: "{{ healthcheck_retries | default(50) }}"
-      delay: "{{ healthcheck_delay | default(30) }}"
-      register: result
-      until: result.rc == 0
-      when: makefile_healthcheck is defined
-      changed_when: False
-      with_items: "{{ makefile_healthcheck }}"
+    - import_tasks: tasks/healthcheck.yml
 
 - name: Check URLs
   hosts: all

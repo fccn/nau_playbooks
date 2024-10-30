@@ -6,8 +6,13 @@ mongo_docker_port: 27017
 
 mongo_docker_image: docker.io/mongo:4.2.24
 # Older releases:
+# docker.io/mongo:4.2.24
 # docker.io/mongo:4.0.28
 # docker.io/mongo:3.6.23
+
+# From >= 6.0 use mongosh
+mongo_shell_command: mongo
+# mongo_shell_command: mongosh
 
 mongo_docker_command: "{{ mongo_docker_command_keyfile }}--replSet {{ mongo_docker_replSet }} --port {{ mongo_docker_port }} {{ mongo_docker_command_bind_ip }}"
 mongo_docker_command_bind_ip: --bind_ip {{ (mongo_docker_command_bind_ip_default_list + mongo_docker_command_bind_ip_additional_list) | select() | join(',') }}

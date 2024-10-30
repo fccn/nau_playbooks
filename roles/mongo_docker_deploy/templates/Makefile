@@ -46,16 +46,24 @@ bash: ## Open bash on the current node for the {{ mongo_docker_container_name }}
 .PHONY: bash
 
 mongo-shell: ## Open mongo shell
-	@docker exec -it {{ mongo_docker_container_name }} mongo -u {{ mongo_docker_admin_username }} -p{{ mongo_docker_admin_password }}
+	@docker exec -it {{ mongo_docker_container_name }} {{ mongo_shell_command }} --username {{ mongo_docker_admin_username }} --password {{ mongo_docker_admin_password }}
 .PHONY: mongo-shell
 
 mongo-status: ## View MongoDB status
-	@docker exec {{ mongo_docker_container_name }} mongo -u {{ mongo_docker_admin_username }} -p{{ mongo_docker_admin_password }} --eval "printjson(rs.status())"
+	@docker exec {{ mongo_docker_container_name }} {{ mongo_shell_command }} --username {{ mongo_docker_admin_username }} --password {{ mongo_docker_admin_password }} --eval "printjson(rs.status())"
 .PHONY: mongo-status
+
+mongo-primary-node: ## Get MongoDB primary node
+	@docker exec {{ mongo_docker_container_name }} {{ mongo_shell_command }} --username {{ mongo_docker_admin_username }} --password {{ mongo_docker_admin_password }} --eval 'JSON.stringify(rs.status().members.filter(config => config.state == "1")[0].name)' | jq -r | cut -d":" -f 1
+.PHONY: mongo-feature-compatibility-version
+
+mongo-feature-compatibility-version: ## View MongoDB feature compatibility version
+	@docker exec {{ mongo_docker_container_name }} {{ mongo_shell_command }} --username {{ mongo_docker_admin_username }} --password {{ mongo_docker_admin_password }} --eval "JSON.stringify(db.adminCommand( { getParameter: 1, featureCompatibilityVersion: 1 } ))" | tail -n1 | jq -r '.featureCompatibilityVersion.version'
+.PHONY: mongo-feature-compatibility-version
 
 healthcheck-replication: ## Check mongo replication
 	@echo -n "Check mongo replication is 600 seconds (<10 minutes) seconds behind primary: "
-	@(docker exec {{ mongo_docker_container_name }} mongo admin -u {{ mongo_docker_admin_username }} -p{{ mongo_docker_admin_password }} -host rs0/localhost --eval 'rs.status().members.filter(config => config.name == "{{ ansible_host }}:{{ mongo_docker_port }}")[0].state' | tail -1 | grep -q 1 ) || ( docker exec {{ mongo_docker_container_name }} mongo admin -u {{ mongo_docker_admin_username }} -p{{ mongo_docker_admin_password }} --host rs0/localhost --eval 'db.printSecondaryReplicationInfo()' | grep -A 3 "source: {{ ansible_host }}:{{ mongo_docker_port }}" | grep "behind the primary" | awk '{print $$1}' | egrep "^[0-5]?[0-9]?[0-9]$$" > /dev/null )
+	@docker exec {{ mongo_docker_container_name }} {{ mongo_shell_command }} admin --username {{ mongo_docker_admin_username }} --password {{ mongo_docker_admin_password }} --host rs0/localhost --eval 'JSON.stringify(rs.status().members.filter(config => config.name == "{{ ansible_additional_ipv4 | default(ansible_host) }}:{{ mongo_docker_port }}")[0].state)' | egrep -q "(1|2)"
 	@echo "OK"
 .PHONY: healthcheck-replication
 

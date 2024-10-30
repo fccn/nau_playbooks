@@ -1,8 +1,11 @@
 ---
-- name: Install make
+- name: Install packages
   package:
-    name: make
+    name: "{{ item }}"
     state: present
+  with_items:
+  - make
+  - jq
   tags:
     - docker_deploy
 
