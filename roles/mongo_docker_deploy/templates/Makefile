@@ -54,7 +54,7 @@ mongo-status: ## View MongoDB status
 .PHONY: mongo-status
 
 mongo-primary-node: ## Get MongoDB primary node
-	@docker exec {{ mongo_docker_container_name }} {{ mongo_shell_command }} --username {{ mongo_docker_admin_username }} --password {{ mongo_docker_admin_password }} --eval 'JSON.stringify(rs.status().members.filter(config => config.state == "1")[0].name)' | jq -r | cut -d":" -f 1
+	@docker exec {{ mongo_docker_container_name }} {{ mongo_shell_command }} --username {{ mongo_docker_admin_username }} --password {{ mongo_docker_admin_password }} --eval 'JSON.stringify(rs.status().members.filter(config => config.state == "1")[0].name)' | tail -1 | jq -r | cut -d":" -f 1
 .PHONY: mongo-feature-compatibility-version
 
 mongo-feature-compatibility-version: ## View MongoDB feature compatibility version
