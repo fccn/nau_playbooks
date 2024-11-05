@@ -11,8 +11,9 @@ Example:
 """
 import requests
 import argparse
-import yaml
+import json
 import sys
+from collections import OrderedDict
 
 
 def main():
@@ -86,7 +87,7 @@ def main():
 
     # write
     org_export = {'NAU_HEADER_ORGANIZATION_LOGOS': organization_logos_config}
-    yaml.dump(org_export, output)
+    json.dump(org_export, output, indent=4, sort_keys=True)
 
 # call
 main()
