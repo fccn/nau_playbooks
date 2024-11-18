@@ -122,6 +122,19 @@
     #     name: geerlingguy.pip
     #   when: ansible_distribution == 'Ubuntu' and (ansible_distribution_major_version|int) >= 20
 
+    - name: Configure sysconfig custom values
+      sysctl:
+        name: "{{ sysconfig_config.name }}"
+        value: "{{ sysconfig_config.value }}"
+        state: "{{ sysconfig_config.state | default(omit) }}"
+        reload: "{{ sysconfig_config.reload | default(omit) }}"
+        sysctl_set: "{{ sysconfig_config.sysctl_set | default(omit) }}"
+      loop: "{{ sysconfig_configuration | default({}) }}"
+      loop_control:
+        loop_var: sysconfig_config
+        label: "{{ sysconfig_config.name }}"
+      tags: sysctl
+
 - name: Bootstrap cnc with Ubuntu 20.04
   hosts: command_and_control_2004
   become: True

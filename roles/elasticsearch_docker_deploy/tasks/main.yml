@@ -6,13 +6,6 @@
   tags:
     - docker_deploy
 
-- name: Configure sysctl.conf
-  lineinfile: dest=/etc/sysctl.conf line="{{ item.key }} = {{ item.value }}" regexp="^{{ item.key }}[\s]?=" state=present
-  with_dict: "{{ elasticsearch_sysctl_conf }}"
-  notify: reload sysctl
-  tags:
-    - docker_deploy
-
 - name: Restart sysctl if necessary
   meta: flush_handlers
   tags:

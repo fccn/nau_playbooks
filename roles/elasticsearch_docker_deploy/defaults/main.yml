@@ -34,6 +34,3 @@ elasticsearch_docker_deploy_folders_additional:
     dir_owner: 1000
     dir_group: 1000
     dir_mode: "0755"
-
-elasticsearch_sysctl_conf:
-  vm.max_map_count: 262144
