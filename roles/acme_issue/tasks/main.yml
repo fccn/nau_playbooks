@@ -25,13 +25,9 @@
 # warn about the limit of 5 certificates in 7 days per domain.
 - name: Delete certbot configuration and historic certificates
   file:
-    path: "{{ acme_certbot_root_folder }}/live/{{ domain_config['cert-name'] | default(domain_config.domain) }}"
+    path: "{{ acme_certbot_root_folder }}"
     state: absent
   when: acme_force_issue | bool
-  loop: "{{ acme_domains_to_issue_certs }}"
-  loop_control:
-    loop_var: domain_config
-    label: "{{ domain_config.domain }}"
   tags: 
     - acme_issue
 
