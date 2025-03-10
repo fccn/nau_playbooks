@@ -29,17 +29,10 @@ services:
       - {{ redis_docker_volume_path }}:/bitnami/redis/data
     deploy:
       replicas: 1
-      placement:
-        max_replicas_per_node: 1
-      resources:
-        limits:
-          memory: 3G
-        reservations:
-          memory: 400M
     healthcheck:
       test: ["CMD-SHELL", "redis-cli -p {{ redis_docker_port }} ping | grep PONG"]
       start_period: 30s
-      retries: 100
+      retries: 1000
       interval: 30s
       timeout: 30s
 {{ helper.service_configs(service='redis') }}
