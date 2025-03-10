@@ -52,7 +52,7 @@ silent-%:
 	@$(MAKE) $* > /dev/null && echo "OK"
 
 healthcheck-ping-pong: ## check Redis with PING/PONG
-	@docker exec -it $$(docker ps --filter "name={{ redis_docker_container_name }}" -q) redis-cli -p {{ redis_docker_port }} ping | grep --quiet PONG || ( echo "Check redis PING/PONG" ; exit 1 )
+	@docker exec $$(docker ps --filter "name={{ redis_docker_container_name }}" -q) redis-cli -p {{ redis_docker_port }} ping | grep --quiet PONG || ( echo "Check redis PING/PONG" ; exit 1 )
 	@echo "Check redis PING/PONG: OK"
 .PHONY: healthcheck-ping-pong
 
