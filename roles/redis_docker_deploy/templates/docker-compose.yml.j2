@@ -9,6 +9,7 @@ services:
 
   redis:
     image: {{ redis_docker_image }}
+    command: {{ redis_docker_command }}
     container_name: {{ redis_docker_container_name }}
     restart: always
     environment:

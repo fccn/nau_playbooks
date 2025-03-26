@@ -4,6 +4,10 @@ redis_docker_instance_name: redis
 
 redis_replication_mode: master
 redis_docker_port: 6379
+redis_docker_maxmemory: 1gb
+redis_docker_maxmemory_policy: allkeys-lru
+redis_docker_command_extra: --maxmemory {{ redis_docker_maxmemory }} --maxmemory-policy {{ redis_docker_maxmemory_policy }}
+redis_docker_command: /opt/bitnami/scripts/redis/run.sh {{ redis_docker_command_extra }}
 redis_docker_container_name: "{{ redis_docker_deploy_base_folder | basename }}"
 redis_master_host: "{{ redis_docker_container_name }}"
 redis_replica_ip: "{{ redis_docker_container_name }}"
