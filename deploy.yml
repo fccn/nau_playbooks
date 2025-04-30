@@ -540,6 +540,10 @@
               user: "{{ richie_mysql_health_check_user }}",
               host: "{{ richie_mysql_health_check_host | default('%') }}",
             }
+        mysql_docker_configurations_dict:
+          # The size in bytes of the buffer pool, the memory area where InnoDB caches table and index data.
+          # Defaults to 128MB
+          innodb_buffer_pool_size: "{{ richie_mysql_innodb_buffer_pool_size | default('1G') }}"
       when: richie_mysql_deploy | default(false) | bool
 
     - name: Restore keepalived priority
