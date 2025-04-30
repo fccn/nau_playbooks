@@ -83,9 +83,13 @@ healthcheck-mysql-primary: ## show primary master status
 .PHONY: healthcheck-mysql-primary
 
 {% endif %}
-mysql-showprocess-list: ## show the processes inside mysql
+mysql-show-processlist: ## show the processes inside mysql
 	@MYSQL_PWD="{{ mysql_root_password }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ mysql_docker_port }} --execute="show processlist;"
-.PHONY: mysql-showprocess-list
+.PHONY: mysql-show-processlist
+
+mysql-show-full-processlist: ## show the processes inside mysql with full query
+	@MYSQL_PWD="{{ mysql_root_password }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ mysql_docker_port }} --execute="show full processlist;"
+.PHONY: mysql-show-processlist
 
 mysql-shell: ## open mysl shell to run SQL commands
 	@MYSQL_PWD="{{ mysql_root_password }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ mysql_docker_port }}
