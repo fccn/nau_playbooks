@@ -112,3 +112,10 @@ healthcheck-xtradb-node-ready: ## Check XtraDB node is ready to accept connectio
 	@docker exec -i {{ xtradb_docker_container_name }} bash -c 'echo "show status like \"wsrep_ready\";" | MYSQL_PWD="{{ xtradb_mysql_root_password }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} --skip-column-names' | awk '{print $$2}' | grep --quiet "ON" || ( echo "Check XtraDB node is ready to accept connections: error" ; exit 1 )
 	@echo "Check XtraDB node is ready to accept connections: OK"
 .PHONY: xtradb-shell
+
+xtradb-dump: ## Dump the designated databases to a file - `make xtradb-dump DATABASES="database_names" FILE=output_file.sql.gz`
+	@if [ -z "$(FILE)" ]; then echo "Error: FILE parameter is required. Usage: make xtradb-dump DATABASES=\"database_names\" FILE=output_file.sql.gz"; exit 1; fi
+	$(eval DB_OPTION := $(if $(DATABASES),$(DATABASES),--all-databases))
+	@docker exec -it {{ xtradb_docker_container_name }} bash -c 'MYSQL_PWD="{{ xtradb_mysql_root_password }}" /usr/bin/mysqldump -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} $(DB_OPTION) --single-transaction --skip-extended-insert' | nice -n 10 gzip -c | ionice -c2 -n 7 tee $(FILE) > /dev/null
+	@echo "Databases dumped to $(FILE)"
+.PHONY: xtradb-dump
