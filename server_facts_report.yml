@@ -10,16 +10,16 @@
 - hosts: all
   gather_facts: yes
   vars:
-    delimiter: ","
+    delimiter: "\t"
     server_facts_file_path: "server_facts_report.csv"
     root_mount: "{{ ansible_mounts | selectattr ('mount', 'equalto', '/') | first }}"
     occupied_size: "{{ root_mount.size_total - root_mount.size_available }}"
     root_occupied_ratio: "{{ ( ( occupied_size | int ) / root_mount.size_total) | round(3) }}"
   pre_tasks:
-    - shell: echo 'hostname{{ delimiter }}processor_vcpus{{ delimiter }}memory_gb{{ delimiter }}root_mount_available_size_gb{{ delimiter }}root_mount_total_size_gb{{ delimiter }}root_occupied_ratio{{ delimiter }}{{ 'environment' if env is defined else '' }}' > {{ server_facts_file_path }}
+    - shell: echo 'hostname{{ delimiter }}processor_vcpus{{ delimiter }}memory_gb{{ delimiter }}root_mount_availale_size_gb{{ delimiter }}root_mount_total_size_gb{{ delimiter }}root_occupied_ratio{{ delimiter }}host{{ delimiter }}ipv4{{ delimiter }}ipv6{{ delimiter }}{{ 'environment' if env is defined else '' }}' > {{ server_facts_file_path }}
       when: not (append | default(false) | bool)
       run_once: true
       delegate_to: localhost
   tasks:
-    - shell: echo '{{ inventory_hostname }}{{ delimiter }}{{ ansible_processor_vcpus }}{{ delimiter }}{{ ( ansible_memtotal_mb / 1024 ) | round(0) }}{{ delimiter }}{{ root_mount.size_available | human_readable(unit="G") | replace(' GB','') }}{{ delimiter }}{{ root_mount.size_total | human_readable(unit="G") | replace(' GB','') }}{{ delimiter }}{{ root_occupied_ratio }}{{ delimiter }}{{ env|default('') }}' >> {{ server_facts_file_path }}
+    - shell: echo '{{ inventory_hostname }}{{ delimiter }}{{ ansible_processor_vcpus }}{{ delimiter }}{{ ( ansible_memtotal_mb / 1024 ) | round(0) }}{{ delimiter }}{{ root_mount.size_available | human_readable(unit="G") | replace(' GB','') }}{{ delimiter }}{{ root_mount.size_total | human_readable(unit="G") | replace(' GB','') }}{{ delimiter }}{{ root_occupied_ratio }}{{ delimiter }}{{ ansible_host }}{{ delimiter }}{{ ansible_all_ipv4_addresses }}{{ delimiter }}{{ ansible_all_ipv6_addresses }}{{ delimiter }}{{ env|default('') }}' >> {{ server_facts_file_path }}
       delegate_to: localhost
