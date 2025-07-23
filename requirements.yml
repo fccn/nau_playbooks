@@ -17,7 +17,7 @@
 
 # Install IdP Shibboleth, fccn stuff
 - src: git+https://github.com/fccn/shibboleth-3-4-4-centos7-lite.git
-  version: a6802ea65f76ceadf40605aa19a7a05721cb74e7
+  version: a6f8539755bf38c34fe5cb3f37182bce1d27854b
 
 # Manage iptables
 - src: git+https://github.com/fccn/ansible-firewall.git
