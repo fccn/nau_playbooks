@@ -23,13 +23,13 @@
     - acme_issue
 
 # warn about the limit of 5 certificates in 7 days per domain.
-- name: Delete certbot configuration and historic certificates
-  file:
-    path: "{{ acme_certbot_root_folder }}"
-    state: absent
-  when: acme_force_issue | bool
-  tags: 
-    - acme_issue
+# - name: Delete certbot configuration and historic certificates
+#   file:
+#     path: "{{ acme_certbot_root_folder }}"
+#     state: absent
+#   when: acme_force_issue | bool
+#   tags: 
+#     - acme_issue
 
 - name: Run the ACME certbot
   shell: |
@@ -39,6 +39,7 @@
     --cpus 1 --memory 100M \
     --name certbot certbot/certbot:latest \
     certonly --standalone --non-interactive --agree-tos \
+    {{ '--force-renew' if ( acme_force_issue | bool) else '' }} \
     {{ '--server ' + domain_config.server if domain_config.server is defined else '' }} \
     {{ '--eab-kid ' + domain_config['eab-kid'] if domain_config['eab-kid'] is defined else '' }} \
     {{ '--eab-hmac-key ' + domain_config['eab-hmac-key'] if domain_config['eab-hmac-key'] is defined else '' }} \
