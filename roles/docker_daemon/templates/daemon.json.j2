@@ -1,5 +1,0 @@
-{
-{% for key,value in docker_daemon_configurations_dict.items() %}
-  "{{ key }}": {{ value }}{{ ", " if not loop.last else "" }}
-{% endfor %}
-}
