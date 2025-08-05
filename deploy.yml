@@ -32,7 +32,8 @@
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit idpproxy_servers
 #
 #   To mark a server for maintenance, like load balancer or mysql server, append to the shell command arguments:
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --tags keepalived --limit slave_persistence_servers -e keepalived_priority=1
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --tags keepalived --limit redis_docker_servers[0] -e keepalived_priority=1
+#
 #   To mark a server back to normal state, run the same command without the --limit.
 #
 #   To deploy the docker registry mirror
