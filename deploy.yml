@@ -4,8 +4,8 @@
 #
 # Open edX instance with 3 layers:
 # - Load balancer servers
-# - Persistence servers (mongo_servers, cache_servers and mysql_servers)
-# - Application servers (app_servers & complementary_servers)
+# - Persistence servers
+# - Application servers (only partially)
 #
 # NAU also has other services like:
 # - richie for marketing site
@@ -84,7 +84,7 @@
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit clickhouse_servers -e clickhouse_deploy=true
 #
 # - name: Bootstrap instances of 16.04
-#   hosts: all,!idpproxy_servers,!support_server,!build_server
+#   hosts: all,!idpproxy_servers,!support_server
 #   gather_facts: no
 #   become: true
 #   tasks:
@@ -147,7 +147,7 @@
       when: ansible_distribution == 'Ubuntu' and (ansible_distribution_major_version|int) >= 20
 
 - name: Configure hosts file
-  hosts: all,!support_server,!command_and_control,!build_server
+  hosts: all,!support_server,!command_and_control
   become: True
   gather_facts: True
   # vars defined on 02_hosts.yml
@@ -177,73 +177,6 @@
         keepalived_priority_override: ""
       when: balancer_keepalived_vrrp_instances is defined
   tags: load-balancer
-
-- name: Configure mongo server instance
-  hosts: mongo_servers
-  become: True
-  gather_facts: True
-  roles:
-    - role: swapfile
-    - role: data_dirs
-    - role: mongo_3_2
-    - role: oraclejdk
-    - role: es_kopf
-
-- name: Configure the complementary server group
-  hosts: complementary_servers
-  serial: "{{ serial_number | default(1) }}"
-  become: True
-  gather_facts: True
-  roles:
-    - role: rolling_deploy
-      vars:
-        rolling_deploy_starting: true
-      when: ( groups['complementary_servers'] | length ) > 1
-    - role: remove_edx_apt_ppa_repo
-    - role: swapfile
-    - role: nginx
-      nginx_sites:
-      - insights
-      - edx_notes_api
-      - nau_nginx_status
-    - role: nginx_default_static_site
-      when: use_nginx_default_site
-    - role: discovery
-      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'discovery' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
-    - role: ecommerce
-      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'ecommerce' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
-    - role: ecomworker
-      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'ecommerce' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
-    - role: edx_notes_api
-      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'edx_notes_api' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
-    - role: analytics_api
-      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'analytics_api' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
-    - role: insights
-      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'insights' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
-    - role: mfe_deployer
-      when: COMMON_COMPLEMENTARY_APPLICATION_ROLES is defined and 'mfe' in COMMON_COMPLEMENTARY_APPLICATION_ROLES
-    - role: web_server_monitoring
-    - role: snmpd
-    - role: nau_check_urls
-    - role: rolling_deploy
-      vars:
-        rolling_deploy_starting: false
-      when: ( groups['complementary_servers'] | length ) > 1
-
-- name: Configure pipeline servers
-  hosts: pipeline_servers
-  become: True
-  gather_facts: True
-  vars:
-    ANALYTICS_API_SERVICE_CONFIG: "When defined, we create the analytics-api users at the db"
-  roles:
-    - role: remove_edx_apt_ppa_repo
-    - role: swapfile
-    - role: edxlocal
-    # Sometimes we need to comment the next line to run the configuration,
-    # because the ensure everything is up and running is broken.
-    - analytics_pipeline
-    - analytics_pipeline_configuration
 
 # specific variables are configured on nau-data/envs/<env>/group_vars/idpproxy_servers.yml
 - name: Configure Shibboleth IdP
@@ -279,32 +212,6 @@
     - role: geerlingguy.docker
     - role: openark_orchestrator
 
-- name: Configure build server
-  hosts: build_server
-  tasks:
-    - name: Install docker
-      import_role:
-        name: geerlingguy.docker
-    - name: Install Java to run a Jenkins node
-      import_role:
-        name: geerlingguy.java
-    - name: Install pip to build python based software
-      import_role:
-        name: geerlingguy.pip
-    - name: Install virtualenv pip package to build python based software
-      pip:
-        name: virtualenv
-    - name: Install python3.8-venv package to build python based software
-      package:
-        name: python3.8-venv
-    - name: Allow ubuntu user to run docker builds
-      user:
-        name: ubuntu
-        groups: docker
-        append: yes
-    - name: Install docker_image ansible module dependencies
-      pip:
-        name: docker-py
 
 - name: Configure docker registry mirror
   hosts: registry_mirror_server
@@ -832,7 +739,7 @@
         openedx_docker_deploy_s3_access_key_id: "{{ EDXAPP_BACKUPS_AWS_ACCESS_KEY_ID }}"
         openedx_docker_deploy_s3_secret_access_key: "{{ EDXAPP_BACKUPS_AWS_SECRET_ACCESS_KEY }}"
         # server node where to build the nginx web server image with all static assets inside
-        openedx_build_web_server_node: "{{ hostvars[groups['build_server'][0]].ansible_host }}"
+        # openedx_build_web_server_node: "{{ hostvars[groups['build_server'][0]].ansible_host }}"
     - name: End rolling deploy - open load balancer connections
       import_role:
         name: rolling_deploy
