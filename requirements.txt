@@ -1,8 +1,7 @@
-# install specific version of pip
--r configuration/pre-requirements.txt
-
 # Install specific version of setuptools
 setuptools==44.1.0
 
-# Install upstream Open edX configuration requirements
--r configuration/requirements.txt
+ansible==2.8.20
+# dependencies for ansible
+Jinja2==2.8
+markupsafe==2.0.1
