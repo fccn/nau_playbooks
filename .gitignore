@@ -4,7 +4,6 @@ vendor/roles
 *.log
 # ignoring solita_jenkins password generated file
 solita_jenkins
-#configuration/
 #nau-data/
 venv_ops/
 venv/

@@ -4,16 +4,13 @@ Nau playbooks
 This repository holds the specific playbooks required to manage the Open edX installation at NAU.
 
 ## Clone the required repositories
-This repository uses 2 different other repositories.
-
-The `configuration` is the Open edX upstream that install the Open edX old way of deployment using Ansible.
+This repository uses another different repository.
 
 The `secure-nau-data` repository is the private NAU repository where the keys and passwords are stored,
 on per environment.
 
 Commands to clone the dependencies:
 ```bash
-git clone -b nau/nutmeg.master https://github.com/fccn/configuration.git configuration
 git clone -b master git@github.com:fccn/secure-nau-data.git nau-data
 git clone -b master git@github.com:fccn/nau_playbooks.git nau_playbooks
 ```
@@ -21,6 +18,9 @@ git clone -b master git@github.com:fccn/nau_playbooks.git nau_playbooks
 ## Install Python 3.8
 
 Because of the old version of Open edX that we use on NAU, we need to use the older Python 3.8 version.
+
+### Using package manager
+
 So to execute the deployment process on newer Debian based Operating System like Ubuntu,
 we need to add the additional `deadsnakes` Personal Package Archives (PPA) and
 install the older Python 3.8 version.
@@ -31,14 +31,17 @@ sudo apt update
 sudo apt install python3.8 python3.8-dev python3.8-venv python3.8-distutils
 ```
 
-Alternatively use pyenv.
-
-## Installing Pip on Python3.8
 To install the `pip` on the older Python version 3.8, run:
 
 ```bash
 wget https://bootstrap.pypa.io/get-pip.py
 python3.8 get-pip.py
+```
+
+## uv
+
+```bash
+uv venv --seed venv -p python3.8.20
 ```
 
 ## Installing OS packages
