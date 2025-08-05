@@ -56,12 +56,6 @@
 #   To deploy Observability
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit observability_docker_servers -e observability_docker_deploy=true
 #
-#   To deploy Openedx Application and build nginx
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit openedx_docker_servers -e openedx_docker_deploy=true -e openedx_nginx_build=true
-#
-#   To update OpenedX app site configuration
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit openedx_docker_servers -e openedx_app_site_configuration_deploy=true --tags openedx_app_site_configuration
-#
 #   To deploy Financial Manager MySQL database
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit financial_manager_mysql_docker_servers -e financial_manager_mysql_deploy=true
 #
@@ -452,72 +446,6 @@
       tags: keepalived
       when: ( richie_mysql_deploy | default(false) | bool ) and richie_mysql_keepalived_vrrp_instances is defined and ( groups['richie_mysql_docker_servers'] | length ) > 1
 
-- name: Deploy openedx application docker servers
-  hosts: openedx_docker_servers
-  serial: "{{ serial_number | default(1) }}" # deploy in sequence
-  become: True
-  gather_facts: True
-  tasks:
-    - name: Start rolling deploy - block load balancer connections
-      import_role:
-        name: rolling_deploy
-      vars:
-        rolling_deploy_docker: true
-        rolling_deploy_starting: true
-      when: ( groups['openedx_docker_servers'] | length ) > 1 and ( openedx_docker_deploy | default(false) | bool )
-    - name: Install or upgrade docker daemon
-      import_role:
-        name: geerlingguy.docker
-      when: openedx_docker_deploy | default(false) | bool
-    - import_role:
-        name: snmpd
-      tags: snmpd
-      when: openedx_docker_deploy | default(false) | bool
-    - import_role:
-        name: snmpd_docker
-      tags: snmpd
-      when: openedx_docker_deploy | default(false) | bool
-    - name: Deploy openedx as docker compose file
-      import_role:
-        name: openedx_docker_deploy
-      vars:
-        openedx_docker_deploy_run: "{{ openedx_docker_deploy | default(false) }}"
-        elasticsearch_cluster_hosts_url_tmp: "{% for elastic_host in groups['elasticsearch_docker_servers'] %}http://{{ hostvars[elastic_host].ansible_host }}:{{ hostvars[elastic_host].elasticsearch_http_port }}{{ ',' if not loop.last else '' }}{% endfor %}"
-        openedx_docker_deploy_elasticsearch_cluster_hosts_url: "{{ elasticsearch_cluster_hosts_url_tmp.split(',') | list }}"
-        openedx_docker_deploy_cache_redis_host: "{{ hostvars[groups['redis_docker_servers'][0]].redis_virtual_ipv4 }}" # use VIP
-        openedx_docker_deploy_cache_redis_port: "{{ hostvars[groups['redis_docker_servers'][0]].redis_docker_port }}"
-        openedx_docker_deploy_celery_redis_host: "{{ hostvars[groups['redis_docker_servers'][0]].ansible_host }}" # don't use VIP, use host IP
-        openedx_docker_deploy_celery_redis_port: "{{ hostvars[groups['redis_docker_servers'][0]].redis_docker_port }}"
-        openedx_docker_deploy_ecommerce_broker_host: "{{ hostvars[groups['redis_docker_servers'][0]].ansible_host }}" # don't use VIP, use host IP
-        openedx_docker_deploy_ecommerce_broker_port: "{{ hostvars[groups['redis_docker_servers'][0]].redis_docker_port }}"
-        openedx_docker_deploy_mysql_default_host: "{{ hostvars[groups['openedx_mysql_docker_servers'][0]].ansible_host }}"
-        openedx_docker_deploy_mysql_default_port: "{{ hostvars[groups['openedx_mysql_docker_servers'][0]].openedx_mysql_docker_port }}"
-        openedx_docker_deploy_mysql_read_replica_host: "{{ hostvars[groups['openedx_mysql_docker_servers'][1]].openedx_mysql_read_replica_virtual_ipv4 | default( hostvars[groups['openedx_mysql_docker_servers'][1]].ansible_host ) }}"
-        openedx_docker_deploy_mysql_read_replica_port: "{{ hostvars[groups['openedx_mysql_docker_servers'][1]].openedx_mysql_docker_port }}"
-        # s3 to copy ACME issued certificates
-        openedx_nginx_s3_certificates_folder: "/acme_certificates"
-        openedx_docker_deploy_s3_host: "{{ AWS_S3_DBS_BACKUP_HOST }}"
-        openedx_docker_deploy_s3_bucket: "{{ AWS_S3_DBS_BACKUP_BUCKET_NAME }}"
-        openedx_docker_deploy_s3_access_key_id: "{{ EDXAPP_BACKUPS_AWS_ACCESS_KEY_ID }}"
-        openedx_docker_deploy_s3_secret_access_key: "{{ EDXAPP_BACKUPS_AWS_SECRET_ACCESS_KEY }}"
-        # server node where to build the nginx web server image with all static assets inside
-        # openedx_build_web_server_node: "{{ hostvars[groups['build_server'][0]].ansible_host }}"
-    - name: End rolling deploy - open load balancer connections
-      import_role:
-        name: rolling_deploy
-      vars:
-        rolling_deploy_docker: true
-        rolling_deploy_starting: false
-      when: ( groups['openedx_docker_servers'] | length ) > 1 and ( openedx_docker_deploy | default(false) | bool )
-
-    - name: Update openedx site configurations
-      import_role:
-        name: openedx_app_site_configuration
-      when: ( openedx_app_site_configuration_deploy | default(false) | bool )
-      run_once: yes
-      tags:
-        - openedx_app_site_configuration
-        - create_or_update_site_configuration
 
 - name: Deploy financial manager mysql docker servers
   hosts: financial_manager_mysql_docker_servers
