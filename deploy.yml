@@ -53,9 +53,6 @@
 #   To deploy Richie Application
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit richie_docker_servers -e richie_docker_deploy=true
 #
-#   To deploy Course Certificate
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit coursecertificate_docker_servers -e coursecertificate_docker_deploy=true
-#
 #   To deploy StaticProxy
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit staticproxy_docker_servers -e staticproxy_docker_deploy=true
 #
@@ -460,44 +457,6 @@
         keepalived_priority_override: ""
       tags: keepalived
       when: ( richie_mysql_deploy | default(false) | bool ) and richie_mysql_keepalived_vrrp_instances is defined and ( groups['richie_mysql_docker_servers'] | length ) > 1
-
-- name: Deploy coursecertificate docker servers
-  hosts: coursecertificate_docker_servers
-  serial: "{{ serial_number | default(1) }}" # deploy in sequence
-  become: True
-  gather_facts: True
-  tasks:
-    - name: Start rolling deploy - block load balancer connections
-      import_role:
-        name: rolling_deploy
-      vars:
-        rolling_deploy_docker: true
-        rolling_deploy_starting: true
-      when: ( groups['coursecertificate_docker_servers'] | length ) > 1 and ( coursecertificate_docker_deploy | default(false) | bool )
-    - name: Install or upgrade docker daemon
-      import_role:
-        name: geerlingguy.docker
-      when: coursecertificate_docker_deploy | default(false) | bool
-    - import_role:
-        name: snmpd
-      tags: snmpd
-      when: coursecertificate_docker_deploy | default(false) | bool
-    - import_role:
-        name: snmpd_docker
-      tags: snmpd
-      when: coursecertificate_docker_deploy | default(false) | bool
-    - name: Deploy coursecertificate as docker compose file
-      import_role:
-        name: coursecertificate_docker_deploy
-      vars:
-        coursecertificate_docker_deploy_run: "{{ coursecertificate_docker_deploy | default(false) }}"
-    - name: End rolling deploy - open load balancer connections
-      import_role:
-        name: rolling_deploy
-      vars:
-        rolling_deploy_docker: true
-        rolling_deploy_starting: false
-      when: ( groups['coursecertificate_docker_servers'] | length ) > 1 and ( coursecertificate_docker_deploy | default(false) | bool )
 
 - name: Deploy staticproxy docker servers
   hosts: staticproxy_docker_servers
