@@ -1,8 +1,0 @@
----
-
-EDXAPP_MYSQL_REPLICATION_USER: 'SET ME PLEASE'
-EDXAPP_MYSQL_REPLICATION_PASSWORD: 'SET ME PLEASE'
-EDXAPP_MYSQL_REPLICATION_MASTER_SERVER_IP: "{{ hostvars[groups['master_db_server'][0]].ansible_host }}"
-EDXAPP_MYSQL_REPLICATION_SLAVE_SERVER_IP: "{{ hostvars[groups['slave_db_server'][0]].ansible_host }}"
-
-REPLICATION_DUMP_FILE_NAME: "mysql_dumb"
