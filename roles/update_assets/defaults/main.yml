@@ -1,8 +1,0 @@
----
-
-edxapp_app_dir: "{{ COMMON_APP_DIR }}/edxapp"
-edxapp_venvs_dir: "{{ edxapp_app_dir }}/venvs"
-edxapp_venv_dir: "{{ edxapp_venvs_dir }}/edxapp"
-edxapp_venv_bin: "{{ edxapp_venv_dir }}/bin"
-edxapp_code_dir: "{{ edxapp_app_dir }}/edx-platform"
-edxapp_user: "edxapp"
