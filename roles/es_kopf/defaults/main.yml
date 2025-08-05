@@ -1,5 +1,0 @@
----
-# Check https://github.com/lmenezes/elasticsearch-kopf/blob/master/README.md
-# to find compatible Kopf version
-ES_PLUGIN_KOPF_VERSION: "v1.6.1"
-
