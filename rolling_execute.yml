@@ -5,10 +5,8 @@
 #   ansible-playbook -i nau-data/envs/<env>/hosts.ini rolling_execute.yml --limit <group> -e command='ls /tmp'
 #
 # Example that executes multiple commands:
-#   ansible-playbook -i nau-data/envs/<env>/hosts.ini rolling_execute.yml --limit openedx_docker_servers -e "command='docker pull overhangio/openedx-forum:14.0.0 && docker pull overhangio/openedx-notes:14.0.1 && docker pull overhangio/openedx-discovery:14.0.2 && docker pull nauedu/openedx-analytics-data-api:nau-nutmeg.master-XXXXXX-build-yy && docker pull nauedu/openedx-insights:nau-nutmeg.master-XXXXX-build-yy && docker pull nauedu/openedx:nau-nutmeg.master-build-XXX-YYYYYYY'"
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini rolling_execute.yml --limit mongo_docker_servers -e "command='docker pull XXXXX && docker pull YYYY'"
 #
-# Example that restarts the Open edX LMS and Studio:
-#   ansible-playbook -i nau-data/envs/<env>/hosts.ini rolling_execute.yml --limit openedx_docker_servers -e "command='make -C /nau/ops/openedx restart-lms restart-cms'"
 ---
 - hosts: all
   serial: "{{ serial_number | default(1) }}"
