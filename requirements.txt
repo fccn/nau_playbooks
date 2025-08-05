@@ -1,7 +1,1 @@
-# Install specific version of setuptools
-setuptools==44.1.0
-
-ansible==2.8.20
-# dependencies for ansible
-Jinja2==2.8
-markupsafe==2.0.1
+ansible==2.10.7
