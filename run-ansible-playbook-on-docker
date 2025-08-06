@@ -1,0 +1,23 @@
+#!/bin/bash -xe
+#
+# Example
+#  ./run-ansible-playbook development deploy.yml --limit balancer_servers --check
+#
+
+
+git config --global --add safe.directory `pwd`/nau-data
+
+BRANCH_SECURE_DATA="${BRANCH_SECURE_DATA:=master}"
+[ -d "nau-data" ] || rm -f nau-data
+[ -d "nau-data" ] || git clone --quiet -b "${BRANCH_SECURE_DATA}" git@github.com:fccn/secure-nau-data.git nau-data
+git -C "nau-data" clean -fdx
+git -C "nau-data" pull
+git -C "nau-data" checkout ${BRANCH_SECURE_DATA}
+
+NAU_ENVIRONMENT=$1
+shift
+
+HOSTS_FILE="nau-data/envs/${NAU_ENVIRONMENT}/hosts.ini"
+test -f $HOSTS_FILE || { echo "Missing hosts file $HOSTS_FILE" ; exit 1; }
+
+ansible-playbook -i $HOSTS_FILE $@

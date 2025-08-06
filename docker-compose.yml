@@ -1,0 +1,39 @@
+services:
+  ansible:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM python:3.8.20-slim-bullseye
+        # Install git
+        RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+        WORKDIR /app
+        # Install Ansible and other dependencies
+        COPY requirements.txt requirements.txt
+        RUN pip install -r requirements.txt --exists-action w --no-compile --disable-pip-version-check
+        COPY requirements.yml requirements.yml
+        RUN ansible-galaxy install -p vendor/roles -r requirements.yml --force --ignore-errors
+
+        RUN mkdir -p ~/.ssh
+        RUN chmod 700 ~/.ssh
+        RUN touch ~/.ssh/known_hosts
+        RUN if [ ! -n "$(grep "^github.com " ~/.ssh/known_hosts)" ]; then ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null; fi
+
+        COPY . .
+    container_name: ansible_container
+    volumes:
+      # Mount the SSH agent socket to allow Ansible to use SSH keys
+      - ${SSH_AUTH_SOCK}:${SSH_AUTH_SOCK}
+      - ./:/app
+    environment:
+      # Disable host key checking for Ansible
+      ANSIBLE_HOST_KEY_CHECKING: False
+      # Set the SSH agent socket to allow Ansible to use SSH keys
+      SSH_AUTH_SOCK: ${SSH_AUTH_SOCK}
+      # Enable color output for Ansible
+      ANSIBLE_FORCE_COLOR: true
+      # Pass BRANCH_SECURE_DATA environment variable if defined
+      BRANCH_SECURE_DATA: ${BRANCH_SECURE_DATA:-}
+      # To use locally use ANSIBLE_SSH_ARGS='-o ProxyCommand="ssh -W %h:%p -q gw.nau.fccn.pt -p 1022"'
+      ANSIBLE_SSH_ARGS: ${ANSIBLE_SSH_ARGS:-}
+    # use host mode networking to allow Ansible to access the host's network
+    network_mode: host
