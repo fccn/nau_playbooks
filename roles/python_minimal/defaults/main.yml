@@ -1,6 +1,0 @@
-# Install python2.7 + the /usr/bin/python symlink.
-
-python_packages:
-  - python-minimal
-
-# For Ubuntu 20.04 the package has changed to python2-minimal

@@ -69,14 +69,6 @@
 #   To deploy ClickHouse databases
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit clickhouse_servers -e clickhouse_deploy=true
 #
-# - name: Bootstrap instances of 16.04
-#   hosts: all,!idpproxy_servers,!support_server
-#   gather_facts: no
-#   become: true
-#   tasks:
-#     - import_role:
-#         name: python_minimal
-#       when: ansible_python_interpreter is not defined
 
 - name: Infrastructure configuration
   hosts: all
