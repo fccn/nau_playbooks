@@ -22,9 +22,6 @@
 #   To deploy the application servers with a specific themes version
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit app_servers -e "THEMES_VERSION=master"
 #
-#   To deploy the complementary servers and its services run:
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit complementary_servers
-#
 #   To deploy the load balancers run:
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit balancer_servers
 #
