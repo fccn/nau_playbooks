@@ -15,17 +15,23 @@
 #   ansible-playbook -i nau-data/envs/development/hosts.ini healthcheck.yml
 #
 ---
-- name: Run Makefile healthcheck
+- name: Run Health check
   hosts: all
   become: True
   gather_facts: True
-  serial: "{{ serial_number | default(1) }}" # check in sequence
+  serial: "{{ serial_number | default(1) }}" # default check in parallel
   tasks:
     - import_tasks: tasks/healthcheck.yml
 
-- name: Check URLs
-  hosts: all
-  become: True
-  gather_facts: True
-  roles:
-    - nau_check_urls
+    - import_role:
+        name: nau_check_urls
+
+    - name: Check routing if can connect to 1st load balancer virtual IP
+      shell: |
+        curl -4 -v --resolve {{ EDXAPP_LMS_BASE }}:443:{{ hostvars[groups['balancer_servers'][0]].balancer_virtual_ipv4_1 }} https://{{ EDXAPP_LMS_BASE }}
+      when: hostvars[groups['balancer_servers'][0]].balancer_virtual_ipv4_1 is defined
+
+    - name: Check routing if can connect to 2nd load balancer virtual IP
+      shell: |
+        curl -4 -v --resolve {{ EDXAPP_LMS_BASE }}:443:{{ hostvars[groups['balancer_servers'][0]].balancer_virtual_ipv4_2 }} https://{{ EDXAPP_LMS_BASE }}
+      when: hostvars[groups['balancer_servers'][0]].balancer_virtual_ipv4_2 is defined
