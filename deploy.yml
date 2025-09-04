@@ -647,10 +647,7 @@
         name: snmpd
       tags: snmpd
       when: kubernetes_deploy | default(false) | bool
-    - import_role:
-        name: snmpd_docker
-      tags: snmpd
-      when: kubernetes_deploy | default(false) | bool
+
 
 # Should be the last, because it depends on the docker, and the business projects are the ones that install docker
 - name: Deploy observability docker servers
