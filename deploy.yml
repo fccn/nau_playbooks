@@ -66,6 +66,9 @@
 #   To deploy ClickHouse databases
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit clickhouse_servers -e clickhouse_deploy=true
 #
+#   To deploy Kubernetes nodes
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit kubernetes_servers -e kubernetes_deploy=true
+#
 
 - name: Infrastructure configuration
   hosts: all
