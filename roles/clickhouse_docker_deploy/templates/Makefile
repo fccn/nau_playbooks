@@ -62,15 +62,21 @@ healthcheck: healthcheck-parallel ## Overall healthcheck - for parallel executio
 healthcheck-parallel: \
 	healthcheck-clickhouse-port \
 	healthcheck-clickhouse-ping \
+	healthcheck-clickhouse-replicas-status \
 	healthcheck-memory
 .PHONY: healthcheck-parallel
 
 healthcheck-clickhouse-port: ## Check ClickHouse port
-	@nc -z -w 5 127.0.0.1 {{ clickhouse_port_http }} || ( echo "Check clickhouse port: error" ; exit 1 )
-	@echo "Check clickhouse port: OK"
+	@nc -z -w 5 127.0.0.1 {{ clickhouse_server_http_port }} || ( echo "Check ClickHouse port: error" ; exit 1 )
+	@echo "Check ClickHouse port: OK"
 .PHONY: healthcheck-clickhouse-port
 
 healthcheck-clickhouse-ping: ## Check ClickHouse ping
-	@curl --silent http://localhost:8123/ping | grep --quiet "Ok" || ( echo "Check clickhouse ping: error" ; exit 1 )
-	@echo "Check clickhouse ping: OK"
+	@curl --silent http://localhost:8123/ping | grep --quiet "Ok" || ( echo "Check ClickHouse ping: error" ; exit 1 )
+	@echo "Check ClickHouse ping: OK"
 .PHONY: healthcheck-clickhouse-ping
+
+healthcheck-clickhouse-replicas-status: ## Check ClickHouse replicas status
+	@curl --silent http://localhost:8123/replicas_status | grep --quiet "Ok" || ( echo "Check ClickHouse replicas status: error" ; exit 1 )
+	@echo "Check ClickHouse replicas status: OK"
+.PHONY: healthcheck-clickhouse-replicas-status
