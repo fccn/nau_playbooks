@@ -1,0 +1,25 @@
+<clickhouse>
+    <!--  Keeper is a lighter coordinator than ZooKeeper  -->
+    <keeper_server>
+        <tcp_port>{{ clickhouse_zookeeper_port }}</tcp_port>
+        <!--  RAFT replication port among Keeper peers.  -->
+        <raft_port>{{ clickhouse_raft_port }}</raft_port>
+        <server_id from_env="CH_KEEPER_ID" />
+        <!--  Keep coordination state separate from table data for clarity.  -->
+        <log_storage_path>/var/lib/clickhouse/coordination/log</log_storage_path>
+        <snapshot_storage_path>/var/lib/clickhouse/coordination/snapshots</snapshot_storage_path>
+        <coordination_settings>
+            <session_timeout_ms>30000</session_timeout_ms>
+        </coordination_settings>
+        <!--  All three Keeper peers. Hostnames are the VM FQDNs.  -->
+        <raft_configuration>
+{% for ch_host in clickhouse_cluster_hosts %}
+            <server>
+                <id>{{ hostvars[ch_host].clickhouse_id }}</id>
+                <hostname>{{ hostvars[ch_host]['clickhouse_host'] | default(hostvars[ch_host]['ansible_host']) | default(ch_host) }}</hostname>
+                <port>{{ hostvars[ch_host]['clickhouse_raft_port'] | default(clickhouse_raft_port_default) }}</port>
+            </server>
+{% endfor %}
+        </raft_configuration>
+    </keeper_server>
+</clickhouse>

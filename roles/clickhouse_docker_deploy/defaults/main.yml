@@ -2,9 +2,6 @@
 clickhouse_docker_image: docker.io/clickhouse/clickhouse-server:24.8
 clickhouse_node_name: "{{ inventory_hostname }}"
 
-clickhouse_port_http: 8123
-clickhouse_port_native: 9000
-
 clickhouse_docker_deploy_limit_memory: 6G
 clickhouse_docker_deploy_reservations_memory: 2G
 
@@ -16,20 +13,41 @@ clickhouse_docker_deploy_compose_template: templates/docker-compose.yml.j2
 clickhouse_docker_deploy_healthcheck_verify_delay: 5
 clickhouse_docker_deploy_healthcheck_verify_retries: 50
 
-# Files to be templated during deployment
-clickhouse_docker_deploy_templates:
-  - src: templates/Makefile
-    dest: "{{ clickhouse_docker_deploy_base_folder }}/Makefile"
-  - src:  templates/config/server_config.xml
-    dest: "{{ docker_deploy_base_folder }}/config/server_config.xml"
-    config_name: clickhouse_config_server_config
-    service: clickhouse
-    docker_target: /etc/clickhouse-server/config.d/server_config.xml
-  - src:  templates/users/user_config.xml
-    dest: "{{ docker_deploy_base_folder }}/users/user_config.xml"
-    config_name: clickhouse_users_default_user
-    service: clickhouse
-    docker_target: /etc/clickhouse-server/users.d/user_config.xml
+# Files to be templated during deployment, template default but also to add more
+clickhouse_docker_deploy_templates: "{{ clickhouse_docker_deploy_templates_default + clickhouse_docker_deploy_templates_additional|default([]) }}"
+
+# Default templates to be deployed
+clickhouse_docker_deploy_templates_default:
+- src: templates/Makefile
+  dest: "{{ clickhouse_docker_deploy_base_folder }}/Makefile"
+- src:  templates/users/user_config.xml
+  dest: "{{ docker_deploy_base_folder }}/users/user_config.xml"
+  config_name: clickhouse_users_default_user
+  service: clickhouse
+  docker_target: /etc/clickhouse-server/users.d/user_config.xml
+- src:  templates/config/10-ports-and-listen.xml
+  dest: "{{ docker_deploy_base_folder }}/config/10-ports-and-listen.xml"
+  config_name: clickhouse_config_10_ports_and_listen
+  service: clickhouse
+  docker_target: /etc/clickhouse-server/config.d/10-ports-and-listen.xml
+- src:  templates/config/15-macros.xml
+  dest: "{{ docker_deploy_base_folder }}/config/15-macros.xml"
+  config_name: clickhouse_config_15_macros
+  service: clickhouse
+  docker_target: /etc/clickhouse-server/config.d/15-macros.xml
+  when: "{{ clickhouse_deploy_cluster }}"
+- src:  templates/config/20-remote-servers.xml
+  dest: "{{ docker_deploy_base_folder }}/config/20-remote-servers.xml"
+  config_name: clickhouse_config_20_remote_servers
+  service: clickhouse
+  docker_target: /etc/clickhouse-server/config.d/20-remote-servers.xml
+  when: "{{ clickhouse_deploy_cluster }}"
+- src:  templates/config/30-keeper.xml
+  dest: "{{ docker_deploy_base_folder }}/config/30-keeper.xml"
+  config_name: clickhouse_config_30_keeper
+  service: clickhouse
+  docker_target: /etc/clickhouse-server/config.d/30-keeper.xml
+  when: "{{ clickhouse_deploy_cluster }}"
 
 clickhouse_docker_volume_path: /data/{{ clickhouse_docker_container_name }}/
 
@@ -49,6 +67,7 @@ clickhouse_db: xapi
 clickhouse_user: ch_admin
 clickhouse_default_access_management: 1
 
+# ClickHouse docker container environment variables
 clickhouse_docker_environment_variables: "{{ clickhouse_docker_environment_variables_default | combine(clickhouse_docker_environment_variables_overrides, recursive=True) }}"
 clickhouse_docker_environment_variables_overrides: {}
 clickhouse_docker_environment_variables_default:
@@ -57,3 +76,54 @@ clickhouse_docker_environment_variables_default:
   CLICKHOUSE_USER: "{{ clickhouse_user }}"
   CLICKHOUSE_PASSWORD: "{{ clickhouse_password }}"
   CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "{{ clickhouse_default_access_management }}"
+  # Used by configs
+  CH_SHARD: "{{ clickhouse_shard_id }}"
+  CH_REPLICA: "{{ clickhouse_replica }}"
+  CH_KEEPER_ID: "{{ clickhouse_id }}"
+
+# By default use a single shard with id 01
+clickhouse_shard_id: "01"
+
+# The ClickHouse server host, used in the configuration files.
+clickhouse_host: "{{ ansible_host | default(inventory_hostname) }}"
+
+clickhouse_replica: "{{ clickhouse_host }}"
+
+# optional HTTP
+clickhouse_server_http_port_default: 8123
+clickhouse_server_http_port: "{{ clickhouse_server_http_port_default }}" # var specific for each node
+
+# host 9006 -> container 9000 (internal native)
+clickhouse_server_tcp_port_default: 9000 # default for all nodes
+clickhouse_server_tcp_port: "{{ clickhouse_server_tcp_port_default }}" # var specific for each node
+
+# Keeper RAFT (peer-to-peer across hosts)
+clickhouse_raft_port_default: 9234 # default for all nodes
+clickhouse_raft_port: "{{ clickhouse_raft_port_default }}" # var specific for each node
+
+# Keeper client
+clickhouse_zookeeper_port_default: 9181 # default for all nodes
+clickhouse_zookeeper_port: "{{ clickhouse_zookeeper_port_default }}" # var specific for each node
+
+# clickhouse_id: XXX # required
+
+clickhouse_deploy_cluster: "{{ (clickhouse_cluster_hosts | length) > 1 }}"
+
+clickhouse_cluster_hosts:
+- "{{ clickhouse_host }}"
+# - ch1.persistence.layer
+# - ch2.persistence.layer
+# - ch3.persistence.layer
+
+# clickhouse_cluster_hosts_config: []
+# clickhouse_cluster_hosts_config:
+#   - clickhouse_host: ch1.persistence.layer
+#     clickhouse_server_http_port: 8123
+#     clickhouse_server_tcp_port: 9000
+#     clickhouse_raft_port: 9234
+#     clickhouse_zookeeper_port: 9181
+#     clickhouse_id: 1
+#   - clickhouse_host: ch2.persistence.layer
+#     clickhouse_server_tcp_port: 9000
+#   - clickhouse_host: ch3.persistence.layer
+#     clickhouse_server_tcp_port: 9000

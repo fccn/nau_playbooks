@@ -635,6 +635,8 @@
       import_role:
         name: clickhouse_docker_deploy
       when: clickhouse_deploy | default(false) | bool
+      vars:
+        clickhouse_cluster_hosts: "{{ groups['clickhouse_servers'] }}"
 
 
 - name: Deploy to Kubernetes nodes
