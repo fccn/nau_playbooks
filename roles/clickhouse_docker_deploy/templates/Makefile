@@ -51,6 +51,14 @@ bash: ## Open bash on the current node for the {{ clickhouse_docker_container_na
 silent-%:
 	@$(MAKE) $* > /dev/null && echo "OK"
 
+clickhouse-client: ## Open clickhouse-client
+	@docker exec -it {{ clickhouse_docker_container_name }} clickhouse-client
+.PHONY: clickhouse-client
+
+clickhouse-system-clusters: ## Run "SELECT * FROM system.clusters;" query
+	@docker exec -it {{ clickhouse_docker_container_name }} clickhouse-client --query="SELECT * FROM system.clusters;"
+.PHONY: clickhouse-system-clusters
+
 healthcheck-memory: ## check that containers doesn't use more than 90% of its available memory
 	@docker stats --no-stream --format "table {% raw %}{{.Name}}\t{{.MemPerc}}{% endraw %}" | egrep "^{{ clickhouse_docker_container_name }}" | awk '{print $$2}' | sed 's/%//g' | LC_NUMERIC=POSIX awk '$$0 > 90.0 {exit 1}'
 .PHONY: healthcheck-memory
