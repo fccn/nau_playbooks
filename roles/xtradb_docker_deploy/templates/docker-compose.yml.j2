@@ -11,6 +11,7 @@ services:
     image: {{ xtradb_docker_image }}
     container_name: {{ xtradb_docker_container_name }}
     restart: always
+    cap_add: [ SYS_NICE ]
     environment:
 {% for env_var_name, env_var_value in xtradb_docker_environment_variables.items() %}
       {{ env_var_name }}: "{{ env_var_value }}"
