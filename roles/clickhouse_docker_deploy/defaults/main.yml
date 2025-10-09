@@ -1,5 +1,5 @@
 ---
-clickhouse_docker_image: docker.io/clickhouse/clickhouse-server:24.8
+clickhouse_docker_image: docker.io/clickhouse/clickhouse-server:25.3.6.56
 clickhouse_node_name: "{{ inventory_hostname }}"
 
 clickhouse_docker_deploy_limit_memory: 6G
