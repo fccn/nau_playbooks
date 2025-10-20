@@ -68,3 +68,4 @@ mongo_docker_deploy_extra_hosts: []
 
 mongo_limit_no_file_soft: 65535
 mongo_limit_no_file_hard: 65535
+mongo_limit_nproc: 65535

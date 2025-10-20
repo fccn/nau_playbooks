@@ -24,6 +24,7 @@ services:
       - {{ mongo_docker_volume_path }}:/data/db
     network_mode: host
     ulimits:
+      nproc: {{ mongo_limit_nproc }}
       nofile:
         soft: {{ mongo_limit_no_file_soft }}
         hard: {{ mongo_limit_no_file_hard }}
