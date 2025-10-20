@@ -23,6 +23,10 @@ services:
     volumes:
       - {{ mongo_docker_volume_path }}:/data/db
     network_mode: host
+    ulimits:
+      nofile:
+        soft: {{ mongo_limit_no_file_soft }}
+        hard: {{ mongo_limit_no_file_hard }}
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | {{ mongo_shell_command }} localhost:{{ mongo_docker_port }}/test --quiet
       interval: 60s

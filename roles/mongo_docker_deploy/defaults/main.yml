@@ -65,3 +65,6 @@ mongo_docker_secret_root_password_file_path: "{{ '/run/secrets/mongo-root-passwo
 mongo_docker_volume_path: /data/{{ mongo_docker_instance_name }}
 
 mongo_docker_deploy_extra_hosts: []
+
+mongo_limit_no_file_soft: 65535
+mongo_limit_no_file_hard: 65535
