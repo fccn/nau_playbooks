@@ -13,6 +13,9 @@ innodb_buffer_pool_size = {{ xtradb_docker_innodb_buffer_pool_size }}
 {% if xtradb_docker_wsrep_sst_donor is defined %}
 wsrep_sst_donor = {{ xtradb_docker_wsrep_sst_donor }}
 {% endif %}
+{% if xtradb_docker_thread_cache_size is defined %}
+thread_cache_size = {{ xtradb_docker_thread_cache_size }}
+{% endif %}
 
 [client]
 ssl-ca = /cert/ca.pem

@@ -100,6 +100,7 @@ xtradb_docker_environment_variables_default_join:
 
 xtradb_docker_max_connections: 500
 xtradb_docker_innodb_buffer_pool_size: 5934M
+# xtradb_docker_thread_cache_size: 20
 
 # Prefer the last node in the cluster to be used for state transfer from the cluster.
 # If the list contains a trailing comma, the remaining nodes in the cluster
