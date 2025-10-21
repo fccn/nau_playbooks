@@ -12,6 +12,13 @@ redis_docker_container_name: "{{ redis_docker_deploy_base_folder | basename }}"
 redis_master_host: "{{ redis_docker_container_name }}"
 redis_replica_ip: "{{ redis_docker_container_name }}"
 
+# By default bitnami images already have this limits set, but we set them here just in case
+redis_limit_no_file_soft: 1048576
+redis_limit_no_file_hard: 1048576
+
+# Set a high nproc limit to avoid "max number of clients reached" errors under high load
+redis_limit_nproc: 65536
+
 redis_docker_volume_path: /data/{{ redis_docker_instance_name }}
 
 redis_docker_deploy_parent_folder: /nau/ops

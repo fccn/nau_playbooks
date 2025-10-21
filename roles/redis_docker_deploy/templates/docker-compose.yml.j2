@@ -30,6 +30,11 @@ services:
       - {{ redis_docker_volume_path }}:/bitnami/redis/data
     deploy:
       replicas: 1
+    ulimits:
+      nproc: {{ redis_limit_nproc }}
+      nofile:
+        soft: {{ redis_limit_no_file_soft }}
+        hard: {{ redis_limit_no_file_hard }}
     healthcheck:
       test: ["CMD-SHELL", "redis-cli -p {{ redis_docker_port }} ping | grep PONG"]
       start_period: 30s
