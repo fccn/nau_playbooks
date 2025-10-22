@@ -51,6 +51,10 @@ bash: ## Open bash on the current node for the {{ redis_docker_container_name }}
 silent-%:
 	@$(MAKE) $* > /dev/null && echo "OK"
 
+redis-connected-clients: ## Get connected clients count
+	@docker exec $$(docker ps --filter "name={{ redis_docker_container_name }}" -q) redis-cli -p {{ redis_docker_port }} INFO clients | grep connected_clients | egrep -o "[0-9]+"
+.PHONY: redis-connected-clients
+
 healthcheck-ping-pong: ## check Redis with PING/PONG
 	@docker exec $$(docker ps --filter "name={{ redis_docker_container_name }}" -q) redis-cli -p {{ redis_docker_port }} ping | grep --quiet PONG || ( echo "Check redis PING/PONG" ; exit 1 )
 	@echo "Check redis PING/PONG: OK"
