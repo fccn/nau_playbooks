@@ -61,6 +61,10 @@ mongo-feature-compatibility-version: ## View MongoDB feature compatibility versi
 	@docker exec {{ mongo_docker_container_name }} {{ mongo_shell_command }} --username {{ mongo_docker_admin_username }} --password {{ mongo_docker_admin_password }} --eval "JSON.stringify(db.adminCommand( { getParameter: 1, featureCompatibilityVersion: 1 } ))" | tail -n1 | jq -r '.featureCompatibilityVersion.version'
 .PHONY: mongo-feature-compatibility-version
 
+mongo-connections-current: ## View MongoDB connection current count
+	@docker exec {{ mongo_docker_container_name }} {{ mongo_shell_command }} --username {{ mongo_docker_admin_username }} --password {{ mongo_docker_admin_password }} --eval "db.serverStatus().connections.current"
+.PHONY: mongo-connections-current
+
 healthcheck-replication: ## Check mongo replication
 	@echo -n "Check mongo replication is 600 seconds (<10 minutes) seconds behind primary: "
 	@docker exec {{ mongo_docker_container_name }} {{ mongo_shell_command }} admin --username {{ mongo_docker_admin_username }} --password {{ mongo_docker_admin_password }} --host rs0/localhost --eval 'JSON.stringify(rs.status().members.filter(config => config.name == "{{ ansible_additional_ipv4 | default(ansible_host) }}:{{ mongo_docker_port }}")[0].state)' | egrep -q "(1|2)"
