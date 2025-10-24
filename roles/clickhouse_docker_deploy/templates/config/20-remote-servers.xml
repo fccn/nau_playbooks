@@ -9,6 +9,8 @@
                     <!--  NOTE: This hosts need to be correctly set  -->
                     <host>{{ hostvars[ch_host]['clickhouse_host'] | default(hostvars[ch_host]['ansible_host']) | default(ch_host) }}</host>
                     <port>{{ hostvars[ch_host]['clickhouse_server_tcp_port'] | default(clickhouse_server_tcp_port_default) }}</port>
+                    <user>{{ need to find the var to the CLICKHOUSE_ADMIN_USER }}</user>
+                    <password>{{ need to find the var to the CLICKHOUSE_ADMIN_PASSWORD }}</password>
                 </replica>
 {% endfor %}
             </shard>
