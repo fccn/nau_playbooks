@@ -631,6 +631,14 @@
   become: True
   gather_facts: True
   tasks:
+    - name: Lower keepalived priority to force VIP swap
+      import_role:
+        name: keepalived
+      vars: 
+        keepalived_priority_override: 1 # Lower priority so the VIPs can swap to other machine.
+      tags: keepalived
+      when: ( clickhouse_deploy | default(false) | bool ) and clickhouse_keepalived_vrrp_instances is defined and ( groups['clickhouse_servers'] | length ) > 1
+
     - name: Install or upgrade docker daemon
       import_role:
         name: geerlingguy.docker
@@ -651,6 +659,13 @@
       when: clickhouse_deploy | default(false) | bool
       vars:
         clickhouse_cluster_hosts: "{{ groups['clickhouse_servers'] }}"
+    - name: Lower keepalived priority to force VIP swap
+      import_role:
+        name: keepalived
+      vars:
+        keepalived_priority_override: ""
+      tags: keepalived
+      when: ( clickhouse_deploy | default(false) | bool ) and clickhouse_keepalived_vrrp_instances is defined and ( groups['clickhouse_servers'] | length ) > 1
 
 
 - name: Deploy to Kubernetes nodes
