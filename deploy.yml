@@ -574,6 +574,13 @@
   become: True
   gather_facts: True
   tasks:
+    - name: Lower keepalived priority to force VIP swap
+      import_role:
+        name: keepalived
+      vars: 
+        keepalived_priority_override: 1 # Lower priority so the VIPs can swap to other machine.
+      tags: keepalived
+      when: ( xtradb_deploy | default(false) | bool ) and xtradb_keepalived_vrrp_instances is defined and ( groups['xtradb_servers'] | length ) > 1
     - name: Install or upgrade docker daemon
       import_role:
         name: geerlingguy.docker
@@ -609,6 +616,13 @@
         # will also be considered if the nodes from the list are not available.
         xtradb_docker_wsrep_sst_donor: "{{ groups['xtradb_servers'][-1] }},"
       when: xtradb_deploy | default(false) | bool
+    - name: Lower keepalived priority to force VIP swap
+      import_role:
+        name: keepalived
+      vars:
+        keepalived_priority_override: ""
+      tags: keepalived
+      when: ( xtradb_deploy | default(false) | bool ) and xtradb_keepalived_vrrp_instances is defined and ( groups['xtradb_servers'] | length ) > 1
 
 
 - name: Deploy to ClickHouse database
