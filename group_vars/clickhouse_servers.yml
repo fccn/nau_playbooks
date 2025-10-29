@@ -1,0 +1,46 @@
+---
+##########################################################
+# Warn THIS FILE can't contain any sensitive information #
+##########################################################
+
+clickhouse_docker_deploy_base_folder: /nau/ops/clickhouse
+
+clickhouse_snmpd_configs:
+  - extend clickhouse_healthcheck                  /usr/bin/make --jobs 20 --no-print-directory --directory {{ clickhouse_docker_deploy_base_folder }} silent-healthcheck
+
+clickhouse_makefile_healthcheck: [ "{{ clickhouse_docker_deploy_base_folder }}" ]
+
+# Keep alive configurations
+clickhouse_indexof_current_host: "{{ groups['clickhouse_servers'].index(inventory_hostname) }}"
+
+# Keep alive Virtual IP for clickhouse connections
+clickhouse_keepalived_is_primary: "{{ groups['clickhouse_servers'][0] == inventory_hostname }}"
+clickhouse_keepalived_state: "{{ 'MASTER' if clickhouse_keepalived_is_primary else 'BACKUP' }}"
+clickhouse_keepalived_priority: "{{ 200 if clickhouse_keepalived_is_primary else (100 - ( clickhouse_indexof_current_host|int)) }}"
+
+# Other servers IPs
+clickhouse_keepalived_peers_ips: "{{ groups['clickhouse_servers'] | difference([inventory_hostname]) | map('extract', hostvars, 'ansible_host') | list }}"
+
+clickhouse_keepalived_vrrp_instances:
+  - name: clickhouse_failover_link_ipv4
+    ipv6: false
+    state: "{{ clickhouse_keepalived_state }}"
+    id: 46
+    priority: "{{ keepalived_priority_override if ( keepalived_priority_override | default('') | string | length > 0 ) else clickhouse_keepalived_priority }}"
+    pass: "{{ clickhouse_keepalived_pass }}"
+    peers_ips: "{{ clickhouse_keepalived_peers_ips }}"
+    track_script: clickhouse_healthcheck_script
+    virtual_ip:
+      - "{{ clickhouse_virtual_ipv4 }}/24 dev {{ keepalived_connected_network_interface }} label vipClickhouse"
+
+# Keepalived health check script for clickhouse
+clickhouse_keepalived_health:
+  - name: clickhouse_healthcheck_script
+    script: /usr/bin/nc -z -w 5 127.0.0.1 {{ clickhouse_server_tcp_port }}
+    interval: 2
+    timeout: 3
+
+# Ports
+clickhouse_server_tcp_port: 9000
+# http 8123
+# raft 9234
