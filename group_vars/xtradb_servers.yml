@@ -1,0 +1,65 @@
+---
+##########################################################
+# Warn THIS FILE can't contain any sensitive information #
+##########################################################
+
+# folder where the xtradb docker deployment files are located
+xtradb_docker_deploy_base_folder: /nau/ops/xtradb
+
+# default port where mysql is listening inside the container
+xtradb_mysql_port: 3306
+
+# SNMPD configuration to monitor XtraDB health
+xtradb_snmpd_configs:
+  - extend xtradb_healthcheck                  /usr/bin/make --jobs 20 --no-print-directory --directory {{ xtradb_docker_deploy_base_folder }} silent-healthcheck
+
+xtradb_makefile_healthcheck: [ "{{ xtradb_docker_deploy_base_folder }}" ]
+
+xtradb_indexof_current_host: "{{ groups['xtradb_servers'].index(inventory_hostname) }}"
+
+# Keep alive Virtual IP for read-write XtraDB connections
+xtradb_keepalived_is_primary_rw: "{{ groups['xtradb_servers'][0] == inventory_hostname }}"
+xtradb_keepalived_state_rw: "{{ 'MASTER' if xtradb_keepalived_is_primary_rw else 'BACKUP' }}"
+xtradb_keepalived_peer_ipv4_rw: "{{ hostvars[ (groups['xtradb_servers'] | difference([inventory_hostname]))[0] ].ansible_host }}"
+xtradb_keepalived_priority_rw: "{{ 200 if xtradb_keepalived_is_primary_rw else (100 - (xtradb_indexof_current_host|int) ) }}"
+
+# Keep alive Virtual IP for read-only XtraDB connections
+xtradb_keepalived_is_primary_r: "{{ groups['xtradb_servers'][1] == inventory_hostname }}"
+xtradb_keepalived_state_r: "{{ 'MASTER' if xtradb_keepalived_is_primary_r else 'BACKUP' }}"
+xtradb_keepalived_peer_ipv4_r: "{{ hostvars[ (groups['xtradb_servers'] | difference([inventory_hostname]))[0] ].ansible_host }}"
+xtradb_keepalived_priority_r: "{{ 200 if xtradb_keepalived_is_primary_r else (100 + (xtradb_indexof_current_host|int) ) }}"
+
+# Keep alive other servers IPs
+xtradb_keepalived_peers_ips: "{{ groups['xtradb_servers'] | difference([inventory_hostname]) | map('extract', hostvars, 'ansible_host') | list }}"
+
+xtradb_keepalived_vrrp_instances:
+  - name: xtradb_failover_link_ipv4_rw
+    ipv6: false
+    state: "{{ xtradb_keepalived_state_rw }}"
+    id: 43
+    priority: "{{ keepalived_priority_override if ( keepalived_priority_override | default('') | string | length > 0 ) else xtradb_keepalived_priority_rw }}"
+    pass: "{{ xtradb_keepalived_ipv4_rw_pass }}"
+    peers_ips: "{{ xtradb_keepalived_peers_ips }}"
+    track_script: xtradb_healthcheck_script
+    virtual_ip:
+      - "{{ xtradb_virtual_ipv4_rw }}/24 dev {{ keepalived_connected_network_interface }} label vipXtraDBRW"
+  - name: xtradb_failover_link_ipv4_r
+    ipv6: false
+    state: "{{ xtradb_keepalived_state_r }}"
+    id: 45
+    priority: "{{ keepalived_priority_override if ( keepalived_priority_override | default('') | string | length > 0 ) else xtradb_keepalived_priority_r }}"
+    pass: "{{ xtradb_keepalived_ipv4_r_pass }}"
+    peers_ips: "{{ xtradb_keepalived_peers_ips }}"
+    track_script: xtradb_healthcheck_script
+    virtual_ip:
+      - "{{ xtradb_virtual_ipv4_r }}/24 dev {{ keepalived_connected_network_interface }} label vipXtraDBR"
+
+# Keepalived health check script for XtraDB
+xtradb_keepalived_health:
+  - name: xtradb_healthcheck_script
+    # script: mysqladmin ping --silent --host 127.0.0.1 --user {{ xtradb_health_check_user }} --port {{ xtradb_mysql_port }}
+    script: /usr/bin/nc -z -w 5 127.0.0.1 {{ xtradb_mysql_port }}
+    interval: 2
+    timeout: 3
+
+xtradb_health_check_user: xtradb_healthcheck_user

@@ -9,6 +9,8 @@
                     <!--  NOTE: This hosts need to be correctly set  -->
                     <host>{{ hostvars[ch_host]['clickhouse_host'] | default(hostvars[ch_host]['ansible_host']) | default(ch_host) }}</host>
                     <port>{{ hostvars[ch_host]['clickhouse_server_tcp_port'] | default(clickhouse_server_tcp_port_default) }}</port>
+                    <user>{{ hostvars[ch_host]['clickhouse_user'] | default(clickhouse_user) }}</user>
+                    <password>{{ hostvars[ch_host]['clickhouse_password'] | default(clickhouse_password) }}</password>
                 </replica>
 {% endfor %}
             </shard>
