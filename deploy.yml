@@ -60,6 +60,9 @@
 #   To deploy Financial Manager application
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit financial_manager_docker_servers -e financial_manager_deploy=true
 #
+#   To deploy NAU Analytics MySQL database
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit nau_analytics_mysql_docker_servers -e nau_analytics_mysql_deploy=true
+#
 #   To deploy Percona XtraDB databases
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit xtradb_servers -e xtradb_deploy=true
 #
@@ -567,6 +570,73 @@
         rolling_deploy_starting: false
       when: ( groups['financial_manager_docker_servers'] | length ) > 1 and ( financial_manager_docker_servers | default(false) | bool )
 
+- name: Deploy nau analytics mysql docker servers
+  hosts: nau_analytics_mysql_docker_servers
+  serial: "{{ serial_number | default(1) }}" # deploy in sequence
+  become: True
+  gather_facts: True
+  tasks:
+    - name: Install or upgrade docker daemon
+      import_role:
+        name: geerlingguy.docker
+      when: nau_analytics_mysql_deploy | default(false) | bool
+
+    - import_role:
+        name: snmpd
+      tags: snmpd
+      when: nau_analytics_mysql_deploy | default(false) | bool
+    - import_role:
+        name: snmpd_docker
+      tags: snmpd
+      when: nau_analytics_mysql_deploy | default(false) | bool
+
+    - name: Deploy nau analytics mysql
+      import_role:
+        name: mysql_docker_deploy
+      vars:
+        # To fix nau analytics MySQL authentication
+        # use legacy authentication plugin to fix: 
+        # django.db.utils.OperationalError: (2059, "Authentication plugin 'caching_sha2_password' 
+        # cannot be loaded: /usr/lib/x86_64-linux-gnu/mariadb18/plugin/caching_sha2_password.so: 
+        # cannot open shared object file: No such file or directory
+        mysql_docker_command_extra: --default-authentication-plugin=mysql_native_password
+
+        # Base configuration for the MySQL instance
+        mysql_docker_image: docker.io/mysql:8.0.29
+        mysql_major_release_number: 8
+        mysql_docker_hostname: "{{ nau_analytics_mysql_docker_hostname | default(' nau_analytics_mysql') }}"
+        mysql_docker_port: "{{ nau_analytics_mysql_docker_port | default(3306) }}"
+        mysql_docker_instance_name: nau_analytics_mysql
+        mysql_docker_primary: True
+        mysql_root_password: "{{ nau_analytics_mysql_root_password }}"
+        mysql_server_id: "{{ groups.nau_analytics_mysql_docker_servers.index(inventory_hostname) +1 }}"
+
+        mysql_health_check_user: "{{ nau_analytics_mysql_health_check_user | default('health_check_user') }}"
+        mysql_health_check_pass: "{{ nau_analytics_mysql_health_check_pass | default('') }}"
+
+        # Advanced configuration that assumes that the first server is the primary replica.
+        mysql_replication_login_password: "{{ nau_analytics_mysql_root_password }}"
+        # mysql_replication_master_server_ip: "{{ hostvars[groups.nau_analytics_mysql_docker_servers[0]].ansible_host }}"
+        # mysql_replication_master_port: "{{ hostvars[groups.nau_analytics_mysql_docker_servers[0]].nau_analytics_mysql_docker_port }}"
+        # mysql_replication_user: "{{ nau_analytics_mysql_replication_user }}"
+        # mysql_replication_password: "{{ nau_analytics_mysql_replication_password }}"
+        mysql_replication_init_databases: [ "{{ nau_analytics_mysql_database }}" ]
+        mysql_replication_additional_databases:
+          - "{{ nau_analytics_mysql_database | default(None) }}"
+        mysql_replication_additional_users:
+          # one per site
+          - {
+              db: "{{ nau_analytics_mysql_database | default(None) }}",
+              user: "{{ nau_analytics_mysql_user | default(None) }}",
+              pass: "{{ nau_analytics_mysql_password | default(None) }}",
+              host: "%"
+            }
+          - {
+              db: "*",
+              user: "{{ nau_analytics_mysql_health_check_user | default('health_check_user') }}",
+              host: "{{ nau_analytics_mysql_health_check_host | default('%') }}",
+            }
+      when: nau_analytics_mysql_deploy | default(false) | bool
 
 - name: Deploy to XtraDB database
   hosts: xtradb_servers
