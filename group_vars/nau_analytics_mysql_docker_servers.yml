@@ -1,0 +1,12 @@
+##########################################################
+# Warn THIS FILE can't contain any sensitive information #
+##########################################################
+---
+nau_analytics_mysql_docker_deploy_base_folder: /nau/ops/nau_analytics_mysql
+nau_analytics_mysql_snmpd_configs:
+  - extend nau_analytics_mysql_healthcheck                  /usr/bin/make --jobs 20 --no-print-directory --directory {{ nau_analytics_mysql_docker_deploy_base_folder }} silent-healthcheck
+nau_analytics_mysql_makefile_healthcheck: [ "{{ nau_analytics_mysql_docker_deploy_base_folder }}" ]
+
+nau_analytics_mysql_database: nau_analytics
+nau_analytics_mysql_user: nau_analytics
+# the passwords are defined on file with the same name inside each environment folder
