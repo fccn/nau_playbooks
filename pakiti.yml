@@ -1,5 +1,9 @@
 # Run the pakiti client, but don't install it
 # Pakiti is library that extracts some audit information on the server and sends its data to a pakiti server
+#
+# Example usage:
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini pakiti.yml
+
 ---
 - name: Runs the pakiti client
   hosts: all
