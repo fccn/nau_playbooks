@@ -1,0 +1,23 @@
+---
+# keepalived virtual IP (VIP) configuration
+keepalived_vrrp_instances: "{{
+  ( balancer_keepalived_vrrp_instances  | default([]) ) +
+  ( redis_keepalived_vrrp_instances  | default([]) ) +
+  ( elasticsearch_keepalived_vrrp_instances  | default([]) ) +
+  ( richie_mysql_keepalived_vrrp_instances | default([]) ) +
+  ( openedx_mysql_read_replica_keepalived_vrrp_instances | default([]) ) +
+  ( xtradb_keepalived_vrrp_instances | default([]) ) +
+  ( clickhouse_keepalived_vrrp_instances | default([]) ) +
+  []
+}}"
+
+keepalived_health: "{{
+  ( balancer_keepalived_health | default([]) ) +
+  ( redis_keepalived_health | default([]) ) +
+  ( elasticsearch_keepalived_health | default([]) ) +
+  ( richie_mysql_keepalived_health | default([]) ) +
+  ( openedx_mysql_read_replica_keepalived_health | default([]) ) +
+  ( xtradb_keepalived_health | default([]) ) +
+  ( clickhouse_keepalived_health | default([]) ) +
+  []
+}}"
