@@ -17,6 +17,7 @@ snmpd_configs: "{{
   ( financial_manager_snmpd_configs if financial_manager_snmpd_configs is defined else [] ) +
   ( xtradb_snmpd_configs if xtradb_snmpd_configs is defined else [] ) +
   ( clickhouse_snmpd_configs if clickhouse_snmpd_configs is defined else [] ) +
+  ( nau_analytics_mysql_snmpd_configs if nau_analytics_mysql_snmpd_configs is defined else [] ) +
   []
 }}"
 
@@ -33,5 +34,6 @@ makefile_healthcheck: "{{
   ( financial_manager_makefile_healthcheck if financial_manager_makefile_healthcheck is defined else [] ) +
   ( xtradb_makefile_healthcheck if xtradb_makefile_healthcheck is defined else [] ) +
   ( clickhouse_makefile_healthcheck if clickhouse_makefile_healthcheck is defined else [] ) +
+  ( nau_analytics_mysql_makefile_healthcheck if nau_analytics_mysql_makefile_healthcheck is defined else [] ) +
   []
 }}"
