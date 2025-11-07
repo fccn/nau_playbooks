@@ -6,6 +6,7 @@
   loop:
     - make
     - python3-pip
+    - python3-mysqldb
   loop_control:
     loop_var: pack
   tags:
@@ -15,6 +16,8 @@
   pip:
     name: "{{ docker_mysql_replication_common_pip_pkgs }}"
     state: present
+  # Just install when Ubuntu < 24.04, for newer versions python3-mysqldb is available as package
+  when: "ansible_facts['distribution'] == 'Ubuntu' and ansible_facts['distribution_version'] is version('24.04', '<')"
   tags:
     - docker_mysql_replication
     - docker_mysql_replication_additional
