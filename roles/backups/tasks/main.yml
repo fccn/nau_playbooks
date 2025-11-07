@@ -60,5 +60,5 @@
 #   when:  backup_mongo
 
 # Upload backups to CEPH
-- include: ceph.yml
+- include_tasks: ceph.yml
   when: DBS_BACKUP_EXTERNAL_STORAGE == 'ceph'
