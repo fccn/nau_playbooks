@@ -48,10 +48,12 @@ vrrp_instance {{ instance.name }} {
    # Unicast specific option, this is the IP of the peer instance
    unicast_peer {
     {{ instance.peer_ip if instance.peer_ip is defined else '' }}
+{% if instance.peers_ips is defined %}
 {% for peer_ip in instance.peers_ips %}
     {{ peer_ip }}
 {% endfor %}
    }
+{% endif %}
 
    track_script {
     {{ instance.track_script }}
