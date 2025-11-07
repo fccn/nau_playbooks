@@ -1,0 +1,37 @@
+---
+# snmpd configuration used by nagios and cacti.
+# Nagios sent alarms when something is not ok.
+# Cacti generate time series based charts.
+# to test execute this command on the server
+#   snmpwalk -v 2c -c d84jvmsq94uo localhost NET-SNMP-EXTEND-MIB::nsExtendOutputFull
+snmpd_configs: "{{
+  ( openedx_snmpd_configs if openedx_snmpd_configs is defined else [] ) +
+  ( openedx_mysql_snmpd_configs if openedx_mysql_snmpd_configs is defined else [] ) +
+  ( richie_mysql_snmpd_configs if richie_mysql_snmpd_configs is defined else [] ) +
+  ( coursecertificate_snmpd_configs if coursecertificate_snmpd_configs is defined else [] ) +
+  ( observability_snmpd_configs if observability_snmpd_configs is defined else [] ) +
+  ( elasticsearch_snmpd_configs if elasticsearch_snmpd_configs is defined else [] ) +
+  ( redis_snmpd_configs if redis_snmpd_configs is defined else [] ) +
+  ( mongo_snmpd_configs if mongo_snmpd_configs is defined else [] ) +
+  ( financial_manager_mysql_snmpd_configs if financial_manager_mysql_snmpd_configs is defined else [] ) +
+  ( financial_manager_snmpd_configs if financial_manager_snmpd_configs is defined else [] ) +
+  ( xtradb_snmpd_configs if xtradb_snmpd_configs is defined else [] ) +
+  ( clickhouse_snmpd_configs if clickhouse_snmpd_configs is defined else [] ) +
+  []
+}}"
+
+# Paths where to run the `healthcheck` Makefile target.
+# Executed on the `healthcheck` and `update_and_reboot` playbooks.
+makefile_healthcheck: "{{
+  ( richie_mysql_makefile_healthcheck if richie_mysql_makefile_healthcheck is defined else [] ) +
+  ( observability_makefile_healthcheck if observability_makefile_healthcheck is defined else [] ) +
+  ( elasticsearch_makefile_healthcheck if elasticsearch_makefile_healthcheck is defined else [] ) +
+  ( redis_makefile_healthcheck if redis_makefile_healthcheck is defined else [] ) +
+  ( mongo_makefile_healthcheck if mongo_makefile_healthcheck is defined else [] ) +
+  ( financial_manager_redis_makefile_healthcheck if financial_manager_redis_makefile_healthcheck is defined else [] ) +
+  ( financial_manager_mysql_makefile_healthcheck if financial_manager_mysql_makefile_healthcheck is defined else [] ) +
+  ( financial_manager_makefile_healthcheck if financial_manager_makefile_healthcheck is defined else [] ) +
+  ( xtradb_makefile_healthcheck if xtradb_makefile_healthcheck is defined else [] ) +
+  ( clickhouse_makefile_healthcheck if clickhouse_makefile_healthcheck is defined else [] ) +
+  []
+}}"
