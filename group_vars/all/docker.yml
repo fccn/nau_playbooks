@@ -1,0 +1,5 @@
+---
+# For newer versions of Docker
+# Also install the docker-compose utility so we are more compatible.
+# The docker-compose installation is still needed by ansible-docker-deploy role.
+docker_install_compose: true
