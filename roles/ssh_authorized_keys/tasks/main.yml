@@ -12,13 +12,13 @@
   tags: 
     - ssh
 
-- name: Delete authorized keys
-  file:
-    path: ~/.ssh/authorized_keys
-    state: absent
-  become: yes
-  become_user: "{{ item }}"
-  with_items: "{{ users_without_authorized_keys }}"
-  ignore_errors: "{{ ansible_check_mode }}"
-  tags:
+- name: Delete authorized keys if user exists
+  include_tasks: delete_authorized_keys.yml
+  loop: "{{ users_without_authorized_keys }}"
+  loop_control:
+    loop_var: username
+    label: "User to check if exists '{{ username }}' and then delete its authorized keys"
+  # ignore errors to avoid failing if the user does not exist
+  ignore_errors: yes
+  tags: 
     - ssh
