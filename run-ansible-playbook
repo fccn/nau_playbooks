@@ -16,9 +16,8 @@ git -C "nau-data" pull
 git -C "nau-data" checkout ${BRANCH_SECURE_DATA}
 
 # Create the virtual environment
-# rm -rf venv_ops
-python3.8 -m venv venv_ops
-. venv_ops/bin/activate
+uv venv --seed venv -p python3.11
+. venv/bin/activate
 
 # Install pip requirements
 pip install -r requirements.txt --exists-action w --no-compile --disable-pip-version-check
