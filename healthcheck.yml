@@ -29,9 +29,6 @@
     - name: Check routing if can connect to 1st load balancer virtual IP
       shell: |
         curl -4 -v --resolve {{ EDXAPP_LMS_BASE }}:443:{{ hostvars[groups['balancer_servers'][0]].balancer_virtual_ipv4_1 }} https://{{ EDXAPP_LMS_BASE }}
-      # skip warning of using curl instead of get_url, because we need to use the --resolve option
-      args:
-        warn: False
       # Executing a curl doesn't change anything, so we have better output
       changed_when: False
       when: hostvars[groups['balancer_servers'][0]].balancer_virtual_ipv4_1 is defined
@@ -39,9 +36,6 @@
     - name: Check routing if can connect to 2nd load balancer virtual IP
       shell: |
         curl -4 -v --resolve {{ EDXAPP_LMS_BASE }}:443:{{ hostvars[groups['balancer_servers'][0]].balancer_virtual_ipv4_2 }} https://{{ EDXAPP_LMS_BASE }}
-      # skip warning of using curl instead of get_url, because we need to use the --resolve option
-      args:
-        warn: False
       # Executing a curl doesn't change anything, so we have better output
       changed_when: False
       when: hostvars[groups['balancer_servers'][0]].balancer_virtual_ipv4_2 is defined
