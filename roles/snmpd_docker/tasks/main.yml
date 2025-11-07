@@ -6,6 +6,7 @@
     groups: docker
     append: yes
   notify: restart snmpd
+  ignore_errors: "{{ ansible_check_mode }}"
   when: ansible_distribution_version is version('20.04', '>=')
   tags:
     - snmpd
