@@ -48,9 +48,6 @@
 #   To deploy Richie MySQL
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit richie_mysql_docker_servers -e richie_mysql_deploy=true
 #
-#   To deploy Richie Application
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit richie_docker_servers -e richie_docker_deploy=true
-#
 #   To deploy Observability
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit observability_docker_servers -e observability_docker_deploy=true
 #
