@@ -9,7 +9,8 @@
 
 # Install docker
 - name: geerlingguy.docker
-  version: 4.2.1
+  src: git+https://github.com/geerlingguy/ansible-role-docker.git
+  version: 7.8.0
 
 # Install java
 - name: geerlingguy.java
