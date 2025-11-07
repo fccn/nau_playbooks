@@ -16,6 +16,7 @@ git -C "nau-data" pull
 git -C "nau-data" checkout ${BRANCH_SECURE_DATA}
 
 # Create the virtual environment
+PATH=$HOME/.local/bin:$PATH
 uv venv --seed venv -p python3.11
 . venv/bin/activate
 
