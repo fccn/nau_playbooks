@@ -9,6 +9,7 @@ richie_mysql_makefile_healthcheck: [ "{{ richie_mysql_docker_deploy_base_folder 
 
 richie_mysql_snmpd_configs: 
   - extend richie_mysql_healthcheck                  /usr/bin/make --jobs 20 --no-print-directory --directory {{ richie_mysql_docker_deploy_base_folder }} silent-healthcheck
+  - extend richie_mysql_connections_count            /usr/bin/make --jobs 20 --no-print-directory --directory {{ richie_mysql_docker_deploy_base_folder }} mysql-connections-count
 
 # Keep alive configuration
 richie_mysql_keepalived_is_primary: "{{ groups['richie_mysql_docker_servers'][0] == inventory_hostname }}"

@@ -9,6 +9,7 @@ clickhouse_docker_deploy_base_folder: /nau/ops/clickhouse
 
 clickhouse_snmpd_configs:
   - extend clickhouse_healthcheck                  /usr/bin/make --jobs 20 --no-print-directory --directory {{ clickhouse_docker_deploy_base_folder }} silent-healthcheck
+  - extend clickhouse_system_processes_count       /usr/bin/make --jobs 20 --no-print-directory --directory {{ clickhouse_docker_deploy_base_folder }} clickhouse-system-processes-count
 
 clickhouse_makefile_healthcheck: [ "{{ clickhouse_docker_deploy_base_folder }}" ]
 

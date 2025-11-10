@@ -7,6 +7,8 @@
 financial_manager_mysql_docker_deploy_base_folder: /nau/ops/financial_manager_mysql
 financial_manager_mysql_snmpd_configs:
   - extend financial_manager_mysql_healthcheck                  /usr/bin/make --jobs 20 --no-print-directory --directory {{ financial_manager_mysql_docker_deploy_base_folder }} silent-healthcheck
+  - extend financial_manager_mysql_mysql_connections_count      /usr/bin/make --jobs 20 --no-print-directory --directory {{ financial_manager_mysql_docker_deploy_base_folder }} mysql-connections-count
+
 financial_manager_mysql_makefile_healthcheck: [ "{{ financial_manager_mysql_docker_deploy_base_folder }}" ]
 
 financial_manager_mysql_database: nau_financial_manager

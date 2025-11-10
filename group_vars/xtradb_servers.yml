@@ -12,6 +12,7 @@ xtradb_mysql_port: 3306
 # SNMPD configuration to monitor XtraDB health
 xtradb_snmpd_configs:
   - extend xtradb_healthcheck                  /usr/bin/make --jobs 20 --no-print-directory --directory {{ xtradb_docker_deploy_base_folder }} silent-healthcheck
+  - extend xtradb_connections_count            /usr/bin/make --jobs 20 --no-print-directory --directory {{ xtradb_docker_deploy_base_folder }} xtradb-connections-count
 
 xtradb_makefile_healthcheck: [ "{{ xtradb_docker_deploy_base_folder }}" ]
 

@@ -7,6 +7,8 @@
 nau_analytics_mysql_docker_deploy_base_folder: /nau/ops/nau_analytics_mysql
 nau_analytics_mysql_snmpd_configs:
   - extend nau_analytics_mysql_healthcheck                  /usr/bin/make --jobs 20 --no-print-directory --directory {{ nau_analytics_mysql_docker_deploy_base_folder }} silent-healthcheck
+  - extend nau_analytics_mysql_connections_count            /usr/bin/make --jobs 20 --no-print-directory --directory {{ nau_analytics_mysql_docker_deploy_base_folder }} mysql-connections-count
+
 nau_analytics_mysql_makefile_healthcheck: [ "{{ nau_analytics_mysql_docker_deploy_base_folder }}" ]
 
 nau_analytics_mysql_database: nau_analytics

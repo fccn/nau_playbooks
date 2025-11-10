@@ -8,6 +8,7 @@ mongo_docker_deploy_base_folder: /nau/ops/mongo
 mongo_docker_container_name: mongo
 mongo_snmpd_configs: 
   - extend mongo_healthcheck                  /usr/bin/make --jobs 20 --no-print-directory --directory {{ mongo_docker_deploy_base_folder }} silent-healthcheck
+  - extend mongo_connections_current          /usr/bin/make --jobs 20 --no-print-directory --directory {{ mongo_docker_deploy_base_folder }} mongo-connections-current
 
 mongo_makefile_healthcheck: [ "{{ mongo_docker_deploy_base_folder }}" ]
 

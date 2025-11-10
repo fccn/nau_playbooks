@@ -8,6 +8,7 @@ redis_docker_port: 6381
 redis_docker_deploy_base_folder: /nau/ops/redis
 redis_snmpd_configs: 
   - extend redis_healthcheck                  /usr/bin/make --jobs 20 --no-print-directory --directory {{ redis_docker_deploy_base_folder }} silent-healthcheck
+  - extend redis_connected_clients            /usr/bin/make --jobs 20 --no-print-directory --directory {{ redis_docker_deploy_base_folder }} redis-connected-clients
 
 redis_keepalived_is_primary: "{{ groups['redis_docker_servers'][0] == inventory_hostname }}"
 redis_keepalived_state: "{{ 'MASTER' if redis_keepalived_is_primary else 'BACKUP' }}"
