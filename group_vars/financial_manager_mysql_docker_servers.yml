@@ -1,0 +1,13 @@
+# Shared public variables for Financial Manager MySQL Docker servers
+#
+##########################################################
+# Warn THIS FILE can't contain any sensitive information #
+##########################################################
+---
+financial_manager_mysql_docker_deploy_base_folder: /nau/ops/financial_manager_mysql
+financial_manager_mysql_snmpd_configs:
+  - extend financial_manager_mysql_healthcheck                  /usr/bin/make --jobs 20 --no-print-directory --directory {{ financial_manager_mysql_docker_deploy_base_folder }} silent-healthcheck
+financial_manager_mysql_makefile_healthcheck: [ "{{ financial_manager_mysql_docker_deploy_base_folder }}" ]
+
+financial_manager_mysql_database: nau_financial_manager
+financial_manager_mysql_user: nau_financial_manager

@@ -1,3 +1,5 @@
+# Shared public variables for NAU Analytics MySQL Docker servers
+#
 ##########################################################
 # Warn THIS FILE can't contain any sensitive information #
 ##########################################################

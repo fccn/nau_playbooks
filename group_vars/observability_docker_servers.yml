@@ -1,0 +1,8 @@
+---
+observability_docker_deploy_base_folder: /nau/ops/observability
+observability_makefile_healthcheck: [ "{{ observability_docker_deploy_base_folder }}" ]
+
+observability_fluentbit_debug: false
+
+observability_snmpd_configs:
+  - extend observability_healthcheck  /usr/bin/make --jobs 20 --no-print-directory --directory {{ observability_docker_deploy_base_folder }} silent-healthcheck

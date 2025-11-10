@@ -1,0 +1,38 @@
+# Shared public variables for Redis Docker servers
+#
+###########################################################
+# Warn THIS FILE can't contain any sensitive information #
+###########################################################
+---
+redis_docker_port: 6381
+redis_docker_deploy_base_folder: /nau/ops/redis
+redis_snmpd_configs: 
+  - extend redis_healthcheck                  /usr/bin/make --jobs 20 --no-print-directory --directory {{ redis_docker_deploy_base_folder }} silent-healthcheck
+
+redis_keepalived_is_primary: "{{ groups['redis_docker_servers'][0] == inventory_hostname }}"
+redis_keepalived_state: "{{ 'MASTER' if redis_keepalived_is_primary else 'BACKUP' }}"
+redis_keepalived_peer_ipv4: "{{ hostvars[ (groups['redis_docker_servers'] | difference([inventory_hostname]))[0] ].ansible_host }}"
+redis_keepalived_priority: "{{ 200 if redis_keepalived_is_primary else 100 }}"
+
+redis_keepalived_vrrp_instances:
+  - name: redis_failover_link_ipv4
+    ipv6: false
+    state: "{{ redis_keepalived_state }}"
+    id: 41
+    priority: "{{ keepalived_priority_override if ( keepalived_priority_override | default('') | string | length > 0 ) else redis_keepalived_priority }}"
+    pass: "{{ redis_keepalived_pass }}"
+    peer_ip: "{{ redis_keepalived_peer_ipv4 }}"
+    track_script: redis_chk_script
+    virtual_ip:
+      - "{{ redis_virtual_ipv4 }}/24 dev {{ keepalived_connected_network_interface }} label vipRedis"
+
+redis_keepalived_health:
+  - name: redis_chk_script
+    #script: /usr/bin/nc -z 127.0.0.1 {{ redis_docker_port }}
+    # interval: 2
+    # timeout: 3
+    script: /usr/bin/make -C /nau/ops/redis/ --no-print-directory silent-healthcheck
+    timeout: 9
+    interval: 10
+
+redis_makefile_healthcheck: [ "{{ redis_docker_deploy_base_folder }}" ]

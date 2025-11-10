@@ -1,0 +1,35 @@
+# Shared public variables for Richie MySQL Docker servers
+#
+###########################################################
+# Warn THIS FILE can't contain any sensitive information #
+###########################################################
+---
+richie_mysql_docker_deploy_base_folder: /nau/ops/richie_mysql
+richie_mysql_makefile_healthcheck: [ "{{ richie_mysql_docker_deploy_base_folder }}" ]
+
+richie_mysql_snmpd_configs: 
+  - extend richie_mysql_healthcheck                  /usr/bin/make --jobs 20 --no-print-directory --directory {{ richie_mysql_docker_deploy_base_folder }} silent-healthcheck
+
+# Keep alive configuration
+richie_mysql_keepalived_is_primary: "{{ groups['richie_mysql_docker_servers'][0] == inventory_hostname }}"
+richie_mysql_keepalived_state: "{{ 'MASTER' if richie_mysql_keepalived_is_primary else 'BACKUP' }}"
+richie_mysql_keepalived_peer_ipv4: "{{ hostvars[ (groups['richie_mysql_docker_servers'] | difference([inventory_hostname]))[0] ].ansible_host }}"
+richie_mysql_keepalived_priority: "{{ 200 if richie_mysql_keepalived_is_primary else 100 }}"
+
+richie_mysql_keepalived_vrrp_instances:
+  - name: richie_mysql_failover_link_ipv4
+    ipv6: false
+    state: "{{ richie_mysql_keepalived_state }}"
+    id: 42
+    priority: "{{ keepalived_priority_override if ( keepalived_priority_override | default('') | string | length > 0 ) else richie_mysql_keepalived_priority }}"
+    pass: "{{ redis_keepalived_pass }}"
+    peer_ip: "{{ richie_mysql_keepalived_peer_ipv4 }}"
+    track_script: richie_mysql_healthcheck_script
+    virtual_ip:
+      - "{{ richie_mysql_virtual_ipv4 }}/24 dev {{ keepalived_connected_network_interface }} label vipRichieMysql"
+
+richie_mysql_keepalived_health:
+  - name: richie_mysql_healthcheck_script
+    script: mysqladmin ping --silent --host 127.0.0.1 --user {{ richie_mysql_health_check_user }} --port {{ richie_mysql_docker_port }}
+    interval: 2
+    timeout: 3
