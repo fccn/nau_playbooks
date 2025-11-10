@@ -52,8 +52,8 @@ vrrp_instance {{ instance.name }} {
 {% for peer_ip in instance.peers_ips %}
     {{ peer_ip }}
 {% endfor %}
-   }
 {% endif %}
+   }
 
    track_script {
     {{ instance.track_script }}
