@@ -1,5 +1,67 @@
 ---
+# Base folder where all docker deploy ansible role related files will be stored.
+docker_deploy_base_folder: "/nau/ops/{{ docker_image_name }}"
+
 # For newer versions of Docker
 # Also install the docker-compose utility so we are more compatible.
 # The docker-compose installation is still needed by ansible-docker-deploy role.
 docker_install_compose: true
+
+# Docker daemon options, that will be written to /etc/docker/daemon.json file.
+# If docker daemon fails to start, you can view its logs using the next command:
+#   journalctl -xu docker.service
+docker_daemon_options: "{{ docker_daemon_options_default }}"
+docker_daemon_options_default:
+  # Change default containers IP Addresses so they don't collide with NAU internal networks.
+  bip: "10.0.31.1/24"
+  fixed-cidr: "10.0.31.1/25"
+  default-address-pools:
+    - base: "10.20.0.0/16"
+      size: 24
+  features:
+    buildkit: true
+
+  # Use a custom docker registry mirror, so images can be downloaded faster and to prevent
+  # to reach the Docker Hub download limits.
+  registry-mirrors:
+    - http://{{ registry_mirror_host }}:5000
+  insecure-registries:
+    - "{{ registry_mirror_host }}:{{ registry_mirror_port }}"
+
+  # Extend docker daemon configurations.
+  # Replace default logging driver to fluentd.
+  log-driver: fluentd
+  # Docker daemon logging options
+  log-opts:
+    # Use the default fluentd address, localhost:24224
+    # the observability deploy role, deploys a small stack with a fluentbit container that exposes
+    # the 24224 port on host mode.
+    fluentd-address: "localhost:24224"
+
+    # Docker connects to Fluentd in the background.
+    # Messages are buffered until the connection is established.
+    fluentd-async: "true"
+
+    # Docker uses the first 12 characters of the container ID to tag log messages, because
+    # this default configuration is not good enough for the longer docker stack container names,
+    # we need to change to be something that would help the process on fluent bit configuration.
+    # The Fluentd logging driver already sends the `container_id` and `container_name` has
+    # additional metadata.
+    #
+    # Docker stack on Docker swarm:
+    # So we configure it to send on the `tag` the docker swarm service name.
+    # Example: `openedx_lms` or `richie_nginx`.
+    # If the container don't have a docker stack, the `tag` will be empty.
+    # Reference: http://alexfu.it/2018/12/07/use-labels-in-docker-logging-tags/
+    #
+    # Docker compose:
+    # We configure it to send on the `tag` the docker compose project and service.
+    # Example:
+    # - `project` with value of `openedx`
+    # - `service` with value of `lms`
+    # To a final tag could be `docker.container.log.openedx_lms`
+    #
+    tag: "docker.container.log.{% raw %}{{if (index .ContainerLabels \"com.docker.swarm.service.name\")}}{{index .ContainerLabels \"com.docker.swarm.service.name\"}}{{end}}{% endraw %}{% raw %}{{if (index .ContainerLabels \"com.docker.compose.project\")}}{{index .ContainerLabels \"com.docker.compose.project\"}}_{{end}}{% endraw %}{% raw %}{{if (index .ContainerLabels \"com.docker.compose.service\")}}{{index .ContainerLabels \"com.docker.compose.service\"}}{{end}}{% endraw %}"
+
+registry_mirror_host: nau-registry-mirror
+registry_mirror_port: 5000
