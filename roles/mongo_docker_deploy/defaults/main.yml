@@ -52,7 +52,7 @@ mongo_docker_deploy_templates:
     when: "{{ mongo_docker_initdb_root_password | length > 0 }}"
   - src_data: "{{ mongo_docker_keyFile_value }}"
     dest: "{{ mongo_docker_deploy_base_folder }}/mongo/mongodb_key"
-    mode: 600
+    mode: "0600"
     owner: 999
     secret_name: mongo_key
     service: mongo
