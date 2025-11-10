@@ -56,11 +56,11 @@ clickhouse-client: ## Open clickhouse-client
 .PHONY: clickhouse-client
 
 clickhouse-system-clusters: ## Run "SELECT * FROM system.clusters;" query
-	@docker exec -it {{ clickhouse_docker_container_name }} clickhouse-client --query="SELECT * FROM system.clusters;"
+	@docker exec {{ clickhouse_docker_container_name }} clickhouse-client --query="SELECT * FROM system.clusters;"
 .PHONY: clickhouse-system-clusters
 
 clickhouse-system-processes-count: ## Run "SELECT count() FROM system.processes;" query
-	@docker exec -it {{ clickhouse_docker_container_name }} clickhouse-client --query="SELECT count() FROM system.processes;"
+	@docker exec {{ clickhouse_docker_container_name }} clickhouse-client --query="SELECT count() FROM system.processes;"
 .PHONY: clickhouse-system-processes-count
 
 healthcheck-memory: ## check that containers doesn't use more than 90% of its available memory
