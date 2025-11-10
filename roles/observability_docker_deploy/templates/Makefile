@@ -83,7 +83,7 @@ healthcheck-parallel: \
 .PHONY: healthcheck-parallel
 
 healthcheck-fluentbit-forward-port: ## check fluentbit forward port
-	@nc -z -w 5 127.0.0.1 {{ observability_fluentbit_forward_port }} || ( echo "Check fluentbit forward port on {{ observability_fluentbit_forward_port }}: error" ; exit 1 )
+	@nc -z -w 5 127.0.0.1 {{ observability_fluentbit_forward_port }} >/dev/null 2>&1 || ( echo "Check fluentbit forward port on {{ observability_fluentbit_forward_port }}: error" ; exit 1 )
 	@echo "Check fluentbit forward port on {{ observability_fluentbit_forward_port }}: OK"
 .PHONY: healthcheck-fluentbit-forward-port
 

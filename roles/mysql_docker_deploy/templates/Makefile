@@ -70,16 +70,14 @@ healthcheck-parallel: \
 .PHONY: healthcheck-parallel
 
 healthcheck-mysql-port: ## check mysql port
-	@echo -n "Check mysql port for {{ mysql_docker_container_name }}: "
-	@nc -z -w 5 127.0.0.1 {{ mysql_docker_port }}
-	@echo "OK"
+	@nc -z -w 5 127.0.0.1 {{ mysql_docker_port }} >/dev/null 2>&1 || ( echo "Check mysql port: error!" ; exit 1 )
+	@echo "Check mysql port for: OK"
 .PHONY: healthcheck-mysql-port
 
 {% if mysql_docker_primary %}
 healthcheck-mysql-primary: ## show primary master status
-	@echo -n "Check mysql master status: "
-	@echo 'show master status \G' | MYSQL_PWD="{{ mysql_health_check_pass }}" mysql -u {{ mysql_health_check_user }} --host 127.0.0.1 --port {{ mysql_docker_port }} > /dev/null
-	@echo "OK"
+	@echo 'show master status \G' | MYSQL_PWD="{{ mysql_health_check_pass }}" mysql -u {{ mysql_health_check_user }} --host 127.0.0.1 --port {{ mysql_docker_port }} > /dev/null || ( echo "Check mysql master status: error!" ; exit 1 )
+	@echo "Check mysql master status: OK"
 .PHONY: healthcheck-mysql-primary
 
 {% endif %}
@@ -105,9 +103,8 @@ mysql-connections-active-count: ## Number of active connections
 
 {% if not mysql_docker_primary %}
 healthcheck-mysql-replica: ## show replica slave status
-	@echo -n "Check mysql replica {{ mysql_docker_container_name }} seconds behind primary is lower than 600 seconds (< 10 minutes): "
-	@echo 'show slave status \G' | MYSQL_PWD="{{ mysql_health_check_pass }}" mysql -u {{ mysql_health_check_user }} --host 127.0.0.1 --port {{ mysql_docker_port }} | egrep "Seconds_Behind_Master: [0-5]?[0-9]?[0-9]$$" > /dev/null
-	@echo "OK"
+	@echo 'show slave status \G' | MYSQL_PWD="{{ mysql_health_check_pass }}" mysql -u {{ mysql_health_check_user }} --host 127.0.0.1 --port {{ mysql_docker_port }} | egrep "Seconds_Behind_Master: [0-5]?[0-9]?[0-9]$$" > /dev/null || ( echo "Check mysql replica {{ mysql_docker_container_name }} seconds behind primary is lower than 600 seconds (< 10 minutes): Not ok") 
+	@echo "Check mysql replica {{ mysql_docker_container_name }} seconds behind primary is lower than 600 seconds (< 10 minutes): OK"
 .PHONY: healthcheck-mysql-replica
 
 mysql-replica-seconds-behind: ## show how much seconds the replica in behind the primary should be lower than 600 seconds == ( < 10 minutes )

@@ -69,7 +69,7 @@ healthcheck-parallel: \
 .PHONY: healthcheck-parallel
 
 healthcheck-xtradb-mysql-port: ## Check XtraDB MySQL port
-	@nc -z -w 5 127.0.0.1 {{ xtradb_mysql_port }} || ( echo "Check xtradb mysql port: error" ; exit 1 )
+	@nc -z -w 5 127.0.0.1 {{ xtradb_mysql_port }} >/dev/null 2>&1 || ( echo "Check xtradb mysql port: error" ; exit 1 )
 	@echo "Check xtradb mysql port: OK"
 .PHONY: healthcheck-xtradb-mysql-port
 

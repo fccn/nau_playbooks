@@ -56,9 +56,8 @@ healthcheck-memory: ## check that containers doesn't use more than 90% of its av
 .PHONY: healthcheck-memory
 
 healthcheck-app-port: ## Check financial manager app port
-	@echo -n "Check financial_manager port: "
-	@nc -z -w 5 127.0.0.1 {{ financial_manager_app_docker_port }}
-	@echo "OK"
+	@nc -z -w 5 127.0.0.1 {{ financial_manager_app_docker_port }} >/dev/null 2>&1 || ( echo "Check financial_manager port: error!" ; exit 1 )
+	@echo "Check financial_manager port: OK"
 .PHONY: healthcheck-app-port
 
 healthcheck-docker-containers: ## check that docker containers are on running state
@@ -71,8 +70,8 @@ healthcheck: healthcheck-parallel ## Overall healthcheck - for parallel executio
 .PHONY: healthcheck-parallel
 
 healthcheck-nginx-ports: ## check nginx ports
-	@nc -z -w 5 127.0.0.1 {{ financial_manager_nginx_http_ingress_port }}  || ( echo "Check nginx http port {{ financial_manager_nginx_http_ingress_port }}: error not available!" ; exit 1 )
-	@nc -z -w 5 127.0.0.1 {{ financial_manager_nginx_https_ingress_port }} || ( echo "Check nginx https port {{ financial_manager_nginx_https_ingress_port }}: error not available!" ; exit 1 )
+	@nc -z -w 5 127.0.0.1 {{ financial_manager_nginx_http_ingress_port }}  >/dev/null 2>&1 || ( echo "Check nginx http port {{ financial_manager_nginx_http_ingress_port }}: error not available!" ; exit 1 )
+	@nc -z -w 5 127.0.0.1 {{ financial_manager_nginx_https_ingress_port }} >/dev/null 2>&1 || ( echo "Check nginx https port {{ financial_manager_nginx_https_ingress_port }}: error not available!" ; exit 1 )
 	@echo "Check nginx ports: OK"
 .PHONY: healthcheck-nginx-ports
 
@@ -90,12 +89,12 @@ healthcheck-parallel: \
 # Redis
 #######################
 healthcheck-django-cache-redis-port: ## check django cache redis port
-	@nc -z -w 5 {{ financial_manager_caches_default_redis_host }} {{ financial_manager_caches_default_redis_port }} || ( echo "Check django cache redis port: error" ; exit 1; )
+	@nc -z -w 5 {{ financial_manager_caches_default_redis_host }} {{ financial_manager_caches_default_redis_port }} >/dev/null 2>&1 || ( echo "Check django cache redis port: error" ; exit 1; )
 	@echo "Check redis port: OK"
 .PHONY: healthcheck-redis-port
 
 healthcheck-celery-broker-redis-port: ## check celery broker redis port
-	@nc -z -w 5 {{ financial_manager_celery_broker_redis_host }} {{ financial_manager_celery_broker_redis_port }} || ( echo "Check celery broker redis port: error" ; exit 1; )
+	@nc -z -w 5 {{ financial_manager_celery_broker_redis_host }} {{ financial_manager_celery_broker_redis_port }} >/dev/null 2>&1 || ( echo "Check celery broker redis port: error" ; exit 1; )
 	@echo "Check redis port: OK"
 .PHONY: healthcheck-redis-port
 

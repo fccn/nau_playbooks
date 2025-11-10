@@ -79,7 +79,7 @@ healthcheck-parallel: \
 .PHONY: healthcheck-parallel
 
 healthcheck-clickhouse-port: ## Check ClickHouse port
-	@nc -z -w 5 127.0.0.1 {{ clickhouse_server_http_port }} || ( echo "Check ClickHouse port: error" ; exit 1 )
+	@nc -z -w 5 127.0.0.1 {{ clickhouse_server_http_port }} >/dev/null 2>&1 || ( echo "Check ClickHouse port: error" ; exit 1 )
 	@echo "Check ClickHouse port: OK"
 .PHONY: healthcheck-clickhouse-port
 
