@@ -226,8 +226,8 @@
         name: mongo_docker_deploy
       vars:
         # mongo_docker_instance_name
-        mongo_docker_initdb_root_username: "{{ MONGO_ADMIN_USER | default('admin') if (mongo_docker_init | default(false) | bool) else None }}"
-        mongo_docker_initdb_root_password: "{{ MONGO_ADMIN_PASSWORD if (mongo_docker_init | default(false) | bool) else None }}"
+        mongo_docker_initdb_root_username: "{{ MONGO_ADMIN_USER | default('admin') if (mongo_docker_init | default(false) | bool) else '' }}"
+        mongo_docker_initdb_root_password: "{{ MONGO_ADMIN_PASSWORD if (mongo_docker_init | default(false) | bool) else '' }}"
         mongo_docker_replSet: "{{ MONGO_REPL_SET }}"
         mongo_docker_keyFile_value: "{{ MONGO_CLUSTER_KEY | default('') }}"
         mongo_docker_command_bind_ip_additional_list:
@@ -249,7 +249,7 @@
     - name: Set Mongo Feature compatibility
       shell: |
         docker exec {{ mongo_docker_container_name }} {{ mongo_shell_command }} --username {{ mongo_docker_admin_username }} --password {{ mongo_docker_admin_password }} --eval "db.adminCommand( { setFeatureCompatibilityVersion: '{{ mongo_feature_compatibility_version }}'{% if mongo_feature_compatibility_confirm | default(False) %}, confirm: true{% endif %} } )"
-      delegate_to: "{{ get_primary_mongodb_node_output.stdout }}"
+      delegate_to: "{{ get_primary_mongodb_node_output is defined and get_primary_mongodb_node_output.stdout }}"
       run_once: true
       when: mongo_feature_compatibility_version | default(False)
 
@@ -257,7 +257,7 @@
       shell: |
         docker exec {{ mongo_docker_container_name }} {{ mongo_shell_command }} --username {{ mongo_docker_admin_username }} --password {{ mongo_docker_admin_password }} --eval "JSON.stringify(db.adminCommand( { getParameter: 1, featureCompatibilityVersion: 1 } ))" | tail -n1 | jq -r '.featureCompatibilityVersion.version'
       register: get_mongo_feature_compatibility_version_output
-      delegate_to: "{{ get_primary_mongodb_node_output.stdout }}"
+      delegate_to: "{{ get_primary_mongodb_node_output is defined and get_primary_mongodb_node_output.stdout }}"
       run_once: true
       when: mongo_feature_compatibility_version | default(False)
 
