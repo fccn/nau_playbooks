@@ -249,24 +249,24 @@
     - name: Set Mongo Feature compatibility
       shell: |
         docker exec {{ mongo_docker_container_name }} {{ mongo_shell_command }} --username {{ mongo_docker_admin_username }} --password {{ mongo_docker_admin_password }} --eval "db.adminCommand( { setFeatureCompatibilityVersion: '{{ mongo_feature_compatibility_version }}'{% if mongo_feature_compatibility_confirm | default(False) %}, confirm: true{% endif %} } )"
-      delegate_to: "{{ get_primary_mongodb_node_output is defined and get_primary_mongodb_node_output.stdout }}"
+      delegate_to: "{{ get_primary_mongodb_node_output.stdout | default(inventory_hostname) }}"
       run_once: true
-      when: mongo_feature_compatibility_version | default(False)
+      when: (mongo_feature_compatibility_version | default(False)) and get_primary_mongodb_node_output is defined
 
     - name: Get Mongo Feature compatibility
       shell: |
         docker exec {{ mongo_docker_container_name }} {{ mongo_shell_command }} --username {{ mongo_docker_admin_username }} --password {{ mongo_docker_admin_password }} --eval "JSON.stringify(db.adminCommand( { getParameter: 1, featureCompatibilityVersion: 1 } ))" | tail -n1 | jq -r '.featureCompatibilityVersion.version'
       register: get_mongo_feature_compatibility_version_output
-      delegate_to: "{{ get_primary_mongodb_node_output is defined and get_primary_mongodb_node_output.stdout }}"
+      delegate_to: "{{ get_primary_mongodb_node_output.stdout | default(inventory_hostname) }}"
       run_once: true
-      when: mongo_feature_compatibility_version | default(False)
+      when: (mongo_feature_compatibility_version | default(False)) and get_primary_mongodb_node_output is defined
 
     - name: Check Mongo Feature compatibility
       fail:
         msg: Incorrect Mongo feature compatibility version, current '{{ get_mongo_feature_compatibility_version_output.stdout }}' expected '{{ mongo_feature_compatibility_version }}'
-      delegate_to: "{{ get_primary_mongodb_node_output.stdout }}"
+      delegate_to: "{{ get_primary_mongodb_node_output.stdout | default(inventory_hostname) }}"
       run_once: true
-      when: mongo_feature_compatibility_version | default(False) and get_mongo_feature_compatibility_version_output.stdout != mongo_feature_compatibility_version
+      when: (mongo_feature_compatibility_version | default(False)) and get_primary_mongodb_node_output is defined and get_mongo_feature_compatibility_version_output.stdout != mongo_feature_compatibility_version
 
     - import_tasks: tasks/healthcheck.yml
       when: mongo_feature_compatibility_version | default(False)
