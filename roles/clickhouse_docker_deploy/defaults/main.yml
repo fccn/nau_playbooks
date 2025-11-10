@@ -10,8 +10,8 @@ clickhouse_docker_container_name: clickhouse
 clickhouse_docker_deploy_base_folder: "/nau/ops/{{ clickhouse_docker_container_name }}"
 clickhouse_docker_deploy_compose_template: templates/docker-compose.yml.j2
 
-clickhouse_docker_deploy_healthcheck_verify_delay: 5
-clickhouse_docker_deploy_healthcheck_verify_retries: 50
+clickhouse_docker_deploy_healthcheck_delay: 5
+clickhouse_docker_deploy_healthcheck_retries: 50
 
 # Files to be templated during deployment, template default but also to add more
 clickhouse_docker_deploy_templates: "{{ clickhouse_docker_deploy_templates_default + clickhouse_docker_deploy_templates_additional|default([]) }}"
