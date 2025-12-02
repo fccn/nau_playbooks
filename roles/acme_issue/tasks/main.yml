@@ -46,7 +46,9 @@
     {{ '--cert-name ' + domain_config['cert-name'] if domain_config['cert-name'] is defined else '' }} \
     --email {{ domain_config.email | default(acme_certbot_email) }} \
     --http-01-port={{ acme_certbot_port }} \
-    -d {{ domain_config.domain }} 2>&1
+    -d {{ domain_config.domain }} \
+    {{ '-v' if ansible_verbosity > 0 else '' }} \
+    2>&1
   loop: "{{ acme_domains_to_issue_certs }}"
   loop_control:
     loop_var: domain_config
