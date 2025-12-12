@@ -1,27 +1,7 @@
 ---
 # Ansible playbook that deploys NAU.
 #
-#
-# Open edX instance with 3 layers:
-# - Load balancer servers
-# - Persistence servers
-# - Application servers (only partially)
-#
-# NAU also has other services like:
-# - richie for marketing site
-# - static proxy service
-# - fam servers that print course certificate to PDF
-#
 # Examples:
-#   To deploy the application servers and deploy 2 servers at once run:
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit app_servers -e serial_number=2
-#
-#   To deploy the application servers and migrate the database changes
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit app_servers -e "migrate_db=yes"
-#
-#   To deploy the application servers with a specific themes version
-#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit app_servers -e "THEMES_VERSION=master"
-#
 #   To deploy the load balancers run:
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit balancer_servers
 #
