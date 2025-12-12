@@ -69,6 +69,8 @@
 #   To deploy Kubernetes nodes
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit kubernetes_servers -e kubernetes_deploy=true
 #
+#   To deploy ssh keys
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --tags ssh
 
 - name: Infrastructure configuration
   hosts: all
