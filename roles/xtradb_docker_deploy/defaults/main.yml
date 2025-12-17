@@ -98,7 +98,7 @@ xtradb_docker_environment_variables_default:
 xtradb_docker_environment_variables_default_join:
   CLUSTER_JOIN: "{{ xtradb_cluster_hosts | join(',') }}"
 
-xtradb_docker_max_connections: 500
+xtradb_docker_max_connections: 1000
 xtradb_docker_innodb_buffer_pool_size: 5934M
 # xtradb_docker_thread_cache_size: 20
 
