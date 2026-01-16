@@ -19,5 +19,19 @@
             <http_max_field_value_size>1048576</http_max_field_value_size>
             <http_max_field_name_size>1048576</http_max_field_name_size>
         </default>
+        <readonly>
+            <readonly>1</readonly>
+        </readonly>
     </profiles>
+
+    <users>
+        <nau_analytics>
+            <password><![CDATA[{{ clickhouse_nau_analytics_password }}]]></password>
+            <profile>readonly</profile>
+            <networks>
+              <ip>::/0</ip>
+            </networks>
+            <quota>default</quota>
+        </nau_analytics>
+    </users>
 </clickhouse>
