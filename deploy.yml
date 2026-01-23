@@ -279,7 +279,7 @@
           - "{{ ansible_additional_ipv4 | default('') }}"
       when: elasticsearch_deploy | default(false) | bool
 
-- name: Deploy cache redis docker servers
+- name: Deploy Redis docker servers
   hosts: redis_docker_servers
   serial: "{{ serial_number | default(1) }}" # deploy in sequence
   become: True
@@ -307,7 +307,7 @@
       tags: snmpd
       when: redis_deploy | default(false) | bool
 
-    - name: Deploy cache redis
+    - name: Deploy Redis
       import_role:
         name: redis_docker_deploy
       when: redis_deploy | default(false) | bool
