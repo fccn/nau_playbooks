@@ -60,3 +60,39 @@ To run an ansible playbook, like for example the `deploy.yml` playbook, use a si
 ```bash
 ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit XPTO
 ```
+
+## Using --check and --diff (Dry Run Mode)
+
+When working with Ansible playbooks, it's a good practice to preview changes before applying them to your systems.
+Two flags are particularly useful for this:
+
+### --check flag
+The `--check` flag runs the playbook in "dry-run" mode. It simulates the execution without actually making any changes to the target systems.
+This allows you to see what tasks would be executed and catch potential errors before they happen.
+
+```bash
+ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit XPTO --check
+```
+
+### --diff flag
+The `--diff` flag shows the differences that would be made to files. When combined with `--check`, it displays what changes would occur without applying them.
+This is particularly useful for tasks that modify configuration files, as you can see the exact line-by-line differences.
+
+```bash
+ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit XPTO --diff
+```
+
+### Using both together (recommended for beginners)
+For safety, always use both flags together when testing a playbook for the first time:
+
+```bash
+ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit XPTO --check --diff
+```
+
+This combination will:
+- Show you exactly what tasks would run
+- Display file changes side-by-side
+- Make no actual modifications to your systems
+
+Once you're confident the changes are correct, run the playbook without these flags to apply the changes.
+
