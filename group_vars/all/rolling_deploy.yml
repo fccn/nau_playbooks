@@ -1,0 +1,2 @@
+---
+rolling_deploy_parent_servers_ipv4: "{{ groups['balancer_servers'] | map('extract', hostvars, ['ansible_host']) | list }}"

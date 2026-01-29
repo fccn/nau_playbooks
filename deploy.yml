@@ -498,11 +498,11 @@
   tasks:
     - name: Start rolling deploy - block load balancer connections
       import_role:
-        name: rolling_deploy
+        name: ansible-rolling-deploy
       vars:
         rolling_deploy_docker: true
         rolling_deploy_starting: true
-      when: ( groups['financial_manager_docker_servers'] | length ) > 1 and ( financial_manager_docker_servers | default(false) | bool )
+      when: ( groups['financial_manager_docker_servers'] | length ) > 1 and ( financial_manager_deploy | default(false) | bool )
 
     - name: Install or upgrade docker daemon
       import_role:
@@ -543,11 +543,11 @@
 
     - name: End rolling deploy - open load balancer connections
       import_role:
-        name: rolling_deploy
+        name: ansible-rolling-deploy
       vars:
         rolling_deploy_docker: true
         rolling_deploy_starting: false
-      when: ( groups['financial_manager_docker_servers'] | length ) > 1 and ( financial_manager_docker_servers | default(false) | bool )
+      when: ( groups['financial_manager_docker_servers'] | length ) > 1 and ( financial_manager_deploy | default(false) | bool )
 
 - name: Deploy nau analytics mysql docker servers
   hosts: nau_analytics_mysql_docker_servers

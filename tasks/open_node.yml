@@ -1,7 +1,7 @@
 
 - name: Open load balancer connections
   import_role:
-    name: rolling_deploy
+    name: ansible-rolling-deploy
   vars:
     rolling_deploy_docker: true
     rolling_deploy_starting: false

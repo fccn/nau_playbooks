@@ -35,3 +35,8 @@
 # Keepalived to manage Linux Virtual IP addresses for high availability
 - src: git+https://github.com/fccn/ansible-keepalived.git
   version: ca1885fe63396020cee5fd7a31827e21b0a51f70
+
+# Rolling deploy role that use iptables to manage load balancer connections
+# to a cluster of nodes applying a rolling update strategy
+- src: git+https://github.com/fccn/ansible-rolling-deploy.git
+  version: 6a17ce53f0c8d5d1403aeb22d712a0ac35104723
