@@ -122,7 +122,7 @@
   become: True
   gather_facts: True
   roles:
-    - role: keepalived
+    - role: ansible-keepalived
       vars: 
         keepalived_priority_override: 1 # Lower priority so the VIPs can swap to other machine.
       when: balancer_keepalived_vrrp_instances is defined
@@ -132,7 +132,7 @@
     - role: haproxy-netsnmp-perl
     - role: snmpd
     - role: nau_check_urls
-    - role: keepalived
+    - role: ansible-keepalived
       vars:
         keepalived_priority_override: ""
       when: balancer_keepalived_vrrp_instances is defined
@@ -287,7 +287,7 @@
   tasks:
     - name: Lower keepalived priority to force VIP swap
       import_role:
-        name: keepalived
+        name: ansible-keepalived
       vars: 
         keepalived_priority_override: 1 # Lower priority so the VIPs can swap to other machine.
       tags: keepalived
@@ -314,7 +314,7 @@
 
     - name: Restore keepalived priority
       import_role:
-        name: keepalived
+        name: ansible-keepalived
       vars:
         keepalived_priority_override: ""
       tags: keepalived
@@ -328,7 +328,7 @@
   tasks:
     - name: Lower keepalived priority to force VIP swap
       import_role:
-        name: keepalived
+        name: ansible-keepalived
       vars: 
         keepalived_priority_override: 1 # Lower priority so the VIPs can swap to other machine.
       tags: keepalived
@@ -415,7 +415,7 @@
 
     - name: Restore keepalived priority
       import_role:
-        name: keepalived
+        name: ansible-keepalived
       vars:
         keepalived_priority_override: ""
       tags: keepalived
@@ -625,7 +625,7 @@
   tasks:
     - name: Lower keepalived priority to force VIP swap
       import_role:
-        name: keepalived
+        name: ansible-keepalived
       vars: 
         keepalived_priority_override: 1 # Lower priority so the VIPs can swap to other machine.
       tags: keepalived
@@ -667,7 +667,7 @@
       when: xtradb_deploy | default(false) | bool
     - name: Lower keepalived priority to force VIP swap
       import_role:
-        name: keepalived
+        name: ansible-keepalived
       vars:
         keepalived_priority_override: ""
       tags: keepalived
@@ -682,7 +682,7 @@
   tasks:
     - name: Lower keepalived priority to force VIP swap
       import_role:
-        name: keepalived
+        name: ansible-keepalived
       vars: 
         keepalived_priority_override: 1 # Lower priority so the VIPs can swap to other machine.
       tags: keepalived
@@ -710,7 +710,7 @@
         clickhouse_cluster_hosts: "{{ groups['clickhouse_servers'] }}"
     - name: Lower keepalived priority to force VIP swap
       import_role:
-        name: keepalived
+        name: ansible-keepalived
       vars:
         keepalived_priority_override: ""
       tags: keepalived

@@ -31,3 +31,7 @@
 # Auditory of the installed packages and software
 - src: git+https://github.com/fccn/ansible_pakiti_client.git
   version: 2713584acd4de238a39eaf7614092a8ee4a34b4c
+
+# Keepalived to manage Linux Virtual IP addresses for high availability
+- src: git+https://github.com/fccn/ansible-keepalived.git
+  version: ca1885fe63396020cee5fd7a31827e21b0a51f70
