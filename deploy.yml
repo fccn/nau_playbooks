@@ -130,7 +130,7 @@
     - role: ansible-firewall
     - role: ansible-docker-deploy
     - role: haproxy-netsnmp-perl
-    - role: snmpd
+    - role: ansible-snmpd
     - role: nau_check_urls
     - role: ansible-keepalived
       vars:
@@ -197,10 +197,7 @@
       when: mongo_deploy | default(false) | bool
 
     - import_role:
-        name: snmpd
-      when: mongo_deploy | default(false) | bool
-    - import_role:
-        name: snmpd_docker
+        name: ansible-snmpd
       when: mongo_deploy | default(false) | bool
 
     - name: Deploy mongo
@@ -265,10 +262,7 @@
       when: elasticsearch_deploy | default(false) | bool
 
     - import_role:
-        name: snmpd
-      when: elasticsearch_deploy | default(false) | bool
-    - import_role:
-        name: snmpd_docker
+        name: ansible-snmpd
       when: elasticsearch_deploy | default(false) | bool
 
     - name: Deploy elasticsearch
@@ -299,11 +293,7 @@
       when: redis_deploy | default(false) | bool
 
     - import_role:
-        name: snmpd
-      tags: snmpd
-      when: redis_deploy | default(false) | bool
-    - import_role:
-        name: snmpd_docker
+        name: ansible-snmpd
       tags: snmpd
       when: redis_deploy | default(false) | bool
 
@@ -340,11 +330,7 @@
       when: richie_mysql_deploy | default(false) | bool
 
     - import_role:
-        name: snmpd
-      tags: snmpd
-      when: richie_mysql_deploy | default(false) | bool
-    - import_role:
-        name: snmpd_docker
+        name: ansible-snmpd
       tags: snmpd
       when: richie_mysql_deploy | default(false) | bool
 
@@ -434,11 +420,7 @@
       when: financial_manager_mysql_deploy | default(false) | bool
 
     - import_role:
-        name: snmpd
-      tags: snmpd
-      when: financial_manager_mysql_deploy | default(false) | bool
-    - import_role:
-        name: snmpd_docker
+        name: ansible-snmpd
       tags: snmpd
       when: financial_manager_mysql_deploy | default(false) | bool
 
@@ -510,11 +492,7 @@
       when: financial_manager_deploy | default(false) | bool
 
     - import_role:
-        name: snmpd
-      tags: snmpd
-      when: financial_manager_deploy | default(false) | bool
-    - import_role:
-        name: snmpd_docker
+        name: ansible-snmpd
       tags: snmpd
       when: financial_manager_deploy | default(false) | bool
 
@@ -561,11 +539,7 @@
       when: nau_analytics_mysql_deploy | default(false) | bool
 
     - import_role:
-        name: snmpd
-      tags: snmpd
-      when: nau_analytics_mysql_deploy | default(false) | bool
-    - import_role:
-        name: snmpd_docker
+        name: ansible-snmpd
       tags: snmpd
       when: nau_analytics_mysql_deploy | default(false) | bool
 
@@ -636,14 +610,10 @@
       when: xtradb_deploy | default(false) | bool
     - name: Install snmpd
       import_role:
-        name: snmpd
+        name: ansible-snmpd
       tags: snmpd
       when: xtradb_deploy | default(false) | bool
-    - name: Install snmpd docker bridge
-      import_role:
-        name: snmpd_docker
-      tags: snmpd
-      when: xtradb_deploy | default(false) | bool
+
     - name: Deploy Percona XtraDB
       import_role:
         name: xtradb_docker_deploy
@@ -694,14 +664,10 @@
       when: clickhouse_deploy | default(false) | bool
     - name: Install snmpd
       import_role:
-        name: snmpd
+        name: ansible-snmpd
       tags: snmpd
       when: clickhouse_deploy | default(false) | bool
-    - name: Install snmpd docker bridge
-      import_role:
-        name: snmpd_docker
-      tags: snmpd
-      when: clickhouse_deploy | default(false) | bool
+
     - name: Deploy ClickHouse
       import_role:
         name: clickhouse_docker_deploy
@@ -724,7 +690,7 @@
   gather_facts: True
   tasks:
     - import_role:
-        name: snmpd
+        name: ansible-snmpd
       tags: snmpd
       when: kubernetes_deploy | default(false) | bool
 

@@ -40,3 +40,7 @@
 # to a cluster of nodes applying a rolling update strategy
 - src: git+https://github.com/fccn/ansible-rolling-deploy.git
   version: 6a17ce53f0c8d5d1403aeb22d712a0ac35104723
+
+# SNMP daemon installation and configuration
+- src: git+https://github.com/fccn/ansible-snmpd.git
+  version: b62f2a4890433ef9e80de8e2fd394687393691d4
