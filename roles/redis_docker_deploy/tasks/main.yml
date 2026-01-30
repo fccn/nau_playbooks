@@ -18,7 +18,6 @@
     docker_deploy_configs:             "{{ redis_docker_deploy_configs | default([]) }}"
     docker_deploy_secrets:             "{{ redis_docker_deploy_secrets | default([]) }}"
     docker_deploy_services_additional: "{{ redis_docker_deploy_services_additional | default([]) }}"
-    docker_deploy_shell: true
     docker_deploy_healthcheck_delay :  "{{ redis_docker_deploy_healthcheck_delay }}"
     docker_deploy_healthcheck_retries: "{{ redis_docker_deploy_healthcheck_retries }}"
   tags:
