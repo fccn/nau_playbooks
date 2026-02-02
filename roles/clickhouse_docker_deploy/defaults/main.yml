@@ -13,6 +13,9 @@ clickhouse_docker_deploy_compose_template: templates/docker-compose.yml.j2
 clickhouse_docker_deploy_healthcheck_delay: 5
 clickhouse_docker_deploy_healthcheck_retries: 50
 
+# System logs TTL in days
+clickhouse_system_logs_ttl_days: 10
+
 # Files to be templated during deployment, template default but also to add more
 clickhouse_docker_deploy_templates: "{{ clickhouse_docker_deploy_templates_default + clickhouse_docker_deploy_templates_additional|default([]) }}"
 

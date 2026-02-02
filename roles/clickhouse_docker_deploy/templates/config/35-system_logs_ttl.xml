@@ -1,0 +1,7 @@
+<clickhouse>
+    <system_logs>
+        <trace_log>
+            <ttl>{{ clickhouse_system_logs_ttl_days }}</ttl> <!-- days -->
+        </trace_log>
+    </system_logs>
+</clickhouse>
