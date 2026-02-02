@@ -13,3 +13,11 @@ To deploy clickhouse run:
 ```bash
 ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit clickhouse_servers -e clickhouse_deploy=true
 ```
+
+## Troubleshooting
+
+During the deployment, if there is any issue with "Create folders" task, because of the running container, then you can just skip the folder creation and change ownership of those files with:
+
+```bash
+ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit clickhouse_servers -e clickhouse_deploy=true -e '{"docker_deploy_folders": []}'
+```
