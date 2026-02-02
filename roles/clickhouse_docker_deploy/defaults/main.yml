@@ -2,9 +2,6 @@
 clickhouse_docker_image: docker.io/clickhouse/clickhouse-server:25.3.6.56
 clickhouse_node_name: "{{ inventory_hostname }}"
 
-clickhouse_docker_deploy_limit_memory: 6G
-clickhouse_docker_deploy_reservations_memory: 2G
-
 clickhouse_docker_container_name: clickhouse
 
 clickhouse_docker_deploy_base_folder: "/nau/ops/{{ clickhouse_docker_container_name }}"
@@ -51,6 +48,11 @@ clickhouse_docker_deploy_templates_default:
   service: clickhouse
   docker_target: /etc/clickhouse-server/config.d/30-keeper.xml
   when: "{{ clickhouse_deploy_cluster }}"
+- src:  templates/config/35-system_logs_ttl.xml
+  dest: "{{ docker_deploy_base_folder }}/config/35-system_logs_ttl.xml"
+  config_name: clickhouse_config_35_system_logs_ttl
+  service: clickhouse
+  docker_target: /etc/clickhouse-server/config.d/35-system_logs_ttl.xml
 
 clickhouse_docker_volume_path: /data/{{ clickhouse_docker_container_name }}/
 

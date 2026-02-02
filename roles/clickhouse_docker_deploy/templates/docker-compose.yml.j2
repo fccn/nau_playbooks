@@ -25,14 +25,6 @@ services:
       nproc: 65535
     deploy:
       replicas: 1
-      resources:
-        limits:
-          memory: {{ clickhouse_docker_deploy_limit_memory }}
-{% if clickhouse_limit_cpus is defined %}
-          cpus: "{{ clickhouse_limit_cpus }}"
-{% endif %}
-        reservations:
-          memory: {{ clickhouse_docker_deploy_reservations_memory }}
       placement:
         max_replicas_per_node: 1
     healthcheck:
