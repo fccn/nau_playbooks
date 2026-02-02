@@ -1,0 +1,11 @@
+<clickhouse>
+    <logger>
+        <!-- Send logs to console (stdout/stderr) for Docker -->
+        <console>1</console>
+        <!-- Log level: none, fatal, critical, error, warning, notice, information, debug, trace -->
+        <level>{{ clickhouse_log_level | default('information') }}</level>
+        <!-- Remove file-based logging from main config.xml -->
+        <log remove="remove"/>
+        <errorlog remove="remove"/>
+    </logger>
+</clickhouse>

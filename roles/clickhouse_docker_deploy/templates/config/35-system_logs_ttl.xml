@@ -1,7 +1,11 @@
 <clickhouse>
     <system_logs>
-        <trace_log>
-            <ttl>{{ clickhouse_system_logs_ttl_days }}</ttl> <!-- days -->
-        </trace_log>
+{% if clickhouse_system_logs_ttl is defined and clickhouse_system_logs_ttl %}
+{% for log_type, ttl_days in clickhouse_system_logs_ttl.items() %}
+        <{{ log_type }}>
+            <ttl>{{ ttl_days }}</ttl> <!-- days -->
+        </{{ log_type }}>
+{% endfor %}
+{% endif %}
     </system_logs>
 </clickhouse>

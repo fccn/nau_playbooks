@@ -1,0 +1,15 @@
+<clickhouse>
+{% if clickhouse_config is defined and clickhouse_config %}
+{% for key, value in clickhouse_config.items() %}
+{% if value is mapping %}
+  <{{ key }}>
+{% for sub_key, sub_value in value.items() %}
+    <{{ sub_key }}>{{ sub_value }}</{{ sub_key }}>
+{% endfor %}
+  </{{ key }}>
+{% else %}
+  <{{ key }}>{{ value }}</{{ key }}>
+{% endif %}
+{% endfor %}
+{% endif %}
+</clickhouse>

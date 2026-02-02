@@ -10,8 +10,40 @@ clickhouse_docker_deploy_compose_template: templates/docker-compose.yml.j2
 clickhouse_docker_deploy_healthcheck_delay: 5
 clickhouse_docker_deploy_healthcheck_retries: 50
 
-# System logs TTL in days
-clickhouse_system_logs_ttl_days: 10
+# System logs TTL in days - configure per log type
+clickhouse_system_logs_ttl:
+  trace_log: 10
+  text_log: 10
+  metric_log: 10
+  asynchronous_metric_log: 10
+  query_log: 10
+  query_thread_log: 10
+  part_log: 10
+  error_log: 10
+  crash_log: 10
+  processors_profile_log: 10
+  query_views_log: 10
+
+# ClickHouse configuration settings for normal/high-end machines
+clickhouse_config_base: {}
+
+# Configuration for low-end machines (RAM <= 4GB)
+clickhouse_config_memory_limited:
+  max_server_memory_usage_to_ram_ratio: 0.85
+  # Top-level server settings
+  background_pool_size: 4
+  background_merges_mutations_concurrency_ratio: 1
+  merge_tree:
+    # Must be <= background_pool_size * background_merges_mutations_concurrency_ratio
+    number_of_free_entries_in_pool_to_execute_mutation: 4
+    number_of_free_entries_in_pool_to_lower_max_size_of_merge: 4
+    number_of_free_entries_in_pool_to_execute_optimize_entire_partition: 4
+
+# Logs
+clickhouse_log_level: trace
+
+# Merge configs conditionally based on RAM
+clickhouse_config: "{{ clickhouse_config_base | combine(clickhouse_config_memory_limited if (ansible_memtotal_mb | default(9999)) <= 4096 else {}) }}"
 
 # Files to be templated during deployment, template default but also to add more
 clickhouse_docker_deploy_templates: "{{ clickhouse_docker_deploy_templates_default + clickhouse_docker_deploy_templates_additional|default([]) }}"
@@ -20,6 +52,11 @@ clickhouse_docker_deploy_templates: "{{ clickhouse_docker_deploy_templates_defau
 clickhouse_docker_deploy_templates_default:
 - src: templates/Makefile
   dest: "{{ clickhouse_docker_deploy_base_folder }}/Makefile"
+- src:  templates/config/05-logger.xml
+  dest: "{{ docker_deploy_base_folder }}/config/05-logger.xml"
+  config_name: clickhouse_config_05_logger
+  service: clickhouse
+  docker_target: /etc/clickhouse-server/config.d/05-logger.xml
 - src:  templates/users/user_config.xml
   dest: "{{ docker_deploy_base_folder }}/users/user_config.xml"
   config_name: clickhouse_users_default_user
@@ -42,6 +79,11 @@ clickhouse_docker_deploy_templates_default:
   service: clickhouse
   docker_target: /etc/clickhouse-server/config.d/20-remote-servers.xml
   when: "{{ clickhouse_deploy_cluster }}"
+- src:  templates/config/25-merges.xml
+  dest: "{{ docker_deploy_base_folder }}/config/25-merges.xml"
+  config_name: clickhouse_config_25_merges
+  service: clickhouse
+  docker_target: /etc/clickhouse-server/config.d/25-merges.xml
 - src:  templates/config/30-keeper.xml
   dest: "{{ docker_deploy_base_folder }}/config/30-keeper.xml"
   config_name: clickhouse_config_30_keeper
