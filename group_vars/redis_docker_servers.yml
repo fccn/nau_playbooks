@@ -37,3 +37,8 @@ redis_keepalived_health:
     interval: 10
 
 redis_makefile_healthcheck: [ "{{ redis_docker_deploy_base_folder }}" ]
+
+# Kernel parameters needed for Redis
+sysconfig_configuration:
+- name: vm.overcommit_memory
+  value: 1

@@ -12,22 +12,13 @@ services:
     command: {{ redis_docker_command }}
     container_name: {{ redis_docker_container_name }}
     restart: always
-    environment:
-      # Use custom timezone
-      TZ: {{ openedx_timezone | default("Europe/Lisbon") }}
-      ALLOW_EMPTY_PASSWORD: "yes"
-      REDIS_MASTER_HOST: {{ redis_master_host }}
-      REDIS_PORT_NUMBER: {{ redis_docker_port }}
-      REDIS_REPLICATION_MODE: {{ redis_replication_mode }}
-      # announce the hostname of the container, because the IP address can change after a container restart
-      REDIS_REPLICA_IP: {{ redis_replica_ip }}
     ports:
       - target:    {{ redis_docker_port }}
         published: {{ redis_docker_port }}
         protocol:  tcp
         mode:      ingress
     volumes:
-      - {{ redis_docker_volume_path }}:/bitnami/redis/data
+      - {{ redis_docker_volume_path }}:/data
     deploy:
       replicas: 1
     ulimits:

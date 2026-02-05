@@ -5,14 +5,19 @@ redis_docker_instance_name: redis
 redis_replication_mode: master
 redis_docker_port: 6379
 redis_docker_maxmemory: 1gb
-redis_docker_maxmemory_policy: allkeys-lru
-redis_docker_command_extra: --maxmemory {{ redis_docker_maxmemory }} --maxmemory-policy {{ redis_docker_maxmemory_policy }}
-redis_docker_command: /opt/bitnami/scripts/redis/run.sh {{ redis_docker_command_extra }}
+redis_docker_command: >
+  redis-server
+  --port {{ redis_docker_port }}
+  --bind 0.0.0.0
+  --maxmemory {{ redis_docker_maxmemory }}
+  --maxmemory-policy allkeys-lru
+  --appendonly yes
+  --protected-mode no
 redis_docker_container_name: "{{ redis_docker_deploy_base_folder | basename }}"
 redis_master_host: "{{ redis_docker_container_name }}"
 redis_replica_ip: "{{ redis_docker_container_name }}"
 
-# By default bitnami images already have this limits set, but we set them here just in case
+# Redis limits to avoid "max number of clients reached" errors under high load
 redis_limit_no_file_soft: 1048576
 redis_limit_no_file_hard: 1048576
 
