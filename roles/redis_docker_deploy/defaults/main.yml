@@ -1,5 +1,5 @@
 ---
-redis_docker_image: docker.io/bitnami/redis:6.2.7-debian-11-r49
+redis_docker_image: docker.io/redis:7.2.4
 redis_docker_instance_name: redis
 
 redis_replication_mode: master
@@ -36,6 +36,6 @@ redis_docker_deploy_templates:
 
 redis_docker_deploy_folders_additional:
   - dest: /data/{{ redis_docker_instance_name }}/
-    dir_owner: 1001
-    dir_group: 1001
+    dir_owner: 999
+    dir_group: 999
     dir_mode: "0755"

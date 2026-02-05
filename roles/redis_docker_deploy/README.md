@@ -6,3 +6,5 @@ This list isn't related with this role, but hey we had to document this somewher
 The Redis has 10 databases per default. 
 
 https://github.com/fccn/nau-technical/blob/main/docs/redis.md
+
+You should add the Linux Kernel parameter `vm.overcommit_memory` with `1`.
