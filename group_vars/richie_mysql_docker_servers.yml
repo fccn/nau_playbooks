@@ -23,7 +23,7 @@ richie_mysql_keepalived_vrrp_instances:
     state: "{{ richie_mysql_keepalived_state }}"
     id: 42
     priority: "{{ keepalived_priority_override if ( keepalived_priority_override | default('') | string | length > 0 ) else richie_mysql_keepalived_priority }}"
-    pass: "{{ redis_keepalived_pass }}"
+    pass: "{{ richie_mysql_keepalived_pass }}"
     peer_ip: "{{ richie_mysql_keepalived_peer_ipv4 }}"
     track_script: richie_mysql_healthcheck_script
     virtual_ip:
