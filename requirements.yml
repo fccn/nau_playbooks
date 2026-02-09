@@ -15,7 +15,8 @@ roles:
 
 # Install java
 - name: geerlingguy.java
-  version: 2.1.0
+  src: git+https://github.com/geerlingguy/ansible-role-java.git
+  version: 2.5.2
 
 # Install IdP Shibboleth, fccn stuff
 - src: git+https://github.com/fccn/shibboleth-3-4-4-centos7-lite.git
