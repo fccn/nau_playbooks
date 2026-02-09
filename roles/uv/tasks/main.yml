@@ -1,0 +1,69 @@
+---
+# Tasks to install uv - An extremely fast Python package installer and resolver
+# Documentation: https://docs.astral.sh/uv/
+
+- name: Check if uv is already installed
+  ansible.builtin.command: uv --version
+  register: uv_version_check
+  failed_when: false
+  changed_when: false
+  tags:
+    - uv
+
+- name: Install uv using standalone installer
+  when: uv_version_check.rc != 0
+  tags:
+    - uv
+  block:
+    - name: Download and install uv (using curl)
+      ansible.builtin.shell: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+      args:
+        executable: /bin/bash
+        creates: "{{ ansible_env.HOME }}/.local/bin/uv"
+      environment:
+        # Set to 1 to disable modifying PATH in shell profiles
+        UV_NO_MODIFY_PATH: "{{ uv_no_modify_path | default('0') }}"
+      register: uv_install_result
+
+    - name: Verify uv installation
+      ansible.builtin.command: "{{ ansible_env.HOME }}/.local/bin/uv --version"
+      register: uv_installed_version
+      changed_when: false
+
+    - name: Display installed uv version
+      ansible.builtin.debug:
+        msg: "uv installed successfully: {{ uv_installed_version.stdout }}"
+
+- name: Ensure uv is in PATH
+  ansible.builtin.lineinfile:
+    path: "{{ ansible_env.HOME }}/.bashrc"
+    line: 'export PATH="{{ ansible_env.HOME }}/.local/bin:$PATH"'
+    create: yes
+    state: present
+  when: 
+    - uv_ensure_path | default(true)
+  tags:
+    - uv
+
+- name: Setup bash completion for uv (optional)
+  ansible.builtin.lineinfile:
+    path: "{{ ansible_env.HOME }}/.bashrc"
+    line: 'eval "$(uv generate-shell-completion bash)"'
+    create: yes
+    state: present
+  when: 
+    - uv_enable_completion | default(false)
+  tags:
+    - uv
+
+- name: Setup bash completion for uvx (optional)
+  ansible.builtin.lineinfile:
+    path: "{{ ansible_env.HOME }}/.bashrc"
+    line: 'eval "$(uvx --generate-shell-completion bash)"'
+    create: yes
+    state: present
+  when: 
+    - uv_enable_completion | default(false)
+  tags:
+    - uv

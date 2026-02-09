@@ -1,0 +1,11 @@
+---
+# Default variables for uv installation role
+
+# Set to '1' to disable modifying PATH in shell profiles during installation
+uv_no_modify_path: '0'
+
+# Whether to ensure uv is in PATH by modifying .bashrc
+uv_ensure_path: true
+
+# Whether to enable bash completion for uv and uvx commands
+uv_enable_completion: false
