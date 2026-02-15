@@ -18,7 +18,6 @@
     docker_deploy_configs:             "{{ xtradb_docker_deploy_configs | default([]) }}"
     docker_deploy_secrets:             "{{ xtradb_docker_deploy_secrets | default([]) }}"
     docker_deploy_services_additional: "{{ xtradb_docker_deploy_services_additional | default([]) }}"
-    docker_deploy_shell: true
     docker_deploy_healthcheck_retries: "{{ xtradb_docker_deploy_healthcheck_retries }}"
     docker_deploy_healthcheck_delay:   "{{ xtradb_docker_deploy_healthcheck_delay }}"
   tags:
