@@ -1,5 +1,27 @@
+# This playbook is used to backup the data of the different databases of NAU service.
+#
+# It will backup:
+# 1. MongoDB Cluster
+# 2. Richie MySQL DB Cluster
+# 3. Percona XtraDB Cluster
+# 4. Financial Manager MySQL DB Cluster
+# 5. NAU Analytics MySQL DB Cluster
+#
+# The backup of the Percona XtraDB Cluster is done with Percona XtraBackup,
+# which is a tool that allows to backup the data of a MySQL database without locking
+# the tables and without stopping the database.
+#
+# By default the backup is run on the last database server defined in the inventory.
+# On Percona XtraDB Cluster, the backup is run on the last server defined in the inventory, which should be least load server.
+#
+# Examples:
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini backup.yml --limit xtradb_servers
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini backup.yml --limit richie_mysql_docker_servers
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini backup.yml --limit mongo_docker_servers
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini backup.yml --limit financial_manager_mysql_docker_servers
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini backup.yml --limit nau_analytics_mysql_docker_servers
+#
 ---
-
 - name: Backup of Mongo data
   # by default run the backup on the last mongo instance defined in the inventory
   hosts: mongo_docker_servers[-1]
@@ -74,3 +96,24 @@
         backup_mysql_login_password: financial_manager_mysql_root_password
         backup_mysql_port: "{{ financial_manager_mysql_docker_port }}"
       when: backup_financial_manager_mysql | default(true) | bool
+
+- name: Backup NAU Analytics Mysql data
+  # by default run the backup on the instance that should be a read replica
+  hosts: nau_analytics_mysql_docker_servers[-1]
+  become: True
+  gather_facts: True
+  tasks:
+    - debug:
+        msg: Backing up NAU Analytics Mysql Database
+      when: backup_nau_analytics_mysql | default(true)
+
+    - name: Backup NAU Analytics Mysql Database
+      import_role:
+        name: backups
+      vars:
+        backup_mysql: True
+        backup_mysql_container_name: nau_analytics_mysql
+        backup_mysql_login_user: root
+        backup_mysql_login_password: "{{ nau_analytics_mysql_root_password }}"
+        backup_mysql_port: "{{ nau_analytics_mysql_docker_port | default(3306) }}"
+      when: backup_nau_analytics_mysql | default(true) | bool
