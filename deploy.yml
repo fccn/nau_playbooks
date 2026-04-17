@@ -561,6 +561,13 @@
         # cannot be loaded: /usr/lib/x86_64-linux-gnu/mariadb18/plugin/caching_sha2_password.so: 
         # cannot open shared object file: No such file or directory
         mysql_docker_command_extra: --default-authentication-plugin=mysql_native_password
+        
+        # MySQL connection tuning for NAU Analytics
+        # Increased max_connections and reduced timeouts to prevent connection saturation
+        mysql_docker_configurations_dict:
+          max_connections: 300
+          wait_timeout: 28800
+          interactive_timeout: 28800
 
         # Base configuration for the MySQL instance
         mysql_docker_image: docker.io/mysql:8.0.29
