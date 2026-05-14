@@ -28,7 +28,7 @@ roles:
 
 # Utility to deploy apps to docker compose
 - src: git+https://github.com/fccn/ansible-docker-deploy.git
-  version: ac73f8a037ee37babdf189a164597d8cf281bb2a
+  version: 762a40f083e906416f01eb0bd98bcf03a640f16b
 
 # Auditory of the installed packages and software
 - src: git+https://github.com/fccn/ansible_pakiti_client.git
