@@ -11,7 +11,6 @@
     docker_deploy_configs:             "{{ observability_docker_deploy_configs | default([]) }}"
     docker_deploy_secrets:             "{{ observability_docker_deploy_secrets | default([]) }}"
     docker_deploy_services_additional: "{{ observability_docker_deploy_services_additional | default([]) }}"
-    docker_deploy_shell: true
     docker_deploy_healthcheck_delay :  "{{ observability_docker_deploy_healthcheck_delay }}"
     docker_deploy_healthcheck_retries: "{{ observability_docker_deploy_healthcheck_retries }}"
   when: observability_docker_deploy | default(false)

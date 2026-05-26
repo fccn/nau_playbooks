@@ -6,7 +6,6 @@
     docker_deploy_base_folder:        "{{ registry_mirror_docker_deploy_base_folder }}"
     docker_deploy_compose_template:   "{{ registry_mirror_docker_deploy_compose_template }}"
     docker_deploy_templates:          "{{ registry_mirror_docker_deploy_templates }}"
-    docker_deploy_shell:              true
     docker_deploy_folders_additional: "{{ registry_mirror_docker_deploy_folders_additional }}"
   tags:
     - docker_deploy

@@ -41,7 +41,6 @@
     docker_deploy_configs:             "{{ mysql_docker_deploy_configs | default([]) }}"
     docker_deploy_secrets:             "{{ mysql_docker_deploy_secrets | default([]) }}"
     docker_deploy_services_additional: "{{ mysql_docker_deploy_services_additional | default([]) }}"
-    docker_deploy_shell:               true
     docker_deploy_healthcheck_delay :  "{{ mysql_docker_deploy_healthcheck_delay }}"
     docker_deploy_healthcheck_retries: "{{ mysql_docker_deploy_healthcheck_retries }}"
   tags:

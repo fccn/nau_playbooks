@@ -18,7 +18,6 @@
     docker_deploy_configs:             "{{ clickhouse_docker_deploy_configs | default([]) }}"
     docker_deploy_secrets:             "{{ clickhouse_docker_deploy_secrets | default([]) }}"
     docker_deploy_services_additional: "{{ clickhouse_docker_deploy_services_additional | default([]) }}"
-    docker_deploy_shell: true
     docker_deploy_healthcheck_retries: "{{ clickhouse_docker_deploy_healthcheck_retries }}"
     docker_deploy_healthcheck_delay:   "{{ clickhouse_docker_deploy_healthcheck_delay }}"
   tags:
