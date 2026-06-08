@@ -689,7 +689,7 @@
       when: clickhouse_deploy | default(false) | bool
       vars:
         clickhouse_cluster_hosts: "{{ groups['clickhouse_servers'] }}"
-    - name: Lower keepalived priority to force VIP swap
+    - name: Restore keepalived priority
       import_role:
         name: ansible-keepalived
       vars:

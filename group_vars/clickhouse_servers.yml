@@ -16,10 +16,15 @@ clickhouse_makefile_healthcheck: [ "{{ clickhouse_docker_deploy_base_folder }}" 
 # Keep alive configurations
 clickhouse_indexof_current_host: "{{ groups['clickhouse_servers'].index(inventory_hostname) }}"
 
-# Keep alive Virtual IP for clickhouse connections
+# Keep alive Virtual IP for read/write clickhouse connections
 clickhouse_keepalived_is_primary: "{{ groups['clickhouse_servers'][0] == inventory_hostname }}"
 clickhouse_keepalived_state: "{{ 'MASTER' if clickhouse_keepalived_is_primary else 'BACKUP' }}"
 clickhouse_keepalived_priority: "{{ 200 if clickhouse_keepalived_is_primary else (100 - ( clickhouse_indexof_current_host|int)) }}"
+
+# Keep alive Virtual IP for read-only clickhouse connections (2nd node is primary, fails over to 3rd node)
+clickhouse_keepalived_is_primary_r: "{{ groups['clickhouse_servers'][1] == inventory_hostname }}"
+clickhouse_keepalived_state_r: "{{ 'MASTER' if clickhouse_keepalived_is_primary_r else 'BACKUP' }}"
+clickhouse_keepalived_priority_r: "{{ 200 if clickhouse_keepalived_is_primary_r else (100 + (clickhouse_indexof_current_host|int)) }}"
 
 # Other servers IPs
 clickhouse_keepalived_peers_ips: "{{ groups['clickhouse_servers'] | difference([inventory_hostname]) | map('extract', hostvars, 'ansible_host') | list }}"
@@ -35,6 +40,16 @@ clickhouse_keepalived_vrrp_instances:
     track_script: clickhouse_healthcheck_script
     virtual_ip:
       - "{{ clickhouse_virtual_ipv4 }}/24 dev {{ keepalived_connected_network_interface }} label vipClickhouse"
+  - name: clickhouse_failover_link_ipv4_r
+    ipv6: false
+    state: "{{ clickhouse_keepalived_state_r }}"
+    id: 47
+    priority: "{{ keepalived_priority_override if ( keepalived_priority_override | default('') | string | length > 0 ) else clickhouse_keepalived_priority_r }}"
+    pass: "{{ clickhouse_keepalived_ipv4_r_pass }}"
+    peers_ips: "{{ clickhouse_keepalived_peers_ips }}"
+    track_script: clickhouse_healthcheck_script
+    virtual_ip:
+      - "{{ clickhouse_virtual_ipv4_r }}/24 dev {{ keepalived_connected_network_interface }} label vipClickhouseR"
 
 # Keepalived health check script for clickhouse
 clickhouse_keepalived_health:
