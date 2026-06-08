@@ -22,7 +22,7 @@ clickhouse_keepalived_state: "{{ 'MASTER' if clickhouse_keepalived_is_primary el
 clickhouse_keepalived_priority: "{{ 200 if clickhouse_keepalived_is_primary else (100 - ( clickhouse_indexof_current_host|int)) }}"
 
 # Keep alive Virtual IP for read-only clickhouse connections (2nd node is primary, fails over to 3rd node)
-clickhouse_keepalived_is_primary_r: "{{ groups['clickhouse_servers'][1] == inventory_hostname }}"
+clickhouse_keepalived_is_primary_r: "{{ groups['clickhouse_servers'][ 1 if (groups['clickhouse_servers'] | length > 1) else 0 ] == inventory_hostname }}"
 clickhouse_keepalived_state_r: "{{ 'MASTER' if clickhouse_keepalived_is_primary_r else 'BACKUP' }}"
 clickhouse_keepalived_priority_r: "{{ 200 if clickhouse_keepalived_is_primary_r else (100 + (clickhouse_indexof_current_host|int)) }}"
 
