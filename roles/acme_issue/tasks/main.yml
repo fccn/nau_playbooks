@@ -33,7 +33,7 @@
 
 - name: Run the ACME certbot
   shell: |
-    docker run --rm \
+    docker run --pull=always --rm \
     --volume {{ acme_certbot_root_folder }}/:/etc/letsencrypt/ \
     -p {{ acme_certbot_port }}:{{ acme_certbot_port }} \
     --cpus 1 --memory 100M \
