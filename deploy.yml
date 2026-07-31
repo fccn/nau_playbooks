@@ -76,6 +76,8 @@
 
     - import_role:
         name: ansible_pakiti_client
+      # skip idp proxy
+      when: ansible_distribution == 'Ubuntu'
 
     # - name: Install pip
     #   import_role:
