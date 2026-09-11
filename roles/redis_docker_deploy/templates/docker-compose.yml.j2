@@ -27,7 +27,7 @@ services:
         soft: {{ redis_limit_no_file_soft }}
         hard: {{ redis_limit_no_file_hard }}
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -p {{ redis_docker_port }} ping | grep PONG"]
+      test: ["CMD-SHELL", "REDISCLI_AUTH={{ REDIS_PASSWORD }} redis-cli -p {{ redis_docker_port }} --user {{ redis_acl_username }} --no-auth-warning ping | grep PONG"]
       start_period: 30s
       retries: 1000
       interval: 30s
