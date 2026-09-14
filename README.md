@@ -64,14 +64,34 @@ ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit XPTO
 ## Run the firewall playbook
 
 The `firewall.yml` playbook (re)applies the iptables firewall configuration on any host, and can
-be run independently of `deploy.yml`:
+be run independently of `deploy.yml`. It targets zero hosts unless `firewall_target` is passed:
 ```bash
-ansible-playbook -i nau-data/envs/<env>/hosts.ini firewall.yml --limit XPTO --check --diff
+ansible-playbook -i nau-data/envs/<env>/hosts.ini firewall.yml -e firewall_target=balancer_servers --check --diff
 ```
 
 All firewall logic lives in this single file. No IP address, CIDR, hostname, port number, or
 knowledge of which service talks to which other service is hardcoded in it — all of that is
 data-driven from `secure-nau-data`.
+
+### `firewall_target` and `firewall_managed_groups`
+
+`firewall_target` is a runtime-only, comma-separated string (e.g. `-e firewall_target=a,b`) and the
+only way to select hosts; not passing it at all is a full no-op, and it is never checked into
+`group_vars`. `firewall_managed_groups` is the opposite: a static, checked-in list (normally defined
+under `group_vars/all` in `secure-nau-data`) of groups onboarded/reviewed for this playbook. It does
+**not** drive host selection directly — it's only used to fail fast if `firewall_target` requests a
+group that isn't listed, and to warn about any inventory group missing from it. Onboarding a new
+group means adding it to this list — an explicit, reviewable change — rather than this playbook
+implicitly touching every inventory group. `--limit` can still be layered on top of
+`firewall_target` to narrow further, but never widens beyond it. Management/bastion-style groups
+(e.g. `jump_servers`, `command_and_control`) must always define an explicit
+`<group_name>_firewall_ports` list and must never rely on the default-open-to-`nau_network` fallback
+described below, since they aren't part of the internal service mesh.
+
+Structural/meta groups whose children are targeted instead (e.g. `kubernetes_servers`,
+`observability_docker_servers`) belong in a separate `firewall_leaf_meta_groups` list (also under
+`group_vars/all`): a `_firewall_ports` list defined directly on one of these is never read, and
+they're excluded from the coverage warning above.
 
 ### `<group_name>_firewall_ports`
 
@@ -122,9 +142,10 @@ access, or to add a brand-new service, add/edit its `<group_name>_firewall_ports
 **No change to `firewall.yml` is ever needed** for this, regardless of how many ports a service
 has or how differently they need to be restricted.
 
-Rules should only be defined at the most specific (leaf) inventory group level, never at a parent
-`:children` group too — a host belonging to both would otherwise get both sets of rules aggregated
-together.
+Rules should only be defined at the most specific (leaf) inventory group level. A
+`<group_name>_firewall_ports` list defined on a group in `firewall_leaf_meta_groups` is never read
+(see above); on any other parent `:children` group, a host belonging to both would instead get both
+sets of rules aggregated together.
 
 `--limit` works as expected: it only restricts which hosts the play runs against, not group
 membership resolution.

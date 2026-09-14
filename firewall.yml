@@ -26,15 +26,67 @@
 # unrestricted internal access and lets access be tightened later, per service, purely by adding
 # entries to that group's file in secure-nau-data -- no change to this playbook is ever needed.
 #
-# Can be run independently of `deploy.yml`, restricted with `--limit` to any host/group/list; group
-# membership resolution is unaffected by `--limit`.
+# `firewall_target` is a runtime-only, comma-separated string (e.g. `-e firewall_target=a,b`) and
+# the only way to select hosts. Not passing it at all resolves to zero hosts -- a full no-op,
+# nothing is touched. It is never checked into group_vars.
+#
+# `firewall_managed_groups` is the opposite: a static, checked-in list (defined under group_vars/all
+# in secure-nau-data) of groups onboarded/reviewed for this playbook. It does not drive `hosts:`
+# directly -- it's only used to validate `firewall_target`'s contents (failing fast if an unlisted
+# group is requested) and to warn about any inventory group missing from it. It is never intended
+# to be passed via `-e`.
+#
+# `firewall_leaf_meta_groups` (also defined under group_vars/all) lists structural/meta groups whose
+# children are targeted instead, e.g. `kubernetes_servers` (children: `kubernetes_control_plane_servers`,
+# `kubernetes_worker_node_servers`). These are excluded both from the coverage warning above and
+# from port-entry collection below -- a host is a member of a meta group AND its own leaf group at
+# the same time, and without this exclusion the meta group's own (always undefined)
+# `_firewall_ports` would be read as "no ports defined", adding a default-access-to-`nau_network`
+# rule that reopens whatever the leaf group's own `_firewall_ports` had restricted.
+#
+# Management/bastion-style groups (e.g. `jump_servers`, `command_and_control`) are not part of the
+# internal service mesh, so they must always define an explicit `<group_name>_firewall_ports` list
+# and must never rely on the "no port entries defined" default-access-to-`nau_network` fallback
+# above, since `nau_network` access is not relevant to them.
+#
+# This file has two plays. Ansible skips a play's tasks entirely (even `run_once` ones) when its
+# `hosts:` pattern matches zero real hosts, so the `firewall_target` validation below can't safely
+# live inside the main play -- it instead runs against the implicit `localhost`, which always
+# exists, so it fires even when every requested group is invalid, before the second play (the
+# actual per-host application) ever selects a real host.
+#
+# Can be run independently of `deploy.yml`. `--limit` can still be layered on top of
+# `firewall_target` to narrow further (e.g. to a single host within a targeted group), consistent
+# with existing Ansible usage patterns in this repo; group membership resolution (which
+# `<group_name>_firewall_ports` list(s) apply) is unaffected by `--limit`.
 #
 # Example:
 #   ansible-playbook -i nau-data/envs/<env>/hosts.ini firewall.yml --limit XPTO --check --diff
 #
+# Since it targets zero hosts unless `firewall_target` is passed, typical invocations look like:
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini firewall.yml -e firewall_target=balancer_servers --check --diff
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini firewall.yml -e firewall_target=balancer_servers,jump_servers
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini firewall.yml -e firewall_target=jump_servers --limit XPTO --check --diff
+#
 ---
+- name: Fail fast if firewall_target requests a group that isn't in firewall_managed_groups
+  hosts: "{{ ['localhost'] if ((firewall_target | default('')).split(',') | map('trim') | reject('equalto', '') | list | length > 0) else [] }}"
+  become: false
+  gather_facts: false
+  tags: firewall
+  tasks:
+    - name: Fail if any requested firewall_target group is not in firewall_managed_groups
+      assert:
+        that: "item in (firewall_managed_groups | default([]))"
+        fail_msg: >-
+          '{{ item }}' was requested via `firewall_target` but is not listed in
+          firewall_managed_groups (not yet onboarded/reviewed for this playbook).
+      loop: "{{ (firewall_target | default('')).split(',') | map('trim') | reject('equalto', '') | list }}"
+      run_once: true
+      tags: firewall
+
 - name: Apply firewall configuration to NAU servers
-  hosts: all
+  hosts: "{{ (firewall_target | default('')).split(',') | map('trim') | reject('equalto', '') | list }}"
   become: True
   gather_facts: True
   tags: firewall
@@ -49,10 +101,26 @@
       when: nau_network is not defined
       tags: firewall
 
+    - name: Warn if any inventory group is missing from firewall_managed_groups
+      debug:
+        msg: >-
+          These groups exist in inventory but are not listed in firewall_managed_groups, so they
+          will never be targeted by this playbook even if explicitly requested via `firewall_target`:
+          {{ groups.keys() | difference(firewall_leaf_meta_groups | default([])) | difference(firewall_managed_groups | default([])) }}
+      when: (groups.keys() | difference(firewall_leaf_meta_groups | default([])) | difference(firewall_managed_groups | default([])) | length) > 0
+      run_once: true
+      tags: firewall
+
     - name: Collect each group's firewall port entries this host belongs to
+      # Excludes firewall_leaf_meta_groups: a host in e.g. redis_docker_servers is also, via
+      # inventory's `:children`, a member of the meta group observability_docker_servers. Without
+      # this exclusion, that meta group's own (always undefined) `_firewall_ports` would be
+      # collected too, and the next task would then treat it as "no ports defined", emitting an
+      # extra default-access-to-nau_network rule that silently reopens whatever port(s)
+      # redis_docker_servers_firewall_ports had otherwise restricted.
       set_fact:
         firewall_group_port_lists: "{{ firewall_group_port_lists | default([]) + [{'name': item, 'ports': lookup('vars', item ~ '_firewall_ports', default=[])}] }}"
-      loop: "{{ group_names }}"
+      loop: "{{ group_names | difference(firewall_leaf_meta_groups | default([])) }}"
       loop_control:
         label: "{{ item }}"
       tags: firewall
