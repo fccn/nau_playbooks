@@ -26,15 +26,31 @@
 # unrestricted internal access and lets access be tightened later, per service, purely by adding
 # entries to that group's file in secure-nau-data -- no change to this playbook is ever needed.
 #
+# Only groups listed in `firewall_managed_groups` (default: `['balancer_servers']`) are targeted by
+# this play at all -- adding a new group requires an explicit, reviewable one-line addition to that
+# list, rather than this playbook implicitly touching every group in the inventory. `--limit` still
+# works as before, narrowing further on top of this list, never widening beyond it.
+#
+# Management/bastion-style groups (e.g. `jump_servers`, `command_and_control`) are not part of the
+# internal service mesh, so they must always define an explicit `<group_name>_firewall_ports` list
+# and must never rely on the "no port entries defined" default-access-to-`nau_network` fallback
+# above, since `nau_network` access is not relevant to them.
+#
 # Can be run independently of `deploy.yml`, restricted with `--limit` to any host/group/list; group
 # membership resolution is unaffected by `--limit`.
 #
 # Example:
 #   ansible-playbook -i nau-data/envs/<env>/hosts.ini firewall.yml --limit XPTO --check --diff
 #
+# Since it targets zero hosts unless `firewall_managed_groups` is passed, typical invocations
+# look like:
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini firewall.yml -e firewall_managed_groups=balancer_servers --check --diff
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini firewall.yml -e firewall_managed_groups=balancer_servers,jump_servers
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini firewall.yml -e firewall_managed_groups=jump_servers --limit XPTO --check --diff
+#
 ---
 - name: Apply firewall configuration to NAU servers
-  hosts: all
+  hosts: "{{ (firewall_managed_groups | default('')).split(',') | map('trim') | reject('equalto', '') | list }}"
   become: True
   gather_facts: True
   tags: firewall

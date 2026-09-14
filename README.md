@@ -73,6 +73,16 @@ All firewall logic lives in this single file. No IP address, CIDR, hostname, por
 knowledge of which service talks to which other service is hardcoded in it — all of that is
 data-driven from `secure-nau-data`.
 
+### `firewall_managed_groups`
+
+This playbook only targets groups listed in `firewall_managed_groups` (default: `['balancer_servers']`,
+normally overridden under `group_vars/all` in `secure-nau-data`); `--limit` narrows further on top
+of this list, but never widens beyond it. Onboarding a new group requires adding it to this list —
+an explicit, reviewable change — rather than this playbook implicitly touching every inventory
+group. Management/bastion-style groups (e.g. `jump_servers`, `command_and_control`) must always
+define an explicit `<group_name>_firewall_ports` list and must never rely on the default-open-to-
+`nau_network` fallback described below, since they aren't part of the internal service mesh.
+
 ### `<group_name>_firewall_ports`
 
 For each inventory group, `secure-nau-data` may define a `<group_name>_firewall_ports` list, one
