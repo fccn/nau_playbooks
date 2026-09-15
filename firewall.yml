@@ -1,0 +1,133 @@
+# Playbook that (re)applies the iptables firewall configuration to all NAU servers.
+#
+# The ansible-firewall role fully regenerates the ruleset, so it runs once per host with all
+# groups' rules combined into one `firewall_servers_rules` list.
+#
+# This playbook has no knowledge of which service groups talk to which other groups, and no port
+# numbers are hardcoded here. All of that lives in secure-nau-data, per group, as a
+# `<group_name>_firewall_ports` list, e.g.:
+#
+#   xtradb_servers_firewall_ports:
+#     - port: "{{ xtradb_mysql_port }}"
+#       comment: "XtraDB MySQL client port"
+#       allowed_ips: []                          # falls back to nau_network
+#     - port: "{{ xtradb_galera_sst_port }}"
+#       comment: "XtraDB Galera SST"
+#       allowed_ips: "{{ xtradb_servers_ips }}"   # own cluster peers only
+#
+# For each entry, the source used in the `-s` clause is: its own `allowed_ips` and/or
+# `allowed_network` if defined, otherwise the shared `nau_network` variable (defined once under
+# group_vars/all in secure-nau-data). If neither resolves, that entry's rule is dropped rather than
+# emitted with a blank `-s` clause. An entry may also set an optional `interface` key to restrict
+# the rule to a specific network interface (e.g. `interface: eth1`); omitted by default.
+#
+# If a group has no `<group_name>_firewall_ports` defined at all (not yet configured), it instead
+# gets a single default rule: open to `nau_network`, with no port restriction. This matches today's
+# unrestricted internal access and lets access be tightened later, per service, purely by adding
+# entries to that group's file in secure-nau-data -- no change to this playbook is ever needed.
+#
+# Only groups listed in `firewall_managed_groups` (default: `['balancer_servers']`) are targeted by
+# this play at all -- adding a new group requires an explicit, reviewable one-line addition to that
+# list, rather than this playbook implicitly touching every group in the inventory. `--limit` still
+# works as before, narrowing further on top of this list, never widening beyond it.
+#
+# Management/bastion-style groups (e.g. `jump_servers`, `command_and_control`) are not part of the
+# internal service mesh, so they must always define an explicit `<group_name>_firewall_ports` list
+# and must never rely on the "no port entries defined" default-access-to-`nau_network` fallback
+# above, since `nau_network` access is not relevant to them.
+#
+# Can be run independently of `deploy.yml`, restricted with `--limit` to any host/group/list; group
+# membership resolution is unaffected by `--limit`.
+#
+# Example:
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini firewall.yml --limit XPTO --check --diff
+#
+# Since it targets zero hosts unless `firewall_managed_groups` is passed, typical invocations
+# look like:
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini firewall.yml -e firewall_managed_groups=balancer_servers --check --diff
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini firewall.yml -e firewall_managed_groups=balancer_servers,jump_servers
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini firewall.yml -e firewall_managed_groups=jump_servers --limit XPTO --check --diff
+#
+---
+- name: Apply firewall configuration to NAU servers
+  hosts: "{{ (firewall_managed_groups | default('')).split(',') | map('trim') | reject('equalto', '') | list }}"
+  become: True
+  gather_facts: True
+  tags: firewall
+  tasks:
+    - name: Warn if the shared nau_network fallback variable is not defined
+      debug:
+        msg: >-
+          nau_network is not defined. Any firewall port entry or group default-access rule relying
+          on it as a fallback will be dropped, denying that traffic (ansible-firewall ends in a
+          default DROP). Define nau_network, or explicit per-entry allowed_ips/allowed_network, in
+          secure-nau-data.
+      when: nau_network is not defined
+      tags: firewall
+
+    - name: Collect each group's firewall port entries this host belongs to
+      set_fact:
+        firewall_group_port_lists: "{{ firewall_group_port_lists | default([]) + [{'name': item, 'ports': lookup('vars', item ~ '_firewall_ports', default=[])}] }}"
+      loop: "{{ group_names }}"
+      loop_control:
+        label: "{{ item }}"
+      tags: firewall
+
+    - name: Build a firewall rule for every explicitly defined firewall port entry
+      set_fact:
+        firewall_servers_rules: >-
+          {{
+            firewall_servers_rules | default([])
+            + (
+                (resolved_port_source != '')
+                | ternary(
+                    [
+                      '-A INPUT'
+                      ~ (' -i ' ~ item.1.interface if (item.1.interface is defined and item.1.interface) else '')
+                      ~ ' -s ' ~ resolved_port_source ~ ' -p tcp -m tcp --dport ' ~ item.1.port
+                      ~ ' -m state --state NEW -j ACCEPT -m comment --comment "' ~ item.1.comment ~ '"'
+                    ],
+                    []
+                  )
+              )
+          }}
+      vars:
+        # Combines this entry's own allowed_ips (list) and allowed_network (CIDR) if either is
+        # defined, otherwise falls back to the shared nau_network, otherwise resolves to ''.
+        resolved_port_source: >-
+          {{
+            (
+              (item.1.allowed_ips | default([]))
+              + ([item.1.allowed_network] if (item.1.allowed_network is defined and item.1.allowed_network) else [])
+            )
+            | join(',')
+            or (nau_network | default(''))
+          }}
+      loop: "{{ firewall_group_port_lists | subelements('ports', skip_missing=True) }}"
+      loop_control:
+        label: "{{ item.0.name }}:{{ item.1.port }}"
+      tags: firewall
+
+    - name: Build a default access rule for groups without any firewall port entries defined
+      set_fact:
+        firewall_servers_rules: >-
+          {{
+            firewall_servers_rules | default([])
+            + (
+                (item.ports | length == 0 and (nau_network | default('')) != '')
+                | ternary(
+                    [
+                      '-A INPUT -s ' ~ (nau_network | default('')) ~ ' -p tcp -m state --state NEW -j ACCEPT'
+                      ~ ' -m comment --comment "' ~ item.name ~ ' (default access, no port-specific rules defined)"'
+                    ],
+                    []
+                  )
+              )
+          }}
+      loop: "{{ firewall_group_port_lists }}"
+      tags: firewall
+
+    - name: Apply firewall role with aggregated rules
+      include_role:
+        name: ansible-firewall
+      tags: firewall
