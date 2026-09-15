@@ -7,12 +7,11 @@ redis_docker_port: 6379
 redis_docker_maxmemory: 1gb
 
 # ACL username for nau-technical#799 (phased auth rollout). Password comes from
-# REDIS_PASSWORD, already defined per-environment in secure-nau-data.
-# REDIS_PASSWORD is interpolated unquoted/unescaped into redis.conf, the
-# Makefile healthcheck targets, and the docker-compose healthcheck shell
-# command - it must be alphanumeric only (enforced by an `assert` task in
-# tasks/main.yml; whoever sets it in secure-nau-data should not use spaces,
-# '#', quotes, backticks, '$', newlines, or any other punctuation).
+# REDIS_PASSWORD, already defined per-environment in secure-nau-data. No
+# character-set constraint on REDIS_PASSWORD: redis.conf.j2 uses its SHA-256
+# hash (Redis ACL's `#<hash>` form) rather than the plaintext, and the
+# Makefile/docker-compose healthcheck shell commands use Ansible's `quote`
+# filter (+ to_json for the latter's YAML nesting) instead of raw interpolation.
 redis_acl_username: nau_redis
 
 # Per-environment cutover switch for nau-technical#799. Defaults to the current,

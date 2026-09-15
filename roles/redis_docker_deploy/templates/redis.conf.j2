@@ -21,4 +21,9 @@ user default on nopass ~* &* +@all
 {% else %}
 user default off
 {% endif %}
-user {{ redis_acl_username }} on >{{ REDIS_PASSWORD }} ~* &* +@all
+# Password supplied as its SHA-256 hash (Redis ACL's `#<hash>` form), not
+# plaintext `>password` - Redis's config-file parser has no escaping for
+# arbitrary content in that token (no quoting for spaces, '#', newlines, etc.),
+# but a hex digest is always a safe, fixed-format token regardless of what
+# REDIS_PASSWORD actually contains.
+user {{ redis_acl_username }} on #{{ REDIS_PASSWORD | hash('sha256') }} ~* &* +@all
