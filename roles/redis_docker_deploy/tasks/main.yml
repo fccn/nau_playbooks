@@ -6,6 +6,25 @@
   tags:
     - docker_deploy
 
+- name: Assert REDIS_PASSWORD only contains characters safe to interpolate unquoted
+  assert:
+    that:
+      - REDIS_PASSWORD is defined
+      - REDIS_PASSWORD is match('^[A-Za-z0-9]+$')
+    fail_msg: >-
+      REDIS_PASSWORD (set per-environment in secure-nau-data) must be
+      alphanumeric only (letters and digits, no punctuation at all). It is
+      interpolated unquoted/unescaped into
+      roles/redis_docker_deploy/templates/redis.conf.j2 (Redis ACL config
+      syntax has no quoting for the >password token), the Makefile healthcheck
+      targets, and the docker-compose healthcheck's inline shell command.
+      A space, '#' (Redis config comment marker), quote, backtick, '$',
+      newline, or any other punctuation would silently break Redis config
+      parsing or the healthcheck shell invocation, surfacing only in
+      whichever environment happens to have picked an unsafe value.
+  tags:
+    - docker_deploy
+
 - name: Deploy
   include_role:
     name: ansible-docker-deploy
