@@ -1,18 +1,29 @@
 ---
-redis_docker_image: docker.io/redis:7.2.4
+redis_docker_image: docker.io/redis:7.4.5
 redis_docker_instance_name: redis
 
 redis_replication_mode: master
 redis_docker_port: 6379
 redis_docker_maxmemory: 1gb
-redis_docker_command: >
-  redis-server
-  --port {{ redis_docker_port }}
-  --bind 0.0.0.0
-  --maxmemory {{ redis_docker_maxmemory }}
-  --maxmemory-policy allkeys-lru
-  --appendonly yes
-  --protected-mode no
+
+# ACL username for nau-technical#799 (phased auth rollout). Password comes from
+# REDIS_PASSWORD, already defined per-environment in secure-nau-data. No
+# character-set constraint on REDIS_PASSWORD: redis.conf.j2 uses its SHA-256
+# hash (Redis ACL's `#<hash>` form) rather than the plaintext, and the
+# Makefile/docker-compose healthcheck shell commands use Ansible's `quote`
+# filter (+ to_json for the latter's YAML nesting) instead of raw interpolation.
+redis_acl_username: nau_redis
+
+# Per-environment cutover switch for nau-technical#799. Defaults to the current,
+# safe behavior (default user stays enabled with no password) everywhere. Only
+# override this to `false` in a specific environment's group_vars in
+# secure-nau-data, and only once every one of that environment's consumers has
+# migrated to redis_acl_username and it's verified nothing still connects as
+# `default` - never change this default here, it would flip every environment.
+redis_default_user_enabled: true
+
+redis_conf_docker_target: /usr/local/etc/redis/redis.conf
+redis_docker_command: "redis-server {{ redis_conf_docker_target }}"
 redis_docker_container_name: "{{ redis_docker_deploy_base_folder | basename }}"
 redis_master_host: "{{ redis_docker_container_name }}"
 redis_replica_ip: "{{ redis_docker_container_name }}"
@@ -38,9 +49,16 @@ redis_docker_deploy_healthcheck_retries: 360
 redis_docker_deploy_templates:
   - src: templates/Makefile
     dest: "{{ redis_docker_deploy_base_folder }}/Makefile"
+  - src: templates/redis.conf.j2
+    dest: "{{ redis_docker_deploy_base_folder }}/redis.conf"
+    mode: "0600"
+    secret_name: redis_conf
+    service: redis
+    docker_target: "{{ redis_conf_docker_target }}"
 
 redis_docker_deploy_folders_additional:
   - dest: /data/{{ redis_docker_instance_name }}/
     dir_owner: 999
     dir_group: 999
     dir_mode: "0755"
+

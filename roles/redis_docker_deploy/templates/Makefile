@@ -52,11 +52,11 @@ silent-%:
 	@$(MAKE) $* > /dev/null && echo "OK"
 
 redis-connected-clients: ## Get connected clients count
-	@docker exec $$(docker ps --filter "name={{ redis_docker_container_name }}" -q) redis-cli -p {{ redis_docker_port }} INFO clients | grep connected_clients | egrep -o "[0-9]+"
+	@docker exec -e REDISCLI_AUTH={{ REDIS_PASSWORD | quote }} $$(docker ps --filter "name={{ redis_docker_container_name }}" -q) redis-cli -p {{ redis_docker_port }} --user {{ redis_acl_username }} --no-auth-warning INFO clients | grep connected_clients | egrep -o "[0-9]+"
 .PHONY: redis-connected-clients
 
 healthcheck-ping-pong: ## check Redis with PING/PONG
-	@docker exec $$(docker ps --filter "name={{ redis_docker_container_name }}" -q) redis-cli -p {{ redis_docker_port }} ping | grep --quiet PONG || ( echo "Check redis PING/PONG" ; exit 1 )
+	@docker exec -e REDISCLI_AUTH={{ REDIS_PASSWORD | quote }} $$(docker ps --filter "name={{ redis_docker_container_name }}" -q) redis-cli -p {{ redis_docker_port }} --user {{ redis_acl_username }} --no-auth-warning ping | grep --quiet PONG || ( echo "Check redis PING/PONG" ; exit 1 )
 	@echo "Check redis PING/PONG: OK"
 .PHONY: healthcheck-ping-pong
 

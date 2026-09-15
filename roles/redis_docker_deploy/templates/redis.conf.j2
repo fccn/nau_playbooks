@@ -1,0 +1,29 @@
+# {{ ansible_managed }}
+#
+# Redis configuration for NAU (nau-technical#799, nau-technical#845)
+
+port {{ redis_docker_port }}
+bind 0.0.0.0
+maxmemory {{ redis_docker_maxmemory }}
+maxmemory-policy allkeys-lru
+appendonly yes
+protected-mode no
+
+# ACL, phased rollout (nau-technical#799): `redis_default_user_enabled` is set
+# per-environment in secure-nau-data (defaults to `true` = current, safe
+# behavior). Only flip it to `false` for an environment once every one of its
+# consumers has migrated to `{{ redis_acl_username }}` and it's been verified
+# nothing still connects as `default` - this variable is the ONLY thing that
+# should ever change that, precisely so a deploy against the wrong environment
+# can't accidentally enforce auth before its consumers are ready.
+{% if redis_default_user_enabled | default(true) %}
+user default on nopass ~* &* +@all
+{% else %}
+user default off
+{% endif %}
+# Password supplied as its SHA-256 hash (Redis ACL's `#<hash>` form), not
+# plaintext `>password` - Redis's config-file parser has no escaping for
+# arbitrary content in that token (no quoting for spaces, '#', newlines, etc.),
+# but a hex digest is always a safe, fixed-format token regardless of what
+# REDIS_PASSWORD actually contains.
+user {{ redis_acl_username }} on #{{ REDIS_PASSWORD | hash('sha256') }} ~* &* +@all
