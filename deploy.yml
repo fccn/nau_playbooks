@@ -529,14 +529,16 @@
         financial_manager_celery_broker_redis_port: "{{ hostvars[groups['redis_docker_servers'][0]].redis_docker_port }}"
         financial_manager_celery_broker_redis_db:   "9"
 
-        # ACL credentials (nau-technical#799). Empty/unset by default (today's
-        # safe behavior, no auth) - only becomes active once an environment's
-        # secure-nau-data sets FINANCIAL_MANAGER_REDIS_USERNAME/_PASSWORD,
+        # ACL credentials (nau-technical#799). Off by default (today's safe
+        # behavior, no auth) - only becomes active once an environment's
+        # secure-nau-data sets FINANCIAL_MANAGER_REDIS_AUTH_ENABLED: true,
         # which must only happen after that environment's Redis server has
-        # the nau_redis ACL user. Never hardcode real values here directly -
-        # this play runs unscoped across dev/stage/prod.
-        financial_manager_redis_username: "{{ FINANCIAL_MANAGER_REDIS_USERNAME | default('') }}"
-        financial_manager_redis_password: "{{ FINANCIAL_MANAGER_REDIS_PASSWORD | default('') }}"
+        # the nau_redis ACL user. Shares the same nau_redis user/REDIS_PASSWORD
+        # as every other consumer (nau_playbooks#20) rather than a distinct
+        # credential - never hardcode real values here directly, this play
+        # runs unscoped across dev/stage/prod.
+        financial_manager_redis_username: "{{ 'nau_redis' if FINANCIAL_MANAGER_REDIS_AUTH_ENABLED | default(false) else '' }}"
+        financial_manager_redis_password: "{{ REDIS_PASSWORD if FINANCIAL_MANAGER_REDIS_AUTH_ENABLED | default(false) else '' }}"
 
     - name: End rolling deploy - open load balancer connections
       import_role:
