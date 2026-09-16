@@ -51,7 +51,10 @@ redis_docker_deploy_templates:
     dest: "{{ redis_docker_deploy_base_folder }}/Makefile"
   - src: templates/redis.conf.j2
     dest: "{{ redis_docker_deploy_base_folder }}/redis.conf"
+    # owned by the official image's non-root runtime user (UID 999), not root -
+    # root:root 0600 left the container unable to read its own config file
     mode: "0600"
+    owner: 999
     secret_name: redis_conf
     service: redis
     docker_target: "{{ redis_conf_docker_target }}"
