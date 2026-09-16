@@ -1,11 +1,6 @@
-# Playbook that (re)applies the iptables firewall configuration to all NAU servers.
+# Playbook that (re)applies the iptables firewall configuration to NAU servers.
 #
-# The ansible-firewall role fully regenerates the ruleset, so it runs once per host with all
-# groups' rules combined into one `firewall_servers_rules` list.
-#
-# This playbook has no knowledge of which service groups talk to which other groups, and no port
-# numbers are hardcoded here. All of that lives in secure-nau-data, per group, as a
-# `<group_name>_firewall_ports` list, e.g.:
+# All firewall data lives in secure-nau-data, per group, as a `<group_name>_firewall_ports` list:
 #
 #   xtradb_servers_firewall_ports:
 #     - port: "{{ xtradb_mysql_port }}"
@@ -15,58 +10,28 @@
 #       comment: "XtraDB Galera SST"
 #       allowed_ips: "{{ xtradb_servers_ips }}"   # own cluster peers only
 #
-# For each entry, the source used in the `-s` clause is: its own `allowed_ips` and/or
-# `allowed_network` if defined, otherwise the shared `nau_network` variable (defined once under
-# group_vars/all in secure-nau-data). If neither resolves, that entry's rule is dropped rather than
-# emitted with a blank `-s` clause. An entry may also set an optional `interface` key to restrict
-# the rule to a specific network interface (e.g. `interface: eth1`); omitted by default.
+# Each entry's source resolves to its own allowed_ips/allowed_network, else the shared
+# nau_network, else the rule is dropped (denied, not opened). An entry may set `interface: eth1`
+# to restrict it to one interface.
 #
-# If a group has no `<group_name>_firewall_ports` defined at all (not yet configured), it instead
-# gets a single default rule: open to `nau_network`, with no port restriction. This matches today's
-# unrestricted internal access and lets access be tightened later, per service, purely by adding
-# entries to that group's file in secure-nau-data -- no change to this playbook is ever needed.
+# A group with no `_firewall_ports` defined gets a single default rule: open to nau_network. This
+# matches current unrestricted access, so access is only tightened when a service opts in.
 #
-# `firewall_target` is a runtime-only, comma-separated string (e.g. `-e firewall_target=a,b`) and
-# the only way to select hosts. Not passing it at all resolves to zero hosts -- a full no-op,
-# nothing is touched. It is never checked into group_vars.
+# `firewall_target` (comma-separated string, `-e firewall_target=a,b`) is the only way to select
+# hosts; omit it for a no-op. `firewall_managed_groups` is a static, checked-in list of onboarded
+# groups, used only to validate `firewall_target` and to warn about groups missing from it.
+# `firewall_leaf_meta_groups` lists structural groups (e.g. kubernetes_servers) whose children are
+# targeted instead, so they're skipped by both checks.
 #
-# `firewall_managed_groups` is the opposite: a static, checked-in list (defined under group_vars/all
-# in secure-nau-data) of groups onboarded/reviewed for this playbook. It does not drive `hosts:`
-# directly -- it's only used to validate `firewall_target`'s contents (failing fast if an unlisted
-# group is requested) and to warn about any inventory group missing from it. It is never intended
-# to be passed via `-e`.
+# Management/bastion groups (jump_servers, command_and_control) must always define explicit
+# `_firewall_ports` and never rely on the nau_network default, since they aren't part of the
+# internal service mesh.
 #
-# `firewall_leaf_meta_groups` (also defined under group_vars/all) lists structural/meta groups whose
-# children are targeted instead, e.g. `kubernetes_servers` (children: `kubernetes_control_plane_servers`,
-# `kubernetes_worker_node_servers`). These are excluded both from the coverage warning above and
-# from port-entry collection below -- a host is a member of a meta group AND its own leaf group at
-# the same time, and without this exclusion the meta group's own (always undefined)
-# `_firewall_ports` would be read as "no ports defined", adding a default-access-to-`nau_network`
-# rule that reopens whatever the leaf group's own `_firewall_ports` had restricted.
-#
-# Management/bastion-style groups (e.g. `jump_servers`, `command_and_control`) are not part of the
-# internal service mesh, so they must always define an explicit `<group_name>_firewall_ports` list
-# and must never rely on the "no port entries defined" default-access-to-`nau_network` fallback
-# above, since `nau_network` access is not relevant to them.
-#
-# This file has two plays. Ansible skips a play's tasks entirely (even `run_once` ones) when its
-# `hosts:` pattern matches zero real hosts, so the `firewall_target` validation below can't safely
-# live inside the main play -- it instead runs against the implicit `localhost`, which always
-# exists, so it fires even when every requested group is invalid, before the second play (the
-# actual per-host application) ever selects a real host.
-#
-# Can be run independently of `deploy.yml`. `--limit` can still be layered on top of
-# `firewall_target` to narrow further (e.g. to a single host within a targeted group), consistent
-# with existing Ansible usage patterns in this repo; group membership resolution (which
-# `<group_name>_firewall_ports` list(s) apply) is unaffected by `--limit`.
+# Two plays: the first validates firewall_target against firewall_managed_groups on localhost
+# (so it fails fast even if firewall_target selects zero real hosts); the second applies the rules.
 #
 # Example:
-#   ansible-playbook -i nau-data/envs/<env>/hosts.ini firewall.yml --limit XPTO --check --diff
-#
-# Since it targets zero hosts unless `firewall_target` is passed, typical invocations look like:
 #   ansible-playbook -i nau-data/envs/<env>/hosts.ini firewall.yml -e firewall_target=balancer_servers --check --diff
-#   ansible-playbook -i nau-data/envs/<env>/hosts.ini firewall.yml -e firewall_target=balancer_servers,jump_servers
-#   ansible-playbook -i nau-data/envs/<env>/hosts.ini firewall.yml -e firewall_target=jump_servers --limit XPTO --check --diff
 #
 ---
 - name: Fail fast if firewall_target requests a group that isn't in firewall_managed_groups
