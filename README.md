@@ -61,6 +61,18 @@ To run an ansible playbook, like for example the `deploy.yml` playbook, use a si
 ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit XPTO
 ```
 
+## Run the firewall playbook
+
+`firewall.yml` (re)applies the iptables firewall configuration, independent of `deploy.yml`. It
+targets zero hosts unless `firewall_target` is passed:
+```bash
+ansible-playbook -i nau-data/envs/<env>/hosts.ini firewall.yml -e firewall_target=balancer_servers --check --diff
+```
+
+All firewall logic and configuration conventions are documented in `firewall.yml` itself — see its
+header comment. Per-service ports/access rules are defined in `secure-nau-data`, so tightening or
+adding access never requires a change here.
+
 ## Using --check and --diff (Dry Run Mode)
 
 When working with Ansible playbooks, it's a good practice to preview changes before applying them to your systems.
