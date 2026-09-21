@@ -60,6 +60,16 @@ healthcheck-ping-pong: ## check Redis with PING/PONG
 	@echo "Check redis PING/PONG: OK"
 .PHONY: healthcheck-ping-pong
 
+check-unauthenticated-clients: ## Warn about any client still connecting as `default` (nau-technical#799) - only meaningful once default is disabled; a stale keda-operator scaler connection surviving a Redis restart is a known cause, fixed by deleting/recreating the affected ScaledObject so it reconnects
+	@stale=$$(docker exec -e REDISCLI_AUTH={{ REDIS_PASSWORD | quote }} $$(docker ps --filter "name={{ redis_docker_container_name }}" -q) redis-cli -p {{ redis_docker_port }} --user {{ redis_acl_username }} --no-auth-warning CLIENT LIST | grep "user=default" || true); \
+	if [ -n "$$stale" ]; then \
+		echo "WARNING: found client(s) still connecting as 'default':"; \
+		echo "$$stale"; \
+	else \
+		echo "check-unauthenticated-clients: OK (no default-user connections)"; \
+	fi
+.PHONY: check-unauthenticated-clients
+
 healthcheck-memory: ## check that containers doesn't use more than 90% of its available memory
 	@docker stats --no-stream --format "table {% raw %}{{.Name}}\t{{.MemPerc}}{% endraw %}" | egrep "^{{ redis_docker_container_name }}" | awk '{print $$2}' | sed 's/%//g' | LC_NUMERIC=POSIX awk '$$0 > 90.0 {exit 1}'
 .PHONY: healthcheck-memory
