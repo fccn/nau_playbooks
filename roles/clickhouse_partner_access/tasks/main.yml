@@ -1,0 +1,63 @@
+---
+# Provisions (or updates) native ClickHouse partner access, per
+# fccn/nau-technical#981. Intentionally a separate, explicitly-invoked
+# role rather than part of the regular clickhouse_deploy flow — this
+# manages partner accounts, not the ClickHouse service itself.
+#
+# Usage (see README.md for details):
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini \
+#     playbooks/clickhouse_partner_access.yml --limit clickhouse_servers[0]
+#
+# Only needs to run against a single cluster node — every DDL statement in
+# the template uses `ON CLUSTER`, so ClickHouse's own distributed-DDL queue
+# (backed by Keeper) fans it out to every replica.
+
+- name: Assert clickhouse_partners is non-empty
+  ansible.builtin.assert:
+    that:
+      - clickhouse_partners | length > 0
+    fail_msg: >-
+      clickhouse_partners is empty — nothing to provision. Define the
+      partner list in group_vars (see roles/clickhouse_partner_access/defaults/main.yml
+      for the expected shape and secure-nau-data for where real values live).
+  run_once: true
+  tags: clickhouse_partner_access
+
+- name: Render per-partner provisioning SQL
+  ansible.builtin.template:
+    src: partner_access.sql.j2
+    dest: "/tmp/clickhouse_partner_access_{{ item.name }}.sql"
+    mode: "0600"
+  loop: "{{ clickhouse_partners }}"
+  loop_control:
+    label: "{{ item.name }}"
+  no_log: true # the rendered file embeds each partner's plaintext password
+  run_once: true
+  tags: clickhouse_partner_access
+
+- name: Apply per-partner provisioning SQL
+  ansible.builtin.shell: |
+    set -o pipefail
+    docker exec -i {{ clickhouse_docker_container_name }} \
+      clickhouse-client --user {{ clickhouse_user }} --password {{ clickhouse_password }} \
+      --multiquery < /tmp/clickhouse_partner_access_{{ item.name }}.sql
+  args:
+    executable: /bin/bash
+  loop: "{{ clickhouse_partners }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: clickhouse_partner_access_result
+  changed_when: true
+  no_log: true # avoid leaking the admin password used to connect
+  run_once: true
+  tags: clickhouse_partner_access
+
+- name: Clean up rendered SQL (contains partner passwords in plaintext)
+  ansible.builtin.file:
+    path: "/tmp/clickhouse_partner_access_{{ item.name }}.sql"
+    state: absent
+  loop: "{{ clickhouse_partners }}"
+  loop_control:
+    label: "{{ item.name }}"
+  run_once: true
+  tags: clickhouse_partner_access

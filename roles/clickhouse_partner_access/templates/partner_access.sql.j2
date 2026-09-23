@@ -1,0 +1,79 @@
+{%- set cluster_clause = "ON CLUSTER '" ~ clickhouse_partner_access_cluster ~ "' " if clickhouse_partner_access_on_cluster else "" -%}
+{%- set cols = namespace(list=['up.user_id']) -%}
+{%- for field in clickhouse_partner_access_profile_direct_fields -%}
+{%- set cols.list = cols.list + ['up.' ~ field] -%}
+{%- endfor -%}
+{%- for field in clickhouse_partner_access_profile_meta_json_fields -%}
+{%- set cols.list = cols.list + ["JSONExtractString(up.meta, '" ~ field ~ "') AS " ~ field] -%}
+{%- endfor -%}
+{%- set profile_all_columns = cols.list -%}
+-- {{ ansible_managed }}
+--
+-- Native, read-only, org-scoped ClickHouse access for partner
+-- '{{ partner.name }}' (org = '{{ partner.org }}'), per
+-- fccn/nau-technical#981 "Option A".
+--
+-- Idempotent: every statement uses IF NOT EXISTS / OR REPLACE, so this can
+-- be re-run safely (e.g. to pick up a new table in
+-- clickhouse_partner_access_org_scoped_tables) without dropping/recreating
+-- the user or losing its password.
+{% if clickhouse_partner_access_on_cluster %}
+-- Run via `clickhouse-client --multiquery` against any single node in the
+-- cluster; `ON CLUSTER` fans the DDL out to every replica through the
+-- existing Keeper-backed distributed-DDL queue.
+{% else %}
+-- This environment isn't a replicated ClickHouse cluster
+-- (clickhouse_partner_access_on_cluster=false), so no `ON CLUSTER` clause
+-- is used — this only needs to run against the single node directly.
+{% endif %}
+
+CREATE USER IF NOT EXISTS org_user_{{ partner.name }} {{ cluster_clause }}
+    IDENTIFIED WITH sha256_password BY '{{ partner.password }}'
+    SETTINGS PROFILE 'readonly';
+
+CREATE ROLE IF NOT EXISTS org_role_{{ partner.name }} {{ cluster_clause }};
+
+GRANT {{ cluster_clause }}org_role_{{ partner.name }} TO org_user_{{ partner.name }};
+
+SET DEFAULT ROLE org_role_{{ partner.name }} TO org_user_{{ partner.name }};
+
+-- Category 1: tables that already carry a native `org` column. ROW POLICY
+-- accepts a comma-separated table list under one policy name (applied
+-- independently to each table) — confirmed live. GRANT does NOT accept a
+-- comma-separated table list (ClickHouse's grammar only allows one
+-- db.table target per GRANT statement) — confirmed live the hard way, so
+-- this needs one GRANT per table instead.
+CREATE ROW POLICY IF NOT EXISTS org_filter_{{ partner.name }} {{ cluster_clause }}
+    ON {{ clickhouse_partner_access_org_scoped_tables | join(', ') }}
+    FOR SELECT USING org = '{{ partner.org }}'
+    TO org_role_{{ partner.name }};
+
+{% for table in clickhouse_partner_access_org_scoped_tables %}
+GRANT {{ cluster_clause }}SELECT ON {{ table }} TO org_role_{{ partner.name }};
+{% endfor %}
+-- Category 3: `event_sink.user_profile` has no `org` column (it's a
+-- per-profile snapshot, not a per-enrollment record), so a plain ROW
+-- POLICY subquery can't be used — ClickHouse evaluates a row policy's
+-- subquery under the *querying user's own* privileges, which would force
+-- also granting direct SELECT on `event_sink.external_id` (the platform's
+-- de-anonymization key). Instead, a SQL SECURITY DEFINER view does the
+-- org-scoping lookup under {{ clickhouse_partner_access_view_definer }}'s
+-- privileges, so org_role_{{ partner.name }} only ever needs SELECT on the
+-- view itself.
+--
+-- IMPORTANT: org_role_{{ partner.name }} must NEVER also get a direct grant
+-- on event_sink.user_profile — doing so silently bypasses this view's
+-- org-scoping (confirmed live in dev testing, see #981 plan §2).
+CREATE VIEW IF NOT EXISTS reporting.{{ partner.name }}_user_profile {{ cluster_clause }}
+    DEFINER = {{ clickhouse_partner_access_view_definer }} SQL SECURITY DEFINER
+AS SELECT
+    {{ profile_all_columns | join(',\n    ') }}
+FROM event_sink.user_profile up
+WHERE up.user_id IN (
+    SELECT user_id FROM event_sink.external_id
+    WHERE external_user_id IN (
+        SELECT DISTINCT actor_id FROM xapi.enrollment_events WHERE org = '{{ partner.org }}'
+    )
+);
+
+GRANT {{ cluster_clause }}SELECT ON reporting.{{ partner.name }}_user_profile TO org_role_{{ partner.name }};

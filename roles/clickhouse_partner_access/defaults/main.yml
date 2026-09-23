@@ -1,0 +1,90 @@
+---
+# clickhouse_partner_access
+#
+# Provisions native, read-only, org-scoped ClickHouse access for external
+# data partners (e.g. ARTE), per fccn/nau-technical#981 "Option A".
+#
+# This role is intentionally NOT wired into the normal `clickhouse_deploy`
+# path in deploy.yml — it's opt-in, run explicitly (see README.md), since
+# it's about partner accounts, not the ClickHouse deployment itself.
+
+# Whether this environment's ClickHouse is actually a replicated cluster.
+# Mirrors clickhouse_docker_deploy's own `clickhouse_deploy_cluster` logic
+# (`(clickhouse_cluster_hosts | length) > 1`) — single-node environments
+# (confirmed live: dev, which has exactly one clickhouse_servers host) never
+# get the `logs_cluster` cluster/macros config templated in the first
+# place, so `ON CLUSTER` DDL would fail there with "Requested cluster
+# 'logs_cluster' not found". Multi-node environments (confirmed live:
+# staging and production, 3 nodes each) do have it, and `ON CLUSTER` DDL
+# there is what lets this role target just one node while ClickHouse's own
+# distributed-DDL queue (backed by Keeper) fans the DDL out to every
+# replica. Override to `false` per-environment (e.g. dev's group_vars) if
+# a single-node environment is used.
+clickhouse_partner_access_on_cluster: true
+
+# Name of the replicated ClickHouse cluster (see 15-macros.xml /
+# 20-remote-servers.xml in clickhouse_docker_deploy). Only relevant when
+# clickhouse_partner_access_on_cluster is true.
+clickhouse_partner_access_cluster: logs_cluster
+
+# The user that owns partner-facing DEFINER views (must already exist and
+# have SELECT on the underlying tables the views read from).
+clickhouse_partner_access_view_definer: ch_admin
+
+# Category 1 tables (per the #981 Option A plan): have a native `org`
+# column and carry no PII, so a plain ROW POLICY + table-level GRANT SELECT
+# is enough. Shared across every partner — partners differ only by their
+# `org` literal (see clickhouse_partners below), not by which tables exist.
+clickhouse_partner_access_org_scoped_tables:
+  - xapi.enrollment_events
+  - xapi.grading_events
+  - xapi.problem_events
+  - xapi.navigation_events
+  - xapi.video_playback_events
+  - xapi.responses
+  - xapi.xapi_events_all_parsed
+  - event_sink.course_blocks
+  - event_sink.course_overviews
+  - reporting.dim_most_recent_enrollment
+  - reporting.fact_enrollment_status
+  - reporting.dim_learner_most_recent_course_grade
+  - reporting.dim_subsection_problem_results
+  - reporting.dim_problem_results
+  - reporting.dim_problem_responses
+  - reporting.dim_learner_last_response
+  - reporting.int_problem_results
+  - reporting.fact_video_segments
+
+# Default set of `event_sink.user_profile` columns exposed through each
+# partner's DEFINER view (see templates/partner_access.sql.j2).
+# `meta_json_fields` are extracted out of the opaque `meta` JSON blob as
+# their own columns — never expose `meta` itself (see #981 plan §3).
+# `nuts`/`cae4` are only populated once nau-openedx-extensions#159
+# (NUTS/CAE profile fields, still unmerged at the time of writing) ships;
+# extracting them ahead of that is harmless (JSONExtractString on a
+# missing key returns an empty string).
+clickhouse_partner_access_profile_direct_fields:
+  - year_of_birth
+  - gender
+  - level_of_education
+  - country
+clickhouse_partner_access_profile_meta_json_fields:
+  - nif
+  - employment_situation
+  - nuts
+  - cae4
+
+# List of partner definitions. Empty by default — the real, per-environment
+# list (with real org codes/passwords) lives in secure-nau-data's
+# group_vars, e.g.:
+#
+# clickhouse_partners:
+#   - name: arte
+#     org: "AMA"
+#     password: "{{ clickhouse_partner_arte_password }}"
+#
+# `name` becomes `org_user_<name>` / `org_role_<name>` / `org_filter_<name>`
+# / `reporting.<name>_user_profile`, following Ivo's original naming
+# convention from #981. Add one entry per partner — the mechanism is
+# shared, only `name`/`org`/`password` change per partner.
+clickhouse_partners: []
