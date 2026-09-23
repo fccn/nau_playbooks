@@ -710,6 +710,16 @@
       tags: keepalived
       when: ( clickhouse_deploy | default(false) | bool ) and clickhouse_keepalived_vrrp_instances is defined
 
+    - name: Provision ClickHouse partner access
+      import_role:
+        name: clickhouse_partner_access
+      tags: clickhouse_partner_access
+      # Only needs one node -- ON CLUSTER DDL fans out via Keeper. Not
+      # gated on clickhouse_deploy: independent of whether this run is
+      # (re)deploying ClickHouse itself, invoke with
+      # --tags clickhouse_partner_access to run only this.
+      when: inventory_hostname == groups['clickhouse_servers'][0]
+
 
 - name: Deploy to Kubernetes nodes
   hosts: kubernetes_servers

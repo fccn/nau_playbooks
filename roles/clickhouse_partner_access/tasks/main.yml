@@ -1,0 +1,76 @@
+---
+# Provisions (or updates) native ClickHouse partner access, per
+# fccn/nau-technical#981. Invoked from deploy.yml's ClickHouse play,
+# restricted to a single host there -- every statement here uses
+# `ON CLUSTER`, so ClickHouse's distributed-DDL queue (via Keeper) fans
+# it out to the rest of the cluster.
+
+- name: Skip entirely when clickhouse_partner_access_enabled is false
+  ansible.builtin.debug:
+    msg: >-
+      clickhouse_partner_access_enabled is false -- skipping. Set it to
+      true in this environment's group_vars (alongside
+      clickhouse_partners) to roll this out here.
+  run_once: true
+  tags: clickhouse_partner_access
+  when: not (clickhouse_partner_access_enabled | bool)
+
+- name: Assert clickhouse_partners is non-empty
+  ansible.builtin.assert:
+    that:
+      - clickhouse_partners | length > 0
+    fail_msg: >-
+      clickhouse_partners is empty -- nothing to provision. Define it in
+      group_vars (see defaults/main.yml for the expected shape).
+  run_once: true
+  tags: clickhouse_partner_access
+  when: clickhouse_partner_access_enabled | bool
+
+# block/always so cleanup of the rendered SQL (plaintext passwords) still
+# runs if apply fails or the play is interrupted, not just on normal
+# completion.
+- name: Render, apply and clean up per-partner provisioning SQL
+  block:
+    - name: Render per-partner provisioning SQL
+      ansible.builtin.template:
+        src: partner_access.sql.j2
+        dest: "/tmp/clickhouse_partner_access_{{ item.name }}.sql"
+        mode: "0600"
+      loop: "{{ clickhouse_partners }}"
+      loop_control:
+        label: "{{ item.name }}"
+      no_log: true # rendered file embeds each partner's plaintext password
+
+    # Password goes in via env, never --password, so it never appears in
+    # any process's argv (readable by anyone via `ps aux` while it runs):
+    # `-e CLICKHOUSE_PASSWORD` (no `=value`) forwards the value from this
+    # task's own env (set below with `environment:`, not interpolated
+    # into the command string) into the container, and clickhouse-client
+    # reads that same var natively when --password is omitted.
+    - name: Apply per-partner provisioning SQL
+      ansible.builtin.shell: |
+        set -o pipefail
+        docker exec -i -e CLICKHOUSE_PASSWORD {{ clickhouse_docker_container_name }} \
+          clickhouse-client --user {{ clickhouse_user }} \
+          --multiquery < /tmp/clickhouse_partner_access_{{ item.name }}.sql
+      args:
+        executable: /bin/bash
+      environment:
+        CLICKHOUSE_PASSWORD: "{{ clickhouse_password }}"
+      loop: "{{ clickhouse_partners }}"
+      loop_control:
+        label: "{{ item.name }}"
+      register: clickhouse_partner_access_result
+      changed_when: true
+      no_log: true # avoid leaking the admin password used to connect
+  always:
+    - name: Clean up rendered SQL (contains partner passwords in plaintext)
+      ansible.builtin.file:
+        path: "/tmp/clickhouse_partner_access_{{ item.name }}.sql"
+        state: absent
+      loop: "{{ clickhouse_partners }}"
+      loop_control:
+        label: "{{ item.name }}"
+  run_once: true
+  tags: clickhouse_partner_access
+  when: clickhouse_partner_access_enabled | bool

@@ -1,0 +1,58 @@
+{%- set cluster_clause = "ON CLUSTER '" ~ clickhouse_partner_access_cluster ~ "' " if clickhouse_partner_access_on_cluster else "" -%}
+{%- set cols = namespace(list=['up.user_id']) -%}
+{%- for field in clickhouse_partner_access_profile_direct_fields -%}
+{%- set cols.list = cols.list + ['up.' ~ field] -%}
+{%- endfor -%}
+{%- for field in clickhouse_partner_access_profile_meta_json_fields -%}
+{%- set cols.list = cols.list + ["JSONExtractString(up.meta, '" ~ field ~ "') AS " ~ field] -%}
+{%- endfor -%}
+{%- set profile_all_columns = cols.list -%}
+-- {{ ansible_managed }}
+--
+-- Native, read-only, org-scoped ClickHouse access for partner
+-- '{{ partner.name }}' (org = '{{ partner.org }}'), per fccn/nau-technical#981.
+-- Idempotent -- safe to re-run (IF NOT EXISTS / OR REPLACE throughout).
+
+CREATE USER IF NOT EXISTS org_user_{{ partner.name }} {{ cluster_clause }}
+    IDENTIFIED WITH sha256_password BY '{{ partner.password }}'
+    SETTINGS PROFILE 'readonly';
+
+CREATE ROLE IF NOT EXISTS org_role_{{ partner.name }} {{ cluster_clause }};
+
+GRANT {{ cluster_clause }}org_role_{{ partner.name }} TO org_user_{{ partner.name }};
+
+SET DEFAULT ROLE org_role_{{ partner.name }} TO org_user_{{ partner.name }};
+
+-- Category 1: tables with a native `org` column.
+CREATE ROW POLICY IF NOT EXISTS org_filter_{{ partner.name }} {{ cluster_clause }}
+    ON {{ clickhouse_partner_access_org_scoped_tables | join(', ') }}
+    FOR SELECT USING org = '{{ partner.org }}'
+    TO org_role_{{ partner.name }};
+
+-- GRANT needs one statement per table (unlike ROW POLICY above, which
+-- accepts a list), hence the loop.
+{% for table in clickhouse_partner_access_org_scoped_tables %}
+GRANT {{ cluster_clause }}SELECT ON {{ table }} TO org_role_{{ partner.name }};
+{% endfor %}
+-- Category 3: event_sink.user_profile has no `org` column, so a row
+-- policy can't scope it directly (its subquery runs under the
+-- *querying user's own* privileges, which would force a grant on
+-- event_sink.external_id too). A SECURITY DEFINER view does the lookup
+-- under {{ clickhouse_partner_access_view_definer }}'s privileges instead --
+-- org_role_{{ partner.name }} only ever needs SELECT on the view.
+--
+-- IMPORTANT: never grant org_role_{{ partner.name }} direct SELECT on
+-- event_sink.user_profile -- that silently bypasses this view's org-scoping.
+CREATE VIEW IF NOT EXISTS reporting.{{ partner.name }}_user_profile {{ cluster_clause }}
+    DEFINER = {{ clickhouse_partner_access_view_definer }} SQL SECURITY DEFINER
+AS SELECT
+    {{ profile_all_columns | join(',\n    ') }}
+FROM event_sink.user_profile up
+WHERE up.user_id IN (
+    SELECT user_id FROM event_sink.external_id
+    WHERE external_user_id IN (
+        SELECT DISTINCT actor_id FROM xapi.enrollment_events WHERE org = '{{ partner.org }}'
+    )
+);
+
+GRANT {{ cluster_clause }}SELECT ON reporting.{{ partner.name }}_user_profile TO org_role_{{ partner.name }};
