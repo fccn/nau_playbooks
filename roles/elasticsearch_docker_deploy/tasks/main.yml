@@ -23,7 +23,6 @@
     docker_deploy_configs:             "{{ elasticsearch_docker_deploy_configs | default([]) }}"
     docker_deploy_secrets:             "{{ elasticsearch_docker_deploy_secrets | default([]) }}"
     docker_deploy_services_additional: "{{ elasticsearch_docker_deploy_services_additional | default([]) }}"
-    docker_deploy_shell: true
     docker_deploy_healthcheck_retries: "{{ elasticsearch_docker_deploy_healthcheck_retries }}"
     docker_deploy_healthcheck_delay:   "{{ elasticsearch_docker_deploy_healthcheck_delay }}"
   tags:
