@@ -25,7 +25,7 @@ redis_keepalived_vrrp_instances:
     peer_ip: "{{ redis_keepalived_peer_ipv4 }}"
     track_script: redis_chk_script
     virtual_ip:
-      - "{{ redis_virtual_ipv4 }}/24 dev {{ keepalived_connected_network_interface }} label vipRedis"
+      - "{{ redis_virtual_ipv4 }}/24 label vipRedis"
 
 redis_keepalived_health:
   - name: redis_chk_script

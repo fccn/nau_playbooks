@@ -43,7 +43,7 @@ xtradb_keepalived_vrrp_instances:
     peers_ips: "{{ xtradb_keepalived_peers_ips }}"
     track_script: xtradb_healthcheck_script
     virtual_ip:
-      - "{{ xtradb_virtual_ipv4_rw }}/24 dev {{ keepalived_connected_network_interface }} label vipXtraDBRW"
+      - "{{ xtradb_virtual_ipv4_rw }}/24 label vipXtraDBRW"
   - name: xtradb_failover_link_ipv4_r
     ipv6: false
     state: "{{ xtradb_keepalived_state_r }}"
@@ -53,7 +53,7 @@ xtradb_keepalived_vrrp_instances:
     peers_ips: "{{ xtradb_keepalived_peers_ips }}"
     track_script: xtradb_healthcheck_script
     virtual_ip:
-      - "{{ xtradb_virtual_ipv4_r }}/24 dev {{ keepalived_connected_network_interface }} label vipXtraDBR"
+      - "{{ xtradb_virtual_ipv4_r }}/24 label vipXtraDBR"
 
 # Keepalived health check script for XtraDB
 xtradb_keepalived_health:
