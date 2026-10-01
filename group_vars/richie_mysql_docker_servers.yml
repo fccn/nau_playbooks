@@ -27,7 +27,7 @@ richie_mysql_keepalived_vrrp_instances:
     peer_ip: "{{ richie_mysql_keepalived_peer_ipv4 }}"
     track_script: richie_mysql_healthcheck_script
     virtual_ip:
-      - "{{ richie_mysql_virtual_ipv4 }}/24 dev {{ keepalived_connected_network_interface }} label vipRichieMysql"
+      - "{{ richie_mysql_virtual_ipv4 }}/24 label vipRichieMysql"
 
 richie_mysql_keepalived_health:
   - name: richie_mysql_healthcheck_script

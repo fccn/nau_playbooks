@@ -39,7 +39,7 @@ clickhouse_keepalived_vrrp_instances:
     peers_ips: "{{ clickhouse_keepalived_peers_ips }}"
     track_script: clickhouse_healthcheck_script
     virtual_ip:
-      - "{{ clickhouse_virtual_ipv4 }}/24 dev {{ keepalived_connected_network_interface }} label vipClickhouse"
+      - "{{ clickhouse_virtual_ipv4 }}/24 label vipClickhouse"
   - name: clickhouse_failover_link_ipv4_r
     ipv6: false
     state: "{{ clickhouse_keepalived_state_r }}"
@@ -49,7 +49,7 @@ clickhouse_keepalived_vrrp_instances:
     peers_ips: "{{ clickhouse_keepalived_peers_ips }}"
     track_script: clickhouse_healthcheck_script
     virtual_ip:
-      - "{{ clickhouse_virtual_ipv4_r }}/24 dev {{ keepalived_connected_network_interface }} label vipClickhouseR"
+      - "{{ clickhouse_virtual_ipv4_r }}/24 label vipClickhouseR"
 
 # Keepalived health check script for clickhouse
 clickhouse_keepalived_health:
