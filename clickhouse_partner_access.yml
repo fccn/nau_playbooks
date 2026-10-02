@@ -1,0 +1,31 @@
+# Provisions (or updates) native, read-only, org-scoped ClickHouse access
+# for external data partners (e.g. ARTE), per fccn/nau-technical#981
+# "Option A".
+#
+# The partner list (which orgs get access, their password) is defined in
+# the `clickhouse_partners` variable — see
+# roles/clickhouse_partner_access/defaults/main.yml for the expected shape.
+# The real per-environment values live in secure-nau-data's group_vars,
+# never in this repo.
+#
+# Idempotent and safe to re-run (e.g. after adding a table to
+# clickhouse_partner_access_org_scoped_tables, or a new partner to
+# clickhouse_partners) — every DDL statement uses IF NOT EXISTS / OR
+# REPLACE. Only needs to target a single cluster node; ClickHouse's own
+# distributed-DDL queue (backed by Keeper) fans the DDL out to every
+# replica via `ON CLUSTER`.
+#
+# Example:
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini \
+#     clickhouse_partner_access.yml
+#
+---
+- name: Provision native ClickHouse partner access
+  hosts: clickhouse_servers
+  become: True
+  gather_facts: False
+  tasks:
+    - name: Provision partner access
+      import_role:
+        name: clickhouse_partner_access
+      tags: clickhouse_partner_access
