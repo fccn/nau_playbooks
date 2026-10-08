@@ -1,0 +1,75 @@
+---
+# clickhouse_partner_access
+#
+# Provisions native, read-only, org-scoped ClickHouse access for external
+# data partners (e.g. ARTE), per fccn/nau-technical#981 "Option A". Runs
+# as part of deploy.yml's ClickHouse play (see README.md).
+
+# Kill switch, independent of clickhouse_partners being non-empty -- must
+# be explicitly set true per-environment (alongside clickhouse_partners)
+# before anything is provisioned there. Keeps rollout a deliberate,
+# reviewable one-line change per environment.
+clickhouse_partner_access_enabled: false
+
+# Whether this environment's ClickHouse is a replicated cluster (mirrors
+# clickhouse_docker_deploy's own clustering logic). Dev is single-node
+# and has no `logs_cluster` templated, so `ON CLUSTER` DDL would fail
+# there -- override to false in dev's group_vars.
+clickhouse_partner_access_on_cluster: true
+
+# Name of the replicated cluster (see clickhouse_docker_deploy's
+# macros). Only relevant when clickhouse_partner_access_on_cluster is true.
+clickhouse_partner_access_cluster: logs_cluster
+
+# User that owns partner-facing DEFINER views (must already have SELECT
+# on the underlying tables the views read from).
+clickhouse_partner_access_view_definer: ch_admin
+
+# Category 1 tables (#981 Option A): already have a native `org` column
+# and no PII, so ROW POLICY + GRANT SELECT is enough. Shared across all
+# partners -- only the `org` literal differs per partner.
+clickhouse_partner_access_org_scoped_tables:
+  - xapi.enrollment_events
+  - xapi.grading_events
+  - xapi.problem_events
+  - xapi.navigation_events
+  - xapi.video_playback_events
+  - xapi.responses
+  - xapi.xapi_events_all_parsed
+  - event_sink.course_blocks
+  - event_sink.course_overviews
+  - reporting.dim_most_recent_enrollment
+  - reporting.fact_enrollment_status
+  - reporting.dim_learner_most_recent_course_grade
+  - reporting.dim_subsection_problem_results
+  - reporting.dim_problem_results
+  - reporting.dim_problem_responses
+  - reporting.dim_learner_last_response
+  - reporting.int_problem_results
+  - reporting.fact_video_segments
+
+# event_sink.user_profile columns exposed through each partner's DEFINER
+# view (see templates/partner_access.sql.j2). meta_json_fields are
+# extracted out of the opaque `meta` JSON blob -- never expose `meta`
+# itself.
+clickhouse_partner_access_profile_direct_fields:
+  - year_of_birth
+  - gender
+  - level_of_education
+  - country
+clickhouse_partner_access_profile_meta_json_fields:
+  - nif
+  - employment_situation
+  - nuts
+  - cae4
+
+# Partner list -- empty by default. Real per-environment values (org
+# codes/passwords) live in secure-nau-data's group_vars, e.g.:
+#
+# clickhouse_partners:
+#   - name: arte
+#     org: "AMA"
+#     password: "{{ clickhouse_partner_arte_password }}"
+#
+# `name` becomes org_user_<name>/org_role_<name>/reporting.<name>_user_profile.
+clickhouse_partners: []
