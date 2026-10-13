@@ -34,11 +34,12 @@
     - name: Render per-partner provisioning SQL
       ansible.builtin.template:
         src: partner_access.sql.j2
-        dest: "/tmp/clickhouse_partner_access_{{ item.name }}.sql"
+        dest: "/tmp/clickhouse_partner_access_{{ partner.name }}.sql"
         mode: "0600"
       loop: "{{ clickhouse_partners }}"
       loop_control:
-        label: "{{ item.name }}"
+        loop_var: partner # template references `partner.*`; default `item` would be undefined
+        label: "{{ partner.name }}"
       no_log: true # rendered file embeds each partner's plaintext password
 
     # Password goes in via env, never --password, so it never appears in
