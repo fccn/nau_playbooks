@@ -11,8 +11,18 @@
 --
 -- Native, read-only, org-scoped ClickHouse access for partner
 -- '{{ partner.name }}' (org = '{{ partner.org }}'), per fccn/nau-technical#981.
--- Idempotent -- safe to re-run (IF NOT EXISTS / OR REPLACE throughout).
+-- Idempotent -- safe to re-run (IF NOT EXISTS throughout). The shared
+-- resource-governance objects in partner_resource_limits.sql.j2 are
+-- idempotent too (CREATE IF NOT EXISTS + ALTER, see that file).
 
+-- 'readonly' here is just a baseline/defense-in-depth default for a
+-- brand new user -- the real, tunable resource limits (memory/time/
+-- thread/per-user caps) and the query quota are attached to
+-- org_role_{{ partner.name }} by
+-- roles/clickhouse_partner_access/templates/partner_resource_limits.sql.j2
+-- (rendered once for every partner, after this loop), which can update
+-- them for already-existing users with no need to touch this file's
+-- `CREATE USER IF NOT EXISTS`, which is a no-op past the first run.
 CREATE USER IF NOT EXISTS org_user_{{ partner.name }} {{ cluster_clause }}
     IDENTIFIED WITH sha256_password BY '{{ partner.password }}'
     SETTINGS PROFILE 'readonly';
