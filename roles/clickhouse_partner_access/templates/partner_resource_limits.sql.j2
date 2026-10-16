@@ -1,0 +1,71 @@
+{%- set cluster_clause = "ON CLUSTER '" ~ clickhouse_partner_access_cluster ~ "' " if clickhouse_partner_access_on_cluster else "" -%}
+{%- set partner_roles = clickhouse_partners | map(attribute='name') | map('regex_replace', '^', 'org_role_') | join(', ') -%}
+-- {{ ansible_managed }}
+--
+-- Shared resource-governance profile + quota for every partner role.
+-- Bounds worst-case per-query cost (profile) and per-hour query
+-- volume (quota) so partner access can't impact core LMS/CMS
+-- ClickHouse load, independently of the org-scoping done by
+-- partner_access.sql.j2. See
+-- roles/clickhouse_partner_access/docs/resource_governance_analysis.md
+-- for the full scalability/performance-impact analysis behind the
+-- values below (fccn/nau-technical#981).
+--
+-- Rendered ONCE across all partners (not per-partner like
+-- partner_access.sql.j2). CREATE IF NOT EXISTS + ALTER (never DROP):
+-- ALTER's `TO`/`SETTINGS` clauses are a full replace, not additive
+-- (confirmed live against dev ClickHouse), so this always lists every
+-- current partner's role, same end state as DROP+CREATE. Deliberately
+-- not DROP+CREATE, though, for two reasons confirmed live:
+-- 1. A mid-run failure between DROP and CREATE would leave org_role_*
+--    with zero enforcement until the next successful run -- governance
+--    "fails open" exactly when a deploy issue makes that most likely.
+--    ALTER never passes through a state where the object doesn't
+--    exist, so a failure here can only leave the *previous* values in
+--    place, never none at all.
+-- 2. DROP+CREATE silently resets the quota's rolling usage counters
+--    (system.quotas_usage) on every run, not just once per real
+--    interval boundary -- confirmed live. ALTER preserves them.
+--
+-- Must run AFTER partner_access.sql.j2's per-partner loop (every
+-- org_role_<name> referenced below must already exist).
+
+CREATE SETTINGS PROFILE IF NOT EXISTS {{ clickhouse_partner_access_settings_profile }} {{ cluster_clause }};
+ALTER SETTINGS PROFILE {{ clickhouse_partner_access_settings_profile }} {{ cluster_clause }}
+    SETTINGS
+        readonly = 1 READONLY,
+        max_memory_usage = {{ clickhouse_partner_access_max_memory_usage }} READONLY,
+        max_execution_time = {{ clickhouse_partner_access_max_execution_time }} READONLY,
+        max_threads = {{ clickhouse_partner_access_max_threads }} READONLY,
+        max_bytes_to_read = {{ clickhouse_partner_access_max_bytes_to_read }} READONLY,
+        max_memory_usage_for_user = {{ clickhouse_partner_access_max_memory_usage_for_user }} READONLY,
+        max_concurrent_queries_for_user = {{ clickhouse_partner_access_max_concurrent_queries_for_user }} READONLY
+    TO {{ partner_roles }};
+
+CREATE QUOTA IF NOT EXISTS {{ clickhouse_partner_access_quota_name }} {{ cluster_clause }};
+-- Apply the current interval FIRST, then clear any stale one below --
+-- not the other way around. ALTER QUOTA ... FOR INTERVAL <N> ... adds
+-- a second, independent interval alongside an existing one of a
+-- different length rather than replacing it (confirmed live), so if
+-- clickhouse_partner_access_quota_interval_hours changed since the
+-- last run, clearing the stale interval before adding the current one
+-- would pass through a state with zero intervals -- and if the second
+-- statement then failed (Keeper timeout, ON CLUSTER error), the quota
+-- would stay fully unconstrained until the next successful run. Adding
+-- first means both intervals are briefly enforced together (harmless),
+-- and a failure on the cleanup step below leaves the old interval(s)
+-- in place rather than none at all.
+ALTER QUOTA {{ clickhouse_partner_access_quota_name }} {{ cluster_clause }}
+    FOR INTERVAL {{ clickhouse_partner_access_quota_interval_hours }} HOUR
+        MAX QUERIES {{ clickhouse_partner_access_quota_max_queries }},
+            EXECUTION TIME {{ clickhouse_partner_access_quota_max_execution_time }}
+    TO {{ partner_roles }};
+{% for stale_seconds in clickhouse_partner_access_quota_stale_durations_seconds %}
+-- Clears a previously configured interval that no longer matches
+-- clickhouse_partner_access_quota_interval_hours (see tasks/main.yml)
+-- -- NO LIMITS removes that interval entirely instead of leaving it
+-- present-but-unconstrained.
+ALTER QUOTA {{ clickhouse_partner_access_quota_name }} {{ cluster_clause }}
+    FOR INTERVAL {{ stale_seconds }} SECOND NO LIMITS
+    TO {{ partner_roles }};
+{% endfor %}
