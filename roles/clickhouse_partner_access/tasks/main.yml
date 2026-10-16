@@ -26,6 +26,75 @@
   tags: clickhouse_partner_access
   when: clickhouse_partner_access_enabled | bool
 
+# Every partner.name is interpolated unquoted into identifiers in both
+# SQL templates (org_user_<name>, org_role_<name>, and this template's
+# `TO org_role_<name>, ...` list). A name containing anything outside
+# this pattern produces a SQL syntax error -- and in
+# partner_resource_limits.sql.j2 specifically, that error would abort
+# the whole multiquery apply (the CREATE IF NOT EXISTS + ALTER
+# ordering in that template avoids failing open on a *good* name, but
+# can't help against a bad one causing the statement itself to fail).
+- name: Assert every partner name is a safe SQL identifier
+  ansible.builtin.assert:
+    that:
+      # \Z (not $): `match` uses Python re.match, where $ also matches
+      # just before a trailing newline -- "arte\n" would otherwise pass
+      # this and render as org_user_arte\n, a confusing mid-apply SQL
+      # error instead of a clear validation failure.
+      - item is match('^[a-z][a-z0-9_]*\Z')
+    fail_msg: >-
+      clickhouse_partners entry '{{ item }}' isn't a safe SQL
+      identifier (must match ^[a-z][a-z0-9_]*$) -- it's interpolated
+      unquoted into CREATE USER/ROLE/TO clauses.
+  # Looping over plain names (not partner dicts) so this never needs
+  # no_log: a no_log assert still fails the play, but censors its own
+  # fail_msg in the standard failure report too (confirmed live) -- the
+  # operator can tell *that* something failed but not *which partner*
+  # or *why*, defeating the point of a named assertion.
+  loop: "{{ clickhouse_partners | map(attribute='name') | list }}"
+  run_once: true
+  tags: clickhouse_partner_access
+  when: clickhouse_partner_access_enabled | bool
+
+# Every one of these is rendered straight into SQL with no quoting (they're
+# numeric settings, not strings) -- a non-numeric override (e.g. a stray
+# "2GB" instead of 2000000000) produces invalid SQL that, like the name
+# check above, would abort the resource-limits apply. Also requires
+# strictly positive, not just numeric: 0 looks like a valid override but
+# actually disables the corresponding ClickHouse limit (unlimited for
+# every setting here except max_threads, where 0 means "auto", i.e. all
+# cores) -- a well-meant "tighten this to 0" override would silently
+# remove governance instead, with nothing downstream to catch it (every
+# one of these is READONLY and role-attached).
+- name: Assert partner resource-limit values are positive integers
+  ansible.builtin.assert:
+    that:
+      # \Z (not $): same trailing-newline gotcha as the name check
+      # above -- "2000000000\n" would otherwise pass, then fail a SQL
+      # parse once rendered instead of failing this assert cleanly.
+      - (lookup('vars', item) | string) is match('^[0-9]+\Z')
+      - (lookup('vars', item) | int) > 0
+    fail_msg: >-
+      {{ item }} ({{ lookup('vars', item) }}) isn't a positive integer
+      -- check for typos/units (e.g. "2GB") or an accidental 0 override
+      in group_vars, either of which would silently disable the
+      corresponding ClickHouse limit/cap instead of tightening it.
+  loop:
+    - clickhouse_partner_access_max_memory_usage
+    - clickhouse_partner_access_max_execution_time
+    - clickhouse_partner_access_max_threads
+    - clickhouse_partner_access_max_bytes_to_read
+    - clickhouse_partner_access_max_memory_usage_for_user
+    - clickhouse_partner_access_max_concurrent_queries_for_user
+    - clickhouse_partner_access_quota_interval_hours
+    - clickhouse_partner_access_quota_max_queries
+    - clickhouse_partner_access_quota_max_execution_time
+  loop_control:
+    label: "{{ item }}"
+  run_once: true
+  tags: clickhouse_partner_access
+  when: clickhouse_partner_access_enabled | bool
+
 # block/always so cleanup of the rendered SQL (plaintext passwords) still
 # runs if apply fails or the play is interrupted, not just on normal
 # completion.
@@ -65,13 +134,168 @@
       changed_when: true
       no_log: true # avoid leaking the admin password used to connect
   always:
+    # Looping over plain names (not partner dicts), same reasoning as
+    # the name-validation assert above: this task doesn't need
+    # partner.password, so there's no reason to censor its own
+    # (admittedly rare) failure path with no_log.
     - name: Clean up rendered SQL (contains partner passwords in plaintext)
       ansible.builtin.file:
-        path: "/tmp/clickhouse_partner_access_{{ item.name }}.sql"
+        path: "/tmp/clickhouse_partner_access_{{ item }}.sql"
         state: absent
-      loop: "{{ clickhouse_partners }}"
-      loop_control:
-        label: "{{ item.name }}"
+      loop: "{{ clickhouse_partners | map(attribute='name') | list }}"
+  run_once: true
+  tags: clickhouse_partner_access
+  when: clickhouse_partner_access_enabled | bool
+
+# Separate block, run AFTER the per-partner loop above: every
+# org_role_<name> it references in its TO clause must already exist.
+# block/always so cleanup of the rendered SQL still runs if apply
+# fails or the play is interrupted, not just on normal completion. The
+# rendered SQL itself has no partner secrets in it (unlike the
+# per-partner block above), but the apply/verify tasks below still set
+# no_log -- they pass the ClickHouse admin password used to connect.
+- name: Render, apply and clean up shared partner resource-limits SQL
+  block:
+    # ALTER QUOTA ... FOR INTERVAL <N> ... doesn't replace an existing
+    # interval of a *different* length -- it adds a second, independent
+    # one alongside it (confirmed live: durations went from [3600] to
+    # [3600, 7200] instead of just [7200]). This only matters if
+    # clickhouse_partner_access_quota_interval_hours itself changes
+    # between runs (the common case -- only the limit *values* changing
+    # while the interval stays the same -- replaces cleanly via ALTER,
+    # also confirmed live), but when it does, the stale interval would
+    # otherwise linger indefinitely with no built-in warning that it's
+    # still being enforced alongside the new one. `durations` is the
+    # column system.quotas exposes the quota's currently configured
+    # interval lengths (in seconds) through; empty/no-rows (first run,
+    # quota doesn't exist yet) is handled the same as "nothing stale".
+    - name: Query shared quota's currently configured interval durations
+      ansible.builtin.shell: |
+        set -o pipefail
+        docker exec -i -e CLICKHOUSE_PASSWORD {{ clickhouse_docker_container_name }} \
+          clickhouse-client --user {{ clickhouse_user }} --format TSV --query "
+            SELECT arrayStringConcat(arrayMap(x -> toString(x), durations), ',')
+            FROM system.quotas WHERE name = '{{ clickhouse_partner_access_quota_name }}'
+          "
+      args:
+        executable: /bin/bash
+      environment:
+        CLICKHOUSE_PASSWORD: "{{ clickhouse_password }}"
+      register: clickhouse_partner_quota_existing_durations_result
+      changed_when: false
+      no_log: true # avoid leaking the admin password used to connect
+
+    - name: Compute stale quota interval durations to clear after applying the current one
+      ansible.builtin.set_fact:
+        clickhouse_partner_access_quota_stale_durations_seconds: >-
+          {{
+            (clickhouse_partner_quota_existing_durations_result.stdout | default('') | trim).split(',')
+            | select('match', '^[0-9]+$') | map('int')
+            | reject('equalto', clickhouse_partner_access_quota_interval_hours | int * 3600)
+            | list
+          }}
+
+    - name: Render shared partner resource-limits SQL
+      ansible.builtin.template:
+        src: partner_resource_limits.sql.j2
+        dest: /tmp/clickhouse_partner_resource_limits.sql
+        mode: "0600"
+
+    - name: Apply shared partner resource-limits SQL
+      ansible.builtin.shell: |
+        set -o pipefail
+        docker exec -i -e CLICKHOUSE_PASSWORD {{ clickhouse_docker_container_name }} \
+          clickhouse-client --user {{ clickhouse_user }} \
+          --multiquery < /tmp/clickhouse_partner_resource_limits.sql
+      args:
+        executable: /bin/bash
+      environment:
+        CLICKHOUSE_PASSWORD: "{{ clickhouse_password }}"
+      register: clickhouse_partner_resource_limits_result
+      changed_when: true
+      no_log: true # avoid leaking the admin password used to connect
+
+    # Turns a silent "CREATE/ALTER exited 0 but some partner role isn't
+    # actually covered" into a loud task failure, rather than something
+    # only noticed when a partner's queries turn out unconstrained.
+    # apply_to_list is the column ClickHouse itself exposes the
+    # profile's/quota's TO clause through (confirmed live) -- no need
+    # to parse `SHOW CREATE` text. Queried separately (not UNION ALL
+    # into one blob): a single merged string let the verification below
+    # pass when a role was attached to only one of the two objects,
+    # since a substring match against either line alone was enough.
+    - name: Query shared profile's current TO list
+      ansible.builtin.shell: |
+        set -o pipefail
+        docker exec -i -e CLICKHOUSE_PASSWORD {{ clickhouse_docker_container_name }} \
+          clickhouse-client --user {{ clickhouse_user }} --format TSV --query "
+            SELECT arrayStringConcat(apply_to_list, ',') FROM system.settings_profiles
+            WHERE name = '{{ clickhouse_partner_access_settings_profile }}'
+          "
+      args:
+        executable: /bin/bash
+      environment:
+        CLICKHOUSE_PASSWORD: "{{ clickhouse_password }}"
+      register: clickhouse_partner_profile_to_list
+      changed_when: false
+      no_log: true # avoid leaking the admin password used to connect
+
+    - name: Query shared quota's current TO list
+      ansible.builtin.shell: |
+        set -o pipefail
+        docker exec -i -e CLICKHOUSE_PASSWORD {{ clickhouse_docker_container_name }} \
+          clickhouse-client --user {{ clickhouse_user }} --format TSV --query "
+            SELECT arrayStringConcat(apply_to_list, ',') FROM system.quotas
+            WHERE name = '{{ clickhouse_partner_access_quota_name }}'
+          "
+      args:
+        executable: /bin/bash
+      environment:
+        CLICKHOUSE_PASSWORD: "{{ clickhouse_password }}"
+      register: clickhouse_partner_quota_to_list
+      changed_when: false
+      no_log: true # avoid leaking the admin password used to connect
+
+    # The shell tasks above are skipped (not simulated) under --check,
+    # like every command/shell task in this role -- so these asserts
+    # must skip too, or they fail against the previous tasks'
+    # empty/unset results under --check instead of a real apply result.
+    # Split into exact list-member comparisons (not substring on a
+    # blob), and checked against each object separately: a role present
+    # in only one of the two no longer passes, and a name that's a
+    # substring of another valid name (e.g. org_role_arte inside
+    # org_role_arte_v2) no longer false-matches. Looping over plain
+    # names (not partner dicts): neither assert needs the password, and
+    # no_log would censor the very fail_msg (partner + which object)
+    # these tasks exist to surface on failure.
+    - name: Assert every partner role is attached to the shared profile
+      ansible.builtin.assert:
+        that:
+          - ('org_role_' ~ item) in (clickhouse_partner_profile_to_list.stdout | trim | split(','))
+        fail_msg: >-
+          org_role_{{ item }} is missing from
+          {{ clickhouse_partner_access_settings_profile }}'s TO list
+          after applying partner_resource_limits.sql.j2 -- resource
+          governance is not actually in effect for this partner.
+      loop: "{{ clickhouse_partners | map(attribute='name') | list }}"
+      when: not ansible_check_mode
+
+    - name: Assert every partner role is attached to the shared quota
+      ansible.builtin.assert:
+        that:
+          - ('org_role_' ~ item) in (clickhouse_partner_quota_to_list.stdout | trim | split(','))
+        fail_msg: >-
+          org_role_{{ item }} is missing from
+          {{ clickhouse_partner_access_quota_name }}'s TO list after
+          applying partner_resource_limits.sql.j2 -- resource
+          governance is not actually in effect for this partner.
+      loop: "{{ clickhouse_partners | map(attribute='name') | list }}"
+      when: not ansible_check_mode
+  always:
+    - name: Clean up rendered shared resource-limits SQL
+      ansible.builtin.file:
+        path: /tmp/clickhouse_partner_resource_limits.sql
+        state: absent
   run_once: true
   tags: clickhouse_partner_access
   when: clickhouse_partner_access_enabled | bool
