@@ -73,6 +73,45 @@ All firewall logic and configuration conventions are documented in `firewall.yml
 header comment. Per-service ports/access rules are defined in `secure-nau-data`, so tightening or
 adding access never requires a change here.
 
+## Run the healthcheck playbook
+
+`healthcheck.yml` checks the health of the whole platform. It only reads, it never changes anything,
+and it fails (exit code 2) after printing the list of every problem found.
+
+```bash
+ansible-playbook -i nau-data/envs/<env>/hosts.ini healthcheck.yml
+```
+
+| Tag | Where it runs | What it checks |
+|-----|---------------|----------------|
+| `vips` | all hosts | every keepalived virtual IP is held by exactly one node, and that node is its `MASTER` |
+| `kubernetes` | control planes | rke2, API server `/readyz`, etcd quorum, leader and size, nodes Ready, pods, workloads and volume claims |
+| `connectivity` | k8s workers | every worker reaches MongoDB, XtraDB (nodes and VIPs), Redis, Elasticsearch, ClickHouse, Richie MySQL and Ceph S3 |
+| `docker-services` | load balancers, registry mirror | the `make healthcheck` of the service |
+| `endpoints` | localhost | the public endpoints through each load balancer VIP, the DNS answer of the public names, flapping and TLS expiry |
+| `vm` | all hosts | the previous healthcheck, with the retries that gate `deploy.yml` and the rolling playbooks |
+
+Examples:
+```bash
+# Everything except the `vm` checks, which retry for up to 25 minutes
+ansible-playbook -i nau-data/envs/<env>/hosts.ini healthcheck.yml --skip-tags vm
+
+# Only some checks. Keep the `always` tag, it prints the report
+ansible-playbook -i nau-data/envs/<env>/hosts.ini healthcheck.yml --tags vips,endpoints,always --skip-tags vm
+
+# A node is in maintenance, so the VIPs do not need to be on their MASTER
+ansible-playbook -i nau-data/envs/<env>/hosts.ini healthcheck.yml --skip-tags vm -e healthcheck_vip_expected_holder_enforced=false
+```
+
+The endpoints, the expected answers and the thresholds are in `group_vars/all/healthcheck.yml`.
+Notes:
+- With `--limit` only the hosts in the limit are checked, and only a VIP held by several nodes is
+  reported. The `endpoints` checks run on `localhost`, so add it to the limit to run them.
+- The `vm` checks stop the playbook at the first failing host, as the deploy playbooks need.
+- The `kubernetes` checks run `etcdctl` when it is installed on the control planes, otherwise they rely
+  on the etcd check of the API server `/readyz`.
+- IPv6 is only tested with `-e healthcheck_endpoints_check_ipv6=true`, from a machine with IPv6.
+
 ## Using --check and --diff (Dry Run Mode)
 
 When working with Ansible playbooks, it's a good practice to preview changes before applying them to your systems.
