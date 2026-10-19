@@ -6,6 +6,9 @@
 # - connectivity: every Kubernetes worker reaches MongoDB, XtraDB, Redis, Elasticsearch,
 #   ClickHouse, the Richie MySQL and Ceph S3
 # - docker-services: the Makefile healthcheck of the load balancers and the registry mirror
+# - host: the OS, the IPv4 addresses against the inventory, the routes (default route, container networks
+#   that overlap the host's) and the iptables rules (loaded against the persisted file). It also lists the
+#   OS, addresses and firewall of every host in the report.
 # - endpoints: the public endpoints of the platform through each load balancer VIP, the DNS
 #   answer of the public names and the TLS certificates
 #
@@ -68,6 +71,14 @@
   tasks:
     - import_tasks: tasks/healthcheck_docker_services.yml
 
+- name: Check the operating system, the network and the firewall of each host
+  hosts: all
+  become: true
+  gather_facts: false
+  tags: host
+  tasks:
+    - import_tasks: tasks/healthcheck_host.yml
+
 - name: Check the public endpoints through each load balancer
   hosts: localhost
   connection: local
@@ -86,6 +97,14 @@
         healthcheck_report: >-
           {{ (groups['all'] + ['localhost']) | unique
              | map('extract', hostvars, 'healthcheck_problems') | select('defined') | flatten | unique | sort }}
+      run_once: true
+
+    - name: Print the operating system, addresses and firewall of each host
+      ansible.builtin.debug:
+        msg: "{{ infos }}"
+      vars:
+        infos: "{{ groups['all'] | map('extract', hostvars, 'healthcheck_host_info') | select('defined') | sort | list }}"
+      when: infos | length > 0 and healthcheck_host_show_info | bool
       run_once: true
 
     - name: Print the problems

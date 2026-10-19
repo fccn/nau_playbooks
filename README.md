@@ -88,6 +88,7 @@ ansible-playbook -i nau-data/envs/<env>/hosts.ini healthcheck.yml
 | `kubernetes` | control planes | rke2, API server `/readyz`, etcd quorum, leader and size, nodes Ready, pods, workloads and volume claims |
 | `connectivity` | k8s workers | every worker reaches MongoDB, XtraDB (nodes and VIPs), Redis, Elasticsearch, ClickHouse, Richie MySQL and Ceph S3 |
 | `docker-services` | load balancers, registry mirror | the `make healthcheck` of the service |
+| `host` | all hosts | the OS, the IPv4 addresses against the inventory (`ansible_host`, `ansible_additional_ipv4`, `ansible_public_ipv4`, `old_ipv4`), the default route, container networks that overlap the host's, and the iptables rules loaded against the persisted file |
 | `endpoints` | localhost | the public endpoints through each load balancer VIP, the DNS answer of the public names, flapping and TLS expiry |
 | `vm` | all hosts | the previous healthcheck, with the retries that gate `deploy.yml` and the rolling playbooks |
 
@@ -105,6 +106,12 @@ ansible-playbook -i nau-data/envs/<env>/hosts.ini healthcheck.yml --skip-tags vm
 
 The endpoints, the expected answers and the thresholds are in `group_vars/all/healthcheck.yml`.
 Notes:
+- The `host` checks also list the OS, kernel, addresses, default route and firewall summary of every host in the
+  report (`healthcheck_host_show_info`). A host of a group in `firewall_managed_groups` must run the ansible-firewall
+  rules: INPUT ends in a DROP, the persisted file (`/etc/iptables/rules.v4` or `/etc/sysconfig/iptables`, and the
+  `v6` equivalents) is valid, and it ACCEPTs the same ports and source addresses as the rules loaded in the kernel
+  (`-e healthcheck_host_firewall_expected=false` only reports them). Rules that jump to another chain (Docker,
+  Kubernetes, fail2ban) are not compared. Use `healthcheck_host_unsupported_os` to flag end of life systems.
 - With `--limit` only the hosts in the limit are checked, and only a VIP held by several nodes is
   reported. The `endpoints` checks run on `localhost`, so add it to the limit to run them.
 - The `vm` checks stop the playbook at the first failing host, as the deploy playbooks need.

@@ -28,6 +28,28 @@ healthcheck_k8s_ignore_namespaces: []
 healthcheck_k8s_report_limit: 20
 
 # ---------------------------------------------------------------------------
+# Operating system, network and firewall of each host
+# ---------------------------------------------------------------------------
+# Regular expressions matched against PRETTY_NAME of /etc/os-release. A host whose OS matches is a problem,
+# for example "Ubuntu 16\.04" or "CentOS Linux 7". Empty: the OS is only reported.
+healthcheck_host_unsupported_os: []
+# Compare the IPv4 addresses configured on the host with the inventory: ansible_host, ansible_additional_ipv4 and
+# ansible_public_ipv4 must be configured, old_ipv4 must not, and any other address (keepalived VIPs and container
+# networks excluded) is reported.
+healthcheck_host_check_inventory_addresses: true
+# IPv4 addresses that are allowed on a host without being in the inventory.
+healthcheck_host_ignore_ipv4: []
+# Interfaces of containers and Kubernetes: their addresses are not the host's, but their networks must not overlap with it.
+healthcheck_host_container_interfaces: '^(docker|br-|veth|cni|flannel|cali|vxlan|kube|cilium|tunl|weave|virbr|lxc)'
+# A host of a group in `firewall_managed_groups` (see firewall.yml) is expected to run the ansible-firewall rules:
+# INPUT ends in a DROP and the rules are persisted in a file that matches the ones loaded. Set to false to only report.
+healthcheck_host_firewall_expected: "{{ (firewall_managed_groups | default([])) | intersect(group_names) | length > 0 }}"
+# Also check ip6tables. Set to false for hosts where IPv6 is disabled in the kernel.
+healthcheck_host_firewall_check_ipv6: true
+# Print the OS, addresses and firewall summary of every host in the report.
+healthcheck_host_show_info: true
+
+# ---------------------------------------------------------------------------
 # Connectivity from the Kubernetes worker nodes to the data stores
 # ---------------------------------------------------------------------------
 healthcheck_connectivity_timeout: 5
