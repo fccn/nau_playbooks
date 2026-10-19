@@ -11,7 +11,8 @@
 --
 -- Native, read-only, org-scoped ClickHouse access for partner
 -- '{{ partner.name }}' (org = '{{ partner.org }}'), per fccn/nau-technical#981.
--- Idempotent -- safe to re-run (IF NOT EXISTS throughout). The shared
+-- Idempotent -- safe to re-run (IF NOT EXISTS throughout, except the
+-- Category 4 cleanup and CREATE OR REPLACE VIEW below). The shared
 -- resource-governance objects in partner_resource_limits.sql.j2 are
 -- idempotent too (CREATE IF NOT EXISTS + ALTER, see that file).
 
@@ -66,3 +67,38 @@ WHERE up.user_id IN (
 );
 
 GRANT {{ cluster_clause }}SELECT ON reporting.{{ partner.name }}_user_profile TO org_role_{{ partner.name }};
+
+-- Runs on every apply, for every partner -- not a one-off migration step.
+-- Originally added to clean up environments that ran an earlier version of
+-- this role, when int_problem_results was still in
+-- clickhouse_partner_access_org_scoped_tables (a direct GRANT there never
+-- actually worked because of the Dictionary dependency chain, but still
+-- left a stale GRANT/ROW POLICY entry behind that CREATE ... IF NOT EXISTS
+-- never removes -- confirmed on dev: org_role_arte had exactly this
+-- leftover GRANT + org_filter_arte row policy on reporting.int_problem_results
+-- before this cleanup block was added). Left in permanently (not dead code
+-- to remove once every environment has applied it once): it also actively
+-- enforces the "never grant org_role_<name> direct SELECT on
+-- reporting.int_problem_results" rule above, in case the dependency chain
+-- ever gets granted to the role for an unrelated reason. Both statements
+-- below are idempotent no-ops when there is nothing to clean up (verified
+-- live against dev ClickHouse 25.3.6.56).
+REVOKE {{ cluster_clause }}SELECT ON reporting.int_problem_results FROM org_role_{{ partner.name }};
+DROP ROW POLICY IF EXISTS org_filter_{{ partner.name }} ON reporting.int_problem_results {{ cluster_clause }};
+
+-- Category 4: reporting.int_problem_results has an `org` column but a
+-- direct GRANT doesn't work -- its dependency chain (dim_course_blocks
+-- -> two Dictionaries) has no `org` column of its own. DEFINER view,
+-- same reasoning as event_sink.user_profile above -- see README.
+-- CREATE OR REPLACE (not IF NOT EXISTS): lets a future column-list
+-- change here actually take effect on already-provisioned environments.
+--
+-- IMPORTANT: never grant org_role_{{ partner.name }} direct SELECT on
+-- reporting.int_problem_results -- that would bypass this view's org-scoping.
+CREATE OR REPLACE VIEW reporting.{{ partner.name }}_problem_attempts {{ cluster_clause }}
+    DEFINER = {{ clickhouse_partner_access_view_definer }} SQL SECURITY DEFINER
+AS SELECT
+    {{ clickhouse_partner_access_problem_attempts_columns | join(',\n    ') }}
+FROM reporting.int_problem_results WHERE org = '{{ partner.org }}';
+
+GRANT {{ cluster_clause }}SELECT ON reporting.{{ partner.name }}_problem_attempts TO org_role_{{ partner.name }};
