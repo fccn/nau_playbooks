@@ -45,8 +45,34 @@ clickhouse_partner_access_org_scoped_tables:
   - reporting.dim_problem_results
   - reporting.dim_problem_responses
   - reporting.dim_learner_last_response
-  - reporting.int_problem_results
   - reporting.fact_video_segments
+# reporting.int_problem_results is NOT in this list despite having an
+# `org` column -- see README's "Why some org-scoped tables still need a
+# DEFINER view" section.
+
+# Explicit column list for reporting.<partner>_problem_attempts (see
+# templates/partner_access.sql.j2) -- deliberately not `SELECT *`, so a
+# future column added upstream to int_problem_results (e.g. PII) isn't
+# silently exposed to every partner. Matches int_problem_results' full
+# column list as of #981; update here (not the template) if that
+# changes.
+clickhouse_partner_access_problem_attempts_columns:
+  - emission_time
+  - org
+  - course_key
+  - course_name
+  - course_run
+  - problem_id
+  - problem_name
+  - problem_name_with_location
+  - course_order
+  - problem_link
+  - actor_id
+  - responses
+  - success
+  - attempts
+  - interaction_type
+  - graded
 
 # event_sink.user_profile columns exposed through each partner's DEFINER
 # view (see templates/partner_access.sql.j2). meta_json_fields are
@@ -71,7 +97,8 @@ clickhouse_partner_access_profile_meta_json_fields:
 #     org: "AMA"
 #     password: "{{ clickhouse_partner_arte_password }}"
 #
-# `name` becomes org_user_<name>/org_role_<name>/reporting.<name>_user_profile.
+# `name` becomes org_user_<name>/org_role_<name>/reporting.<name>_user_profile/
+# reporting.<name>_problem_attempts.
 clickhouse_partners: []
 
 # Shared resource-governance profile + quota applied to every partner

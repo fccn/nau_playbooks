@@ -48,9 +48,17 @@ real partner entries) never provisions anything by itself. Rollout to an
 environment is a separate, reviewable change: flip
 `clickhouse_partner_access_enabled: true` in that environment's group_vars.
 
-Safe to re-run -- every per-partner statement is `IF NOT EXISTS`, so
-adding a table or partner and re-running only adds what's missing. The
-shared resource-governance profile/quota (see below) are rebuilt from the
+Safe to re-run -- almost every per-partner statement is `IF NOT EXISTS`,
+so adding a table or partner and re-running only adds what's missing.
+Two exceptions, both needed so a changed column list actually takes
+effect on an already-provisioned environment (see [Why some
+org-scoped tables still need a DEFINER
+view](#why-some-org-scoped-tables-still-need-a-definer-view)):
+`reporting.<partner>_problem_attempts` is `CREATE OR REPLACE`, and it's
+preceded by an idempotent cleanup (`REVOKE`/`DROP ROW POLICY IF
+EXISTS`) for environments that ran an older version of this role
+against `reporting.int_problem_results` directly. The shared
+resource-governance profile/quota (see below) are rebuilt from the
 full `clickhouse_partners` list on every run (via `ALTER`, not a
 destructive drop), so an existing partner's limits/quota attachment also
 stay in sync with the current defaults on every deploy -- see
@@ -68,9 +76,29 @@ clickhouse_partners:
 ```
 
 `name` becomes the suffix for every object this role creates
-(`org_user_arte`, `org_role_arte`, `reporting.arte_user_profile`). No
-code change needed -- the table/column lists in `defaults/main.yml` are
-shared across all partners.
+(`org_user_arte`, `org_role_arte`, `reporting.arte_user_profile`,
+`reporting.arte_problem_attempts`). No code change needed -- the
+table/column lists in `defaults/main.yml` are shared across all
+partners.
+
+## Why some org-scoped tables still need a DEFINER view
+
+Most tables get a plain `ROW POLICY` + `GRANT SELECT` (Category 1): native
+`org` column, no PII. Two need a `SECURITY DEFINER` view instead
+(`reporting.<partner>_user_profile`, `reporting.<partner>_problem_attempts`),
+running under `clickhouse_partner_access_view_definer`'s privileges so
+`org_role_<partner>` only needs `SELECT` on the wrapper:
+
+- `event_sink.user_profile` has no `org` column at all.
+- `reporting.int_problem_results` has an `org` column, but it's a view
+  that joins `reporting.dim_course_blocks` (itself backed by two
+  Dictionaries with no `org` column) for display-name metadata.
+  ClickHouse checks a plain view's grants against the querying user's
+  own privileges down the whole chain, so a direct grant fails, and
+  granting the chain itself would expose every course's/block's name
+  platform-wide.
+
+See `templates/partner_access.sql.j2`.
 
 ## Resource governance (profile + quota)
 
@@ -186,4 +214,5 @@ DROP USER IF EXISTS org_user_<name> ON CLUSTER '<cluster>';
 DROP ROLE IF EXISTS org_role_<name> ON CLUSTER '<cluster>';
 DROP ROW POLICY IF EXISTS org_filter_<name> ON <tables...> ON CLUSTER '<cluster>';
 DROP VIEW IF EXISTS reporting.<name>_user_profile ON CLUSTER '<cluster>';
+DROP VIEW IF EXISTS reporting.<name>_problem_attempts ON CLUSTER '<cluster>';
 ```

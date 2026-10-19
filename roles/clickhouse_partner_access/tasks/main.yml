@@ -56,6 +56,26 @@
   tags: clickhouse_partner_access
   when: clickhouse_partner_access_enabled | bool
 
+# partner.org is interpolated into SQL as a quoted string literal
+# (WHERE org = '{{ partner.org }}') rather than an unquoted identifier,
+# so the injection risk is different from partner.name above: an org
+# value containing a single quote could break out of the literal. The
+# looser pattern below still blocks that (and other SQL metacharacters)
+# while allowing the punctuation real org codes use.
+- name: Assert every partner org is free of SQL string-literal metacharacters
+  ansible.builtin.assert:
+    that:
+      - item is match('^[A-Za-z0-9_.-]+\Z')
+    fail_msg: >-
+      clickhouse_partners entry has org '{{ item }}', which isn't safe to
+      interpolate into a quoted SQL string literal (must match
+      ^[A-Za-z0-9_.-]+$) -- it's rendered unescaped into WHERE org = '...'
+      clauses.
+  loop: "{{ clickhouse_partners | map(attribute='org') | list }}"
+  run_once: true
+  tags: clickhouse_partner_access
+  when: clickhouse_partner_access_enabled | bool
+
 # Every one of these is rendered straight into SQL with no quoting (they're
 # numeric settings, not strings) -- a non-numeric override (e.g. a stray
 # "2GB" instead of 2000000000) produces invalid SQL that, like the name
