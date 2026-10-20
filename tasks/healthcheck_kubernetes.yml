@@ -1,0 +1,191 @@
+---
+# Health of the RKE2 Kubernetes cluster, executed on the control plane nodes.
+#
+# On every control plane: the rke2 service, the API server readiness (that includes etcd)
+# and, when `etcdctl` is installed there, the etcd members, quorum, leader and database size.
+# Once per cluster: nodes Ready, pods, workloads and volumes.
+
+- name: Check the rke2-server service is active
+  ansible.builtin.command: systemctl is-active rke2-server
+  register: healthcheck_k8s_service
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Check the API server is ready, with every internal check including etcd
+  ansible.builtin.command: "{{ healthcheck_k8s_kubectl }} get --raw '/readyz?verbose'"
+  environment:
+    KUBECONFIG: "{{ healthcheck_k8s_kubeconfig }}"
+  register: healthcheck_k8s_readyz
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Check if etcdctl is installed
+  ansible.builtin.command: sh -c 'command -v etcdctl'
+  register: healthcheck_k8s_etcdctl
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Check the etcd members health
+  ansible.builtin.command: etcdctl endpoint health --cluster --write-out=json
+  environment: &etcdctl_environment
+    ETCDCTL_API: "3"
+    ETCDCTL_ENDPOINTS: "{{ healthcheck_k8s_etcd_endpoint }}"
+    ETCDCTL_CACERT: "{{ healthcheck_k8s_etcd_tls_dir }}/server-ca.crt"
+    ETCDCTL_CERT: "{{ healthcheck_k8s_etcd_tls_dir }}/server-client.crt"
+    ETCDCTL_KEY: "{{ healthcheck_k8s_etcd_tls_dir }}/server-client.key"
+  register: healthcheck_k8s_etcd_health
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: healthcheck_k8s_etcdctl.rc == 0
+
+- name: Check the etcd members status
+  ansible.builtin.command: etcdctl endpoint status --cluster --write-out=json
+  environment: *etcdctl_environment
+  register: healthcheck_k8s_etcd_status
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: healthcheck_k8s_etcdctl.rc == 0
+
+- name: Record the problems of this control plane
+  ansible.builtin.set_fact:
+    healthcheck_problems: "{{ healthcheck_problems | default([]) + problems }}"
+  vars:
+    # etcdctl exits non-zero when a member is unhealthy but still prints the JSON, so parse whatever it printed
+    etcd_health: "{{ (healthcheck_k8s_etcd_health.stdout | from_json) if (healthcheck_k8s_etcd_health.stdout | default('', true) | trim).startswith('[') else [] }}"
+    etcd_status: "{{ (healthcheck_k8s_etcd_status.stdout | from_json) if (healthcheck_k8s_etcd_status.stdout | default('', true) | trim).startswith('[') else [] }}"
+    etcd_unhealthy: "{{ etcd_health | rejectattr('health') | map(attribute='endpoint') | list }}"
+    etcd_healthy_count: "{{ etcd_health | selectattr('health') | list | length }}"
+    etcd_quorum: "{{ (etcd_health | length) // 2 + 1 }}"
+    etcd_leaders: "{{ etcd_status | map(attribute='Status') | map(attribute='leader') | unique | list }}"
+    etcd_big: "{{ etcd_status | selectattr('Status.dbSize', 'gt', healthcheck_k8s_etcd_max_db_size_bytes | int) | map(attribute='Endpoint') | list }}"
+    api_failed_checks: "{{ healthcheck_k8s_readyz.stdout_lines | default([]) | select('match', '^\\[-\\]') | list }}"
+    problems: >-
+      {{ (
+           ([inventory_hostname ~ ': rke2-server service is ' ~ (healthcheck_k8s_service.stdout | default('unknown', true))]
+              if healthcheck_k8s_service.rc != 0 else [])
+         + ([inventory_hostname ~ ': the API server is not ready: ' ~ ((api_failed_checks | join('; ')) or (healthcheck_k8s_readyz.stderr | default('', true) | trim) or 'no answer')]
+              if healthcheck_k8s_readyz.rc != 0 else [])
+         + ([inventory_hostname ~ ': etcdctl returned no usable answer: ' ~ ((healthcheck_k8s_etcd_health.stderr | default('', true) | trim) or 'empty output')]
+              if healthcheck_k8s_etcdctl.rc == 0 and etcd_health | length == 0 else [])
+         + (['etcd has no quorum, ' ~ etcd_healthy_count ~ ' of ' ~ (etcd_health | length) ~ ' members healthy, ' ~ etcd_quorum ~ ' needed']
+              if etcd_health | length > 0 and etcd_healthy_count | int < etcd_quorum | int else [])
+         + (['etcd members unhealthy: ' ~ (etcd_unhealthy | join(', '))]
+              if etcd_unhealthy | length > 0 else [])
+         + (['etcd members do not agree on the leader, leaders seen: ' ~ (etcd_leaders | join(', '))]
+              if etcd_leaders | length != 1 and etcd_status | length > 0 else [])
+         + (['etcd database is too big on ' ~ (etcd_big | join(', ')) ~ ', above ' ~ healthcheck_k8s_etcd_max_db_size_bytes ~ ' bytes']
+              if etcd_big | length > 0 else [])
+         ) }}
+
+- name: List the cluster nodes and their Ready condition
+  ansible.builtin.command:
+    argv:
+      - "{{ healthcheck_k8s_kubectl }}"
+      - get
+      - nodes
+      - -o
+      - 'jsonpath={range .items[*]}{.metadata.name}{"\t"}{.status.conditions[?(@.type=="Ready")].status}{"\n"}{end}'
+  environment:
+    KUBECONFIG: "{{ healthcheck_k8s_kubeconfig }}"
+  register: healthcheck_k8s_nodes
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  run_once: true
+
+- name: List the pods with their phase and the reasons of their waiting containers
+  ansible.builtin.command:
+    argv:
+      - "{{ healthcheck_k8s_kubectl }}"
+      - get
+      - pods
+      - --all-namespaces
+      - -o
+      - 'jsonpath={range .items[*]}{.metadata.namespace}/{.metadata.name}{"\t"}{.status.phase}{"\t"}{range .status.containerStatuses[*]}{.state.waiting.reason}{" "}{end}{"\n"}{end}'
+  environment:
+    KUBECONFIG: "{{ healthcheck_k8s_kubeconfig }}"
+  register: healthcheck_k8s_pods
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  run_once: true
+
+- name: List the replicas wanted and ready of the workloads
+  ansible.builtin.command:
+    argv:
+      - "{{ healthcheck_k8s_kubectl }}"
+      - get
+      - "{{ item.kind }}"
+      - --all-namespaces
+      - -o
+      - 'jsonpath={range .items[*]}{.metadata.namespace}/{.metadata.name}{"\t"}{{ item.want }}{"\t"}{{ item.ready }}{"\n"}{end}'
+  environment:
+    KUBECONFIG: "{{ healthcheck_k8s_kubeconfig }}"
+  register: healthcheck_k8s_workloads
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  run_once: true
+  loop:
+    - { kind: deployments, want: '{.spec.replicas}', ready: '{.status.readyReplicas}' }
+    - { kind: statefulsets, want: '{.spec.replicas}', ready: '{.status.readyReplicas}' }
+    - { kind: daemonsets, want: '{.status.desiredNumberScheduled}', ready: '{.status.numberReady}' }
+  loop_control:
+    label: "{{ item.kind }}"
+
+- name: List the persistent volume claims and their phase
+  ansible.builtin.command:
+    argv:
+      - "{{ healthcheck_k8s_kubectl }}"
+      - get
+      - persistentvolumeclaims
+      - --all-namespaces
+      - -o
+      - 'jsonpath={range .items[*]}{.metadata.namespace}/{.metadata.name}{"\t"}{.status.phase}{"\n"}{end}'
+  environment:
+    KUBECONFIG: "{{ healthcheck_k8s_kubeconfig }}"
+  register: healthcheck_k8s_pvcs
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  run_once: true
+
+- name: Record the problems of the cluster
+  ansible.builtin.set_fact:
+    healthcheck_problems: "{{ healthcheck_problems | default([]) + problems }}"
+  vars:
+    ignored: "{{ '^(' ~ (healthcheck_k8s_ignore_namespaces | join('|')) ~ ')/' if healthcheck_k8s_ignore_namespaces | length > 0 else '^$never' }}"
+    limit: "{{ healthcheck_k8s_report_limit | int }}"
+    node_lines: "{{ healthcheck_k8s_nodes.stdout_lines | default([]) }}"
+    nodes_not_ready: "{{ node_lines | reject('search', '\t[Tt]rue$') | map('split', '\t') | map('first') | list }}"
+    expected_nodes: "{{ groups['kubernetes_servers'] | default([]) | length }}"
+    pod_lines: "{{ healthcheck_k8s_pods.stdout_lines | default([]) | reject('search', ignored) | list }}"
+    pods_bad: >-
+      {% for line in pod_lines %}{% set c = line.split('\t') %}{% if c[1] not in ['Running', 'Succeeded', 'Failed'] or (c[2] | default('')) is search('CrashLoopBackOff|ImagePullBackOff|ErrImagePull|CreateContainerConfigError|CreateContainerError|InvalidImageName') %}{{ c[0] }} ({{ c[1] }}{{ ' ' ~ (c[2] | trim) if (c[2] | default('') | trim) else '' }})|{% endif %}{% endfor %}
+    workload_lines: "{{ healthcheck_k8s_workloads.results | default([]) | map(attribute='stdout_lines') | flatten | reject('search', ignored) | list }}"
+    workloads_bad: >-
+      {% for line in workload_lines %}{% set c = line.split('\t') %}{% if (c[2] | default('') | int(0)) < (c[1] | default('') | int(0)) %}{{ c[0] }} ({{ c[2] | default('') | int(0) }}/{{ c[1] | int(0) }} ready)|{% endif %}{% endfor %}
+    pvcs_bad: "{{ healthcheck_k8s_pvcs.stdout_lines | default([]) | reject('search', ignored) | reject('search', '\tBound$') | map('split', '\t') | map('first') | list }}"
+    pods_bad_list: "{{ (pods_bad | default('', true)).split('|') | map('trim') | select | list }}"
+    workloads_bad_list: "{{ (workloads_bad | default('', true)).split('|') | map('trim') | select | list }}"
+    cluster_failed: "{{ healthcheck_k8s_nodes.rc != 0 }}"
+    problems: >-
+      {{ (
+           (['cluster: kubectl could not query the cluster from ' ~ inventory_hostname ~ ': ' ~ (healthcheck_k8s_nodes.stderr | default('', true) | trim)]
+              if cluster_failed else [])
+         + (['cluster: nodes not Ready: ' ~ (nodes_not_ready | join(', '))]
+              if not cluster_failed and nodes_not_ready | length > 0 else [])
+         + (['cluster: ' ~ (node_lines | length) ~ ' nodes registered but the inventory has ' ~ expected_nodes]
+              if not cluster_failed and expected_nodes | int > 0 and node_lines | length != expected_nodes | int else [])
+         + (['cluster: ' ~ (pods_bad_list | length) ~ ' pods not running: ' ~ (pods_bad_list[:limit] | join('; ')) ~ ('; ...' if pods_bad_list | length > limit else '')]
+              if pods_bad_list | length > 0 else [])
+         + (['cluster: ' ~ (workloads_bad_list | length) ~ ' workloads without all replicas ready: ' ~ (workloads_bad_list[:limit] | join('; ')) ~ ('; ...' if workloads_bad_list | length > limit else '')]
+              if workloads_bad_list | length > 0 else [])
+         + (['cluster: ' ~ (pvcs_bad | length) ~ ' volume claims not Bound: ' ~ (pvcs_bad[:limit] | join(', '))]
+              if pvcs_bad | length > 0 else [])
+         ) }}
