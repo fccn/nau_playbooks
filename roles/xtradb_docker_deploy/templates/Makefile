@@ -108,6 +108,20 @@ xtradb-connections-active-count: ## Number of active connections
 	@docker exec -i {{ xtradb_docker_container_name }} bash -c 'echo "SELECT COUNT(1) FROM information_schema.PROCESSLIST WHERE INFO IS NOT NULL;" | MYSQL_PWD="{{ xtradb_mysql_root_password }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} --skip-column-names'
 .PHONY: xtradb-connections-active-count
 
+xtradb-binlog-bytes: ## Bytes of binary logs kept on disk (prints nothing and fails when the database is down)
+	@docker exec -i {{ xtradb_docker_container_name }} bash -c 'set -e; logs=$$(MYSQL_PWD="{{ xtradb_mysql_root_password }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} --skip-column-names --execute="SHOW BINARY LOGS;"); echo "$$logs" | awk "{s+=\$$2} END {print s+0}"'
+.PHONY: xtradb-binlog-bytes
+
+xtradb-binlog-written-bytes: ## Bytes written to the binary logs since the server started (counter, restarts at 0; fails without a value)
+	@docker exec -i {{ xtradb_docker_container_name }} bash -c 'set -o pipefail; MYSQL_PWD="{{ xtradb_mysql_root_password }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} --skip-column-names --execute="SELECT SUM_NUMBER_OF_BYTES_WRITE FROM performance_schema.file_summary_by_event_name WHERE EVENT_NAME = \"wait/io/file/sql/binlog\";" | grep -E "^[0-9]+$$"'
+.PHONY: xtradb-binlog-written-bytes
+
+xtradb-binlog-usage: ## Show the binary logs on disk and the rate they are written at (average since the last restart)
+	@docker exec -i {{ xtradb_docker_container_name }} bash -c 'MYSQL_PWD="{{ xtradb_mysql_root_password }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} --table --execute="SHOW BINARY LOGS;"'
+	@echo "Total on disk: $$($(MAKE) --no-print-directory xtradb-binlog-bytes) bytes"
+	@docker exec -i {{ xtradb_docker_container_name }} bash -c 'MYSQL_PWD="{{ xtradb_mysql_root_password }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} --table --execute="SELECT ROUND(f.SUM_NUMBER_OF_BYTES_WRITE / 1073741824, 2) AS written_gib, ROUND(CAST(s.VARIABLE_VALUE AS UNSIGNED) / 3600, 1) AS since_restart_hours, ROUND(f.SUM_NUMBER_OF_BYTES_WRITE / 1073741824 / (GREATEST(CAST(s.VARIABLE_VALUE AS UNSIGNED), 1) / 86400), 2) AS gib_per_day FROM performance_schema.file_summary_by_event_name f, performance_schema.global_status s WHERE f.EVENT_NAME = \"wait/io/file/sql/binlog\" AND s.VARIABLE_NAME = \"Uptime\";"'
+.PHONY: xtradb-binlog-usage
+
 healthcheck-xtradb-node-ready: ## Check XtraDB node is ready to accept connections
 	@docker exec -i {{ xtradb_docker_container_name }} bash -c 'echo "show status like \"wsrep_ready\";" | MYSQL_PWD="{{ xtradb_mysql_root_password }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} --skip-column-names' | awk '{print $$2}' | grep --quiet "ON" || ( echo "Check XtraDB node is ready to accept connections: error" ; exit 1 )
 	@echo "Check XtraDB node is ready to accept connections: OK"

@@ -72,7 +72,7 @@ On each node, one at a time, with the cluster healthy. `PURGE` and the settings 
 make -C /nau/ops/xtradb/ xtradb-shell
 ```
 ```sql
-SHOW BINARY LOGS;                                -- before
+SHOW BINARY LOGS;                                -- before (or: make xtradb-binlog-usage)
 SET GLOBAL expire_logs_days = 0;                 -- first, the two settings cannot both be set
 SET GLOBAL binlog_expire_logs_seconds = 172800;  -- the value of the environment
 FLUSH BINARY LOGS;                               -- nothing is purged until the logs rotate
@@ -80,6 +80,39 @@ SHOW BINARY LOGS;                                -- after
 ```
 
 The runtime values are lost on a restart: the deploy is what makes them permanent.
+
+### If the volume is already full
+
+Verified on the 8.0.36 image with a node on a full volume. The node still reports `Synced` (`make healthcheck` and
+the keepalived check stay green), but it cannot write its binary log. Once its receive queue reaches the flow
+control limit the **whole cluster** stops committing, DDL included: on the healthy nodes the statements wait in
+`wsrep: replicating and certifying write set` or `wsrep: preparing for TO isolation`.
+
+- `SET GLOBAL` still works, but `SHOW BINARY LOGS`, `SHOW MASTER STATUS`, `FLUSH BINARY LOGS` and `PURGE BINARY LOGS`
+  **hang**: they write a recovery copy of the index file. SQL alone cannot fix a node that is already full. To see
+  what is running use `SHOW FULL PROCESSLIST`: a query on `information_schema.processlist` fails (error 1114, it
+  needs a temporary table).
+- Free a few MB outside the binary logs, for example leftovers in `BACKUP_ROOT` (`/data/backup_tmp`, check what is
+  there before deleting). The hung statements run at once and apply the retention.
+- If nothing can be freed, stop the full node (`docker stop xtradb`): the other two nodes resume committing
+  within seconds. A blocked node does not shut down cleanly, so the container is killed after the grace period (exit
+  code 137). Starting it again on a volume that is still full does not help: it starts but stays `Joining` until
+  there is space. Once there is, it finishes the IST and becomes `Synced` with the same data as the other nodes.
+- Then run the commands above right away: freeing a few MB only leaves the node a few MB from being full again.
+- Deleting an old `bin.NNNNNN` file by hand is tolerated (the index keeps a 0-byte entry until the next
+  `PURGE BINARY LOGS TO 'bin.NNNNNN'`), but it is a last resort.
+
+### Measure and monitor
+
+```bash
+make --no-print-directory -C /nau/ops/xtradb/ xtradb-binlog-usage         # files, total and GiB/day since the last restart
+make --no-print-directory -C /nau/ops/xtradb/ xtradb-binlog-bytes         # bytes on disk
+make --no-print-directory -C /nau/ops/xtradb/ xtradb-binlog-written-bytes # bytes written since the server started
+```
+
+`xtradb_snmpd_configs` (in `group_vars/xtradb_servers.yml`) exposes the two numbers through SNMP
+(`xtradb_binlog_bytes`, `xtradb_binlog_written_bytes`) and registers `/data` with a minimum of 30 % free
+(`disk /data 30%`, net-snmp's threshold is the free space), so a monitoring tool can alert at 70 % used.
 
 ## References
 
