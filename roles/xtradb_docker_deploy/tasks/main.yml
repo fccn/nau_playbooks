@@ -1,4 +1,21 @@
 ---
+- name: Validate the binary log settings
+  assert:
+    that:
+      # 0 would turn off the automatic purge of the binary logs.
+      - xtradb_docker_binlog_expire_logs_seconds | string is match('^[1-9][0-9]*$')
+      # A size without a unit is in bytes (`30` is a 30 byte cap that purges every rotated binary log).
+      - xtradb_docker_binlog_space_limit | string is match('^([1-9][0-9]*[GT])?$')
+      - xtradb_docker_binlog_row_image is not defined or (xtradb_docker_binlog_row_image | string | upper) in ['FULL', 'MINIMAL', 'NOBLOB']
+    fail_msg: >-
+      Invalid binary log settings.
+      xtradb_docker_binlog_expire_logs_seconds must be a number of seconds greater than 0 (got '{{ xtradb_docker_binlog_expire_logs_seconds }}');
+      xtradb_docker_binlog_space_limit must be empty or a size with a G or T unit, like 30G (got '{{ xtradb_docker_binlog_space_limit }}');
+      xtradb_docker_binlog_row_image, when defined, must be FULL, MINIMAL or NOBLOB.
+    quiet: true
+  tags:
+    - docker_deploy
+
 - name: Install make
   package:
     name: make

@@ -6,8 +6,15 @@ default_authentication_plugin = caching_sha2_password
 log-bin = bin.log
 log-bin-index = bin-log.index
 collation_server = utf8mb4_unicode_ci
-expire_logs_days = 30
+# `expire_logs_days` must not be set together with `binlog_expire_logs_seconds`.
+binlog_expire_logs_seconds = {{ xtradb_docker_binlog_expire_logs_seconds }}
 max_binlog_size = 100M
+{% if xtradb_docker_binlog_space_limit | string | length > 0 %}
+binlog_space_limit = {{ xtradb_docker_binlog_space_limit }}
+{% endif %}
+{% if xtradb_docker_binlog_row_image is defined %}
+binlog_row_image = {{ xtradb_docker_binlog_row_image }}
+{% endif %}
 max_connections = {{ xtradb_docker_max_connections }}
 innodb_buffer_pool_size = {{ xtradb_docker_innodb_buffer_pool_size }}
 {% if xtradb_docker_wsrep_sst_donor is defined %}
