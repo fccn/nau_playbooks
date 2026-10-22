@@ -106,3 +106,44 @@ xtradb_docker_innodb_buffer_pool_size: 5934M
 # If the list contains a trailing comma, the remaining nodes in the cluster
 # will also be considered if the nodes from the list are not available.
 xtradb_docker_wsrep_sst_donor: "{{ xtradb_cluster_hosts[-1] }},"
+
+# Engine settings (nau-technical#1100). Nothing below is set by default: when a variable is not defined, the setting
+# is not written to custom.cnf and the image / MySQL default applies, so the role changes nothing until an
+# environment opts in (in secure-nau-data). Measure first: `make xtradb-innodb-pressure`.
+#
+# Do not use SET PERSIST for any of them. It writes mysqld-auto.cnf in the data directory, which wins over
+# custom.cnf at every restart and hides the value from this repository. Use SET GLOBAL for an immediate effect and
+# set the same value here.
+
+# Stop resolving the host name of every new client connection (the image keeps the host cache off, so each
+# connection costs a reverse and a forward DNS lookup, nau-technical#722). Needs a restart. A MySQL account whose
+# host is a host name (`app@db.example.com`, or a wildcard like `app@%.example.com`) stops matching, silently for
+# a wildcard, so first run on every node: SELECT user, host FROM mysql.user WHERE host REGEXP '[A-Za-z]' AND host <> 'localhost';
+# and enable it only if that returns nothing. IPv6 addresses (`::1`) are listed too, ignore those.
+# xtradb_docker_skip_name_resolve: true
+
+# Size of the InnoDB redo log (MySQL default 100M), 8M to 99G. It absorbs write bursts: writers wait when the redo that is not
+# yet flushed to the data files reaches the capacity. It does not help when the writes are above what the disk can
+# flush for a long time. The files are allocated in full in `/data` (2G uses 2G), a crash recovery after a kill
+# replays at most that much redo, and mysqld can take longer to stop than Docker's 10 s default. Dynamic: SET GLOBAL
+# innodb_redo_log_capacity = 2147483648. Always give a unit, a bare number is in bytes.
+# xtradb_docker_innodb_redo_log_capacity: 2G
+
+# Slow query log, to find the queries that are worth a change before guessing a limit. The files are written in the
+# data directory (`/data/xtradb/slow.log.NNNNNN`), rotated by mysqld at `max_size` and only `max_files` are kept, so
+# the disk used is bounded by max_size x max_files. Entries are about 400 bytes. Without a threshold above 0 every
+# statement is logged, which is only for a short test. At runtime (no restart):
+#   SET GLOBAL slow_query_log_file = '/var/lib/mysql/slow.log'; SET GLOBAL long_query_time = 1;
+#   SET GLOBAL log_slow_extra = ON; SET GLOBAL max_slowlog_size = 268435456; SET GLOBAL max_slowlog_files = 4;
+#   SET GLOBAL slow_query_log = ON;
+# xtradb_docker_slow_query_log: true
+xtradb_docker_slow_query_log_long_query_time: 1
+xtradb_docker_slow_query_log_max_size: 256M
+xtradb_docker_slow_query_log_max_files: 4
+
+# Size of the Galera write-set cache (`galera.cache`, default 128M). It decides how long a node can be away and still
+# rejoin by IST instead of a full SST from a donor. The file is allocated in full in `/data`. Needs a restart. Size it
+# with `make xtradb-innodb-pressure` (the IST window it prints). Before enlarging it, check the kernel and the file
+# system of the nodes: Percona PXC-5340 (open) reports write amplification on the memory mapped gcache with the
+# large folio support of recent kernels (XFS since 5.18, ext4 since 6.16).
+# xtradb_docker_gcache_size: 1G
