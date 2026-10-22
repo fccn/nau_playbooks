@@ -8,6 +8,61 @@ This role can be deployed to multiple hosts creating an Percona XtraDB cluster.
 You have to configure this variable:
 - `xtradb_mysql_root_password`
 
+## Engine settings
+
+The engine settings of [nau-technical#1100](https://github.com/fccn/nau-technical/issues/1100) are all **optional**: a
+variable that is not defined is not written to `custom.cnf`, so the role renders the same file as before until an
+environment opts in. See `defaults/main.yml` for the units, the limits and the cost of each one.
+
+| Variable | What it does | Needs |
+|----------|--------------|-------|
+| `xtradb_docker_slow_query_log` | Slow query log in `/data/xtradb/slow.log.NNNNNN`, rotated by mysqld (`..._max_size` x `..._max_files` is the most it uses). Threshold `..._long_query_time` (1 s). | Restart, or `SET GLOBAL` (see `defaults/main.yml`) |
+| `xtradb_docker_innodb_redo_log_capacity` | Redo log size, 8M to 99G (MySQL default 100M). Absorbs write bursts. Allocated in full in `/data`. | Restart, or `SET GLOBAL` |
+| `xtradb_docker_skip_name_resolve` | No DNS lookup per new connection (3 DNS queries per connection in a local test, the image keeps the host cache off). | Restart, and the account check below |
+| `xtradb_docker_gcache_size` | Galera write-set cache (128M default): how long a node can be away and rejoin by IST. Allocated in full in `/data`. | Restart |
+
+The deploy fails before touching a node if a size has no `M` / `G` unit (a bare number is in bytes), is out of range, or
+if the slow log threshold is `0`.
+
+Set them in the inventory of the environment (`secure-nau-data`), one environment at a time. Do **not** use `SET PERSIST`:
+it writes `mysqld-auto.cnf` in the data directory, which wins over `custom.cnf` at every restart and is not in this
+repository. Use `SET GLOBAL` for an immediate effect and set the same value in the inventory.
+
+### Measure first
+
+```bash
+make --no-print-directory -C /nau/ops/xtradb/ xtradb-innodb-pressure INTERVAL=30
+```
+
+Read-only (it only reads `performance_schema`). Run it on each node a few times in the busiest hour, before and after a
+change. It prints the redo written per second and how full the redo is, the dirty pages, the row lock waits, the new
+connections per second (and whether they do DNS lookups), the slow queries, and how many minutes of write-sets the Galera
+cache holds at the current rate.
+
+A checkpoint age that goes over about 75 % of the redo capacity in a burst means the writers are close to waiting: in a
+local test with the default 100M, a burst that took it to 83 % made them stall, and at 4 % of a 2G capacity it did not.
+The "IST window" is an estimate from the bytes written and the cache size; the line below it, from the write-sets in the
+cache now, is the real one.
+
+### Before `xtradb_docker_skip_name_resolve`
+
+An account whose host is a host name stops matching, and for a wildcard host name (`app@%.example.com`) there is no
+warning in the log. On every node:
+
+```sql
+SELECT user, host FROM mysql.user WHERE host REGEXP '[A-Za-z]' AND host <> 'localhost';
+```
+
+Enable it only if this returns nothing (an IPv6 address such as `::1` is listed too, ignore those). The `root@%` account
+that the `make` health checks and the backup use over `127.0.0.1` has to exist: check it with
+`SELECT user, host FROM mysql.user WHERE user = 'root';`.
+
+### Before enlarging `xtradb_docker_gcache_size`
+
+Check the kernel and the file system of the nodes. Percona PXC-5340 (open) reports write amplification on the memory
+mapped cache with the large folio support of recent kernels (XFS since 5.18, ext4 since 6.16). Compare the disk writes
+of the node before and after on one node first.
+
 ## Certificates
 
 Prior to deploy this role, you need to generate certificates.
