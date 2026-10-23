@@ -56,12 +56,37 @@
   tags: clickhouse_partner_access
   when: clickhouse_partner_access_enabled | bool
 
-# partner.org is interpolated into SQL as a quoted string literal
-# (WHERE org = '{{ partner.org }}') rather than an unquoted identifier,
-# so the injection risk is different from partner.name above: an org
-# value containing a single quote could break out of the literal. The
-# looser pattern below still blocks that (and other SQL metacharacters)
-# while allowing the punctuation real org codes use.
+# partner.orgs is a list (not a single org string) -- a partner's
+# courses can legitimately span more than one platform `org` namespace
+# (e.g. ARTE: both `AMA` and `portugaldigital`, confirmed live). Every
+# entry is asserted non-empty here, since an empty list would silently
+# render `org IN ()`/`WHERE org IN ()` -- valid SQL that matches nothing,
+# not a syntax error -- hiding a config mistake as "zero rows" instead
+# of failing loudly.
+- name: Assert every partner has a non-empty orgs list
+  ansible.builtin.assert:
+    that:
+      - item.orgs is defined
+      - item.orgs | length > 0
+    fail_msg: >-
+      clickhouse_partners entry '{{ item.name }}' has no non-empty
+      'orgs' list -- see defaults/main.yml for the expected shape
+      (orgs: [...], not a single 'org' string).
+  loop: "{{ clickhouse_partners }}"
+  loop_control:
+    label: "{{ item.name }}"
+  run_once: true
+  tags: clickhouse_partner_access
+  when: clickhouse_partner_access_enabled | bool
+
+# Each org value is interpolated into SQL as a quoted string literal
+# (WHERE org IN ('...', '...')) rather than an unquoted identifier, so
+# the injection risk is different from partner.name above: an org value
+# containing a single quote could break out of the literal. The looser
+# pattern below still blocks that (and other SQL metacharacters) while
+# allowing the punctuation real org codes use. Flattened across every
+# partner's orgs list (not just the first org per partner), since every
+# entry gets rendered the same way into partner_access.sql.j2.
 - name: Assert every partner org is free of SQL string-literal metacharacters
   ansible.builtin.assert:
     that:
@@ -69,9 +94,9 @@
     fail_msg: >-
       clickhouse_partners entry has org '{{ item }}', which isn't safe to
       interpolate into a quoted SQL string literal (must match
-      ^[A-Za-z0-9_.-]+$) -- it's rendered unescaped into WHERE org = '...'
-      clauses.
-  loop: "{{ clickhouse_partners | map(attribute='org') | list }}"
+      ^[A-Za-z0-9_.-]+$) -- it's rendered unescaped into WHERE org IN
+      (...) clauses.
+  loop: "{{ clickhouse_partners | map(attribute='orgs') | flatten | list }}"
   run_once: true
   tags: clickhouse_partner_access
   when: clickhouse_partner_access_enabled | bool
