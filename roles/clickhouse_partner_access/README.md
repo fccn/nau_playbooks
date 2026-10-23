@@ -8,11 +8,17 @@ data partners (e.g. ARTE), per
 For each partner in `clickhouse_partners`, this creates:
 - A dedicated user (`org_user_<name>`) and role (`org_role_<name>`).
 - A `ROW POLICY` scoping every table in
-  `clickhouse_partner_access_org_scoped_tables` to `org = '<partner org>'`.
+  `clickhouse_partner_access_org_scoped_tables` to
+  `org IN ('<partner org 1>', '<partner org 2>', ...)` -- a partner's
+  courses can span more than one platform `org` namespace (e.g. ARTE:
+  both `AMA` and `portugaldigital`), so `orgs` is a list, not a single
+  string.
 - A `SQL SECURITY DEFINER` view (`reporting.<name>_user_profile`) exposing
   a subset of `event_sink.user_profile` (the one table with no native
-  `org` column) -- the role only ever gets `SELECT` on the view, never on
-  `event_sink.user_profile`/`event_sink.external_id` directly.
+  `org` column), plus the `actor_id` looked up along the way via
+  `event_sink.external_id` -- the role only ever gets `SELECT` on the
+  view, never on `event_sink.user_profile`/`event_sink.external_id`
+  directly.
 
 It also maintains a resource-governance `SETTINGS PROFILE` + `QUOTA`
 shared by every `org_role_<name>` -- see
@@ -71,9 +77,12 @@ Add an entry to `clickhouse_partners` (in `secure-nau-data`, per environment):
 ```yaml
 clickhouse_partners:
   - name: arte
-    org: "AMA"
+    orgs: ["AMA", "portugaldigital"]
     password: "{{ clickhouse_partner_arte_password }}"
 ```
+
+`orgs` is always a list, even for a partner with a single platform org --
+it's rendered into `org IN (...)` either way.
 
 `name` becomes the suffix for every object this role creates
 (`org_user_arte`, `org_role_arte`, `reporting.arte_user_profile`,

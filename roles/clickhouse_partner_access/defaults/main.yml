@@ -94,8 +94,14 @@ clickhouse_partner_access_profile_meta_json_fields:
 #
 # clickhouse_partners:
 #   - name: arte
-#     org: "AMA"
+#     orgs: ["AMA", "portugaldigital"]
 #     password: "{{ clickhouse_partner_arte_password }}"
+#
+# `orgs` is a list, not a single org string -- a partner's courses can
+# span more than one platform `org` namespace (ARTE's do: both `AMA`
+# and `portugaldigital`, confirmed live against
+# xapi.enrollment_events -- each has its own real, substantial
+# enrollment volume, not just a handful of stray rows).
 #
 # `name` becomes org_user_<name>/org_role_<name>/reporting.<name>_user_profile/
 # reporting.<name>_problem_attempts.
