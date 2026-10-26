@@ -8,11 +8,17 @@ data partners (e.g. ARTE), per
 For each partner in `clickhouse_partners`, this creates:
 - A dedicated user (`org_user_<name>`) and role (`org_role_<name>`).
 - A `ROW POLICY` scoping every table in
-  `clickhouse_partner_access_org_scoped_tables` to `org = '<partner org>'`.
+  `clickhouse_partner_access_org_scoped_tables` to
+  `org IN ('<partner org 1>', '<partner org 2>', ...)` -- a partner's
+  courses can span more than one platform `org` namespace (e.g. ARTE:
+  both `AMA` and `portugaldigital`), so `orgs` is a list, not a single
+  string.
 - A `SQL SECURITY DEFINER` view (`reporting.<name>_user_profile`) exposing
   a subset of `event_sink.user_profile` (the one table with no native
-  `org` column) -- the role only ever gets `SELECT` on the view, never on
-  `event_sink.user_profile`/`event_sink.external_id` directly.
+  `org` column), plus the `actor_id` looked up along the way via
+  `event_sink.external_id` -- the role only ever gets `SELECT` on the
+  view, never on `event_sink.user_profile`/`event_sink.external_id`
+  directly.
 
 It also maintains a resource-governance `SETTINGS PROFILE` + `QUOTA`
 shared by every `org_role_<name>` -- see
@@ -50,18 +56,26 @@ environment is a separate, reviewable change: flip
 
 Safe to re-run -- almost every per-partner statement is `IF NOT EXISTS`,
 so adding a table or partner and re-running only adds what's missing.
-Two exceptions, both needed so a changed column list actually takes
-effect on an already-provisioned environment (see [Why some
-org-scoped tables still need a DEFINER
+A few exceptions, all needed so a config change actually takes effect
+on an already-provisioned environment (see [Why some org-scoped tables
+still need a DEFINER
 view](#why-some-org-scoped-tables-still-need-a-definer-view)):
-`reporting.<partner>_problem_attempts` is `CREATE OR REPLACE`, and it's
-preceded by an idempotent cleanup (`REVOKE`/`DROP ROW POLICY IF
-EXISTS`) for environments that ran an older version of this role
-against `reporting.int_problem_results` directly. The shared
-resource-governance profile/quota (see below) are rebuilt from the
-full `clickhouse_partners` list on every run (via `ALTER`, not a
-destructive drop), so an existing partner's limits/quota attachment also
-stay in sync with the current defaults on every deploy -- see
+- The Category 1 row policy gets an `ALTER ROW POLICY` right after its
+  `CREATE ... IF NOT EXISTS` -- `CREATE ... IF NOT EXISTS` alone never
+  updates an already-existing policy's org list, so without the
+  `ALTER`, a partner's `orgs` list change (e.g. onboarding a second
+  org) would silently never apply on a re-run.
+- `reporting.<partner>_user_profile` and `reporting.<partner>_problem_attempts`
+  are both `CREATE OR REPLACE`, so a changed column list actually takes
+  effect. The latter is preceded by an idempotent cleanup
+  (`REVOKE`/`DROP ROW POLICY IF EXISTS`) for environments that ran an
+  older version of this role against `reporting.int_problem_results`
+  directly.
+
+The shared resource-governance profile/quota (see below) are rebuilt
+from the full `clickhouse_partners` list on every run (via `ALTER`, not
+a destructive drop), so an existing partner's limits/quota attachment
+also stay in sync with the current defaults on every deploy -- see
 [Resource governance](#resource-governance-profile--quota).
 
 ## Adding a new partner
@@ -71,9 +85,12 @@ Add an entry to `clickhouse_partners` (in `secure-nau-data`, per environment):
 ```yaml
 clickhouse_partners:
   - name: arte
-    org: "AMA"
+    orgs: ["AMA", "portugaldigital"]
     password: "{{ clickhouse_partner_arte_password }}"
 ```
+
+`orgs` is always a list, even for a partner with a single platform org --
+it's rendered into `org IN (...)` either way.
 
 `name` becomes the suffix for every object this role creates
 (`org_user_arte`, `org_role_arte`, `reporting.arte_user_profile`,
