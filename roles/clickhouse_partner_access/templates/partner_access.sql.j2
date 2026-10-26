@@ -113,7 +113,10 @@ AS SELECT
     {{ profile_all_columns | join(',\n    ') }}
 FROM event_sink.user_profile up
 INNER JOIN (
-    SELECT DISTINCT user_id, external_user_id AS actor_id
+    -- toString(): external_user_id is UUID here, but actor_id is
+    -- String everywhere else -- matches that type so joins need a
+    -- plain = (confirmed live, same format either way).
+    SELECT DISTINCT user_id, toString(external_user_id) AS actor_id
     FROM event_sink.external_id
     WHERE external_user_id IN (
         SELECT DISTINCT actor_id FROM xapi.enrollment_events WHERE org IN ({{ orgs_sql_list }})
