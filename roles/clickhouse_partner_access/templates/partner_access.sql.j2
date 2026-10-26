@@ -1,5 +1,5 @@
 {%- set cluster_clause = "ON CLUSTER '" ~ clickhouse_partner_access_cluster ~ "' " if clickhouse_partner_access_on_cluster else "" -%}
-{%- set cols = namespace(list=['up.user_id']) -%}
+{%- set cols = namespace(list=['up.user_id', 'ei.actor_id']) -%}
 {%- for field in clickhouse_partner_access_profile_direct_fields -%}
 {%- set cols.list = cols.list + ['up.' ~ field] -%}
 {%- endfor -%}
@@ -7,14 +7,29 @@
 {%- set cols.list = cols.list + ["JSONExtractString(up.meta, '" ~ field ~ "') AS " ~ field] -%}
 {%- endfor -%}
 {%- set profile_all_columns = cols.list -%}
+{%- set orgs_sql_list = "'" ~ (partner.orgs | join("', '")) ~ "'" -%}
 -- {{ ansible_managed }}
 --
 -- Native, read-only, org-scoped ClickHouse access for partner
--- '{{ partner.name }}' (org = '{{ partner.org }}'), per fccn/nau-technical#981.
--- Idempotent -- safe to re-run (IF NOT EXISTS throughout, except the
--- Category 4 cleanup and CREATE OR REPLACE VIEW below). The shared
--- resource-governance objects in partner_resource_limits.sql.j2 are
--- idempotent too (CREATE IF NOT EXISTS + ALTER, see that file).
+-- '{{ partner.name }}' (orgs IN ({{ orgs_sql_list }})), per
+-- fccn/nau-technical#981. partner.orgs is a list (not a single org
+-- string) -- a partner's courses can legitimately span more than one
+-- platform `org` namespace (e.g. ARTE's courses are split across both
+-- `AMA` and `portugaldigital`, confirmed live against
+-- xapi.enrollment_events: both have real, substantial enrollment
+-- volume under their own distinct org).
+-- Idempotent -- safe to re-run (IF NOT EXISTS/ALTER/CREATE OR REPLACE
+-- throughout, never a destructive DROP of partner data). Three
+-- exceptions beyond plain CREATE ... IF NOT EXISTS: the Category 1 row
+-- policy gets an ALTER right after its CREATE ... IF NOT EXISTS, so a
+-- changed partner.orgs list is actually re-applied to an
+-- already-provisioned policy (CREATE ... IF NOT EXISTS alone is a
+-- no-op past the first run); both the user_profile view (Category 3)
+-- and the problem_attempts view (Category 4) are CREATE OR REPLACE,
+-- plus Category 4 has an idempotent cleanup (REVOKE/DROP ROW POLICY IF
+-- EXISTS) ahead of it. The shared resource-governance objects in
+-- partner_resource_limits.sql.j2 are idempotent too (CREATE IF NOT
+-- EXISTS + ALTER, see that file).
 
 -- 'readonly' here is just a baseline/defense-in-depth default for a
 -- brand new user -- the real, tunable resource limits (memory/time/
@@ -34,10 +49,21 @@ GRANT {{ cluster_clause }}org_role_{{ partner.name }} TO org_user_{{ partner.nam
 
 SET DEFAULT ROLE org_role_{{ partner.name }} TO org_user_{{ partner.name }};
 
--- Category 1: tables with a native `org` column.
+-- Category 1: tables with a native `org` column. CREATE ... IF NOT
+-- EXISTS only bootstraps the policy on a brand-new environment -- it is
+-- a no-op (keeps the OLD USING clause) on an environment that already
+-- ran this role before, e.g. with a single-org USING clause from
+-- before partner.orgs supported more than one org. The follow-up ALTER
+-- is what actually keeps an already-provisioned policy's USING clause
+-- in sync with the current partner.orgs list on every re-run.
 CREATE ROW POLICY IF NOT EXISTS org_filter_{{ partner.name }} {{ cluster_clause }}
     ON {{ clickhouse_partner_access_org_scoped_tables | join(', ') }}
-    FOR SELECT USING org = '{{ partner.org }}'
+    FOR SELECT USING org IN ({{ orgs_sql_list }})
+    TO org_role_{{ partner.name }};
+
+ALTER ROW POLICY org_filter_{{ partner.name }} {{ cluster_clause }}
+    ON {{ clickhouse_partner_access_org_scoped_tables | join(', ') }}
+    FOR SELECT USING org IN ({{ orgs_sql_list }})
     TO org_role_{{ partner.name }};
 
 -- GRANT needs one statement per table (unlike ROW POLICY above, which
@@ -52,19 +78,47 @@ GRANT {{ cluster_clause }}SELECT ON {{ table }} TO org_role_{{ partner.name }};
 -- under {{ clickhouse_partner_access_view_definer }}'s privileges instead --
 -- org_role_{{ partner.name }} only ever needs SELECT on the view.
 --
+-- actor_id (ei.actor_id) is now included in the SELECT list --
+-- fccn/nau-technical#981 follow-up: the view already looked up
+-- event_sink.external_id internally to scope rows by org, but never
+-- surfaced the actor_id it found along the way, leaving partners with
+-- no way to correlate this view's user_id/user_cd with the actor_id
+-- used throughout every xapi.*/reporting.* table. Exposing it here
+-- changes nothing about the row-scoping itself (still DEFINER-run,
+-- still scoped to the same orgs) -- it only adds one already-looked-up
+-- column to the output.
+--
+-- The de-duplicated subquery below (not a plain join against
+-- event_sink.external_id directly) is required, not optional:
+-- external_id can have more than one row per user_id (confirmed live
+-- -- e.g. repeated dump snapshots of the same actor_id), so a plain
+-- INNER JOIN on the raw table would fan out and duplicate
+-- user_profile rows. Pre-filtering to DISTINCT user_id/actor_id pairs
+-- first keeps this a true semi-join (at most one output row per
+-- user_profile row), matching the original IN-subquery's semantics
+-- before actor_id needed to be exposed in the SELECT list (IN alone
+-- can't expose a correlated column, which is why this moved to a
+-- join in the first place).
+--
 -- IMPORTANT: never grant org_role_{{ partner.name }} direct SELECT on
 -- event_sink.user_profile -- that silently bypasses this view's org-scoping.
-CREATE VIEW IF NOT EXISTS reporting.{{ partner.name }}_user_profile {{ cluster_clause }}
+-- DISTINCT user_id, actor_id (not just user_id) assumes one actor_id
+-- per user_id within an org -- confirmed live: repeats seen so far are
+-- identical pairs from re-dumped snapshots, never two different
+-- actor_ids for the same user_id. If that ever changes, this would
+-- re-fan-out one profile row per distinct actor_id.
+CREATE OR REPLACE VIEW reporting.{{ partner.name }}_user_profile {{ cluster_clause }}
     DEFINER = {{ clickhouse_partner_access_view_definer }} SQL SECURITY DEFINER
 AS SELECT
     {{ profile_all_columns | join(',\n    ') }}
 FROM event_sink.user_profile up
-WHERE up.user_id IN (
-    SELECT user_id FROM event_sink.external_id
+INNER JOIN (
+    SELECT DISTINCT user_id, external_user_id AS actor_id
+    FROM event_sink.external_id
     WHERE external_user_id IN (
-        SELECT DISTINCT actor_id FROM xapi.enrollment_events WHERE org = '{{ partner.org }}'
+        SELECT DISTINCT actor_id FROM xapi.enrollment_events WHERE org IN ({{ orgs_sql_list }})
     )
-);
+) ei ON ei.user_id = up.user_id;
 
 GRANT {{ cluster_clause }}SELECT ON reporting.{{ partner.name }}_user_profile TO org_role_{{ partner.name }};
 
@@ -99,6 +153,6 @@ CREATE OR REPLACE VIEW reporting.{{ partner.name }}_problem_attempts {{ cluster_
     DEFINER = {{ clickhouse_partner_access_view_definer }} SQL SECURITY DEFINER
 AS SELECT
     {{ clickhouse_partner_access_problem_attempts_columns | join(',\n    ') }}
-FROM reporting.int_problem_results WHERE org = '{{ partner.org }}';
+FROM reporting.int_problem_results WHERE org IN ({{ orgs_sql_list }});
 
 GRANT {{ cluster_clause }}SELECT ON reporting.{{ partner.name }}_problem_attempts TO org_role_{{ partner.name }};
