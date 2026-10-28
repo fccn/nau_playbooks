@@ -79,6 +79,15 @@
       # skip idp proxy
       when: ansible_distribution == 'Ubuntu'
 
+    # NOTE: the Bacula file daemon (bacula-fd) is not deployed by these playbooks.
+    # The Ubuntu 16.04 VMs built from the infrastructure team's template run it,
+    # configured by hand against their backup directors. The 22.04 and 24.04
+    # hosts checked do not have it, nor does the new support server VM.
+    # It needs further investigation before it can be automated: whether the
+    # backups still rely on an in-guest agent, which Bacula versions the
+    # directors accept (16.04 ships 7.0.5, 24.04 ships 13.0.4) and where the
+    # director passwords should be stored.
+
     # - name: Install pip
     #   import_role:
     #     name: geerlingguy.pip
