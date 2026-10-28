@@ -13,6 +13,9 @@ healthcheck_public_domain: "{{ marketing_site_nau_domain | regex_replace('^www\\
 # Also fail when a VIP is held by a node that is not its keepalived MASTER.
 # Set to false while a node is intentionally in maintenance (keepalived priority lowered).
 healthcheck_vip_expected_holder_enforced: true
+# Where the configuration of keepalived and the list of network interfaces are read. Only change them to test.
+healthcheck_keepalived_conf_file: /etc/keepalived/keepalived.conf
+healthcheck_keepalived_net_dir: /sys/class/net
 
 # ---------------------------------------------------------------------------
 # Kubernetes
@@ -46,8 +49,29 @@ healthcheck_host_container_interfaces: '^(docker|br-|veth|cni|flannel|cali|vxlan
 healthcheck_host_firewall_expected: "{{ (firewall_managed_groups | default([])) | intersect(group_names) | length > 0 }}"
 # Also check ip6tables. Set to false for hosts where IPv6 is disabled in the kernel.
 healthcheck_host_firewall_check_ipv6: true
-# Print the OS, addresses and firewall summary of every host in the report.
+# Print the OS, addresses, firewall, virtualization and XtraDB summary of every host in the report.
 healthcheck_host_show_info: true
+# The CPU flags that every host needs. The generic CPU type of a hypervisor (kvm64, qemu64) hides them and the
+# software built for them crashes. Only checked on x86_64. Empty: not checked.
+healthcheck_host_cpu_required_flags: [sse4_2]
+# The clock is synchronised, at least `healthcheck_host_time_min_sources` time sources of chrony answer (2 also
+# requires the redundancy), and the offset to the time source is at most `healthcheck_host_time_max_offset` seconds.
+healthcheck_host_time_check: true
+healthcheck_host_time_min_sources: 1
+healthcheck_host_time_max_offset: 1
+# Every filesystem of the fstab (swap and noauto excluded) is mounted, and none of the local ones is
+# `healthcheck_host_disk_max_percent` percent full. Kubernetes volumes, network filesystems and other mounts that are
+# not in the fstab are not checked for space.
+healthcheck_host_fstab_check: true
+healthcheck_host_disk_max_percent: 85
+# Mount points of the fstab that are not checked, for example a disk that is not always there.
+healthcheck_host_fstab_ignore: []
+# A KVM guest runs qemu-guest-agent, which the hypervisor uses to shut the VM down and to read its addresses.
+healthcheck_host_guest_agent_check: true
+# Where the CPU flags and the filesystems are read. Only change them to test.
+healthcheck_host_cpuinfo_file: /proc/cpuinfo
+healthcheck_host_fstab_file: /etc/fstab
+healthcheck_host_mountinfo_file: /proc/self/mountinfo
 
 # ---------------------------------------------------------------------------
 # Connectivity from the Kubernetes worker nodes to the data stores
@@ -127,3 +151,15 @@ healthcheck_dns_names:
 # ---------------------------------------------------------------------------
 healthcheck_balancer_make_dir: /nau/ops/nau-balancer
 healthcheck_registry_mirror_make_dir: /nau/ops/docker_registry_mirror
+
+# ---------------------------------------------------------------------------
+# XtraDB (Percona XtraDB Cluster, Galera)
+# ---------------------------------------------------------------------------
+healthcheck_xtradb_container: xtradb
+# The nodes that must be in the cluster. Lower it while a node is out of the cluster on purpose.
+healthcheck_xtradb_expected_cluster_size: "{{ groups['xtradb_servers'] | default([]) | length }}"
+# A node that uses this percentage of its max_connections or more is a problem.
+healthcheck_xtradb_connections_max_percent: 80
+healthcheck_xtradb_cert_expiry_days: 30
+# The backup node (the last of the group) uploads the backups to Ceph S3 when DBS_BACKUP_EXTERNAL_STORAGE is ceph.
+healthcheck_xtradb_backup_storage_port: 443

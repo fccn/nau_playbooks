@@ -1,14 +1,18 @@
 # Playbook that checks the health of the whole platform.
 #
 # 1. The checks below only read and never change anything:
-# - vips: each keepalived virtual IP is held by exactly one node and that node is its MASTER
+# - vips: each keepalived virtual IP is held by exactly one node and that node is its MASTER, and keepalived runs
+#   with the interface of its configuration on the host and the declared priority
 # - kubernetes: rke2, API server, etcd quorum, nodes Ready, pods, workloads and volumes
 # - connectivity: every Kubernetes worker reaches MongoDB, XtraDB, Redis, Elasticsearch,
 #   ClickHouse, the Richie MySQL and Ceph S3
 # - docker-services: the Makefile healthcheck of the load balancers and the registry mirror
+# - xtradb: each XtraDB node, its container, the Galera cluster, the TLS certificates and, on the backup
+#   node, the access to the Ceph S3 of the backups
 # - host: the OS, the IPv4 addresses against the inventory, the routes (default route, container networks
-#   that overlap the host's) and the iptables rules (loaded against the persisted file). It also lists the
-#   OS, addresses and firewall of every host in the report.
+#   that overlap the host's), the iptables rules (loaded against the persisted file), and what changes when a VM
+#   moves to another hypervisor: the CPU flags, the clock, the filesystems of the fstab and the guest agent.
+#   It also lists the OS, addresses, firewall and virtualization of every host in the report.
 # - endpoints: the public endpoints of the platform through each load balancer VIP, the DNS
 #   answer of the public names and the TLS certificates
 #
@@ -35,6 +39,9 @@
 # Only some of the new checks, skipping step 3:
 #   ansible-playbook -i nau-data/envs/production/hosts.ini healthcheck.yml --tags vips,kubernetes,always --skip-tags vm
 #
+# After a change to XtraDB, or after one of its VMs moved to another hypervisor:
+#   ansible-playbook -i nau-data/envs/development/hosts.ini healthcheck.yml --tags xtradb,vips,host,connectivity,endpoints,always --skip-tags vm
+#
 # Only step 3, as before this upgrade:
 #   ansible-playbook -i nau-data/envs/production/hosts.ini healthcheck.yml --tags vm
 #
@@ -49,6 +56,7 @@
   tags: vips
   tasks:
     - import_tasks: tasks/healthcheck_vips.yml
+    - import_tasks: tasks/healthcheck_keepalived.yml
 
 - name: Check the Kubernetes clusters
   hosts: kubernetes_control_plane_servers
@@ -70,6 +78,14 @@
   tags: docker-services
   tasks:
     - import_tasks: tasks/healthcheck_docker_services.yml
+
+- name: Check the XtraDB nodes
+  hosts: xtradb_servers
+  become: true
+  gather_facts: false
+  tags: xtradb
+  tasks:
+    - import_tasks: tasks/healthcheck_xtradb.yml
 
 - name: Check the operating system, the network and the firewall of each host
   hosts: all
@@ -104,6 +120,14 @@
         msg: "{{ infos }}"
       vars:
         infos: "{{ groups['all'] | map('extract', hostvars, 'healthcheck_host_info') | select('defined') | sort | list }}"
+      when: infos | length > 0 and healthcheck_host_show_info | bool
+      run_once: true
+
+    - name: Print the state of each XtraDB node
+      ansible.builtin.debug:
+        msg: "{{ infos }}"
+      vars:
+        infos: "{{ groups['xtradb_servers'] | default([]) | map('extract', hostvars, 'healthcheck_xtradb_info') | select('defined') | sort | list }}"
       when: infos | length > 0 and healthcheck_host_show_info | bool
       run_once: true
 

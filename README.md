@@ -84,11 +84,12 @@ ansible-playbook -i nau-data/envs/<env>/hosts.ini healthcheck.yml
 
 | Tag | Where it runs | What it checks |
 |-----|---------------|----------------|
-| `vips` | all hosts | every keepalived virtual IP is held by exactly one node, and that node is its `MASTER` |
+| `vips` | all hosts | every keepalived virtual IP is held by exactly one node, and that node is its `MASTER`. keepalived is active, and each declared instance is in its configuration with an interface that exists on the host (a renamed NIC), the `unicast_src_ip` on it and the declared priority |
 | `kubernetes` | control planes | rke2, API server `/readyz`, etcd quorum, leader and size, nodes Ready, pods, workloads and volume claims |
 | `connectivity` | k8s workers | every worker reaches MongoDB, XtraDB (nodes and VIPs), Redis, Elasticsearch, ClickHouse, Richie MySQL and Ceph S3 |
 | `docker-services` | load balancers, registry mirror | the `make healthcheck` of the service |
-| `host` | all hosts | the OS, the IPv4 addresses against the inventory (`ansible_host`, `ansible_additional_ipv4`, `ansible_public_ipv4`, `old_ipv4`), the default route, container networks that overlap the host's, and the iptables rules loaded against the persisted file |
+| `xtradb` | XtraDB nodes | the container, the `make healthcheck`, the Galera cluster (primary, Synced, all the nodes, maintenance mode, desync, read only, connections), the TLS certificates and, on the backup node, the Ceph S3 of the backups |
+| `host` | all hosts | the OS, the IPv4 addresses against the inventory (`ansible_host`, `ansible_additional_ipv4`, `ansible_public_ipv4`, `old_ipv4`), the default route, container networks that overlap the host's, the iptables rules loaded against the persisted file, and what changes when a VM moves to another hypervisor: the CPU flags, the clock, the filesystems of the fstab and the QEMU guest agent |
 | `endpoints` | localhost | the public endpoints through each load balancer VIP, the DNS answer of the public names, flapping and TLS expiry |
 | `vm` | all hosts | the previous healthcheck, with the retries that gate `deploy.yml` and the rolling playbooks |
 
@@ -102,6 +103,12 @@ ansible-playbook -i nau-data/envs/<env>/hosts.ini healthcheck.yml --tags vips,en
 
 # A node is in maintenance, so the VIPs do not need to be on their MASTER
 ansible-playbook -i nau-data/envs/<env>/hosts.ini healthcheck.yml --skip-tags vm -e healthcheck_vip_expected_holder_enforced=false
+
+# After a VM moved to another hypervisor: the VM itself and the service it runs
+ansible-playbook -i nau-data/envs/<env>/hosts.ini healthcheck.yml --limit <host> --tags host,vips,always --skip-tags vm
+
+# After a change to XtraDB: the nodes, the VIPs and what depends on XtraDB (workers, LMS, CMS and Ecommerce)
+ansible-playbook -i nau-data/envs/<env>/hosts.ini healthcheck.yml --tags xtradb,vips,connectivity,endpoints,always --skip-tags vm
 ```
 
 The endpoints, the expected answers and the thresholds are in `group_vars/all/healthcheck.yml`.
@@ -112,6 +119,13 @@ Notes:
   `v6` equivalents) is valid, and it ACCEPTs the same ports and source addresses as the rules loaded in the kernel
   (`-e healthcheck_host_firewall_expected=false` only reports them). Rules that jump to another chain (Docker,
   Kubernetes, fail2ban) are not compared. Use `healthcheck_host_unsupported_os` to flag end of life systems.
+- The `host` checks also compare the CPU with `healthcheck_host_cpu_required_flags` (a generic CPU type of the
+  hypervisor hides SSE4 and AVX), the clock (`healthcheck_host_time_*`), the filesystems of the fstab (all mounted,
+  the local ones below `healthcheck_host_disk_max_percent`, `healthcheck_host_fstab_ignore` skips a disk that is
+  not always there) and the guest agent of KVM guests. Each one has a switch in `group_vars/all/healthcheck.yml`. The `vips` checks read `/etc/keepalived/keepalived.conf`, so a keepalived
+  configuration rendered before a NIC was renamed is reported until the `keepalived` tag of `deploy.yml` runs again.
+- The `xtradb` checks reach MySQL with the root password from the environment of the container, and only run
+  `SHOW`. The cluster must have as many nodes as the `xtradb_servers` group (`healthcheck_xtradb_expected_cluster_size`).
 - With `--limit` only the hosts in the limit are checked, and only a VIP held by several nodes is
   reported. The `endpoints` checks run on `localhost`, so add it to the limit to run them.
 - The `vm` checks stop the playbook at the first failing host, as the deploy playbooks need.
