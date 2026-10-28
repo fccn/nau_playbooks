@@ -1,0 +1,109 @@
+---
+# Tests the public endpoints of the platform the way a user reaches them: through each
+# load balancer VIP, one by one, so a single broken VIP can't hide behind DNS round robin.
+# Executed from the machine that runs the playbook, which needs the same network access
+# as a client of the load balancers.
+
+- name: List the load balancer VIPs to test, or fall back to the DNS answer
+  ansible.builtin.set_fact:
+    healthcheck_endpoint_vips: >-
+      {% set ns = namespace(vips=[]) %}
+      {% set lb = hostvars[groups['balancer_servers'] | default([]) | first | default('')] | default({}) %}
+      {% for name in ['balancer_virtual_ipv4_1', 'balancer_virtual_ipv4_2'] %}
+      {% if lb[name] is defined %}{% set ns.vips = ns.vips + [{'label': lb[name], 'ip': lb[name]}] %}{% endif %}
+      {% endfor %}
+      {% if healthcheck_endpoints_check_ipv6 | bool %}
+      {% for name in ['balancer_virtual_ipv6_1', 'balancer_virtual_ipv6_2'] %}
+      {% if lb[name] is defined %}{% set ns.vips = ns.vips + [{'label': lb[name], 'ip': lb[name]}] %}{% endif %}
+      {% endfor %}
+      {% endif %}
+      {% if ns.vips | length == 0 %}{% set ns.vips = [{'label': 'DNS', 'ip': ''}] %}{% endif %}
+      {{ ns.vips | to_json }}
+    healthcheck_endpoint_vips_ipv4: >-
+      {% set lb = hostvars[groups['balancer_servers'] | default([]) | first | default('')] | default({}) %}
+      {{ [lb.balancer_virtual_ipv4_1 | default(''), lb.balancer_virtual_ipv4_2 | default('')] | select | list | to_json }}
+
+- name: Look up the DNS answer of the public names
+  ansible.builtin.command: getent ahostsv4 {{ item }}
+  register: healthcheck_dns
+  changed_when: false
+  failed_when: false
+  loop: "{{ healthcheck_dns_names | unique }}"
+  when: healthcheck_dns_check_enabled | bool and (healthcheck_endpoint_vips_ipv4 | from_json | length) > 0
+
+- name: Check every VIP of the load balancers is in the DNS answer
+  ansible.builtin.set_fact:
+    healthcheck_problems: "{{ healthcheck_problems | default([]) + ((dns_problems | default('', true)).split('|') | map('trim') | select | list) }}"
+  vars:
+    vips: "{{ healthcheck_endpoint_vips_ipv4 | from_json }}"
+    dns_problems: >-
+      {% for result in healthcheck_dns.results | default([]) | rejectattr('skipped', 'defined') %}{% set answer = result.stdout_lines | map('split', ' ') | map('first') | unique | list %}{% if result.rc != 0 %}DNS {{ result.item }} does not resolve|{% elif (vips | difference(answer)) | length > 0 or (answer | difference(vips)) | length > 0 %}DNS {{ result.item }} answers {{ answer | join(', ') }}, the load balancer VIPs are {{ vips | join(', ') }}|{% endif %}{% endfor %}
+  when: healthcheck_dns_check_enabled | bool and (healthcheck_endpoint_vips_ipv4 | from_json | length) > 0
+
+- name: Request each endpoint through each VIP
+  ansible.builtin.command:
+    argv: >-
+      {{ ['curl', '--silent', '--show-error', '--max-time', healthcheck_endpoints_timeout | string,
+          '--request', item.0.method | default('GET'), '--write-out', '\n%{http_code}']
+         + (['--resolve', item.0.host ~ ':443:' ~ item.1.ip] if item.1.ip else [])
+         + ['--url', 'https://' ~ item.0.host ~ (item.0.path | default('/'))] }}
+  register: healthcheck_endpoint_responses
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  until: >-
+    healthcheck_endpoint_responses.rc == 0
+    and (healthcheck_endpoint_responses.stdout_lines | last | default('')) == (item.0.status | default(200) | string)
+  retries: "{{ healthcheck_endpoints_retries | int }}"
+  delay: "{{ healthcheck_endpoints_delay | int }}"
+  loop: "{{ healthcheck_endpoints | product(healthcheck_endpoint_vips | from_json) | list }}"
+  loop_control:
+    label: "{{ item.0.name }} via {{ item.1.label }}"
+
+- name: Check the status, content and JSON of each response
+  ansible.builtin.set_fact:
+    healthcheck_problems: "{{ healthcheck_problems | default([]) + ((endpoint_problems | default('', true)).split('|') | map('trim') | select | list) }}"
+  vars:
+    endpoint_problems: >-
+      {% for result in healthcheck_endpoint_responses.results %}
+      {% set endpoint = result.item[0] %}
+      {% set where = endpoint.name ~ ' (' ~ endpoint.host ~ ') via ' ~ result.item[1].label %}
+      {% set body = result.stdout_lines[:-1] | join('\n') %}
+      {% set code = result.stdout_lines | last | default('') %}
+      {% if result.rc != 0 %}{{ where }}: request failed: {{ (result.stderr | default('', true) | trim).split('\n')[0] }}|
+      {% elif code != (endpoint.status | default(200) | string) %}{{ where }}: HTTP {{ code }}, expected {{ endpoint.status | default(200) }}|
+      {% else %}
+      {% if healthcheck_endpoints_flaky_is_problem | bool and result.attempts | default(1) | int > 1 %}{{ where }}: needed {{ result.attempts }} attempts to answer, it is flapping|{% endif %}
+      {% if endpoint.content is defined and endpoint.content not in body %}{{ where }}: the response does not contain "{{ endpoint.content }}"|{% endif %}
+      {% if endpoint.json is defined %}
+      {% set doc = (body | from_json) if body is match('(?s)^\s*\{') else {} %}
+      {% for check in endpoint.json %}
+      {% set path = check.path.split('.') %}
+      {% set found = ((doc[path[0]] | default({}))[path[1]] | default('missing')) if path | length == 2 else (doc[path[0]] | default('missing')) %}
+      {% if found != check.equals %}{{ where }}: {{ check.path }} is {{ found | to_json }}, expected {{ check.equals | to_json }}|{% endif %}
+      {% endfor %}
+      {% endif %}
+      {% endif %}
+      {% endfor %}
+
+- name: Check the TLS certificate of each public name through each VIP
+  ansible.builtin.shell: |
+    set -o pipefail
+    echo | openssl s_client -connect {{ item.1.ip or item.0 }}:443 -servername {{ item.0 }} 2>/dev/null \
+      | openssl x509 -noout -enddate -checkend {{ healthcheck_tls_expiry_days | int * 86400 }}
+  args:
+    executable: /bin/bash
+  register: healthcheck_tls
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  loop: "{{ healthcheck_endpoints | map(attribute='host') | unique | product(healthcheck_endpoint_vips | from_json) | list }}"
+  loop_control:
+    label: "{{ item.0 }} via {{ item.1.label }}"
+
+- name: Check no certificate is about to expire
+  ansible.builtin.set_fact:
+    healthcheck_problems: "{{ healthcheck_problems | default([]) + ((tls_problems | default('', true)).split('|') | map('trim') | select | list) }}"
+  vars:
+    tls_problems: >-
+      {% for result in healthcheck_tls.results %}{% if 'will not expire' not in result.stdout %}TLS certificate of {{ result.item[0] }} via {{ result.item[1].label }}: {{ 'expires in less than ' ~ healthcheck_tls_expiry_days ~ ' days (' ~ (result.stdout_lines | first | default('')) ~ ')' if 'will expire' in result.stdout else 'no certificate presented' }}|{% endif %}{% endfor %}

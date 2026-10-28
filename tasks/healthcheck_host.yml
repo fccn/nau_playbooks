@@ -1,0 +1,147 @@
+---
+# Reads the operating system, the IPv4 addresses, the routes and the iptables rules of this host and
+# reports what is wrong. It only reads, it never changes anything.
+#
+# - OS: reported, and a problem when it matches `healthcheck_host_unsupported_os`.
+# - Addresses: compared with the inventory (ansible_host, ansible_additional_ipv4, ansible_public_ipv4,
+#   old_ipv4). keepalived VIPs and the interfaces of containers are not the host's addresses.
+# - Routes: there must be a default route, and a container network must not overlap a network of the host.
+# - Firewall: see healthcheck_host_firewall.yml.
+# - CPU, clock, filesystems and guest agent: see healthcheck_host_system.yml.
+
+- name: Read the operating system
+  ansible.builtin.command: cat /etc/os-release
+  register: healthcheck_host_os_release
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Read the kernel and the architecture
+  ansible.builtin.command: uname -rm
+  register: healthcheck_host_uname
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Read the IPv4 addresses
+  ansible.builtin.command: ip -4 -o addr show
+  register: healthcheck_host_addr
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Read the IPv4 networks directly attached to this host
+  ansible.builtin.command: ip -4 route show proto kernel
+  register: healthcheck_host_nets
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Read the IPv4 default route
+  ansible.builtin.command: ip -4 route show default
+  register: healthcheck_host_default_route
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Work out the addresses and networks of this host
+  ansible.builtin.set_fact:
+    healthcheck_host_os: "{{ os_name }}"
+    healthcheck_host_real_ips: "{{ host_addrs | map(attribute='1') | list }}"
+    healthcheck_host_own_ips: "{{ own_addrs | map(attribute='1') | list }}"
+    healthcheck_host_vips_held: "{{ host_addrs | selectattr('3', 'search', '(?i)vip') | map(attribute='1') | list }}"
+    healthcheck_host_host_nets: "{{ host_nets }}"
+    healthcheck_host_container_nets: "{{ container_nets }}"
+  vars:
+    # 2: eth0    inet 172.22.1.20/24 brd 172.22.1.255 scope global secondary eth0:vipRedis\       valid_lft forever
+    # gives [interface, address, prefix, what comes after the prefix]
+    all_addrs: "{{ healthcheck_host_addr.stdout | default('', true) | regex_findall('(?m)^\\d+:\\s+(\\S+)\\s+inet\\s+([0-9.]+)/(\\d+)(.*)$') }}"
+    iface_is_container: "{{ healthcheck_host_container_interfaces }}"
+    host_addrs: "{{ all_addrs | rejectattr('0', 'equalto', 'lo') | rejectattr('0', 'match', iface_is_container) | list }}"
+    # The addresses that are really the host's: not a keepalived VIP, not an interface of a container.
+    own_addrs: "{{ host_addrs | rejectattr('3', 'search', '(?i)vip') | list }}"
+    nets: "{{ healthcheck_host_nets.stdout | default('', true) | regex_findall('(?m)^(\\d+\\.\\d+\\.\\d+\\.\\d+/\\d+)\\s+dev\\s+(\\S+)') }}"
+    host_nets: "{{ nets | rejectattr('1', 'equalto', 'lo') | rejectattr('1', 'match', iface_is_container) | list }}"
+    container_nets: "{{ nets | selectattr('1', 'match', iface_is_container) | list }}"
+    os_name: >-
+      {{ (healthcheck_host_os_release.stdout | default('', true) | regex_search('(?m)^PRETTY_NAME="?([^"\n]*)', '\1') or ['unknown']) | first }}
+
+- name: Work out the addresses declared in the inventory
+  ansible.builtin.set_fact:
+    healthcheck_host_declared_ips: "{{ declared }}"
+    healthcheck_host_old_ips: "{{ old }}"
+    healthcheck_host_vip_ips: "{{ vips }}"
+  vars:
+    ipv4: '^\d+\.\d+\.\d+\.\d+$'
+    declared: "{{ [ansible_host | default(''), ansible_additional_ipv4 | default(''), ansible_public_ipv4 | default('')] | select('match', ipv4) | unique | list }}"
+    old: "{{ [old_ipv4 | default('')] | select('match', ipv4) | list }}"
+    # Addresses that keepalived is configured to manage on this host.
+    vips: >-
+      {{ keepalived_vrrp_instances | default([]) | subelements('virtual_ip', skip_missing=true)
+         | map('last') | map('split', ' ') | map('first') | map('split', '/') | map('first') | list }}
+
+- name: Compare the addresses of this host with the inventory
+  ansible.builtin.set_fact:
+    healthcheck_host_address_problems: >-
+      {{ (missing | map('regex_replace', '^(.*)$', 'the address \1 is in the inventory but is NOT configured on the host') | list)
+         + (still_old | map('regex_replace', '^(.*)$', 'the address \1 (old_ipv4) is still configured on the host') | list)
+         + (unexpected | map('regex_replace', '^(.*)$', 'the address \1 is configured on the host but is not in the inventory') | list) }}
+  vars:
+    missing: "{{ healthcheck_host_declared_ips | difference(healthcheck_host_real_ips) }}"
+    still_old: "{{ healthcheck_host_old_ips | intersect(healthcheck_host_real_ips) }}"
+    unexpected: >-
+      {{ healthcheck_host_own_ips | difference(healthcheck_host_declared_ips) | difference(healthcheck_host_old_ips)
+         | difference(healthcheck_host_vip_ips) | difference(healthcheck_host_ignore_ipv4) }}
+  when: healthcheck_host_check_inventory_addresses | bool
+
+- name: Find the container networks that overlap a network of this host
+  ansible.builtin.set_fact:
+    healthcheck_host_overlaps: >-
+      {{ healthcheck_host_overlaps | default([])
+         + [item[0][1] ~ ' ' ~ item[0][0] ~ ' overlaps ' ~ item[1][1] ~ ' ' ~ item[1][0]] }}
+  vars:
+    # An IPv4 network as the first address and the number of addresses, to compare the ranges without a library.
+    a_octets: "{{ item[0][0].split('/')[0].split('.') | map('int') | list }}"
+    a_size: "{{ 2 ** (32 - (item[0][0].split('/')[1] | int)) }}"
+    a_int: "{{ a_octets[0] * 16777216 + a_octets[1] * 65536 + a_octets[2] * 256 + a_octets[3] }}"
+    a_start: "{{ ((a_int | int) // (a_size | int)) * (a_size | int) }}"
+    b_octets: "{{ item[1][0].split('/')[0].split('.') | map('int') | list }}"
+    b_size: "{{ 2 ** (32 - (item[1][0].split('/')[1] | int)) }}"
+    b_int: "{{ b_octets[0] * 16777216 + b_octets[1] * 65536 + b_octets[2] * 256 + b_octets[3] }}"
+    b_start: "{{ ((b_int | int) // (b_size | int)) * (b_size | int) }}"
+  loop: "{{ healthcheck_host_container_nets | product(healthcheck_host_host_nets) | list }}"
+  loop_control:
+    label: "{{ item[0][1] }} {{ item[0][0] }} / {{ item[1][1] }} {{ item[1][0] }}"
+  when: (a_start | int) < (b_start | int) + (b_size | int) and (b_start | int) < (a_start | int) + (a_size | int)
+
+- name: Check the firewall of this host
+  ansible.builtin.include_tasks: healthcheck_host_firewall.yml
+  loop:
+    - { cmd: iptables, restore: iptables-restore, files: ['/etc/iptables/rules.v4', '/etc/sysconfig/iptables'] }
+    - { cmd: ip6tables, restore: ip6tables-restore, files: ['/etc/iptables/rules.v6', '/etc/sysconfig/ip6tables'] }
+  loop_control:
+    loop_var: fw
+    label: "{{ fw.cmd }}"
+  when: fw.cmd == 'iptables' or healthcheck_host_firewall_check_ipv6 | bool
+
+- name: Check the CPU, the clock, the filesystems and the guest agent of this host
+  ansible.builtin.import_tasks: healthcheck_host_system.yml
+
+- name: Record the problems and the summary of this host
+  ansible.builtin.set_fact:
+    healthcheck_problems: >-
+      {{ healthcheck_problems | default([])
+         + (healthcheck_host_address_problems | default([]) | map('regex_replace', '^', inventory_hostname ~ ': ') | list)
+         + (healthcheck_host_overlaps | default([]) | map('regex_replace', '^', inventory_hostname ~ ': container network ') | list)
+         + ([inventory_hostname ~ ': there is no default route'] if healthcheck_host_default_route.stdout | default('', true) | trim == '' else [])
+         + ([inventory_hostname ~ ': the operating system is not supported: ' ~ healthcheck_host_os]
+              if healthcheck_host_unsupported_os | length > 0 and healthcheck_host_os is search(healthcheck_host_unsupported_os | join('|')) else [])
+         + (healthcheck_host_system_problems | default([]) | map('regex_replace', '^', inventory_hostname ~ ': ') | list)
+         + (healthcheck_host_firewall_problems | default([])) }}
+    healthcheck_host_info: >-
+      {{ inventory_hostname ~ ': ' ~ healthcheck_host_os ~ ', kernel ' ~ (healthcheck_host_uname.stdout | default('?', true) | trim)
+         ~ ', IPv4 ' ~ (healthcheck_host_own_ips | join(', ') or 'none')
+         ~ (', VIPs held ' ~ (healthcheck_host_vips_held | join(', ')) if healthcheck_host_vips_held | length > 0 else '')
+         ~ ', default route ' ~ (healthcheck_host_default_route.stdout | default('', true) | trim | regex_search('via (\S+)', '\1') | default(['none'], true) | first)
+         ~ ', ' ~ healthcheck_host_system_info
+         ~ (', ' ~ (healthcheck_host_firewall_info | default([]) | join(', ')) if healthcheck_host_firewall_info | default([]) | length > 0 else '') }}

@@ -1,0 +1,165 @@
+---
+# Variables of the `healthcheck.yml` playbook.
+# This file is public, secrets must never be added here.
+
+# Hostnames and ports of the platform come from the inventory (EDXAPP_LMS_BASE, marketing_site_nau_domain, ...).
+# The Ecommerce and AP hostnames are not variables of the inventory, so they are derived from the domain of the
+# marketing site: www.nau.edu.pt gives nau.edu.pt, www.stage.nau.fccn.pt gives stage.nau.fccn.pt.
+healthcheck_public_domain: "{{ marketing_site_nau_domain | regex_replace('^www\\.', '') }}"
+
+# ---------------------------------------------------------------------------
+# Virtual IPs (keepalived)
+# ---------------------------------------------------------------------------
+# Also fail when a VIP is held by a node that is not its keepalived MASTER.
+# Set to false while a node is intentionally in maintenance (keepalived priority lowered).
+healthcheck_vip_expected_holder_enforced: true
+# Where the configuration of keepalived and the list of network interfaces are read. Only change them to test.
+healthcheck_keepalived_conf_file: /etc/keepalived/keepalived.conf
+healthcheck_keepalived_net_dir: /sys/class/net
+
+# ---------------------------------------------------------------------------
+# Kubernetes
+# ---------------------------------------------------------------------------
+healthcheck_k8s_kubectl: /var/lib/rancher/rke2/bin/kubectl
+healthcheck_k8s_kubeconfig: /etc/rancher/rke2/rke2.yaml
+healthcheck_k8s_etcd_tls_dir: /var/lib/rancher/rke2/server/tls/etcd
+healthcheck_k8s_etcd_endpoint: https://127.0.0.1:2379
+# etcd stops accepting writes when its database reaches the space quota (2 GiB by default).
+healthcheck_k8s_etcd_max_db_size_bytes: 1717986918 # 1.6 GiB
+# Namespaces ignored when looking for pods, workloads and volumes that are not ready.
+healthcheck_k8s_ignore_namespaces: []
+healthcheck_k8s_report_limit: 20
+
+# ---------------------------------------------------------------------------
+# Operating system, network and firewall of each host
+# ---------------------------------------------------------------------------
+# Regular expressions matched against PRETTY_NAME of /etc/os-release. A host whose OS matches is a problem,
+# for example "Ubuntu 16\.04" or "CentOS Linux 7". Empty: the OS is only reported.
+healthcheck_host_unsupported_os: []
+# Compare the IPv4 addresses configured on the host with the inventory: ansible_host, ansible_additional_ipv4 and
+# ansible_public_ipv4 must be configured, old_ipv4 must not, and any other address (keepalived VIPs and container
+# networks excluded) is reported.
+healthcheck_host_check_inventory_addresses: true
+# IPv4 addresses that are allowed on a host without being in the inventory.
+healthcheck_host_ignore_ipv4: []
+# Interfaces of containers and Kubernetes: their addresses are not the host's, but their networks must not overlap with it.
+healthcheck_host_container_interfaces: '^(docker|br-|veth|cni|flannel|cali|vxlan|kube|cilium|tunl|weave|virbr|lxc)'
+# A host of a group in `firewall_managed_groups` (see firewall.yml) is expected to run the ansible-firewall rules:
+# INPUT ends in a DROP and the rules are persisted in a file that matches the ones loaded. Set to false to only report.
+healthcheck_host_firewall_expected: "{{ (firewall_managed_groups | default([])) | intersect(group_names) | length > 0 }}"
+# Also check ip6tables. Set to false for hosts where IPv6 is disabled in the kernel.
+healthcheck_host_firewall_check_ipv6: true
+# Print the OS, addresses, firewall, virtualization and XtraDB summary of every host in the report.
+healthcheck_host_show_info: true
+# The CPU flags that every host needs. The generic CPU type of a hypervisor (kvm64, qemu64) hides them and the
+# software built for them crashes. Only checked on x86_64. Empty: not checked.
+healthcheck_host_cpu_required_flags: [sse4_2]
+# The clock is synchronised, at least `healthcheck_host_time_min_sources` time sources of chrony answer (2 also
+# requires the redundancy), and the offset to the time source is at most `healthcheck_host_time_max_offset` seconds.
+healthcheck_host_time_check: true
+healthcheck_host_time_min_sources: 1
+healthcheck_host_time_max_offset: 1
+# Every filesystem of the fstab (swap and noauto excluded) is mounted, and none of the local ones is
+# `healthcheck_host_disk_max_percent` percent full. Kubernetes volumes, network filesystems and other mounts that are
+# not in the fstab are not checked for space.
+healthcheck_host_fstab_check: true
+healthcheck_host_disk_max_percent: 85
+# Mount points of the fstab that are not checked, for example a disk that is not always there.
+healthcheck_host_fstab_ignore: []
+# A KVM guest runs qemu-guest-agent, which the hypervisor uses to shut the VM down and to read its addresses.
+healthcheck_host_guest_agent_check: true
+# Where the CPU flags and the filesystems are read. Only change them to test.
+healthcheck_host_cpuinfo_file: /proc/cpuinfo
+healthcheck_host_fstab_file: /etc/fstab
+healthcheck_host_mountinfo_file: /proc/self/mountinfo
+
+# ---------------------------------------------------------------------------
+# Connectivity from the Kubernetes worker nodes to the data stores
+# ---------------------------------------------------------------------------
+healthcheck_connectivity_timeout: 5
+
+# ---------------------------------------------------------------------------
+# Public endpoints, tested through every load balancer VIP
+# ---------------------------------------------------------------------------
+healthcheck_endpoints_timeout: 30
+healthcheck_endpoints_retries: 2
+healthcheck_endpoints_delay: 10
+# The retries only absorb a service that is warming up. Report an endpoint that needed them as a problem,
+# otherwise a flapping backend behind a load balancer goes unnoticed.
+healthcheck_endpoints_flaky_is_problem: true
+# Also test the IPv6 VIPs. The machine that runs the playbook needs IPv6 connectivity.
+healthcheck_endpoints_check_ipv6: false
+# Every IPv4 VIP of the load balancers must be in the DNS answer of these names.
+healthcheck_dns_check_enabled: true
+healthcheck_tls_expiry_days: 14
+
+# Each endpoint accepts:
+#   name, host, path (default /), method (default GET), status (default 200),
+#   content (substring of the response body),
+#   json (list of {path: a.b, equals: value} checked on the JSON body, up to two levels).
+healthcheck_endpoints:
+  - name: LMS heartbeat (MongoDB, MySQL and Celery)
+    host: "{{ EDXAPP_LMS_BASE }}"
+    path: /heartbeat?extended
+    json:
+      - { path: modulestore.status, equals: true }
+      - { path: sql.status, equals: true }
+      - { path: celery.status, equals: true }
+  - name: Studio heartbeat (MongoDB, MySQL and Celery)
+    host: "{{ EDXAPP_CMS_BASE }}"
+    path: /heartbeat?extended
+    json:
+      - { path: modulestore.status, equals: true }
+      - { path: sql.status, equals: true }
+      - { path: celery.status, equals: true }
+  - name: Ecommerce health
+    host: "ecommerce.{{ healthcheck_public_domain }}"
+    path: /health/
+    json:
+      - { path: overall_status, equals: "OK" }
+      - { path: detailed_status.database_status, equals: "OK" }
+  - name: Marketing site NAU homepage
+    host: "{{ marketing_site_nau_domain }}"
+    path: /pt/
+  - name: Marketing site NAU API
+    host: "{{ marketing_site_nau_domain }}"
+    path: /api/v1.0/courses/?limit=1
+    content: '"objects"'
+  - name: Marketing site AP homepage
+    host: "ap.{{ healthcheck_public_domain }}"
+    path: /pt/
+  - name: Financial Manager admin redirects to the login
+    host: "{{ financial_manager_nginx_server_name }}"
+    path: /admin/
+    status: 302
+  - name: Partner API answers (request without credentials is refused)
+    host: "{{ EDXAPP_LMS_BASE }}"
+    path: /nau-openedx-extensions/partner-integration/auth-token/
+    method: POST
+    status: 400
+    content: Missing client_id
+
+# Names whose DNS answer must contain every IPv4 VIP of the load balancers.
+healthcheck_dns_names:
+  - "{{ EDXAPP_LMS_BASE }}"
+  - "{{ EDXAPP_CMS_BASE }}"
+  - "{{ marketing_site_nau_domain }}"
+
+# ---------------------------------------------------------------------------
+# Docker based services that are not in `makefile_healthcheck` (group_vars/all/monitoring.yml).
+# That list is the gate of the deploy and rolling playbooks, so it must not grow.
+# ---------------------------------------------------------------------------
+healthcheck_balancer_make_dir: /nau/ops/nau-balancer
+healthcheck_registry_mirror_make_dir: /nau/ops/docker_registry_mirror
+
+# ---------------------------------------------------------------------------
+# XtraDB (Percona XtraDB Cluster, Galera)
+# ---------------------------------------------------------------------------
+healthcheck_xtradb_container: xtradb
+# The nodes that must be in the cluster. Lower it while a node is out of the cluster on purpose.
+healthcheck_xtradb_expected_cluster_size: "{{ groups['xtradb_servers'] | default([]) | length }}"
+# A node that uses this percentage of its max_connections or more is a problem.
+healthcheck_xtradb_connections_max_percent: 80
+healthcheck_xtradb_cert_expiry_days: 30
+# The backup node (the last of the group) uploads the backups to Ceph S3 when DBS_BACKUP_EXTERNAL_STORAGE is ceph.
+healthcheck_xtradb_backup_storage_port: 443

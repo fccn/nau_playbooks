@@ -1,0 +1,186 @@
+---
+# Reads the CPU, the clock, the filesystems and the guest agent of this host and reports what is wrong.
+# It only reads, it never changes anything. These are the things that change when a VM moves to another hypervisor.
+#
+# - CPU: the flags of `healthcheck_host_cpu_required_flags` are there. A generic CPU type of the hypervisor
+#   (kvm64, qemu64, x86-64-v1) hides SSE4 and AVX, and the software built for them then crashes.
+# - Clock: synchronised, enough time sources answer, and the offset is small.
+# - Filesystems: every one of the fstab (swap, noauto and `healthcheck_host_fstab_ignore` excluded) is mounted, and
+#   none of the local ones is nearly full.
+# - Guest agent: a KVM guest runs qemu-guest-agent.
+
+- name: Read the model and the flags of the CPU
+  ansible.builtin.command:
+    argv:
+      - awk
+      - -F
+      - ': *'
+      - '/^model name/ && !m {m = $2} /^flags/ && !f {f = $2} END {print "model|" m; print "flags|" f}'
+      - "{{ healthcheck_host_cpuinfo_file }}"
+  register: healthcheck_host_cpu
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Read the virtualization technology
+  ansible.builtin.command: systemd-detect-virt
+  register: healthcheck_host_virt_probe
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Work out the CPU and the virtualization of this host
+  ansible.builtin.set_fact:
+    healthcheck_host_virt: "{{ healthcheck_host_virt_probe.stdout | default('', true) | trim | default('unknown', true) }}"
+    healthcheck_host_cpu_model: "{{ (cpu_out | regex_search('(?m)^model\\|(.*)$', '\\1') or ['unknown']) | first | default('unknown', true) }}"
+    healthcheck_host_cpu_flags: "{{ (cpu_out | regex_search('(?m)^flags\\|(.*)$', '\\1') or ['']) | first | split(' ') | select | list }}"
+  vars:
+    cpu_out: "{{ healthcheck_host_cpu.stdout | default('', true) }}"
+
+- name: Check the flags of the CPU
+  ansible.builtin.set_fact:
+    healthcheck_host_system_problems: >-
+      {{ healthcheck_host_system_problems | default([])
+         + ['the CPU (' ~ healthcheck_host_cpu_model ~ ', ' ~ healthcheck_host_virt ~ ') has no ' ~ (missing | join(', '))
+            ~ ', the CPU type of the VM hides it, set it to host or to a newer x86-64-v level'] }}
+  vars:
+    missing: "{{ healthcheck_host_cpu_required_flags | difference(healthcheck_host_cpu_flags) }}"
+  # Only x86 has these flags, and a CPU whose flags cannot be read has nothing to compare.
+  when: >-
+    missing | length > 0 and healthcheck_host_cpu_flags | length > 0
+    and 'x86_64' in healthcheck_host_uname.stdout | default('', true)
+
+- name: Check the clock
+  when: healthcheck_host_time_check | bool
+  block:
+    - name: Read the clock synchronisation
+      ansible.builtin.command: timedatectl
+      register: healthcheck_host_timedatectl
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: Read the time sources of chrony
+      ansible.builtin.command: chronyc -n sources
+      register: healthcheck_host_chrony_sources
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: Read the offset of the clock to its time source
+      ansible.builtin.command: chronyc tracking
+      register: healthcheck_host_chrony_tracking
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: Check the clock of this host
+      ansible.builtin.set_fact:
+        healthcheck_host_system_problems: >-
+          {{ healthcheck_host_system_problems | default([])
+             + (['the clock is not synchronised (timedatectl)'] if synced | length > 0 and synced | first == 'no' else [])
+             + (['only ' ~ answering ~ ' of ' ~ sources | length ~ ' time sources answer (minimum ' ~ healthcheck_host_time_min_sources ~ ')'
+                 ~ (' (no answer from ' ~ (silent | join(', ')) ~ ')' if silent | length > 0 else '')]
+                if sources | length > 0 and answering | int < healthcheck_host_time_min_sources | int else [])
+             + (['the clock is ' ~ (offset[0] | float | round(3)) ~ ' seconds ' ~ ('ahead of' if offset[1] == 'fast' else 'behind') ~ ' its time source']
+                if offset | length > 0 and offset[0] | float > healthcheck_host_time_max_offset | float else []) }}
+      vars:
+        # "System clock synchronized: yes", "NTP synchronized: yes" on the older systemd
+        synced: "{{ healthcheck_host_timedatectl.stdout | default('', true) | regex_search('(?im)^\\s*(?:System clock|NTP) synchronized:\\s*(\\w+)', '\\1') | default([], true) }}"
+        # ^* 193.136.192.52   1  10  377   615  -12us[ -23us] +/- 11ms  gives [source, reach], 0 is no answer in the last 8 polls
+        sources: "{{ healthcheck_host_chrony_sources.stdout | default('', true) | regex_findall('(?m)^[\\^=#][*+\\-?x~ ]\\s+(\\S+)\\s+\\d+\\s+\\d+\\s+(\\d+)\\s') }}"
+        silent: "{{ sources | selectattr('1', 'equalto', '0') | map(attribute='0') | list }}"
+        answering: "{{ sources | length - silent | length }}"
+        # System time     : 0.000007212 seconds fast of NTP time
+        offset: "{{ healthcheck_host_chrony_tracking.stdout | default('', true) | regex_search('System time\\s*:\\s*([0-9.]+) seconds (fast|slow)', '\\1', '\\2') | default([], true) }}"
+
+- name: Check the filesystems
+  when: healthcheck_host_fstab_check | bool
+  block:
+    - name: Read the filesystems of the fstab
+      ansible.builtin.command:
+        argv:
+          - awk
+          # A space in a mount point is written \040, in the fstab and in the list of the kernel
+          - '$1 !~ /^#/ && NF >= 2 {m = $2; gsub(/\\040/, " ", m); if (length(m) > 1) sub(/\/+$/, "", m); print $1 "|" m "|" $3 "|" $4}'
+          - "{{ healthcheck_host_fstab_file }}"
+      register: healthcheck_host_fstab
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: Read the mount points that the kernel has
+      ansible.builtin.command:
+        argv:
+          - awk
+          # 36 35 98:0 / /data rw,relatime shared:1 - xfs /dev/mapper/data-data rw  gives /data
+          - '{for (i = 7; i < NF; i++) if ($i == "-") {m = $5; gsub(/\\040/, " ", m); print m; break}}'
+          - "{{ healthcheck_host_mountinfo_file }}"
+      register: healthcheck_host_mountinfo
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    # No path is given to df: it opens a path, which mounts an automount (x-systemd.automount) and can wait for ever on a
+    # network filesystem. Without a path it skips the automounts, and -l leaves the network filesystems out.
+    - name: Read the space used by the local filesystems
+      ansible.builtin.command: timeout 20 df -P -l
+      register: healthcheck_host_df
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: List the filesystems of the fstab that must be mounted
+      ansible.builtin.set_fact:
+        # [device, mount point, type, options]
+        healthcheck_host_fstab_entries: >-
+          {{ healthcheck_host_fstab.stdout_lines | default([]) | map('split', '|') | list
+             | rejectattr('2', 'equalto', 'swap') | rejectattr('1', 'equalto', 'none')
+             | rejectattr('3', 'search', '(^|,)noauto(,|$)') | rejectattr('1', 'in', healthcheck_host_fstab_ignore) | list }}
+
+    - name: Record the filesystems of the fstab that are not mounted
+      ansible.builtin.set_fact:
+        healthcheck_host_system_problems: >-
+          {{ healthcheck_host_system_problems | default([])
+             + ['the filesystem ' ~ item[1] ~ ' of the fstab (' ~ item[0] ~ ') is not mounted'
+                ~ (', a device name changes with the disk bus, use UUID= or an LVM path'
+                   if item[0] is match('^/dev/(sd|vd|xvd|hd)[a-z]|^/dev/nvme') else '')] }}
+      loop: "{{ healthcheck_host_fstab_entries | rejectattr('1', 'in', healthcheck_host_mountinfo.stdout_lines | default([])) | list }}"
+      loop_control:
+        label: "{{ item[1] }}"
+      # Without the list of the kernel nothing can be said
+      when: healthcheck_host_mountinfo.stdout_lines | default([]) | length > 0
+
+    - name: Record the filesystems of the fstab that are nearly full
+      ansible.builtin.set_fact:
+        healthcheck_host_system_problems: >-
+          {{ healthcheck_host_system_problems | default([]) + ['the filesystem ' ~ item[1] ~ ' is ' ~ item[0] ~ '% full'] }}
+      vars:
+        fstab_mounts: "{{ healthcheck_host_fstab_entries | map(attribute='1') | list }}"
+      # /dev/mapper/data-data 10471424 823228 9648196 8% /data  gives [used percent, mount point]
+      loop: "{{ healthcheck_host_df.stdout | default('', true) | regex_findall('(?m)^\\S+\\s+\\d+\\s+\\d+\\s+\\d+\\s+(\\d+)%\\s+(\\S.*)$') }}"
+      loop_control:
+        label: "{{ item[1] }}"
+      when: item[1] in fstab_mounts and item[0] | int >= healthcheck_host_disk_max_percent | int
+
+- name: Check the guest agent
+  when: healthcheck_host_guest_agent_check | bool and healthcheck_host_virt in ['kvm', 'qemu']
+  block:
+    - name: Read the state of the QEMU guest agent
+      ansible.builtin.command: systemctl is-active qemu-guest-agent
+      register: healthcheck_host_guest_agent
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: Check the QEMU guest agent of this host
+      ansible.builtin.set_fact:
+        healthcheck_host_system_problems: >-
+          {{ healthcheck_host_system_problems | default([])
+             + ['the QEMU guest agent is ' ~ (healthcheck_host_guest_agent.stdout | default('missing', true) | trim | default('missing', true))
+                ~ ', the hypervisor cannot shut this VM down cleanly or read its addresses'] }}
+      when: healthcheck_host_guest_agent.stdout | default('', true) | trim != 'active'
+
+- name: Summarise the virtualization and the CPU of this host
+  ansible.builtin.set_fact:
+    healthcheck_host_system_info: "{{ 'bare metal' if healthcheck_host_virt == 'none' else 'virtualization ' ~ healthcheck_host_virt }}, CPU {{ healthcheck_host_cpu_model }}"
