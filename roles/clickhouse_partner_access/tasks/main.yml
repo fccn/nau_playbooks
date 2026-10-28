@@ -56,13 +56,38 @@
   tags: clickhouse_partner_access
   when: clickhouse_partner_access_enabled | bool
 
+# Each name maps to one org_user_<name>/org_role_<name> and one rendered
+# SQL file (/tmp/clickhouse_partner_access_<name>.sql) -- a duplicate
+# name silently shadows the earlier entry throughout: the later entry's
+# password and orgs win, and the earlier entry's own password-length/
+# orgs checks (which look an entry up by name, below) only ever see the
+# first match, so they can't catch a bad *second* entry sharing that
+# name. Usual trigger: a copy-pasted entry whose name isn't edited when
+# adding the next partner.
+- name: Assert partner names are unique
+  ansible.builtin.assert:
+    that:
+      - (clickhouse_partners | map(attribute='name') | unique | list | length) == (clickhouse_partners | length)
+    fail_msg: >-
+      clickhouse_partners has duplicate partner names -- each name maps
+      to a single org_user_<name>, so the last duplicate would silently
+      win over the earlier entry (including its password and orgs).
+  run_once: true
+  tags: clickhouse_partner_access
+  when: clickhouse_partner_access_enabled | bool
+
 # partner.orgs is a list (not a single org string) -- a partner's
 # courses can legitimately span more than one platform `org` namespace
 # (e.g. ARTE: both `AMA` and `portugaldigital`, confirmed live). Every
 # entry is asserted non-empty here, since an empty list would silently
 # render `org IN ()`/`WHERE org IN ()` -- valid SQL that matches nothing,
 # not a syntax error -- hiding a config mistake as "zero rows" instead
-# of failing loudly.
+# of failing loudly. Loops over a redacted copy (not clickhouse_partners
+# directly) so a later "simplification" back to the raw list doesn't
+# reintroduce a plaintext-password leak on this assert's failure path --
+# same reasoning as the name assert above, applied here via redaction
+# instead of looping over bare names (this assert's fail_msg needs
+# item.name, not just the name).
 - name: Assert every partner has a non-empty orgs list
   ansible.builtin.assert:
     that:
@@ -77,9 +102,29 @@
       orgs: "AMA") passes 'is defined'/'length > 0' on its own --
       Jinja's `join` filter then iterates its *characters*, silently
       rendering `org IN ('A', 'M', 'A')` instead of failing loudly.
-  loop: "{{ clickhouse_partners }}"
+  loop: "{{ clickhouse_partners | map('combine', {'password': '<redacted>'}) | list }}"
   loop_control:
     label: "{{ item.name }}"
+  run_once: true
+  tags: clickhouse_partner_access
+  when: clickhouse_partner_access_enabled | bool
+
+# ALTER USER re-applies partner.password on every run, so a blank/null
+# value would overwrite the live credential. Loops over names (not
+# partner dicts) so a failure can't print the password. Relies on the
+# uniqueness assert above: this looks an entry up by name, so without
+# that guard a duplicate name's second, unvalidated entry could still
+# win at apply time.
+- name: Assert every partner has a usable password
+  ansible.builtin.assert:
+    that:
+      - (clickhouse_partners | selectattr('name', 'equalto', item) | map(attribute='password', default='') | first | string | length) >= clickhouse_partner_access_min_password_length
+    fail_msg: >-
+      clickhouse_partners entry '{{ item }}' has a missing, empty or
+      shorter-than-{{ clickhouse_partner_access_min_password_length }}-character
+      password -- applying it would overwrite the partner's live
+      ClickHouse password.
+  loop: "{{ clickhouse_partners | map(attribute='name') | list }}"
   run_once: true
   tags: clickhouse_partner_access
   when: clickhouse_partner_access_enabled | bool
@@ -145,9 +190,9 @@
   tags: clickhouse_partner_access
   when: clickhouse_partner_access_enabled | bool
 
-# block/always so cleanup of the rendered SQL (plaintext passwords) still
-# runs if apply fails or the play is interrupted, not just on normal
-# completion.
+# block/always so cleanup of the rendered SQL (embeds each partner's
+# password hash) still runs if apply fails or the play is interrupted,
+# not just on normal completion.
 - name: Render, apply and clean up per-partner provisioning SQL
   block:
     - name: Render per-partner provisioning SQL
@@ -159,7 +204,7 @@
       loop_control:
         loop_var: partner # template references `partner.*`; default `item` would be undefined
         label: "{{ partner.name }}"
-      no_log: true # rendered file embeds each partner's plaintext password
+      no_log: true # rendered file embeds each partner's password hash
 
     # Password goes in via env, never --password, so it never appears in
     # any process's argv (readable by anyone via `ps aux` while it runs):
@@ -188,7 +233,7 @@
     # the name-validation assert above: this task doesn't need
     # partner.password, so there's no reason to censor its own
     # (admittedly rare) failure path with no_log.
-    - name: Clean up rendered SQL (contains partner passwords in plaintext)
+    - name: Clean up rendered SQL (contains partner password hashes)
       ansible.builtin.file:
         path: "/tmp/clickhouse_partner_access_{{ item }}.sql"
         state: absent
