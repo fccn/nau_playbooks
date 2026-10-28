@@ -71,6 +71,16 @@ view](#why-some-org-scoped-tables-still-need-a-definer-view)):
   (`REVOKE`/`DROP ROW POLICY IF EXISTS`) for environments that ran an
   older version of this role against `reporting.int_problem_results`
   directly.
+- The user's own password gets the same treatment: `CREATE USER IF NOT
+  EXISTS ... IDENTIFIED WITH sha256_hash BY ...` only sets it on first
+  creation, so a rotated `partner.password` in `secure-nau-data` would
+  otherwise never take effect on a re-run. An `ALTER USER IF EXISTS`
+  right after re-asserts it from the (possibly updated)
+  `clickhouse_partners` list on every run. `sha256_hash` (not
+  `sha256_password`) is used so the plaintext password is never part of
+  the DDL statement itself -- with `clickhouse_partner_access_on_cluster:
+  true`, that statement is what ends up persisted in Keeper's
+  distributed-DDL queue/changelog, which has no authentication of its own.
 
 The shared resource-governance profile/quota (see below) are rebuilt
 from the full `clickhouse_partners` list on every run (via `ALTER`, not
@@ -96,7 +106,27 @@ it's rendered into `org IN (...)` either way.
 (`org_user_arte`, `org_role_arte`, `reporting.arte_user_profile`,
 `reporting.arte_problem_attempts`). No code change needed -- the
 table/column lists in `defaults/main.yml` are shared across all
-partners.
+partners. `name` must also be unique across `clickhouse_partners` --
+the role asserts this, since a duplicate would silently shadow the
+earlier entry (its password and orgs are what end up applied).
+
+`password` must be at least `clickhouse_partner_access_min_password_length`
+characters (16 by default) -- the role asserts this too, since `ALTER
+USER` re-applies it on every run, and a blank/null/too-short value would
+otherwise overwrite the live credential instead of failing validation
+first. Avoid `{{`, `{%` or `{#` in a generated password: a value
+containing one would fail Jinja templating partway through this role
+(fails closed, live credential untouched) but briefly echo the vars
+file to the terminal/`ansible.log` while doing so. Mark such a value
+`!unsafe` in `secure-nau-data` if ever needed.
+
+A partner's password lives in two repos, not just `secure-nau-data`:
+Trino's own copy, used for the `clickhouse_partners` catalog connection
+(`TRINO_CLICKHOUSE_PARTNERS_ARTE_PASSWORD` in
+[nau-analytics-kubernetes-manifests](https://github.com/fccn/nau-analytics-kubernetes-manifests/pull/164)),
+has to be rotated at the same time -- rotating only this role's copy
+breaks the partner's Trino queries until Trino's secret is updated and
+its pods restart.
 
 ## Why some org-scoped tables still need a DEFINER view
 

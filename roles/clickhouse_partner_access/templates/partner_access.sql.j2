@@ -8,6 +8,7 @@
 {%- endfor -%}
 {%- set profile_all_columns = cols.list -%}
 {%- set orgs_sql_list = "'" ~ (partner.orgs | join("', '")) ~ "'" -%}
+{%- set pw_hash = partner.password | hash('sha256') -%}
 -- {{ ansible_managed }}
 --
 -- Native, read-only, org-scoped ClickHouse access for partner
@@ -19,17 +20,19 @@
 -- xapi.enrollment_events: both have real, substantial enrollment
 -- volume under their own distinct org).
 -- Idempotent -- safe to re-run (IF NOT EXISTS/ALTER/CREATE OR REPLACE
--- throughout, never a destructive DROP of partner data). Three
--- exceptions beyond plain CREATE ... IF NOT EXISTS: the Category 1 row
--- policy gets an ALTER right after its CREATE ... IF NOT EXISTS, so a
--- changed partner.orgs list is actually re-applied to an
--- already-provisioned policy (CREATE ... IF NOT EXISTS alone is a
--- no-op past the first run); both the user_profile view (Category 3)
--- and the problem_attempts view (Category 4) are CREATE OR REPLACE,
--- plus Category 4 has an idempotent cleanup (REVOKE/DROP ROW POLICY IF
--- EXISTS) ahead of it. The shared resource-governance objects in
--- partner_resource_limits.sql.j2 are idempotent too (CREATE IF NOT
--- EXISTS + ALTER, see that file).
+-- throughout, never a destructive DROP of partner data). Four
+-- exceptions beyond plain CREATE ... IF NOT EXISTS: the user's own
+-- password gets an ALTER right after its CREATE ... IF NOT EXISTS, so
+-- a rotated partner.password is actually re-applied to an
+-- already-provisioned user; the Category 1 row policy gets the same
+-- treatment, so a changed partner.orgs list is actually re-applied to
+-- an already-provisioned policy (CREATE ... IF NOT EXISTS alone is a
+-- no-op past the first run in both cases); both the user_profile view
+-- (Category 3) and the problem_attempts view (Category 4) are CREATE
+-- OR REPLACE, plus Category 4 has an idempotent cleanup (REVOKE/DROP
+-- ROW POLICY IF EXISTS) ahead of it. The shared resource-governance
+-- objects in partner_resource_limits.sql.j2 are idempotent too (CREATE
+-- IF NOT EXISTS + ALTER, see that file).
 
 -- 'readonly' here is just a baseline/defense-in-depth default for a
 -- brand new user -- the real, tunable resource limits (memory/time/
@@ -40,8 +43,15 @@
 -- them for already-existing users with no need to touch this file's
 -- `CREATE USER IF NOT EXISTS`, which is a no-op past the first run.
 CREATE USER IF NOT EXISTS org_user_{{ partner.name }} {{ cluster_clause }}
-    IDENTIFIED WITH sha256_password BY '{{ partner.password }}'
+    IDENTIFIED WITH sha256_hash BY '{{ pw_hash }}'
     SETTINGS PROFILE 'readonly';
+
+-- CREATE ... IF NOT EXISTS keeps the OLD password on an existing user, so
+-- the ALTER re-applies group_vars' password on every run. sha256_hash (not
+-- sha256_password) keeps the plaintext out of the DDL that ON CLUSTER
+-- persists into Keeper (unauthenticated) -- see README.
+ALTER USER IF EXISTS org_user_{{ partner.name }} {{ cluster_clause }}
+    IDENTIFIED WITH sha256_hash BY '{{ pw_hash }}';
 
 CREATE ROLE IF NOT EXISTS org_role_{{ partner.name }} {{ cluster_clause }};
 

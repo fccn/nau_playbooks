@@ -25,6 +25,13 @@ clickhouse_partner_access_cluster: logs_cluster
 # on the underlying tables the views read from).
 clickhouse_partner_access_view_definer: ch_admin
 
+# Minimum length required of every clickhouse_partners[].password -- see
+# "Assert every partner has a usable password" in tasks/main.yml. ALTER
+# USER re-applies this value on every run, so a blank/null/too-short
+# password would overwrite the live credential rather than failing
+# validation first.
+clickhouse_partner_access_min_password_length: 16
+
 # Category 1 tables (#981 Option A): already have a native `org` column
 # and no PII, so ROW POLICY + GRANT SELECT is enough. Shared across all
 # partners -- only the `org` literal differs per partner.
@@ -104,7 +111,11 @@ clickhouse_partner_access_profile_meta_json_fields:
 # enrollment volume, not just a handful of stray rows).
 #
 # `name` becomes org_user_<name>/org_role_<name>/reporting.<name>_user_profile/
-# reporting.<name>_problem_attempts.
+# reporting.<name>_problem_attempts -- must be unique across this list
+# (asserted). `password` must be at least
+# clickhouse_partner_access_min_password_length characters (asserted);
+# ALTER USER re-applies it on every run, so a blank/null/too-short value
+# would otherwise overwrite the live credential.
 clickhouse_partners: []
 
 # Shared resource-governance profile + quota applied to every partner
