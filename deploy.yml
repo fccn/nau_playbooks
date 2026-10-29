@@ -49,6 +49,9 @@
 #   To deploy Kubernetes nodes
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit kubernetes_servers -e kubernetes_deploy=true
 #
+#   To only deploy Java and the Jenkins controller
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit support_server --tags jenkins_controller
+#
 #   To deploy ssh keys
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --tags ssh
 
@@ -181,6 +184,106 @@
   roles:
     - role: geerlingguy.docker
     - role: openark_orchestrator
+  tasks:
+    # Jenkins controller, installed from the official Jenkins apt repository.
+    # JENKINS_HOME (jobs, plugins, credentials, nodes) is not managed here.
+    # The jenkins package is held, because upgrade_and_reboot.yml runs apt upgrade on every host and would replace it.
+    # Changing jenkins_controller_version upgrades it and restarts Jenkins, downgrades are refused.
+    # Optional variables:
+    #   jenkins_controller_version         exact version of the jenkins package, for example 2.580.2.
+    #                                      Without it, the newest version is installed on the first run only.
+    #   jenkins_controller_java_packages   Java that runs it, it has to be supported by that version of Jenkins,
+    #                                      see https://www.jenkins.io/doc/book/platform-information/support-policy-java/
+    #   jenkins_controller_apt_repo_url    debian-stable has the LTS releases, the versions that were never LTS
+    #                                      only exist on https://pkg.jenkins.io/debian
+    #   jenkins_controller_apt_key_url     signing key of that repository, the Jenkins project rotates it
+    - name: Install Java and the Jenkins controller
+      when:
+        - ansible_distribution == 'Ubuntu'
+        - (ansible_distribution_major_version | int) >= 24
+      tags: jenkins_controller
+      vars:
+        _jenkins_controller_apt_repo_url: "{{ jenkins_controller_apt_repo_url | default('https://pkg.jenkins.io/debian-stable') }}"
+        _jenkins_controller_apt_key_url: "{{ jenkins_controller_apt_key_url | default('https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key') }}"
+        # named after the key, so a rotated key is downloaded as a new file
+        _jenkins_controller_apt_key_file: "/etc/apt/keyrings/{{ (_jenkins_controller_apt_key_url | basename | splitext)[0] }}.asc"
+      block:
+        - name: Install the dependencies of Jenkins
+          apt:
+            name:
+              - ca-certificates
+              # needed by Jenkins on a headless server, see https://www.jenkins.io/doc/book/installing/linux/
+              - fontconfig
+            state: present
+            update_cache: true
+            cache_valid_time: 3600
+
+        - name: Install java
+          import_role:
+            name: geerlingguy.java
+          vars:
+            java_packages: "{{ jenkins_controller_java_packages | default(['openjdk-21-jre-headless']) }}"
+
+        - name: Download the signing key of the Jenkins apt repository
+          get_url:
+            url: "{{ _jenkins_controller_apt_key_url }}"
+            dest: "{{ _jenkins_controller_apt_key_file }}"
+            mode: "0644"
+          register: jenkins_controller_apt_key
+
+        - name: Add the Jenkins apt repository
+          copy:
+            dest: /etc/apt/sources.list.d/jenkins.sources
+            mode: "0644"
+            content: |
+              Types: deb
+              URIs: {{ _jenkins_controller_apt_repo_url }}
+              # a trailing slash makes it a flat repository, which has no components
+              Suites: binary/
+              Signed-By: {{ _jenkins_controller_apt_key_file }}
+          register: jenkins_controller_apt_repository
+
+        - name: Update the apt cache after the Jenkins repository changed
+          apt:
+            update_cache: true
+          when: jenkins_controller_apt_key is changed or jenkins_controller_apt_repository is changed
+
+        # On a dry run of a host that does not have the repository yet, the package cannot be found
+        - name: Install and start Jenkins
+          when: not (ansible_check_mode and (jenkins_controller_apt_key is changed or jenkins_controller_apt_repository is changed))
+          block:
+            - name: Install Jenkins
+              apt:
+                name: "{{ 'jenkins=' ~ jenkins_controller_version if jenkins_controller_version | default('') | length > 0 else 'jenkins' }}"
+                state: present
+                # the package is held, so a deliberate version change has to be allowed
+                allow_change_held_packages: true
+              register: jenkins_controller_install
+
+            - name: Hold the Jenkins package
+              dpkg_selections:
+                name: jenkins
+                selection: hold
+
+            # On a dry run the package may not be installed yet, so its service does not exist
+            - name: Start Jenkins, and restart it when its version changed
+              service:
+                name: jenkins
+                state: "{{ 'restarted' if jenkins_controller_install is changed else 'started' }}"
+                enabled: true
+              when: not (ansible_check_mode and jenkins_controller_install is changed)
+
+            - name: Wait for Jenkins to answer
+              uri:
+                url: http://127.0.0.1:8080/login
+                # 403 also proves that Jenkins is up, 503 and refused connections mean that it is still starting
+                status_code: [200, 403]
+              register: jenkins_controller_check
+              until: jenkins_controller_check is succeeded
+              retries: 60
+              delay: 5
+              changed_when: false
+              when: not ansible_check_mode
 
 
 - name: Configure docker registry mirror
