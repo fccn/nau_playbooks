@@ -35,6 +35,12 @@ clickhouse_partner_access_min_password_length: 16
 # Category 1 tables (#981 Option A): already have a native `org` column
 # and no PII, so ROW POLICY + GRANT SELECT is enough. Shared across all
 # partners -- only the `org` literal differs per partner.
+#
+# xapi.xapi_events_all_parsed is deliberately excluded: its data isn't
+# part of ARTE's documented request (everything it has that ARTE asked
+# for is already covered by the other xapi.* tables), and it also has
+# a Trino-incompatibility bug (DateTime64 emission_time, unsupported
+# by Trino's ClickHouse connector). See nau_playbooks#39 for details.
 clickhouse_partner_access_org_scoped_tables:
   - xapi.enrollment_events
   - xapi.grading_events
@@ -42,7 +48,6 @@ clickhouse_partner_access_org_scoped_tables:
   - xapi.navigation_events
   - xapi.video_playback_events
   - xapi.responses
-  - xapi.xapi_events_all_parsed
   - event_sink.course_blocks
   - event_sink.course_overviews
   - reporting.dim_most_recent_enrollment
