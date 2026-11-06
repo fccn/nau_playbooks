@@ -1,0 +1,113 @@
+---
+# Reads the rules of one family (`fw`: iptables or ip6tables) and reports what is wrong with them.
+# It only reads: `iptables -S` lists the rules and `iptables-restore --test` parses the persisted file
+# without loading it.
+#
+# The rules written by the ansible-firewall role end the INPUT chain in a DROP and are persisted in
+# /etc/iptables/rules.v4 (Debian, Ubuntu) or /etc/sysconfig/iptables (RHEL, CentOS). The file is not
+# written in the format of `iptables -S` (a rule with `-s a,b` is two rules in the kernel), so the loaded
+# rules and the file are compared by the ports and the source addresses that they ACCEPT.
+# Rules that jump to another chain (Docker, Kubernetes, fail2ban) are not compared.
+
+- name: "Check if {{ fw.cmd }} is installed"
+  ansible.builtin.shell: command -v {{ fw.cmd }}
+  environment: &sbin_path
+    PATH: /usr/local/sbin:/usr/sbin:/sbin:/usr/local/bin:/usr/bin:/bin
+  register: healthcheck_host_fw_installed
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: "List the {{ fw.cmd }} rules of the INPUT chain loaded in the kernel"
+  ansible.builtin.command: timeout 20 {{ fw.cmd }} -S INPUT
+  environment: *sbin_path
+  register: healthcheck_host_fw_live
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: healthcheck_host_fw_installed.rc == 0
+
+- name: "Find the file with the persisted {{ fw.cmd }} rules"
+  ansible.builtin.stat:
+    path: "{{ file }}"
+  register: healthcheck_host_fw_files
+  loop: "{{ fw.files }}"
+  loop_control:
+    loop_var: file
+  check_mode: false
+
+- name: "Read the persisted {{ fw.cmd }} rules"
+  ansible.builtin.command: cat {{ persisted }}
+  register: healthcheck_host_fw_file
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  vars:
+    persisted: "{{ healthcheck_host_fw_files.results | selectattr('stat.exists') | map(attribute='file') | first | default('') }}"
+  when: persisted | length > 0
+
+- name: "Check the syntax of the persisted {{ fw.cmd }} rules"
+  ansible.builtin.command: "{{ fw.restore }} --test {{ persisted }}"
+  environment: *sbin_path
+  register: healthcheck_host_fw_syntax
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  vars:
+    persisted: "{{ healthcheck_host_fw_files.results | selectattr('stat.exists') | map(attribute='file') | first | default('') }}"
+  when: persisted | length > 0 and healthcheck_host_fw_installed.rc == 0
+
+- name: "Compare the loaded and the persisted {{ fw.cmd }} rules"
+  ansible.builtin.set_fact:
+    healthcheck_host_firewall_problems: "{{ healthcheck_host_firewall_problems | default([]) + problems }}"
+    healthcheck_host_firewall_info: "{{ healthcheck_host_firewall_info | default([]) + info }}"
+  vars:
+    prefix: "{{ inventory_hostname ~ ': ' ~ fw.cmd ~ ' ' }}"
+    installed: "{{ healthcheck_host_fw_installed.rc == 0 }}"
+    live_ok: "{{ installed and healthcheck_host_fw_live.rc | default(1) == 0 }}"
+    live_rules: "{{ healthcheck_host_fw_live.stdout_lines | default([]) | select('match', '^-A INPUT ') | list }}"
+    policy: "{{ healthcheck_host_fw_live.stdout_lines | default([]) | select('match', '^-P INPUT ') | map('regex_replace', '^-P INPUT ', '') | first | default('?') }}"
+    persisted: "{{ healthcheck_host_fw_files.results | selectattr('stat.exists') | map(attribute='file') | first | default('') }}"
+    file_ok: "{{ persisted | length > 0 }}"
+    file_rules: "{{ healthcheck_host_fw_file.stdout_lines | default([]) | select('match', '^-A INPUT ') | list }}"
+    syntax_ok: "{{ file_ok and installed and healthcheck_host_fw_syntax.rc | default(1) == 0 }}"
+    # What the rules ACCEPT: the destination ports and the source addresses, written the same way in both.
+    live_accept: "{{ live_rules | select('search', '-j ACCEPT') | list }}"
+    file_accept: "{{ file_rules | select('search', '-j ACCEPT') | list }}"
+    live_ports: "{{ live_accept | map('regex_findall', '--dports?\\s+([0-9:,]+)') | flatten | map('split', ',') | flatten | unique | sort }}"
+    file_ports: "{{ file_accept | map('regex_findall', '--dports?\\s+([0-9:,]+)') | flatten | map('split', ',') | flatten | unique | sort }}"
+    live_sources: "{{ live_accept | map('regex_findall', '-s\\s+(\\S+)') | flatten | map('split', ',') | flatten | map('regex_replace', '/(32|128)$', '') | unique | sort }}"
+    file_sources: "{{ file_accept | map('regex_findall', '-s\\s+(\\S+)') | flatten | map('split', ',') | flatten | map('regex_replace', '/(32|128)$', '') | unique | sort }}"
+    drops_the_rest: "{{ policy in ['DROP'] or (live_rules | length > 0 and (live_rules | last) is search('-j (DROP|REJECT)')) }}"
+    expected: "{{ healthcheck_host_firewall_expected | bool }}"
+    problems: >-
+      {{ (
+           [prefix ~ 'is not installed'] if expected and not installed else []
+         ) + (
+           [prefix ~ 'cannot list the INPUT chain: ' ~ ((healthcheck_host_fw_live.stderr | default('', true) | trim) or 'no answer')]
+              if expected and installed and not live_ok else []
+         ) + (
+           [prefix ~ 'INPUT does not end in a DROP, so the firewall rules are not loaded']
+              if expected and live_ok and not drops_the_rest else []
+         ) + (
+           [prefix ~ 'has no persisted rules file (' ~ (fw.files | join(' or ')) ~ '), the rules are lost on reboot']
+              if expected and installed and not file_ok else []
+         ) + (
+           [prefix ~ 'persisted rules file ' ~ persisted ~ ' is not valid: ' ~ (healthcheck_host_fw_syntax.stderr_lines | default([]) | first | default('iptables-restore failed', true))]
+              if expected and file_ok and installed and not syntax_ok else []
+         ) + (
+           [prefix ~ 'loads ports that are not in ' ~ persisted ~ ' (lost on reboot): ' ~ ((live_ports | difference(file_ports)) | join(', '))]
+              if expected and live_ok and file_ok and (live_ports | difference(file_ports)) | length > 0 else []
+         ) + (
+           [prefix ~ 'ports of ' ~ persisted ~ ' are not loaded: ' ~ ((file_ports | difference(live_ports)) | join(', '))]
+              if expected and live_ok and file_ok and (file_ports | difference(live_ports)) | length > 0 else []
+         ) + (
+           [prefix ~ 'loads source addresses that are not in ' ~ persisted ~ ': ' ~ ((live_sources | difference(file_sources)) | join(', '))]
+              if expected and live_ok and file_ok and (live_sources | difference(file_sources)) | length > 0 else []
+         ) + (
+           [prefix ~ 'source addresses of ' ~ persisted ~ ' are not loaded: ' ~ ((file_sources | difference(live_sources)) | join(', '))]
+              if expected and live_ok and file_ok and (file_sources | difference(live_sources)) | length > 0 else []
+         ) }}
+    info: >-
+      {{ [fw.cmd ~ ' ' ~ (('policy ' ~ policy ~ ', ' ~ (live_rules | length) ~ ' INPUT rules' ~ (', ends in DROP' if drops_the_rest else ', does not end in DROP')
+                           ~ (', persisted in ' ~ persisted if file_ok else ', not persisted')) if live_ok else 'not available')] }}

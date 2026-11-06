@@ -1,0 +1,99 @@
+---
+# Checks that keepalived runs on this host, with a configuration that fits it. Only a host that declares
+# `keepalived_vrrp_instances` is checked.
+#
+# The role resolves the `interface` of each VRRP instance when it renders the configuration. When a VM moves to
+# another hypervisor the interface can be renamed (eth0 becomes enp6s18) and keepalived stops with
+# "permanent error CONFIG" until the configuration is rendered again, see
+# https://github.com/fccn/nau-technical/issues/1042. For each declared instance this checks that:
+# - it is in the configuration of the host, on an interface that exists, with its `unicast_src_ip` on that interface
+# - keepalived is active and the priority is the declared one, unless `healthcheck_vip_expected_holder_enforced`
+#   is false (a node in maintenance)
+
+- name: Check keepalived
+  when: keepalived_vrrp_instances | default([]) | length > 0
+  block:
+    - name: Read the state of keepalived
+      ansible.builtin.command: systemctl is-active keepalived
+      register: healthcheck_keepalived_active
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: Read the VRRP instances of the configuration of keepalived
+      ansible.builtin.command:
+        argv:
+          - awk
+          # instance|<name>, interface|<name>|eth0, source|<name>|172.22.1.76, priority|<name>|98, dev|<name>|eth0
+          - >-
+            $1 == "vrrp_instance" {n = $2; print "instance|" n}
+            n != "" && NF >= 2 && $1 == "interface" {print "interface|" n "|" $2}
+            n != "" && NF >= 2 && $1 == "unicast_src_ip" {print "source|" n "|" $2}
+            n != "" && NF >= 2 && $1 == "priority" {print "priority|" n "|" $2}
+            n != "" {for (i = 2; i < NF; i++) if ($i == "dev") print "dev|" n "|" $(i + 1)}
+          - "{{ healthcheck_keepalived_conf_file }}"
+      register: healthcheck_keepalived_conf
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: List the network interfaces of this host
+      ansible.builtin.command: ls -1 {{ healthcheck_keepalived_net_dir }}
+      register: healthcheck_keepalived_nets
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: Read the IPv4 addresses of this host
+      ansible.builtin.command: ip -4 -o addr show
+      register: healthcheck_keepalived_addr
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: Record that keepalived is not running
+      ansible.builtin.set_fact:
+        healthcheck_problems: >-
+          {{ healthcheck_problems | default([])
+             + [inventory_hostname ~ ': keepalived is ' ~ (healthcheck_keepalived_active.stdout | default('', true) | trim | default('not installed', true))] }}
+      when: >-
+        healthcheck_vip_expected_holder_enforced | bool
+        and healthcheck_keepalived_active.stdout | default('', true) | trim != 'active'
+
+    - name: Record that the configuration of keepalived cannot be read
+      ansible.builtin.set_fact:
+        healthcheck_problems: >-
+          {{ healthcheck_problems | default([])
+             + [inventory_hostname ~ ': cannot read ' ~ healthcheck_keepalived_conf_file ~ ' (' ~ (healthcheck_keepalived_conf.stderr | default('', true) | trim) ~ ')'] }}
+      when: healthcheck_keepalived_conf.rc | default(1) != 0
+
+    - name: Check each VRRP instance against the configuration and the network of this host
+      ansible.builtin.set_fact:
+        healthcheck_problems: >-
+          {{ healthcheck_problems | default([])
+             + ([who ~ ' is not in ' ~ healthcheck_keepalived_conf_file ~ ', run the keepalived tag of deploy.yml'] if not present else [])
+             + ([who ~ ' has no interface'] if present and iface == '' else [])
+             + ([who ~ ' uses the interface ' ~ (missing | join(', ')) ~ ', which this host does not have (' ~ (nets | reject('equalto', 'lo') | join(', '))
+                 ~ '), run the keepalived tag of deploy.yml'] if missing | length > 0 else [])
+             + ([who ~ ' has the unicast_src_ip ' ~ src ~ ', which is not configured on ' ~ iface]
+                if src is match('^[0-9.]+$') and iface in nets and (iface ~ '|' ~ src) not in addresses else [])
+             + ([who ~ ' has the priority ' ~ priority ~ ', the inventory declares ' ~ item.priority | int]
+                if healthcheck_vip_expected_holder_enforced | bool and priority != '' and item.priority is defined and priority | int != item.priority | int else []) }}
+      vars:
+        who: "{{ inventory_hostname ~ ': keepalived instance ' ~ item.name }}"
+        conf: "{{ healthcheck_keepalived_conf.stdout_lines | default([]) | map('split', '|') | list }}"
+        present: "{{ conf | selectattr('0', 'equalto', 'instance') | selectattr('1', 'equalto', item.name) | list | length > 0 }}"
+        mine: "{{ conf | selectattr('1', 'equalto', item.name) | list }}"
+        iface: "{{ mine | selectattr('0', 'equalto', 'interface') | map(attribute='2') | first | default('') }}"
+        src: "{{ mine | selectattr('0', 'equalto', 'source') | map(attribute='2') | first | default('') }}"
+        priority: "{{ mine | selectattr('0', 'equalto', 'priority') | map(attribute='2') | first | default('') }}"
+        devs: "{{ mine | selectattr('0', 'equalto', 'dev') | map(attribute='2') | unique | list }}"
+        # The interface of the instance and the `dev` of its VIPs
+        missing: "{{ ([iface] + devs) | select | unique | reject('in', nets) | list if nets | length > 0 else [] }}"
+        nets: "{{ healthcheck_keepalived_nets.stdout_lines | default([]) }}"
+        # 2: eth0    inet 172.22.1.76/24 brd 172.22.1.255 scope global eth0\  gives eth0|172.22.1.76
+        addresses: "{{ healthcheck_keepalived_addr.stdout | default('', true) | regex_findall('(?m)^\\d+:\\s+(\\S+)\\s+inet\\s+([0-9.]+)/') | map('join', '|') | list }}"
+      loop: "{{ keepalived_vrrp_instances }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: healthcheck_keepalived_conf.rc | default(1) == 0
