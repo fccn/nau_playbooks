@@ -154,7 +154,14 @@ is attached to one shared `SETTINGS PROFILE`
 (`clickhouse_partner_access_settings_profile`, default `partner_readonly`)
 and one shared `QUOTA` (`clickhouse_partner_access_quota_name`, default
 `partner_quota`), bounding worst-case per-query cost and per-hour query
-volume so partner access can't impact core LMS/CMS ClickHouse load. See
+volume so partner access can't impact core LMS/CMS ClickHouse load. The
+profile/quota *object* is shared (one set of numeric limits for every
+partner), but each partner's actual usage against it is tracked
+independently: the profile's `..._for_user` settings are inherently
+per connecting ClickHouse user already, and the quota is `KEYED BY
+user_name` (see `templates/partner_resource_limits.sql.j2`) so ARTE and
+INA each get their own hourly counter instead of silently sharing one.
+See
 [docs/resource_governance_analysis.md](docs/resource_governance_analysis.md)
 for the full scalability/performance-impact analysis (prod hardware facts,
 existing Trino precedents, and a live synthetic load test in dev) behind
@@ -164,13 +171,13 @@ these specific values -- done as part of
 | Setting | Default | Rationale |
 | --- | --- | --- |
 | `max_memory_usage` | 2 GB | Matches Trino's existing `query.max-memory-per-node` cap for the same partner access. Per-query; applies regardless of whether the session reached ClickHouse via Trino or a direct connection. |
-| `max_memory_usage_for_user` | 10 GB | Per-user *aggregate* ceiling (confirmed live, not just per-query) on top of the per-query cap above (5 × `max_memory_usage`, reusing Trino's own 5-concurrent-query cap for ARTE): without this, a partner connecting to ClickHouse directly (bypassing Trino, and so Trino's own concurrency cap) could still use up to `max_memory_usage` per query across many parallel connections. Being a true aggregate (not per-query) is what makes it safe for `max_concurrent_queries_for_user` below to be much higher than Trino's raw concurrency figure. |
+| `max_memory_usage_for_user` | 10 GB | Per-user *aggregate* ceiling (confirmed live, not just per-query) on top of the per-query cap above (5 × `max_memory_usage`, reusing Trino's own 5-concurrent-query cap for ARTE): without this, a partner connecting to ClickHouse directly (bypassing Trino, and so Trino's own concurrency cap) could still use up to `max_memory_usage` per query across many parallel connections. Being a true aggregate (not per-query) is what makes it safe for `max_concurrent_queries_for_user` below to be much higher than Trino's raw concurrency figure. Genuinely per-partner already (ClickHouse tracks this per connecting user, not per role); only ever sized for one partner's worst case though, so two partners simultaneously at this ceiling (20 GB) still fits prod's ~28.2 GiB node cap but with shrinking margin per additional partner -- revisit before a 3rd. |
 | `max_concurrent_queries_for_user` | 40 | 5 (Trino's concurrency cap for ARTE) × ~8, a multiplier measured from real dev traffic, not assumed: a single Trino-level query against the ClickHouse partner catalog issues ~6-8 ClickHouse statements (JDBC metadata lookups around the actual data query), confirmed via `system.query_log`. |
 | `max_threads` | 4 | Prod's 16 cores per ClickHouse node, divided by Trino's existing 5-concurrent-query cap for ARTE. |
 | `max_bytes_to_read` | 25 GB | Stops an outsized scan on bytes read (not just memory/time) with headroom above a legitimate heavy query's measured read volume in the synthetic load test. |
 | `max_execution_time` | 60s | ~3.5x margin over the measured cost of a deliberately heavy query in a synthetic load test, far under Trino's own 10-15 min ceiling. |
-| quota `MAX QUERIES` | 1600 / hour | Same ~8x measured multiplier as `max_concurrent_queries_for_user` applied to an original 200/hour target (itself generous relative to Trino's own partner burst-queue capacity) -- this quota counts every ClickHouse statement, including JDBC metadata overhead, not just logical queries. |
-| quota `EXECUTION TIME` | 1200s / hour | Paired with the 60s per-query cap and the quota's 1-hour interval; allows roughly 20 maximally-long queries per hour. |
+| quota `MAX QUERIES` | 1600 / hour | Same ~8x measured multiplier as `max_concurrent_queries_for_user` applied to an original 200/hour target (itself generous relative to Trino's own partner burst-queue capacity) -- this quota counts every ClickHouse statement, including JDBC metadata overhead, not just logical queries. `KEYED BY user_name`, so this is each partner's own independent hourly budget, not a combined one. |
+| quota `EXECUTION TIME` | 1200s / hour | Paired with the 60s per-query cap and the quota's 1-hour interval; allows roughly 20 maximally-long queries per hour. Same `KEYED BY user_name` independence as `MAX QUERIES` above. |
 
 Rendered once per run (`templates/partner_resource_limits.sql.j2`), not
 per-partner: `CREATE SETTINGS PROFILE/QUOTA IF NOT EXISTS` followed by

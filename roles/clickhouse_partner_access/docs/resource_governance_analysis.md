@@ -90,3 +90,53 @@ afterward and confirmed back to baseline via `SHOW CREATE USER`, `SHOW GRANTS`,
 | `max_execution_time` | 60s | **Judgment call, informed by the measured baseline**: ~3.5x margin over the 16.8s cost of the 20M-row test query, while staying far under Trino's own 10–15 minute ceiling. Not a hard-derived number -- a deliberate cutoff with room for legitimately larger analytical queries. |
 | Quota `MAX QUERIES` | 1600 / hour | **Measured, not just a judgment call**: originally 200/hour (generous relative to Trino's own `maxQueued=50` burst capacity, sized for normal BI-tool polling), rescaled by the same ~8x measured ClickHouse-statements-per-Trino-query multiplier described above for `max_concurrent_queries_for_user` -- this quota counts every individual ClickHouse statement including JDBC metadata overhead, so leaving it at 200 would throttle normal usage almost entirely via implementation-detail lookups, not real query volume. |
 | Quota `EXECUTION TIME` | 1200s / hour | **Judgment call**: paired with the 60s per-query cap and the 1-hour interval precedent above; allows roughly 20 maximally-long queries per hour, well above realistic usage. |
+
+## Multi-partner isolation (added onboarding INA, the 2nd partner)
+
+All the analysis above was done with exactly one partner (ARTE) in mind. Onboarding a 2nd
+partner (INA) surfaced one real gap and one non-issue, both worth recording for future
+partners too.
+
+**Gap found and fixed: the quota was a single shared counter across all partners.**
+`CREATE QUOTA` with no `KEYED BY` defaults to `QuotaKeyType::NONE` (confirmed in ClickHouse's
+own source, `src/Access/Quota.h` + `src/Access/QuotaCache.cpp`), which resolves to the same
+empty key for every request regardless of which user issued it. Since `partner_quota` is
+`TO org_role_arte, org_role_ina`, this meant ARTE and INA's hourly `MAX QUERIES`/`EXECUTION
+TIME` usage was being tracked as one combined total, not two independent ones -- latent and
+invisible with a single partner, but a real cross-partner interference risk with two: one
+partner exhausting the shared budget would silently throttle the other, with no per-partner
+visibility into why. Fixed by adding `KEYED BY user_name` to the `ALTER QUOTA` statement in
+`templates/partner_resource_limits.sql.j2`, bucketing usage by the actual connecting
+ClickHouse user (`org_user_<partner>`) instead. Confirmed via ClickHouse's own `ALTER QUOTA`
+docs that `KEYED BY` is a normal alterable clause (not CREATE-only), so this fits the existing
+`ALTER`-never-`DROP`+`CREATE` approach without any new caveats -- re-applying the same key type
+on every run is a no-op.
+
+**Non-issue, but worth confirming explicitly: the settings profile was already per-partner.**
+Unlike the quota, `max_memory_usage_for_user`/`max_concurrent_queries_for_user` are enforced by
+ClickHouse per actual connecting user regardless of how a `SETTINGS PROFILE` was granted (no
+`KEYED BY`-equivalent exists for profiles because none is needed) -- confirmed by ClickHouse's
+own distinct "User memory limit exceeded" error already being scoped to the one user, not every
+role member combined. So the original 10GB/40-query figures were already correctly isolated
+per partner; no profile change was needed for INA.
+
+**Known scaling limit: headroom for `max_memory_usage_for_user` shrinks per added partner.**
+10GB was only ever derived as one partner's worst case against a prod node's ~28.2 GiB
+`max_server_memory_usage`. Two partners (ARTE + INA) simultaneously at their individual 10GB
+ceiling is 20GB combined -- still safely under the node cap (~8 GiB margin) now that each is
+correctly isolated, but this margin shrinks by another 10GB with each additional partner
+onboarded. This is a **judgment call, not yet a hard limit**: revisit `max_memory_usage_for_user`
+(consider lowering it, or moving to a smaller per-partner figure) before a 3rd partner is
+added, rather than assuming today's headroom holds indefinitely.
+
+**Trino-side concurrency isolation uses a different, already-available mechanism: nested
+resource groups, not a ClickHouse-level change.** Trino enforces a query's resource-group
+hierarchy inclusively -- a query in a child subgroup is bounded by both its own limits and
+every ancestor's (per Trino's own resource-groups docs). Converting the existing flat
+`partners` subgroup into a parent with per-partner child subgroups (`partners.arte`,
+`partners.ina`), each with a smaller individual `hardConcurrencyLimit` than the parent's
+existing total, gives each partner a guaranteed fair minimum (via `schedulingPolicy: fair`)
+while leaving the parent's previously-validated combined ceiling completely unchanged -- no
+re-analysis of Trino-level total resource exposure was needed for this. See the
+`nau-analytics-kubernetes-manifests` PRs that onboarded INA for the actual
+`resource-groups.json` values used per environment.

@@ -128,8 +128,26 @@ clickhouse_partners: []
 # worst-case per-query cost and per-hour query volume so a partner
 # can't impact core LMS/CMS ClickHouse load -- even via a single heavy
 # query that the row policy doesn't make any cheaper. One shared
-# profile/quota for all partners (not per-partner): the governance
-# policy is uniform by design.
+# profile/quota object for all partners (not per-partner): the
+# governance policy -- i.e. the numeric limits below -- is uniform by
+# design, same values regardless of which/how many partners exist.
+#
+# That object being shared is distinct from whether USAGE against it is
+# tracked per-partner, though. The settings profile's
+# max_memory_usage_for_user/max_concurrent_queries_for_user are
+# inherently per actual ClickHouse user already (ClickHouse always
+# tracks these per connecting user, independent of which role(s)
+# granted them -- no KEYED BY-style mechanism needed or available for a
+# SETTINGS PROFILE). The quota is different: CREATE QUOTA with no
+# KEYED BY defaults to a single untyped key (confirmed in ClickHouse's
+# own source, src/Access/Quota.h/QuotaCache.cpp), meaning every
+# partner's usage against partner_quota was tracked as one combined
+# counter, not per-partner -- latent with only ARTE, a real
+# cross-partner interference risk once a second partner (INA) was
+# added, since partner A could silently exhaust partner B's hourly
+# budget. Fixed by adding KEYED BY user_name (see
+# templates/partner_resource_limits.sql.j2) so each org_user_<partner>
+# gets an independent counter under the same shared numeric limits.
 #
 # Values derived from a scalability/performance-impact analysis (prod
 # hardware facts + a synthetic load test confirming real enforcement)
@@ -154,6 +172,15 @@ clickhouse_partners: []
 #   independent of the per-query max_memory_usage error) -- so raising
 #   max_concurrent_queries_for_user doesn't by itself widen how much
 #   memory one partner can use at once; that's still bounded here.
+#   This cap is genuinely per-partner (see the KEYED BY note above),
+#   but the 10GB figure itself was only ever derived for one partner's
+#   worst case against the prod ClickHouse node's ~28.2GiB
+#   max_server_memory_usage -- with 2 partners (ARTE + INA) both
+#   simultaneously at their individual 10GB ceiling that's 20GB
+#   combined, still under the node cap with ~8GiB margin, but this
+#   headroom shrinks by 10GB per additional partner onboarded. Revisit
+#   this value (and/or max_concurrent_queries_for_user) before adding a
+#   3rd partner -- see docs/resource_governance_analysis.md.
 #   max_concurrent_queries_for_user=40 (not Trino's raw concurrency
 #   figure of 5) accounts for a real, measured multiplier: inspecting
 #   dev's actual system.query_log for traffic from Trino's ClickHouse
