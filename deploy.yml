@@ -52,6 +52,10 @@
 #   To only deploy Java and the Jenkins controller
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit support_server --tags jenkins_controller
 #
+#   To deploy the MCP server (nau-mcp), without the base play that runs on every host (users, ssh keys, ...)
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit mcp_servers -e mcp_deploy=true --tags mcp
+#   Add --check --diff first to preview it. The monitoring part (snmpd) is run with --tags snmpd.
+#
 #   To deploy ssh keys
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --tags ssh
 
@@ -845,6 +849,33 @@
         name: ansible-snmpd
       tags: snmpd
       when: kubernetes_deploy | default(false) | bool
+
+
+# One VM per environment. The role pulls the nau-mcp repository at the version pinned in secure-nau-data.
+# Before the observability play, which has to be the last: this VM is not one of its hosts.
+- name: Deploy MCP servers
+  hosts: mcp_servers
+  serial: "{{ serial_number | default(1) }}" # deploy in sequence
+  become: True
+  gather_facts: True
+  tasks:
+    - name: Install or upgrade docker daemon
+      import_role:
+        name: geerlingguy.docker
+      tags: mcp
+      when: mcp_deploy | default(false) | bool
+
+    # Only where secure-nau-data defines mcp_snmpd_configs: snmpd adds its user to the docker group.
+    - import_role:
+        name: ansible-snmpd
+      tags: snmpd
+      when: ( mcp_deploy | default(false) | bool ) and mcp_snmpd_configs is defined
+
+    - name: Deploy the MCP server
+      import_role:
+        name: mcp_docker_deploy
+      tags: mcp
+      when: mcp_deploy | default(false) | bool
 
 
 # Should be the last, because it depends on the docker, and the business projects are the ones that install docker
