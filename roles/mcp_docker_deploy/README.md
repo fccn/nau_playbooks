@@ -111,7 +111,8 @@ mcp_makefile_healthcheck: [ "/nau/ops/nau-mcp/deploy" ]
   That role adds the snmpd user to the `docker` group, which is root-equivalent on a VM that holds read access to the
   platform. The Icinga service that reads the `extend` has to be created in Icinga.
 - **`mcp_makefile_healthcheck`.** The `healthcheck`, `upgrade_and_reboot`, `rolling_execute` and `server_maintenance`
-  playbooks then wait for the server after a reboot.
+  playbooks then wait for the server after a reboot. Switch it on only once the server is deployed on that VM: until then
+  they retry for up to 25 minutes (50 times, every 30 seconds) because the folder is not there.
 - **Firewall.** This role opens nothing: the server listens on the loopback only. If a group enables
   `mcp_servers_firewall_ports` in `secure-nau-data`, SSH from the management hosts is the only port it needs.
 
