@@ -1,0 +1,20 @@
+---
+# Runs the `healthcheck` Make target of the Docker services that are not part of
+# `makefile_healthcheck`, because that list gates the deploy and rolling playbooks.
+# Unlike the gate, this runs once, without retries.
+
+- name: Run the Makefile healthcheck of this service
+  ansible.builtin.command: make --no-print-directory --directory {{ make_dir }} healthcheck
+  vars:
+    make_dir: "{{ healthcheck_balancer_make_dir if inventory_hostname in groups['balancer_servers'] | default([]) else healthcheck_registry_mirror_make_dir }}"
+  register: healthcheck_make
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Record the failed Makefile healthcheck
+  ansible.builtin.set_fact:
+    healthcheck_problems: >-
+      {{ healthcheck_problems | default([])
+         + [ inventory_hostname ~ ': make healthcheck failed: ' ~ ((healthcheck_make.stdout_lines | default([]) + healthcheck_make.stderr_lines | default([])) | reject('match', '^make.*Error') | join('; ')) ] }}
+  when: healthcheck_make.rc != 0

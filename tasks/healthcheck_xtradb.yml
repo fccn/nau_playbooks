@@ -1,0 +1,168 @@
+---
+# Checks one Percona XtraDB Cluster (Galera) node, and what decides if it can serve and rejoin the cluster.
+# It only reads. The password of the root user is read from the environment of the container, so it is never
+# an argument of a command and never printed.
+#
+# - Container: running (not exited nor restarting in a loop), not killed for lack of memory, and with a restart policy.
+# - Makefile healthcheck: the one that gates the deploy, but once and without retries.
+# - Galera: the node is in the primary component and Synced, sees every node of the inventory group, has the
+#   history of the cluster, is not in maintenance (pxc_maint_mode) nor desynchronised (wsrep_desync), accepts
+#   writes, and has free connections.
+# - TLS: the certificates of the server, which Galera also uses, do not expire soon.
+# - Backup node (the last of the group, see mysql_xtrabackups.yml): reaches the Ceph S3 of the backups.
+
+- name: Read the state of the XtraDB container
+  ansible.builtin.command:
+    argv:
+      - docker
+      - inspect
+      - --format
+      - '{% raw %}{"state": {{json .State}}, "restart": {{json .HostConfig.RestartPolicy}}}{% endraw %}'
+      - "{{ healthcheck_xtradb_container }}"
+  register: healthcheck_xtradb_inspect
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Check the XtraDB container
+  ansible.builtin.set_fact:
+    healthcheck_xtradb_running: "{{ state.Status | default('') == 'running' }}"
+    healthcheck_problems: >-
+      {{ healthcheck_problems | default([])
+         + ([who ~ ' cannot be inspected: ' ~ (healthcheck_xtradb_inspect.stderr | default('', true) | trim)] if healthcheck_xtradb_inspect.rc != 0 else [])
+         + ([who ~ ' is ' ~ state.Status] if state.Status | default('running') != 'running' else [])
+         + ([who ~ ' was killed for lack of memory'] if state.OOMKilled | default(false) | bool else [])
+         + ([who ~ ' has the restart policy "' ~ (restart.Name | default('', true) or 'no') ~ '", it does not start again after a reboot']
+            if healthcheck_xtradb_inspect.rc == 0 and restart.Name | default('') in ['', 'no'] else []) }}
+  vars:
+    who: "{{ inventory_hostname ~ ': the XtraDB container ' ~ healthcheck_xtradb_container }}"
+    inspect: "{{ healthcheck_xtradb_inspect.stdout | from_json if healthcheck_xtradb_inspect.rc == 0 else {} }}"
+    state: "{{ inspect.state | default({}) }}"
+    restart: "{{ inspect.restart | default({}) }}"
+
+- name: Run the Makefile healthcheck of the XtraDB node
+  ansible.builtin.command: make --no-print-directory --directory {{ xtradb_docker_deploy_base_folder }} healthcheck
+  register: healthcheck_xtradb_make
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: healthcheck_xtradb_running | bool
+
+- name: Record the failed Makefile healthcheck
+  ansible.builtin.set_fact:
+    healthcheck_problems: >-
+      {{ healthcheck_problems | default([])
+         + [inventory_hostname ~ ': XtraDB make healthcheck failed: '
+            ~ ((healthcheck_xtradb_make.stdout_lines | default([]) + healthcheck_xtradb_make.stderr_lines | default([])) | reject('match', '^make.*Error') | join('; '))] }}
+  when: healthcheck_xtradb_make.rc | default(0) != 0
+
+- name: Read the Galera status and the settings of the XtraDB node
+  ansible.builtin.command:
+    argv:
+      - docker
+      - exec
+      - -i
+      - "{{ healthcheck_xtradb_container }}"
+      - bash
+      - -c
+      - 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot -h127.0.0.1 --port={{ xtradb_mysql_port | default(3306) }} -N -B'
+    stdin: |
+      SHOW GLOBAL STATUS WHERE Variable_name IN ('wsrep_cluster_size', 'wsrep_cluster_status', 'wsrep_connected',
+        'wsrep_ready', 'wsrep_local_state_comment', 'wsrep_local_state_uuid', 'wsrep_cluster_state_uuid',
+        'wsrep_cluster_conf_id', 'Threads_connected');
+      SHOW GLOBAL VARIABLES WHERE Variable_name IN ('version', 'pxc_maint_mode', 'wsrep_desync', 'read_only',
+        'max_connections', 'ssl_ca', 'ssl_cert');
+  register: healthcheck_xtradb_sql
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: healthcheck_xtradb_running | bool
+
+- name: Check the Galera status of the XtraDB node
+  ansible.builtin.set_fact:
+    healthcheck_xtradb_settings: "{{ kv }}"
+    healthcheck_xtradb_info: >-
+      {{ inventory_hostname ~ ': XtraDB ' ~ kv.version | default('?') ~ ', ' ~ kv.wsrep_local_state_comment | default('?')
+         ~ ', ' ~ kv.wsrep_cluster_size | default('?') ~ ' of ' ~ expected ~ ' nodes, cluster configuration ' ~ kv.wsrep_cluster_conf_id | default('?')
+         ~ ', ' ~ kv.Threads_connected | default('?') ~ ' of ' ~ kv.max_connections | default('?') ~ ' connections' }}
+    healthcheck_problems: >-
+      {{ healthcheck_problems | default([])
+         + ([who ~ 'cannot read its status: ' ~ (healthcheck_xtradb_sql.stderr | default('', true) | trim)] if kv | length == 0 else [])
+         + ([who ~ 'is not in the primary component (wsrep_cluster_status ' ~ kv.wsrep_cluster_status ~ ')']
+            if kv.wsrep_cluster_status | default('Primary') != 'Primary' else [])
+         + ([who ~ 'is not connected to the cluster (wsrep_connected ' ~ kv.wsrep_connected ~ ')'] if kv.wsrep_connected | default('ON') != 'ON' else [])
+         + ([who ~ 'is not ready for queries (wsrep_ready ' ~ kv.wsrep_ready ~ ')'] if kv.wsrep_ready | default('ON') != 'ON' else [])
+         + ([who ~ 'is ' ~ kv.wsrep_local_state_comment ~ ', not Synced'] if kv.wsrep_local_state_comment | default('Synced') != 'Synced' else [])
+         + ([who ~ 'sees ' ~ kv.wsrep_cluster_size ~ ' of the ' ~ expected ~ ' nodes of the cluster']
+            if kv.wsrep_cluster_size is defined and kv.wsrep_cluster_size | int != expected | int else [])
+         + ([who ~ 'has not the history of the cluster (wsrep_local_state_uuid ' ~ kv.wsrep_local_state_uuid
+             ~ ', the cluster is ' ~ kv.wsrep_cluster_state_uuid ~ ')']
+            if kv.wsrep_local_state_uuid | default('') != kv.wsrep_cluster_state_uuid | default('') else [])
+         + ([who ~ 'is in maintenance mode (pxc_maint_mode ' ~ kv.pxc_maint_mode ~ ')'] if kv.pxc_maint_mode | default('DISABLED') != 'DISABLED' else [])
+         + ([who ~ 'is desynchronised from the cluster (wsrep_desync ' ~ kv.wsrep_desync ~ ')'] if kv.wsrep_desync | default('OFF') != 'OFF' else [])
+         + ([who ~ 'is read only (read_only ' ~ kv.read_only ~ ')'] if kv.read_only | default('OFF') != 'OFF' else [])
+         + ([who ~ 'uses ' ~ kv.Threads_connected ~ ' of its ' ~ kv.max_connections ~ ' connections']
+            if kv.max_connections | default(0) | int > 0
+               and kv.Threads_connected | default(0) | int * 100 >= healthcheck_xtradb_connections_max_percent | int * kv.max_connections | int else []) }}
+  vars:
+    who: "{{ inventory_hostname ~ ': XtraDB ' }}"
+    expected: "{{ healthcheck_xtradb_expected_cluster_size | int }}"
+    # name<TAB>value, one line per status and per variable
+    kv: "{{ dict(healthcheck_xtradb_sql.stdout | default('', true) | regex_findall('(?m)^(\\w+)\\t(.*)$')) }}"
+  when: healthcheck_xtradb_running | bool
+
+- name: Check the TLS certificates of the XtraDB node
+  ansible.builtin.command:
+    argv:
+      - docker
+      - exec
+      - "{{ healthcheck_xtradb_container }}"
+      - openssl
+      - x509
+      - -in
+      - "{{ item }}"
+      - -noout
+      - -enddate
+      - -checkend
+      - "{{ healthcheck_xtradb_cert_expiry_days | int * 86400 }}"
+  register: healthcheck_xtradb_certs
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  loop: "{{ [healthcheck_xtradb_settings.ssl_ca | default(''), healthcheck_xtradb_settings.ssl_cert | default('')] | select | unique | list }}"
+  when: healthcheck_xtradb_running | bool
+
+- name: Record the TLS certificates that expire soon or cannot be read
+  ansible.builtin.set_fact:
+    healthcheck_problems: >-
+      {{ healthcheck_problems | default([])
+         + [inventory_hostname ~ ': XtraDB certificate ' ~ item.item ~ (
+              ' expires in less than ' ~ healthcheck_xtradb_cert_expiry_days ~ ' days (' ~ (item.stdout | default('', true) | regex_search('notAfter=(.*)', '\1') | default(['?'], true) | first) ~ ')'
+              if 'will expire' in item.stdout | default('') else
+              ' cannot be read: ' ~ (item.stderr | default('', true) | trim)
+            )] }}
+  loop: "{{ healthcheck_xtradb_certs.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item | default('') }}"
+  when: item.rc | default(0) != 0
+
+- name: Check the backup node reaches the Ceph S3 storage of the backups
+  ansible.builtin.wait_for:
+    host: "{{ nau_ceph_host }}"
+    port: "{{ healthcheck_xtradb_backup_storage_port | int }}"
+    timeout: "{{ healthcheck_connectivity_timeout }}"
+    connect_timeout: "{{ healthcheck_connectivity_timeout }}"
+  register: healthcheck_xtradb_backup_storage
+  ignore_errors: true
+  check_mode: false
+  when:
+    - inventory_hostname == groups['xtradb_servers'] | last
+    - DBS_BACKUP_EXTERNAL_STORAGE | default('') == 'ceph'
+    - nau_ceph_host is defined
+
+- name: Record that the backup node cannot reach the Ceph S3 storage
+  ansible.builtin.set_fact:
+    healthcheck_problems: >-
+      {{ healthcheck_problems | default([])
+         + [inventory_hostname ~ ': XtraDB backup node cannot reach the Ceph S3 storage of the backups (' ~ nau_ceph_host ~ ':' ~ healthcheck_xtradb_backup_storage_port ~ ')'] }}
+  when: healthcheck_xtradb_backup_storage is failed

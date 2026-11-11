@@ -1,0 +1,63 @@
+---
+# Probes the virtual IPs (VIPs) that keepalived is configured to manage on this host,
+# then, once for the whole play, verifies where each VIP really is.
+#
+# A VIP is healthy when exactly one node holds it and that node is the one where
+# keepalived declares it `MASTER`. When the run is limited to part of the inventory
+# the VIPs may be held by hosts that were not probed, so only a VIP held by several of
+# the probed nodes (split brain) is reported.
+
+- name: List the virtual IPs that keepalived should manage on this host
+  ansible.builtin.set_fact:
+    healthcheck_vips_declared: "{{ ips | zip(states, names) | map('list') | list }}"
+  vars:
+    pairs: "{{ keepalived_vrrp_instances | default([]) | subelements('virtual_ip', skip_missing=true) }}"
+    ips: "{{ pairs | map('last') | map('split', ' ') | map('first') | map('split', '/') | map('first') | list }}"
+    states: "{{ pairs | map('first') | map(attribute='state') | list }}"
+    names: "{{ pairs | map('first') | map(attribute='name') | list }}"
+
+- name: Check which of those virtual IPs this host holds
+  ansible.builtin.command: ip -o addr show to {{ item[0] }}
+  register: healthcheck_vip_probe
+  changed_when: false
+  check_mode: false
+  loop: "{{ healthcheck_vips_declared }}"
+  loop_control:
+    label: "{{ item[0] }} ({{ item[2] }})"
+
+- name: Record the virtual IPs held and the ones this host is the MASTER of
+  ansible.builtin.set_fact:
+    healthcheck_vips_held: "{{ healthcheck_vip_probe.results | default([]) | selectattr('stdout', 'ne', '') | map(attribute='item') | map('first') | list }}"
+    healthcheck_vips_master: "{{ healthcheck_vips_declared | selectattr('1', 'equalto', 'MASTER') | map('first') | list }}"
+
+- name: Verify the placement of each virtual IP
+  ansible.builtin.set_fact:
+    healthcheck_problems: >-
+      {{ healthcheck_problems | default([])
+         + [ 'VIP ' ~ item ~ ' ' ~ (
+               'is not held by any node, it should be on ' ~ (masters | join(', '))
+               if holders | length == 0 else
+               'is held by several nodes (' ~ (holders | join(', ')) ~ '), VRRP split brain'
+               if holders | length > 1 else
+               'is on ' ~ holders[0] ~ ' but its keepalived MASTER is ' ~ (masters | join(', '))
+             ) ] }}
+  vars:
+    limited_run: "{{ ansible_play_hosts_all | length < groups['all'] | length }}"
+    run_hosts: "{{ ansible_play_hosts | map('extract', hostvars) | list }}"
+    masters: "{{ run_hosts | selectattr('healthcheck_vips_master', 'contains', item) | map(attribute='inventory_hostname') | list }}"
+    holders: "{{ run_hosts | selectattr('healthcheck_vips_held', 'contains', item) | map(attribute='inventory_hostname') | list }}"
+  loop: "{{ ansible_play_hosts | map('extract', hostvars, 'healthcheck_vips_master') | flatten | unique | sort }}"
+  when: >-
+    holders | length > 1
+    or (not limited_run and (
+      holders | length == 0
+      or (healthcheck_vip_expected_holder_enforced | bool and holders[0] not in masters)))
+  run_once: true
+
+- name: Warn that the placement of the virtual IPs is only partially verified
+  ansible.builtin.debug:
+    msg: "The run is limited to part of the inventory, so only the VIPs held by several nodes are reported"
+  vars:
+    limited_run: "{{ ansible_play_hosts_all | length < groups['all'] | length }}"
+  when: limited_run
+  run_once: true

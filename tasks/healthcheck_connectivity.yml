@@ -1,0 +1,64 @@
+---
+# Tests, from this Kubernetes worker node, that every data store the applications use can be
+# reached. A node that lost a route (for example after being restored from a backup) can be
+# healthy for Kubernetes and still break the applications that run on it.
+
+- name: List the data store endpoints that the pods need to reach
+  ansible.builtin.set_fact:
+    healthcheck_connectivity_targets: >-
+      {% set ns = namespace(targets=[]) %}
+      {% for host in groups['mongo_docker_servers'] | default([]) %}
+      {% set ns.targets = ns.targets + [{'name': 'MongoDB ' ~ host, 'host': hostvars[host].ansible_additional_ipv4 | default(hostvars[host].ansible_host), 'port': hostvars[host].mongo_docker_port | default(27017)}] %}
+      {% endfor %}
+      {% for host in groups['xtradb_servers'] | default([]) %}
+      {% set ns.targets = ns.targets + [{'name': 'XtraDB ' ~ host, 'host': hostvars[host].ansible_host, 'port': hostvars[host].xtradb_mysql_port | default(3306)}] %}
+      {% endfor %}
+      {% for host in groups['elasticsearch_docker_servers'] | default([]) %}
+      {% set ns.targets = ns.targets + [{'name': 'Elasticsearch ' ~ host, 'host': hostvars[host].ansible_host, 'port': hostvars[host].elasticsearch_http_port | default(9200)}] %}
+      {% endfor %}
+      {% set xtradb = (groups['xtradb_servers'] | default([]) | first | default('')) %}
+      {% if xtradb and hostvars[xtradb].xtradb_virtual_ipv4_rw is defined %}
+      {% set ns.targets = ns.targets + [{'name': 'XtraDB read-write VIP', 'host': hostvars[xtradb].xtradb_virtual_ipv4_rw, 'port': hostvars[xtradb].xtradb_mysql_port | default(3306)}] %}
+      {% endif %}
+      {% if xtradb and hostvars[xtradb].xtradb_virtual_ipv4_r is defined %}
+      {% set ns.targets = ns.targets + [{'name': 'XtraDB read VIP', 'host': hostvars[xtradb].xtradb_virtual_ipv4_r, 'port': hostvars[xtradb].xtradb_mysql_port | default(3306)}] %}
+      {% endif %}
+      {% set redis = (groups['redis_docker_servers'] | default([]) | first | default('')) %}
+      {% if redis and hostvars[redis].redis_virtual_ipv4 is defined %}
+      {% set ns.targets = ns.targets + [{'name': 'Redis VIP', 'host': hostvars[redis].redis_virtual_ipv4, 'port': hostvars[redis].redis_docker_port | default(6379)}] %}
+      {% endif %}
+      {% set richie = (groups['richie_mysql_docker_servers'] | default([]) | first | default('')) %}
+      {% if richie and hostvars[richie].richie_mysql_virtual_ipv4 is defined %}
+      {% set ns.targets = ns.targets + [{'name': 'Richie MySQL VIP', 'host': hostvars[richie].richie_mysql_virtual_ipv4, 'port': hostvars[richie].richie_mysql_docker_port | default(3306)}] %}
+      {% endif %}
+      {% set clickhouse = (groups['clickhouse_servers'] | default([]) | first | default('')) %}
+      {% if clickhouse and hostvars[clickhouse].clickhouse_virtual_ipv4 is defined %}
+      {% set ns.targets = ns.targets + [{'name': 'ClickHouse read-write VIP', 'host': hostvars[clickhouse].clickhouse_virtual_ipv4, 'port': hostvars[clickhouse].clickhouse_server_tcp_port | default(9000)}] %}
+      {% endif %}
+      {% if clickhouse and hostvars[clickhouse].clickhouse_virtual_ipv4_r is defined %}
+      {% set ns.targets = ns.targets + [{'name': 'ClickHouse read VIP', 'host': hostvars[clickhouse].clickhouse_virtual_ipv4_r, 'port': hostvars[clickhouse].clickhouse_server_tcp_port | default(9000)}] %}
+      {% endif %}
+      {% if nau_ceph_host is defined %}
+      {% set ns.targets = ns.targets + [{'name': 'Ceph S3', 'host': nau_ceph_host, 'port': 443}] %}
+      {% endif %}
+      {{ ns.targets | to_json }}
+
+- name: Check this node connects to each data store
+  ansible.builtin.wait_for:
+    host: "{{ item.host }}"
+    port: "{{ item.port | int }}"
+    timeout: "{{ healthcheck_connectivity_timeout }}"
+    connect_timeout: "{{ healthcheck_connectivity_timeout }}"
+  register: healthcheck_connectivity
+  ignore_errors: true
+  check_mode: false
+  loop: "{{ healthcheck_connectivity_targets | from_json }}"
+  loop_control:
+    label: "{{ item.name }} {{ item.host }}:{{ item.port }}"
+
+- name: Record the data stores this node cannot reach
+  ansible.builtin.set_fact:
+    healthcheck_problems: "{{ healthcheck_problems | default([]) + ((unreachable | default('', true)).split('|') | map('trim') | select | list) }}"
+  vars:
+    unreachable: >-
+      {% for result in healthcheck_connectivity.results %}{% if result is failed %}{{ inventory_hostname }} cannot reach {{ result.item.name }} ({{ result.item.host }}:{{ result.item.port }})|{% endif %}{% endfor %}
