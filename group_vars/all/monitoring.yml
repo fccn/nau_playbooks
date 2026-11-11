@@ -16,6 +16,7 @@ snmpd_configs: "{{
   ( financial_manager_mysql_snmpd_configs if financial_manager_mysql_snmpd_configs is defined else [] ) +
   ( financial_manager_snmpd_configs if financial_manager_snmpd_configs is defined else [] ) +
   ( xtradb_snmpd_configs if xtradb_snmpd_configs is defined else [] ) +
+  ( xtradb_exporter_snmpd_configs if xtradb_exporter_snmpd_configs is defined else [] ) +
   ( clickhouse_snmpd_configs if clickhouse_snmpd_configs is defined else [] ) +
   ( nau_analytics_mysql_snmpd_configs if nau_analytics_mysql_snmpd_configs is defined else [] ) +
   []

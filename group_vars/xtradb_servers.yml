@@ -16,6 +16,18 @@ xtradb_snmpd_configs:
 
 xtradb_makefile_healthcheck: [ "{{ xtradb_docker_deploy_base_folder }}" ]
 
+# Prometheus exporter of the XtraDB. Deployed and monitored only when its password is set in secure-nau-data.
+xtradb_exporter_configured: "{{ ( xtradb_exporter_mysql_password | default('') ) is match('^[A-Za-z0-9]{32}$') }}"
+
+# folder of the exporter deployment, also used by the role
+xtradb_exporter_docker_deploy_base_folder: /nau/ops/xtradb-exporter
+
+# SNMPD configuration to monitor the exporter health
+xtradb_exporter_snmpd_configs: "{{ [ 'extend xtradb_exporter_healthcheck /usr/bin/make --jobs 20 --no-print-directory --directory ' ~ xtradb_exporter_docker_deploy_base_folder ~ ' silent-healthcheck' ] if ( xtradb_exporter_configured | bool ) else [] }}"
+
+# Not in makefile_healthcheck on purpose: the maintenance playbooks wait up to 25 minutes for it,
+# so a dead metrics exporter would block the maintenance of the database nodes.
+
 xtradb_indexof_current_host: "{{ groups['xtradb_servers'].index(inventory_hostname) }}"
 
 # Keep alive Virtual IP for read-write XtraDB connections

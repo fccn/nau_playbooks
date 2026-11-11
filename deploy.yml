@@ -43,6 +43,10 @@
 #   To deploy Percona XtraDB databases
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit xtradb_servers -e xtradb_deploy=true
 #
+#   A full XtraDB deploy also deploys its Prometheus exporter, last, when xtradb_exporter_mysql_password is set.
+#   To deploy only the exporter, last node first:
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit 'xtradb_servers[-1]' -e xtradb_deploy=true --tags xtradb_exporter
+#
 #   To deploy ClickHouse databases
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit clickhouse_servers -e clickhouse_deploy=true
 #
@@ -784,6 +788,20 @@
         keepalived_priority_override: ""
       tags: keepalived
       when: ( xtradb_deploy | default(false) | bool ) and xtradb_keepalived_vrrp_instances is defined and ( groups['xtradb_servers'] | length ) > 1
+
+    # Last, so the keepalived priority is already restored if it fails. Without a valid
+    # xtradb_exporter_mysql_password a full deploy skips it, and --tags xtradb_exporter fails.
+    - name: Deploy the Prometheus exporter of the XtraDB
+      import_role:
+        name: xtradb_exporter_docker_deploy
+      tags: xtradb_exporter
+      when: ( xtradb_deploy | default(false) | bool ) and ( ( xtradb_exporter_configured | bool ) or 'xtradb_exporter' in ansible_run_tags )
+    - name: Skip the Prometheus exporter of the XtraDB, xtradb_exporter_mysql_password is not set
+      debug:
+        msg: >-
+          The XtraDB exporter was not deployed on {{ inventory_hostname }}: define xtradb_exporter_mysql_password
+          (32 letters and digits) in secure-nau-data, then run with --tags xtradb_exporter.
+      when: ( xtradb_deploy | default(false) | bool ) and not ( xtradb_exporter_configured | bool ) and 'xtradb_exporter' not in ansible_run_tags
 
 
 - name: Deploy to ClickHouse database
