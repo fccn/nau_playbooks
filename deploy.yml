@@ -47,6 +47,9 @@
 #   To deploy only the exporter, last node first:
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit 'xtradb_servers[-1]' -e xtradb_deploy=true --tags xtradb_exporter
 #
+#   A full XtraDB deploy also deploys the node exporter (CPU, memory, disk of the VM). To deploy only that:
+#     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit 'xtradb_servers[-1]' -e xtradb_deploy=true --tags node_exporter
+#
 #   To deploy ClickHouse databases
 #     ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit clickhouse_servers -e clickhouse_deploy=true
 #
@@ -802,6 +805,13 @@
           The XtraDB exporter was not deployed on {{ inventory_hostname }}: define xtradb_exporter_mysql_password
           (32 letters and digits) in secure-nau-data, then run with --tags xtradb_exporter.
       when: ( xtradb_deploy | default(false) | bool ) and not ( xtradb_exporter_configured | bool ) and 'xtradb_exporter' not in ansible_run_tags
+
+    # Host metrics (CPU, memory, disk) of the VM, with no password to set.
+    - name: Deploy the Prometheus node exporter
+      import_role:
+        name: node_exporter_docker_deploy
+      tags: node_exporter
+      when: xtradb_deploy | default(false) | bool
 
 
 - name: Deploy to ClickHouse database
