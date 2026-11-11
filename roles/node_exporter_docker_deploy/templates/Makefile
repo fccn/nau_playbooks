@@ -25,6 +25,10 @@ logs: ## View logs
 	docker-compose logs -f
 .PHONY: logs
 
+# `make silent-healthcheck` prints only OK when the healthcheck passes (used by snmpd).
+silent-%:
+	@$(MAKE) $* > /dev/null && echo "OK"
+
 healthcheck: healthcheck-parallel ## Overall healthcheck - for parallel execution run `make --jobs 10 healthcheck`
 	@echo "Everything looks: OK"
 .PHONY: healthcheck
