@@ -43,6 +43,17 @@ ALTER SETTINGS PROFILE {{ clickhouse_partner_access_settings_profile }} {{ clust
     TO {{ partner_roles }};
 
 CREATE QUOTA IF NOT EXISTS {{ clickhouse_partner_access_quota_name }} {{ cluster_clause }};
+-- KEYED BY user_name: without it, a quota applied TO multiple roles
+-- tracks one combined counter for all of them (ClickHouse's default
+-- key type is NONE, not per-grantee -- confirmed in ClickHouse's own
+-- source), so ARTE and INA would silently share a single hourly
+-- budget instead of each getting their own. Keying by user_name
+-- buckets usage by the actual connecting ClickHouse user
+-- (org_user_<partner>), which is already 1:1 with each partner
+-- regardless of how the quota itself is granted (TO a list of roles).
+-- Safe to re-apply on every run: ALTER QUOTA ... KEYED BY ... on an
+-- already-correctly-keyed quota is a no-op (confirmed live).
+--
 -- Apply the current interval FIRST, then clear any stale one below --
 -- not the other way around. ALTER QUOTA ... FOR INTERVAL <N> ... adds
 -- a second, independent interval alongside an existing one of a
@@ -56,6 +67,7 @@ CREATE QUOTA IF NOT EXISTS {{ clickhouse_partner_access_quota_name }} {{ cluster
 -- and a failure on the cleanup step below leaves the old interval(s)
 -- in place rather than none at all.
 ALTER QUOTA {{ clickhouse_partner_access_quota_name }} {{ cluster_clause }}
+    KEYED BY user_name
     FOR INTERVAL {{ clickhouse_partner_access_quota_interval_hours }} HOUR
         MAX QUERIES {{ clickhouse_partner_access_quota_max_queries }},
             EXECUTION TIME {{ clickhouse_partner_access_quota_max_execution_time }}
