@@ -859,6 +859,14 @@
   become: True
   gather_facts: True
   tasks:
+    # First, so that a wrong or missing variable stops the play before Docker is installed or its settings are rewritten.
+    - name: Validate the MCP deploy variables
+      import_role:
+        name: mcp_docker_deploy
+        tasks_from: validate
+      tags: mcp
+      when: mcp_deploy | default(false) | bool
+
     - name: Install or upgrade docker daemon
       import_role:
         name: geerlingguy.docker

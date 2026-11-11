@@ -20,7 +20,9 @@ MCP VM
 
 ## What it does, on each VM, in order
 
-1. Validates the variables (see below). The deploy key and the Grafana token are never printed.
+1. Validates the variables (see below). The play of `deploy.yml` does this first, before Docker is installed or configured, so a
+   wrong variable stops it before anything is changed; the role does it again so it is safe used on its own. The deploy key and
+   the Grafana token are never printed.
 2. Installs `git` and `make`.
 3. Writes the SSH host key that GitHub publishes into the `known_hosts` of root.
 4. Pulls the repository at `mcp_git_version`, with the deploy key. The key is written to a temporary file of mode `0600`
@@ -50,7 +52,8 @@ mcp_git_ssh_key: |            # read-only deploy key of the repository, OpenSSH 
 - **Deploy key.** One per environment, so each can be revoked on its own:
   `ssh-keygen -t ed25519 -N '' -C 'nau-mcp deploy key <env>' -f key`. Add `key.pub` to the repository
   (Settings, Deploy keys) with "Allow write access" **unticked**, put `key` in `secure-nau-data`, and keep a copy in the
-  NAU password database. The value committed in `secure-nau-data` is a placeholder that fails the validation on purpose.
+  NAU password database. The value committed in `secure-nau-data` is a placeholder that fails the validation on purpose: the play
+  stops at its first task, before Docker. A run with `--tags snmpd` only does not validate.
 - **Environment.** `make init` refuses to change it afterwards, so a typo cannot turn a VM into another environment.
 
 ### Optional: the Grafana tools
