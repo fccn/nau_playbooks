@@ -16,6 +16,23 @@ wsrep_sst_donor = {{ xtradb_docker_wsrep_sst_donor }}
 {% if xtradb_docker_thread_cache_size is defined %}
 thread_cache_size = {{ xtradb_docker_thread_cache_size }}
 {% endif %}
+{% if xtradb_docker_skip_name_resolve | default(false) | bool %}
+skip_name_resolve = ON
+{% endif %}
+{% if xtradb_docker_innodb_redo_log_capacity is defined %}
+innodb_redo_log_capacity = {{ xtradb_docker_innodb_redo_log_capacity }}
+{% endif %}
+{% if xtradb_docker_slow_query_log | default(false) | bool %}
+slow_query_log = ON
+slow_query_log_file = /var/lib/mysql/slow.log
+long_query_time = {{ xtradb_docker_slow_query_log_long_query_time }}
+log_slow_extra = ON
+max_slowlog_size = {{ xtradb_docker_slow_query_log_max_size }}
+max_slowlog_files = {{ xtradb_docker_slow_query_log_max_files }}
+{% endif %}
+{% if xtradb_docker_gcache_size is defined %}
+wsrep_provider_options = "gcache.size={{ xtradb_docker_gcache_size }}"
+{% endif %}
 
 [client]
 ssl-ca = /cert/ca.pem
