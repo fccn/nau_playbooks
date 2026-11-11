@@ -1,0 +1,43 @@
+---
+# Deploys the NAU MCP server (nau-mcp), the read-only server that agents use to check the platform.
+# It pulls the repository at a pinned version and runs the deploy/Makefile of that clone. See the README.
+
+# Required, per environment, in secure-nau-data (envs/<env>/group_vars/mcp_servers.yml):
+#
+# The environment this VM serves: the file environments/<mcp_environment>.yaml of the repository says what the
+# server may contact. `make init` refuses to change the environment of a VM that already has one.
+# mcp_environment: dev
+#
+# What to deploy: a tag (v1.2.3) or a full commit hash. Never a branch, so a deploy is always the same code.
+# mcp_git_version: 0123456789abcdef0123456789abcdef01234567
+#
+# Read-only deploy key of the repository (GitHub, Settings, Deploy keys, "Allow write access" unticked), OpenSSH format.
+# It is written to a temporary file for the pull and removed right after, also when the pull fails.
+# mcp_git_ssh_key: |
+#   -----BEGIN OPENSSH PRIVATE KEY-----
+#   ...
+#   -----END OPENSSH PRIVATE KEY-----
+#
+# Optional: the token of a read-only (Viewer) Grafana service account. Defined, it switches the Grafana tools on.
+# Not defined, the Grafana tools stay as they are on the VM.
+# mcp_grafana_token: <token>
+
+# The repository, pulled over SSH. It is private.
+mcp_git_repo: git@github.com:fccn/nau-mcp.git
+
+# Folder of the clone. Its deploy/ folder holds the Makefile, the compose file and the secrets of the server.
+mcp_docker_deploy_base_folder: /nau/ops/nau-mcp
+mcp_docker_deploy_folder: "{{ mcp_docker_deploy_base_folder }}/deploy"
+
+# GitHub's published SSH host key (https://api.github.com/meta, "ssh_keys"; SHA256:+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU).
+# It is written to known_hosts and the pull checks it, so the code of this server never comes from a man in the middle.
+# If GitHub rotates the key, replace it with the new published one.
+mcp_git_host_key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
+mcp_git_known_hosts_file: /root/.ssh/known_hosts
+
+# The image is built on the VM from the pulled code: the first build takes a few minutes (downloads), later ones seconds.
+mcp_image_build_timeout: 1800
+
+# The containers are healthy after about 30 seconds (the health check of the image runs every 30 s).
+mcp_healthcheck_retries: 24
+mcp_healthcheck_delay: 5

@@ -1,0 +1,257 @@
+---
+# Deploys the nau-mcp server: pulls its repository at a pinned version and runs the deploy/Makefile of that clone.
+# The Makefile and the compose file belong to the repository (the server and its deploy move together), so this role
+# does not template them: it only prepares the VM, pulls the code and calls the targets of the Makefile.
+
+# The play of deploy.yml runs validate.yml before it installs Docker; it runs again here, so the role is safe on its own.
+- import_tasks: validate.yml
+
+- name: Install git and make
+  package:
+    name:
+      - git
+      - make
+    state: present
+
+- name: Create the folder of the clone and the SSH folder of root
+  file:
+    path: "{{ item.path }}"
+    state: directory
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ mcp_docker_deploy_base_folder }}", mode: "0755" }
+    - { path: "{{ mcp_git_known_hosts_file | dirname }}", mode: "0700" }
+  loop_control:
+    label: "{{ item.path }}"
+
+# `ansible-docker-deploy` pulls repositories with accept_hostkey, which is `StrictHostKeyChecking=no`: it also accepts a
+# CHANGED key. This server runs what it pulls, so the published key is pinned and the pull refuses any other.
+- name: Trust the SSH host key of GitHub that GitHub publishes
+  known_hosts:
+    path: "{{ mcp_git_known_hosts_file }}"
+    name: github.com
+    key: "github.com {{ mcp_git_host_key }}"
+    state: present
+
+- name: Read the commit that is checked out
+  command: git -C {{ mcp_docker_deploy_base_folder }} rev-parse HEAD
+  register: mcp_git_current
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: ansible_check_mode
+
+- name: Report what a check mode run does not do
+  debug:
+    msg: >-
+      Check mode: the checkout is at {{ mcp_git_current.stdout | default('(none)') if mcp_git_current.rc == 0 else '(none)' }} and the
+      pin is {{ mcp_git_version }}. The pull, the build and the deploy are not run in check mode: they need the repository.
+  when: ansible_check_mode
+
+# Everything below changes the VM or needs the repository, so it does not run in check mode.
+- name: Deploy the MCP server
+  when: not ansible_check_mode
+  block:
+    - name: Pull the repository at the pinned version
+      block:
+        - name: Create a temporary file for the deploy key
+          tempfile:
+            state: file
+            prefix: nau-mcp-deploy-key.
+          register: mcp_git_key_file
+          changed_when: false
+
+        - name: Write the deploy key (readable by root only)
+          copy:
+            content: "{{ mcp_git_ssh_key | trim }}\n"
+            dest: "{{ mcp_git_key_file.path }}"
+            mode: "0600"
+          changed_when: false
+          no_log: true
+          diff: false
+
+        # force: files of the clone that were edited by hand are discarded, like the other roles that pull a repository.
+        # Untracked files stay (.env, secrets, logs): they are ignored by the repository.
+        - name: Pull the repository
+          git:
+            repo: "{{ mcp_git_repo }}"
+            dest: "{{ mcp_docker_deploy_base_folder }}"
+            version: "{{ mcp_git_version }}"
+            force: true
+            key_file: "{{ mcp_git_key_file.path }}"
+          register: mcp_git_pull
+      always:
+        - name: Remove the deploy key from the VM
+          file:
+            path: "{{ mcp_git_key_file.path }}"
+            state: absent
+          changed_when: false
+          when: mcp_git_key_file.path | default('') != ''
+
+    # Creates .env (no secrets in it), secrets/, logs/ and certs/. It refuses to change the environment of a VM that has one.
+    - name: Initialise the VM for its environment
+      command: make init ENV={{ mcp_environment }}
+      args:
+        chdir: "{{ mcp_docker_deploy_folder }}"
+      register: mcp_init
+      changed_when: "'already says' not in mcp_init.stdout"
+
+    # The ID of an image is not used: with the containerd image store every build, even a fully cached one, gets a new ID.
+    # The layers and the creation time only change when something was built.
+    - name: Read the nau-mcp images before the build
+      shell: |
+        set -o pipefail
+        docker image ls --filter reference=nau-mcp --format '{% raw %}{{.Repository}}:{{.Tag}}{% endraw %}' | sort \
+          | xargs -r docker image inspect --format '{% raw %}{{.RepoTags}} {{.Created}} {{.RootFS.Layers}}{% endraw %}'
+      args:
+        executable: /bin/bash
+      register: mcp_images_before
+      changed_when: false
+
+    # The first build downloads the base image and the dependencies; with the layers in cache a build takes seconds.
+    # A failed build stops the run before the containers are touched.
+    - name: Build the image of this version
+      command: make image
+      args:
+        chdir: "{{ mcp_docker_deploy_base_folder }}"
+      timeout: "{{ mcp_image_build_timeout }}"
+      changed_when: false
+
+    - name: Read the nau-mcp images after the build
+      shell: |
+        set -o pipefail
+        docker image ls --filter reference=nau-mcp --format '{% raw %}{{.Repository}}:{{.Tag}}{% endraw %}' | sort \
+          | xargs -r docker image inspect --format '{% raw %}{{.RepoTags}} {{.Created}} {{.RootFS.Layers}}{% endraw %}'
+      args:
+        executable: /bin/bash
+      register: mcp_images_after
+      changed_when: mcp_images_after.stdout != mcp_images_before.stdout
+
+    - name: Read the Grafana token that is on the VM
+      stat:
+        path: "{{ mcp_docker_deploy_folder }}/secrets-grafana/token"
+        checksum_algorithm: sha256
+      register: mcp_grafana_token_file
+      when: mcp_grafana_configured | bool
+
+    # The random secret that the two containers share. make grafana-init creates it, so a missing one is a reason to run it.
+    - name: Read the secret that the two containers share
+      stat:
+        path: "{{ mcp_docker_deploy_folder }}/secrets/grafana-mcp-token"
+      register: mcp_grafana_shared_file
+      when: mcp_grafana_configured | bool
+
+    - name: Check if the Grafana tools are switched on in .env
+      command: grep -qx COMPOSE_PROFILES=grafana .env
+      args:
+        chdir: "{{ mcp_docker_deploy_folder }}"
+      register: mcp_grafana_profile
+      changed_when: false
+      failed_when: false
+      when: mcp_grafana_configured | bool
+
+    - name: Decide if the Grafana tools have to be set up
+      set_fact:
+        mcp_grafana_init_needed: >-
+          {{ mcp_grafana_configured | bool
+             and ( not mcp_grafana_token_file.stat.exists
+                   or mcp_grafana_token_file.stat.checksum != ( mcp_grafana_token | hash('sha256') )
+                   or not mcp_grafana_shared_file.stat.exists
+                   or mcp_grafana_profile.rc != 0 ) }}
+      no_log: true
+
+    - name: Skip the Grafana tools, there is no valid mcp_grafana_token
+      debug:
+        msg: >-
+          The Grafana tools were not touched on {{ inventory_hostname }}: define mcp_grafana_token (the token of a Viewer service
+          account of Grafana, 20 to 200 characters) in secure-nau-data to switch them on.
+      when: not ( mcp_grafana_configured | bool )
+
+    # The token goes through stdin, so it is on no command line.
+    # make grafana-init writes secrets-grafana/token (mode 600, only the Grafana container reads it) and three lines of .env.
+    - name: Switch the Grafana tools on
+      command:
+        argv:
+          - sh
+          - -c
+          - IFS= read -r GRAFANA_TOKEN && export GRAFANA_TOKEN && make grafana-init
+        chdir: "{{ mcp_docker_deploy_folder }}"
+        stdin: "{{ mcp_grafana_token }}"
+      register: mcp_grafana_init
+      failed_when: false
+      changed_when: mcp_grafana_init.rc == 0
+      no_log: true
+      when: mcp_grafana_init_needed | bool
+
+    # no_log hides the task above, but what make prints never holds the token, so it is safe to show here.
+    - name: Stop if the Grafana tools could not be switched on
+      fail:
+        msg: "make grafana-init failed (exit {{ mcp_grafana_init.rc }}): {{ ( mcp_grafana_init.stdout | default('') ~ ' ' ~ mcp_grafana_init.stderr | default('') ) | trim }}"
+      when: mcp_grafana_init_needed | bool and mcp_grafana_init.rc != 0
+
+    # Like the secret files of the other docker roles, they belong to the user of the container and nobody else can read
+    # them, and that is enforced on every run: make grafana-init sets it once, and a Grafana container that cannot read its
+    # token fails its healthcheck. The owner is the one of secrets/, which make init created for the container user.
+    - name: Read the owner of the secrets folder
+      stat:
+        path: "{{ mcp_docker_deploy_folder }}/secrets"
+      register: mcp_secrets_folder
+      when: mcp_grafana_configured | bool
+
+    - name: Keep the Grafana secrets readable by the container user only
+      file:
+        path: "{{ mcp_docker_deploy_folder }}/{{ item.path }}"
+        state: "{{ item.state }}"
+        owner: "{{ mcp_secrets_folder.stat.uid }}"
+        group: "{{ mcp_secrets_folder.stat.gid }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - { path: secrets-grafana, state: directory, mode: "0700" }
+        - { path: secrets-grafana/token, state: file, mode: "0600" }
+        - { path: secrets/grafana-mcp-token, state: file, mode: "0600" }
+      loop_control:
+        label: "{{ item.path }}"
+      when: mcp_grafana_configured | bool
+
+    - name: Check if the containers are up and healthy
+      command: make healthcheck
+      args:
+        chdir: "{{ mcp_docker_deploy_folder }}"
+      register: mcp_health_before
+      changed_when: false
+      failed_when: false
+
+    # make deploy checks the environment file first, then recreates the containers (the server reads that file once, when it
+    # starts). It runs only when something changed, so an unchanged run does not interrupt the server.
+    - name: Deploy the containers
+      command: make deploy
+      args:
+        chdir: "{{ mcp_docker_deploy_folder }}"
+      when: >-
+        mcp_git_pull is changed
+        or mcp_images_after is changed
+        or mcp_grafana_init_needed | bool
+        or mcp_health_before.rc != 0
+
+    - name: Wait until the MCP server is healthy
+      command: make healthcheck
+      args:
+        chdir: "{{ mcp_docker_deploy_folder }}"
+      register: mcp_healthcheck
+      until: mcp_healthcheck.rc == 0
+      retries: "{{ mcp_healthcheck_retries }}"
+      delay: "{{ mcp_healthcheck_delay }}"
+      changed_when: false
+      tags:
+        - healthcheck
+
+    - name: Read what this VM runs
+      command: make status
+      args:
+        chdir: "{{ mcp_docker_deploy_folder }}"
+      register: mcp_status
+      changed_when: false
+
+    - name: Show what this VM runs
+      debug:
+        var: mcp_status.stdout_lines

@@ -1,0 +1,28 @@
+---
+# The variables that the deploy needs, checked before anything is changed. The "Deploy MCP servers" play of deploy.yml runs this
+# file first, before Docker is installed or configured, and main.yml runs it again so that the role is safe used on its own.
+
+# The deploy key and the Grafana token are never printed: both checks only produce a boolean.
+- name: Check the deploy key and the Grafana token (their values are never printed)
+  set_fact:
+    mcp_git_ssh_key_valid: >-
+      {{ mcp_git_ssh_key is defined
+         and ( mcp_git_ssh_key | string ) is match('(?s)^-----BEGIN OPENSSH PRIVATE KEY-----.+-----END OPENSSH PRIVATE KEY-----\s*$') }}
+    mcp_grafana_configured: >-
+      {{ mcp_grafana_token is defined
+         and ( mcp_grafana_token | string ) is match('^[A-Za-z0-9_.~+/=-]{20,200}$') }}
+  no_log: true
+
+- name: Validate the MCP deploy configuration
+  assert:
+    that:
+      - mcp_environment is defined
+      - ( mcp_environment | string ) is match('^[a-z][a-z0-9-]*$')
+      - mcp_git_version is defined
+      - ( mcp_git_version | string ) is match('^([0-9a-f]{40}|v?[0-9]+(\.[0-9]+){1,2}([-.][0-9A-Za-z.]+)?)$')
+      - mcp_git_ssh_key_valid | bool
+    fail_msg: >-
+      Define mcp_environment (dev, stage or prod), mcp_git_version (a tag such as v1.2.3 or a full 40-character commit,
+      never a branch) and mcp_git_ssh_key (the read-only deploy key, in OpenSSH format) in secure-nau-data
+      (group_vars/mcp_servers.yml). The key and the Grafana token are never printed.
+    quiet: true
