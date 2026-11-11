@@ -1,0 +1,170 @@
+---
+# Deploys the Prometheus exporter of this XtraDB node. It never touches the XtraDB container.
+
+- name: Validate the exporter configuration
+  assert:
+    that:
+      - xtradb_exporter_mysql_password is defined
+      - xtradb_exporter_mysql_password is match('^[A-Za-z0-9]{32}$')
+      - xtradb_exporter_mysql_user is match('^[a-z_][a-z0-9_]{0,31}$')
+      - xtradb_exporter_mysql_host is match('^[A-Za-z0-9._-]+$')
+      - xtradb_exporter_mysql_max_user_connections | int > 0
+    fail_msg: >-
+      Define xtradb_exporter_mysql_password in secure-nau-data (group_vars/xtradb_servers.yml) with exactly
+      32 letters and digits, and keep the user and host to letters, digits, '.', '_' and '-'.
+      The password value is never printed.
+    quiet: true
+
+- name: Wait until the XtraDB of this node is a synced member of the cluster
+  command:
+    argv: "{{ xtradb_exporter_root_mysql_command }}"
+  args:
+    stdin: |
+      SELECT IF(
+        (SELECT VARIABLE_VALUE FROM performance_schema.global_status WHERE VARIABLE_NAME = 'wsrep_ready') = 'ON'
+        AND (SELECT VARIABLE_VALUE FROM performance_schema.global_status WHERE VARIABLE_NAME = 'wsrep_local_state') = '4',
+        'synced', 'not-synced');
+  register: xtradb_exporter_node_state
+  until: xtradb_exporter_node_state.stdout | default('') | trim == 'synced'
+  retries: "{{ xtradb_exporter_wait_synced_retries }}"
+  delay: "{{ xtradb_exporter_wait_synced_delay }}"
+  changed_when: false
+  check_mode: false # read only
+
+- name: Test the login of the exporter MySQL user
+  command:
+    argv:
+      - docker
+      - exec
+      - -i
+      - "{{ xtradb_exporter_xtradb_container_name }}"
+      - bash
+      - -c
+      - >-
+        read -r PW; MYSQL_PWD="$PW" mysql -u{{ xtradb_exporter_mysql_user }} -h{{ xtradb_exporter_mysql_host }}
+        -P{{ xtradb_exporter_mysql_port }} --batch --skip-column-names -e "SELECT 1"
+  args:
+    stdin: "{{ xtradb_exporter_mysql_password }}"
+  register: xtradb_exporter_login
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  no_log: true
+
+# Global privileges (dynamic ones included), connection limit, grant option, and the number of schema, table and
+# column grants. The expected value is `PRIVILEGES|limit|NO|0`.
+- name: Read the privileges and connection limit of the exporter MySQL user
+  command:
+    argv: "{{ xtradb_exporter_root_mysql_command }}"
+  args:
+    stdin: |
+      SELECT CONCAT_WS('|',
+        (SELECT GROUP_CONCAT(PRIVILEGE_TYPE ORDER BY PRIVILEGE_TYPE SEPARATOR ',')
+           FROM information_schema.USER_PRIVILEGES
+          WHERE GRANTEE = '''{{ xtradb_exporter_mysql_user }}''@''{{ xtradb_exporter_mysql_host }}'''),
+        (SELECT max_user_connections FROM mysql.user
+          WHERE user = '{{ xtradb_exporter_mysql_user }}' AND host = '{{ xtradb_exporter_mysql_host }}'),
+        (SELECT IF(COUNT(*) > 0, 'YES', 'NO') FROM information_schema.USER_PRIVILEGES
+          WHERE GRANTEE = '''{{ xtradb_exporter_mysql_user }}''@''{{ xtradb_exporter_mysql_host }}''' AND IS_GRANTABLE = 'YES'),
+        (SELECT (SELECT COUNT(*) FROM information_schema.SCHEMA_PRIVILEGES WHERE GRANTEE = '''{{ xtradb_exporter_mysql_user }}''@''{{ xtradb_exporter_mysql_host }}''')
+              + (SELECT COUNT(*) FROM information_schema.TABLE_PRIVILEGES WHERE GRANTEE = '''{{ xtradb_exporter_mysql_user }}''@''{{ xtradb_exporter_mysql_host }}''')
+              + (SELECT COUNT(*) FROM information_schema.COLUMN_PRIVILEGES WHERE GRANTEE = '''{{ xtradb_exporter_mysql_user }}''@''{{ xtradb_exporter_mysql_host }}''')));
+  register: xtradb_exporter_user_state
+  changed_when: false
+  check_mode: false
+
+- name: Decide if the exporter MySQL user has to be created or updated
+  set_fact:
+    xtradb_exporter_user_needs_update: >-
+      {{ xtradb_exporter_login.rc != 0
+         or (xtradb_exporter_user_state.stdout | trim) !=
+            ((xtradb_exporter_mysql_privileges | sort | join(',')) ~ '|' ~ (xtradb_exporter_mysql_max_user_connections | string) ~ '|NO|0') }}
+
+- name: Report that the exporter MySQL user would be created or updated
+  debug:
+    msg: "Check mode: the MySQL user {{ xtradb_exporter_mysql_user }}@{{ xtradb_exporter_mysql_host }} would be created or updated."
+  when: xtradb_exporter_user_needs_update | bool and ansible_check_mode
+
+# Galera replicates it, so the next nodes already find the user.
+- name: Create or update the exporter MySQL user
+  command:
+    argv: "{{ xtradb_exporter_root_mysql_command }}"
+  args:
+    stdin: |
+      CREATE USER IF NOT EXISTS '{{ xtradb_exporter_mysql_user }}'@'{{ xtradb_exporter_mysql_host }}'
+        IDENTIFIED BY '{{ xtradb_exporter_mysql_password }}' WITH MAX_USER_CONNECTIONS {{ xtradb_exporter_mysql_max_user_connections }};
+      ALTER USER '{{ xtradb_exporter_mysql_user }}'@'{{ xtradb_exporter_mysql_host }}'
+        IDENTIFIED BY '{{ xtradb_exporter_mysql_password }}' WITH MAX_USER_CONNECTIONS {{ xtradb_exporter_mysql_max_user_connections }};
+      REVOKE ALL PRIVILEGES, GRANT OPTION FROM '{{ xtradb_exporter_mysql_user }}'@'{{ xtradb_exporter_mysql_host }}';
+      GRANT {{ xtradb_exporter_mysql_privileges | join(', ') }}
+        ON *.* TO '{{ xtradb_exporter_mysql_user }}'@'{{ xtradb_exporter_mysql_host }}';
+  when: xtradb_exporter_user_needs_update | bool
+  no_log: true
+
+- name: Check if the exporter folder already exists
+  stat:
+    path: "{{ xtradb_exporter_docker_deploy_base_folder }}"
+  register: xtradb_exporter_folder
+  check_mode: false # read only
+
+# Not 0700: snmpd runs the healthcheck as its own user, which has to enter the folder.
+# The credentials file inside stays readable only by the container user.
+- name: Create the exporter folder
+  file:
+    path: "{{ xtradb_exporter_docker_deploy_base_folder }}"
+    state: directory
+    mode: "0755"
+
+# The only copy of the password on the host, readable only by the container user.
+- name: Write the credentials file of the exporter
+  copy:
+    dest: "{{ xtradb_exporter_docker_deploy_base_folder }}/.my.cnf"
+    content: |
+      [client]
+      user = {{ xtradb_exporter_mysql_user }}
+      password = {{ xtradb_exporter_mysql_password }}
+      host = {{ xtradb_exporter_mysql_host }}
+      port = {{ xtradb_exporter_mysql_port }}
+    owner: "{{ xtradb_exporter_uid }}"
+    group: "{{ xtradb_exporter_gid }}"
+    mode: "0400"
+  register: xtradb_exporter_credentials_out
+  no_log: true
+  diff: false
+
+# ansible-docker-deploy cannot run in a folder that check mode did not create.
+- name: Report that the exporter container would be deployed
+  debug:
+    msg: "Check mode: the exporter container would be deployed after the folder {{ xtradb_exporter_docker_deploy_base_folder }} is created."
+  when: ansible_check_mode and not xtradb_exporter_folder.stat.exists
+
+- name: Deploy the exporter container
+  include_role:
+    name: ansible-docker-deploy
+  vars:
+    docker_deploy_base_folder:      "{{ xtradb_exporter_docker_deploy_base_folder }}"
+    docker_deploy_compose_template: "{{ xtradb_exporter_docker_deploy_compose_template }}"
+    docker_deploy_templates:        "{{ xtradb_exporter_docker_deploy_templates }}"
+    docker_deploy_shell: true
+    # No docker healthcheck, see the compose template.
+    docker_deploy_healthcheck: false
+    # The credentials file is a bind mount, a new one needs a recreated container.
+    docker_deploy_force_restart: "{{ xtradb_exporter_credentials_out is changed }}"
+    docker_deploy_shell_start_default_additional_parameters_if_changed: --force-recreate
+  when: not ansible_check_mode or xtradb_exporter_folder.stat.exists
+  tags:
+    - docker_deploy
+
+- name: Wait until the exporter can query MySQL
+  uri:
+    url: "http://{{ xtradb_exporter_listen_ip | default('127.0.0.1', true) }}:{{ xtradb_exporter_listen_port }}/metrics"
+    return_content: true
+  register: xtradb_exporter_metrics
+  until: xtradb_exporter_metrics.content | default('') is search('(?m)^mysql_up 1$')
+  retries: "{{ xtradb_exporter_healthcheck_retries }}"
+  delay: "{{ xtradb_exporter_healthcheck_delay }}"
+  changed_when: false
+  when: not ansible_check_mode
+  tags:
+    - healthcheck
+    - docker_deploy

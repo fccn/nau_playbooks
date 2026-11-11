@@ -1,0 +1,38 @@
+# {{ ansible_managed }}
+#
+# Docker compose file for the Prometheus exporter of the XtraDB.
+#
+version: '3.8'
+
+services:
+
+  mysqld-exporter:
+    image: {{ xtradb_exporter_docker_image }}
+    container_name: {{ xtradb_exporter_docker_container_name }}
+    # Not `always`: a crash-looping container shows as `Restarting` in `docker ps`, which blocks the deploy of the
+    # xtradb role for up to 20 minutes. With on-failure it gives up and stays `Exited`.
+    # Docker only restarts it after a reboot if the last exit was not 0, hence SIGKILL (exit 137) as the stop signal.
+    # The retries are never reset: after that many crashes it stays down until the next deploy.
+    restart: "on-failure:{{ xtradb_exporter_restart_max_retries }}"
+    stop_signal: SIGKILL
+    # Reaches the XtraDB of this node on 127.0.0.1 and serves the metrics on the host.
+    network_mode: host
+    user: "{{ xtradb_exporter_uid }}:{{ xtradb_exporter_gid }}"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: {{ xtradb_exporter_mem_limit }}
+    pids_limit: {{ xtradb_exporter_pids_limit }}
+    # No docker healthcheck: an unhealthy container would block the deploys of the other roles. Use `make healthcheck`.
+    command:
+      - --config.my-cnf=/etc/exporter/.my.cnf
+      - --web.listen-address={{ xtradb_exporter_listen_ip }}:{{ xtradb_exporter_listen_port }}
+{% for flag in xtradb_exporter_collector_flags %}
+      - {{ flag }}
+{% endfor %}
+      - --exporter.lock_wait_timeout={{ xtradb_exporter_lock_wait_timeout }}
+      - --exporter.max_open_connections={{ xtradb_exporter_max_open_connections }}
+    volumes:
+      - {{ xtradb_exporter_docker_deploy_base_folder }}/.my.cnf:/etc/exporter/.my.cnf:ro

@@ -1,0 +1,70 @@
+---
+# Prometheus exporter of the XtraDB metrics, one container per node. See the README.
+
+# Pinned: the exporter is still 0.x and minor versions can change metrics. Read its CHANGELOG before upgrading.
+xtradb_exporter_docker_image: docker.io/prom/mysqld-exporter:v0.21.0
+# Must not start with `xtradb`, the memory healthcheck of the xtradb role matches containers by that prefix.
+xtradb_exporter_docker_container_name: mysqld-exporter
+
+# Container of the XtraDB on the same host.
+xtradb_exporter_xtradb_container_name: xtradb
+
+# Each exporter connects to the XtraDB of its own node. This is also the host of the MySQL account.
+xtradb_exporter_mysql_host: 127.0.0.1
+xtradb_exporter_mysql_port: "{{ xtradb_mysql_port | default(3306) }}"
+
+# MySQL user of the exporter. Galera replicates it, so it exists once per cluster.
+xtradb_exporter_mysql_user: exporter
+# Required, set it per environment in secure-nau-data: exactly 32 letters and digits.
+# No symbols: a `?` breaks the connection string the exporter builds from it.
+# xtradb_exporter_mysql_password:
+xtradb_exporter_mysql_privileges:
+  - PROCESS
+  - REPLICATION CLIENT
+  - SELECT
+xtradb_exporter_mysql_max_user_connections: 3
+
+# The metrics have no auth or TLS, so listen only on the VM IP. Empty listens on all interfaces.
+xtradb_exporter_listen_ip: "{{ ansible_host | default('') }}"
+xtradb_exporter_listen_port: 9104
+
+# `nobody` of the image. It runs the container and owns the credentials file.
+xtradb_exporter_uid: 65534
+xtradb_exporter_gid: 65534
+
+# On top of the default collectors. Avoid the ones that scan information_schema/performance_schema.
+xtradb_exporter_collector_flags:
+  - --collect.binlog_size
+xtradb_exporter_max_open_connections: 2
+xtradb_exporter_lock_wait_timeout: 2
+
+# Docker restarts after a crash, never reset (see the compose template).
+xtradb_exporter_restart_max_retries: 5
+
+xtradb_exporter_mem_limit: 128m
+xtradb_exporter_pids_limit: 64
+
+# Also defined for the xtradb_servers group in group_vars/xtradb_servers.yml (snmpd needs it), which wins over this one.
+xtradb_exporter_docker_deploy_base_folder: /nau/ops/xtradb-exporter
+xtradb_exporter_docker_deploy_compose_template: templates/docker-compose.yml.j2
+
+# Makefile with the healthcheck, also used by snmpd.
+xtradb_exporter_docker_deploy_templates:
+  - src: templates/Makefile
+    dest: "{{ xtradb_exporter_docker_deploy_base_folder }}/Makefile"
+
+# Waits for a synced node before touching the MySQL user, and then for `mysql_up 1`.
+xtradb_exporter_wait_synced_retries: 30
+xtradb_exporter_wait_synced_delay: 10
+xtradb_exporter_healthcheck_retries: 12
+xtradb_exporter_healthcheck_delay: 5
+
+# mysql client as root inside the XtraDB container. The SQL goes through stdin, so no password is in a command line.
+xtradb_exporter_root_mysql_command:
+  - docker
+  - exec
+  - -i
+  - "{{ xtradb_exporter_xtradb_container_name }}"
+  - bash
+  - -c
+  - mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -h127.0.0.1 -P{{ xtradb_exporter_mysql_port }} --batch --skip-column-names
