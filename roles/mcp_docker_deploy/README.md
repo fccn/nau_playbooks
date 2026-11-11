@@ -131,6 +131,12 @@ mcp_makefile_healthcheck: [ "/nau/ops/nau-mcp/deploy" ]
 - **snmpd.** The play imports `ansible-snmpd` only where `mcp_snmpd_configs` is defined (`--tags snmpd` runs just that).
   That role adds the snmpd user to the `docker` group, which is root-equivalent on a VM that holds read access to the
   platform. The Icinga service that reads the `extend` has to be created in Icinga.
+  **Test the `extend` as the snmpd user before relying on it**, because a folder or a file that the snmpd user cannot reach
+  makes the check fail while it passes as root. On the VM, with the folder of `mcp_docker_deploy_base_folder`:
+  `sudo -u Debian-snmp /usr/bin/make --jobs 20 --no-print-directory --directory /nau/ops/nau-mcp/deploy silent-healthcheck`
+  must print `OK`. On a test container the same line passes for an unprivileged user that is only in the `docker` group, and
+  fails for one that is not; the check does not read `secrets/`. snmpd itself only has the group once it was (re)started after
+  the user joined it, so also read the `extend` through snmpd.
 - **`mcp_makefile_healthcheck`.** The `healthcheck`, `upgrade_and_reboot`, `rolling_execute` and `server_maintenance`
   playbooks then wait for the server after a reboot. Switch it on only once the server is deployed on that VM: until then
   they retry for up to 25 minutes (50 times, every 30 seconds) because the folder is not there.
