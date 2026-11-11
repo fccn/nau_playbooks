@@ -72,6 +72,11 @@ ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml \
 `<env>` is the folder of `secure-nau-data` (`development`, `staging`, `production`), the hosts are named `-dev`, `-qa`
 and `-prd`.
 
+If the exporter fails on a node, the rolling XtraDB deploy stops there, before the remaining nodes, like any other failure
+of that play. The database of that node is already deployed and keepalived is restored. Fix it and run the remaining nodes with
+`--limit`, or deploy the databases without the exporters with `--skip-tags node_exporter,xtradb_exporter` (the tags of the
+node exporter role, which runs right after this one, and of this one).
+
 The credentials file and the SQL are hidden from `--diff` and the logs (`no_log`).
 
 Running it again does not restart the exporter, and the MySQL user is only touched when it differs. The recap still
