@@ -156,6 +156,13 @@
       register: mcp_grafana_token_file
       when: mcp_grafana_configured | bool
 
+    # The random secret that the two containers share. make grafana-init creates it, so a missing one is a reason to run it.
+    - name: Read the secret that the two containers share
+      stat:
+        path: "{{ mcp_docker_deploy_folder }}/secrets/grafana-mcp-token"
+      register: mcp_grafana_shared_file
+      when: mcp_grafana_configured | bool
+
     - name: Check if the Grafana tools are switched on in .env
       command: grep -qx COMPOSE_PROFILES=grafana .env
       args:
@@ -171,6 +178,7 @@
           {{ mcp_grafana_configured | bool
              and ( not mcp_grafana_token_file.stat.exists
                    or mcp_grafana_token_file.stat.checksum != ( mcp_grafana_token | hash('sha256') )
+                   or not mcp_grafana_shared_file.stat.exists
                    or mcp_grafana_profile.rc != 0 ) }}
       no_log: true
 
@@ -202,6 +210,30 @@
       fail:
         msg: "make grafana-init failed (exit {{ mcp_grafana_init.rc }}): {{ ( mcp_grafana_init.stdout | default('') ~ ' ' ~ mcp_grafana_init.stderr | default('') ) | trim }}"
       when: mcp_grafana_init_needed | bool and mcp_grafana_init.rc != 0
+
+    # Like the secret files of the other docker roles, they belong to the user of the container and nobody else can read
+    # them, and that is enforced on every run: make grafana-init sets it once, and a Grafana container that cannot read its
+    # token fails its healthcheck. The owner is the one of secrets/, which make init created for the container user.
+    - name: Read the owner of the secrets folder
+      stat:
+        path: "{{ mcp_docker_deploy_folder }}/secrets"
+      register: mcp_secrets_folder
+      when: mcp_grafana_configured | bool
+
+    - name: Keep the Grafana secrets readable by the container user only
+      file:
+        path: "{{ mcp_docker_deploy_folder }}/{{ item.path }}"
+        state: "{{ item.state }}"
+        owner: "{{ mcp_secrets_folder.stat.uid }}"
+        group: "{{ mcp_secrets_folder.stat.gid }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - { path: secrets-grafana, state: directory, mode: "0700" }
+        - { path: secrets-grafana/token, state: file, mode: "0600" }
+        - { path: secrets/grafana-mcp-token, state: file, mode: "0600" }
+      loop_control:
+        label: "{{ item.path }}"
+      when: mcp_grafana_configured | bool
 
     - name: Check if the containers are up and healthy
       command: make healthcheck

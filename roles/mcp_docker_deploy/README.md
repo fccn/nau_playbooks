@@ -13,7 +13,7 @@ Docker plays.
 ```
 MCP VM
   /nau/ops/nau-mcp              the clone, at the pinned version (a detached HEAD)
-    deploy/                     Makefile, docker-compose.yml, .env (no secrets), secrets/, logs/
+    deploy/                     Makefile, docker-compose.yml, .env (no secrets), secrets/, secrets-grafana/, logs/
   nau-mcp container             listens on 127.0.0.1 only: agents reach it through an SSH tunnel
   nau-mcp-grafana container     only where a Grafana token is defined
 ```
@@ -28,7 +28,8 @@ MCP VM
 5. `make init ENV=<mcp_environment>`: creates `.env`, `secrets/`, `logs/` and `certs/`. It refuses to change the
    environment of a VM that already has one.
 6. `make image`: builds the image from the pulled code, on the VM.
-7. Where `mcp_grafana_token` is defined and differs from the one on the VM: `make grafana-init`.
+7. Where `mcp_grafana_token` is defined: `make grafana-init` when it differs from the one on the VM or the setup is
+   incomplete, then the owner and the modes of the Grafana secret files are enforced.
 8. `make deploy`, only when the pulled code, the image or the Grafana setup changed, or when the server is not healthy.
 9. Waits until `make healthcheck` passes, and shows `make status`.
 
@@ -58,10 +59,27 @@ mcp_git_ssh_key: |            # read-only deploy key of the repository, OpenSSH 
 mcp_grafana_token: <token>    # token of a Viewer (read-only) service account of the Grafana of this environment
 ```
 
-Defined and valid (20 to 200 characters), it switches the Grafana tools on: the token goes through stdin to
-`make grafana-init`, which writes it to `deploy/secrets-grafana/token` (mode `0600`, only the Grafana container reads it) and
-three lines to `.env`. Not defined, the Grafana tools stay as they are on the VM (a message says so).
-To rotate it, change the value and deploy again.
+Defined and valid (20 to 200 characters), it switches the Grafana tools on. Create the service account with the **Viewer**
+role and a token **with an expiry**: Grafana's default is "Never".
+
+**Where the token lives**, in the way of the other docker roles: the value in `secure-nau-data`, a file in the folder of
+the service that belongs to the user of the container and that nobody else can read, mounted read-only into the container,
+and never an environment variable or a command line.
+
+| What | Where on the VM | Owner and mode |
+|---|---|---|
+| The token | `deploy/secrets-grafana/token`, mounted read-only into the Grafana container | the container user, `0600`, in a `0700` folder |
+| The secret that the two containers share (random, made by `make grafana-init`) | `deploy/secrets/grafana-mcp-token` | the container user, `0600` |
+
+The role passes the token through the stdin of `make grafana-init`, so it is on no command line and the tasks that carry it
+have `no_log`. It does that only when the value differs from the one on the VM or the setup is incomplete. On every run it
+also puts the owner (the one of `secrets/`, which `make init` made for the container user) and the modes of those files back
+where they should be, as the other roles do with the `owner` and `mode` of a secret: a Grafana container that cannot read
+its token fails its healthcheck.
+
+To rotate the token, change the value and deploy again: the containers are recreated. Without Ansible, the repository has
+the same hand-over: in `deploy/`, `read -rsp 'Grafana token: ' GRAFANA_TOKEN; export GRAFANA_TOKEN; make grafana-init`.
+Not defined, the Grafana tools stay as they are on the VM (a message says so).
 
 ## Deploy
 
