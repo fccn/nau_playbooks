@@ -1,0 +1,38 @@
+---
+# Prometheus node_exporter, one container per VM: CPU, memory, disk and network of the host. See the README.
+
+# Pinned: read the CHANGELOG of node_exporter before upgrading.
+node_exporter_docker_image: docker.io/prom/node-exporter:v1.12.1
+node_exporter_docker_container_name: node-exporter
+
+# The metrics have no auth or TLS, so listen only on the VM IP. Empty listens on all interfaces.
+node_exporter_listen_ip: "{{ ansible_host | default('') }}"
+node_exporter_listen_port: 9100
+
+# Only what the dashboards use. Without this the exporter enables about 40 collectors.
+node_exporter_collectors:
+  - cpu
+  - meminfo
+  - filesystem
+  - diskstats
+  - loadavg
+  - netdev
+  - uname
+  - stat
+  - vmstat
+
+# Docker restarts after a crash, never reset (see the compose template).
+node_exporter_restart_max_retries: 5
+
+node_exporter_mem_limit: 128m
+node_exporter_pids_limit: 64
+
+node_exporter_docker_deploy_base_folder: /nau/ops/node-exporter
+node_exporter_docker_deploy_compose_template: templates/docker-compose.yml.j2
+
+node_exporter_docker_deploy_templates:
+  - src: templates/Makefile
+    dest: "{{ node_exporter_docker_deploy_base_folder }}/Makefile"
+
+node_exporter_healthcheck_retries: 12
+node_exporter_healthcheck_delay: 5

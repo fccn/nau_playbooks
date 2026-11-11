@@ -1,0 +1,39 @@
+# {{ ansible_managed }}
+#
+# Docker compose file for the Prometheus node_exporter.
+#
+version: '3.8'
+
+services:
+
+  node-exporter:
+    image: {{ node_exporter_docker_image }}
+    container_name: {{ node_exporter_docker_container_name }}
+    # Not `always`: a crash-looping container shows as `Restarting` in `docker ps`, which blocks the deploys of the
+    # other roles for up to 20 minutes. With on-failure it gives up and stays `Exited`.
+    # Docker only restarts it after a reboot if the last exit was not 0, hence SIGKILL (exit 137) as the stop signal.
+    # The retries are never reset: after that many crashes it stays down until the next deploy.
+    restart: "on-failure:{{ node_exporter_restart_max_retries }}"
+    stop_signal: SIGKILL
+    # The host network and processes, so it reports the VM and not the container.
+    network_mode: host
+    pid: host
+    user: "65534:65534"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: {{ node_exporter_mem_limit }}
+    pids_limit: {{ node_exporter_pids_limit }}
+    # No docker healthcheck: an unhealthy container would block the deploys of the other roles. Use `make healthcheck`.
+    command:
+      - --path.rootfs=/host
+      - --web.listen-address={{ node_exporter_listen_ip }}:{{ node_exporter_listen_port }}
+      - --collector.disable-defaults
+{% for collector in node_exporter_collectors %}
+      - --collector.{{ collector }}
+{% endfor %}
+    volumes:
+      # rslave so the disks mounted under / (for example /data) show up too.
+      - /:/host:ro,rslave
