@@ -14,5 +14,7 @@ mongo_makefile_healthcheck: [ "{{ mongo_docker_deploy_base_folder }}" ]
 
 mongo_docker_admin_username: "{{ MONGO_ADMIN_USER | default('admin') }}"
 mongo_docker_admin_password: "{{ MONGO_ADMIN_PASSWORD }}"
-mongo_docker_image: docker.io/mongo:7.0
+# Pinned to the version running on PROD: the role runs `docker-compose pull` before `up -d`, so a moving tag
+# would upgrade mongod on the next deploy. Change it deliberately, see the upgrade section of the role README.
+mongo_docker_image: docker.io/mongo:7.0.25
 mongo_shell_command: mongosh
