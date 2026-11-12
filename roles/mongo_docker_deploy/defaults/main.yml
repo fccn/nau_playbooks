@@ -18,7 +18,7 @@ mongo_docker_image: docker.io/mongo:4.2.24
 mongo_shell_command: mongo
 # mongo_shell_command: mongosh
 
-mongo_docker_command: "{{ mongo_docker_command_keyfile }}--replSet {{ mongo_docker_replSet }} --port {{ mongo_docker_port }} {{ mongo_docker_command_bind_ip }}"
+mongo_docker_command: "{{ mongo_docker_command_keyfile }}--replSet {{ mongo_docker_replSet }} --port {{ mongo_docker_port }} {{ mongo_docker_command_bind_ip }}{{ ' --maxConns ' ~ mongo_docker_max_conns if (mongo_docker_max_conns | int > 0) else '' }}"
 mongo_docker_command_bind_ip: --bind_ip {{ (mongo_docker_command_bind_ip_default_list + mongo_docker_command_bind_ip_additional_list) | select() | join(',') }}
 mongo_docker_command_bind_ip_default_list:
   - localhost
@@ -72,3 +72,23 @@ mongo_docker_deploy_extra_hosts: []
 mongo_limit_no_file_soft: 65535
 mongo_limit_no_file_hard: 65535
 mongo_limit_nproc: 65535
+
+# Thread limit (cgroup pids.max) of the mongod container. mongod uses one thread per client connection.
+# Without an explicit value the container inherits the systemd DefaultTasksMax of the VM (9374 on the
+# PROD VMs, which was reached on 2026-11-11 and refused new connections, see fccn/nau-technical#1132).
+# Always use a positive number: `pids_limit: -1` (and 0) leave the inherited limit in place, both with
+# Docker Compose v2.32 (the version on the PROD VMs) and v5. Each thread also costs memory (about 0.2 MB
+# measured), so raise it together with the VM RAM.
+#
+# Sizing (measured on 2026-11-12): each LMS pod (UWSGI_WORKERS=32) holds about 1,825 connections to Mongo,
+# about 600 per Mongo node. 20 LMS pods (the HPA cap) are about 12k per node, plus the workers and the CMS.
+# The primary carries about 1.9k more, and a failover puts about 1.5x on the surviving nodes, so the
+# realistic peak is about 20k. Recompute both values if the pod cap or UWSGI_WORKERS change.
+mongo_limit_pids: 32768
+
+# Maximum number of client connections accepted by mongod (--maxConns), 0 disables it.
+# With it mongod refuses the connections above the limit cleanly (it logs "Connection refused because there
+# are too many open connections") instead of failing to create threads, and it keeps threads for its own
+# replication and election work. mongod uses about 70 threads beyond the connections, so keep it at least
+# 1000 below mongo_limit_pids (checked by the role).
+mongo_docker_max_conns: 28000

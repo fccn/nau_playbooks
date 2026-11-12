@@ -16,6 +16,57 @@ Variables:
 - mongo_docker_initdb_root_username - optional username value to initialize the database, example: `admin`;
 - mongo_docker_initdb_root_password - optional password value to initialize the database.
 - mongo_docker_keyFile_value - optional value of the MongoDB keyFile to increase security between node configuration.
+- mongo_limit_pids - thread limit of the container (cgroup `pids.max`), default `32768`. mongod uses one thread per client connection and, without this limit, the container inherits the systemd `DefaultTasksMax` of the VM (9374 on PROD), which refused new connections on 2026-11-11. Use a positive number: `-1` and `0` do not remove the inherited limit, neither with Docker Compose v2.32 (PROD) nor v5. Each thread costs memory (about 0.2 MB measured), so raise it together with the RAM of the VM.
+- mongo_docker_max_conns - `--maxConns` of mongod, default `28000`, `0` disables it. With it mongod refuses the connections above the limit cleanly (it logs `Connection refused because there are too many open connections`, a good alert signature) instead of failing to create threads, and it keeps threads for its own replication and election work. The role fails if it is not at least 1000 below `mongo_limit_pids`, because mongod uses about 70 threads beyond the connections.
+- mongo_docker_image - pinned in `group_vars/mongo_docker_servers.yml` to the version running on PROD. The role runs `docker-compose pull` before `up -d`, so a moving tag would upgrade mongod on the next deploy.
+
+### Sizing of the connection limits
+
+Measured on 2026-11-12 (nau-technical#1132): each LMS pod (`UWSGI_WORKERS=32`) holds about 1,825 connections to Mongo, about 600 per Mongo node.
+
+| | Per Mongo node |
+|---|---|
+| 20 LMS pods (the HPA cap) | about 12k |
+| plus workers and CMS | a few thousand |
+| the primary carries about | +1.9k |
+| a failover puts on the survivors about | 1.5x |
+| realistic peak | about 20k |
+
+`mongo_docker_max_conns` (28000) and `mongo_limit_pids` (32768) sit above that peak. Memory: about 0.2 MB per connection (upper bound 0.4 MB), so 28k connections cost about 6 GB on top of the WiredTiger cache (about 15.5 GB on a 32 GB node). Recompute both values if the LMS pod cap or `UWSGI_WORKERS` change, and for the load tests of nau-technical#1079.
+
+Check the limits of a running node:
+```bash
+docker inspect mongo --format '{{.HostConfig.PidsLimit}}'
+cat /sys/fs/cgroup/system.slice/docker-$(docker inspect mongo --format '{{.Id}}').scope/pids.{max,current}
+docker exec mongo mongosh admin -u <admin> --eval 'db.serverStatus().connections'   # current / available
+```
+Do not run the `docker inspect ... {{.Id}}` command through an Ansible `-a` string, Ansible reads it as a template.
+
+Apply a new thread limit to a running node without restarting it (the value survives reboots, but is lost when the container is recreated, so deploy the same value afterwards):
+```bash
+docker update --pids-limit 32768 mongo
+```
+
+### Deploying a change of `mongo_limit_pids`, `mongo_docker_max_conns` or the image
+
+Changing them changes `docker-compose.yml`, so the deploy recreates the container (a restart of mongod). The mongo play runs `serial: 1` in inventory order, only with a `ping` healthcheck, so it does not wait for a node to be a caught-up SECONDARY, and it does not step the primary down. Do it by hand, node by node:
+
+1. Try dev or stage first, and deploy off-peak.
+2. Check the set and the lag. All members `health=1` and `lag_vs_primary` about 0:
+   ```js
+   // make mongo-shell
+   var s = rs.status(); var p = s.members.find(m => m.stateStr == 'PRIMARY');
+   s.members.map(m => `${m.name} ${m.stateStr} health=${m.health} lag_vs_primary=${(p.optimeDate - m.optimeDate)/1000}s`)
+   ```
+3. Dry run on one node. The only changes of `docker-compose.yml` must be `pids_limit` and `command` (and `image` if you changed it). `-e mongo_deploy=true` also runs `geerlingguy.docker` and `ansible-snmpd` on the node.
+   ```bash
+   ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit <host> -e mongo_deploy=true --check --diff
+   ```
+4. Secondaries first, one node at a time. For the primary, run `rs.stepDown(180, 15)` first, check with `make mongo-primary-node` that another node is primary, and only then deploy it.
+   ```bash
+   ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit <host> -e mongo_deploy=true
+   ```
+5. Before the next node, run the replica set check of step 2 again, and check that the LMS has no new restarts and no Mongo errors.
 
 ## Add Members to a Replica Set
 https://www.mongodb.com/docs/v3.6/tutorial/expand-replica-set/

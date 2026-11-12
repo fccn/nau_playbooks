@@ -1,4 +1,17 @@
 ---
+- name: Check the container thread limit and the connection limit
+  assert:
+    that:
+      - mongo_limit_pids | int > 0
+      - mongo_docker_max_conns | int >= 0
+      - mongo_docker_max_conns | int == 0 or ((mongo_limit_pids | int) - (mongo_docker_max_conns | int)) >= 1000
+    fail_msg: >-
+      mongo_limit_pids must be a positive number (-1 and 0 leave the inherited systemd limit),
+      mongo_docker_max_conns must be 0 or at least 1000 below mongo_limit_pids
+    quiet: true
+  tags:
+    - docker_deploy
+
 - name: Install packages
   package:
     name: "{{ item }}"
