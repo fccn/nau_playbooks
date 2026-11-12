@@ -16,6 +16,15 @@ Variables:
 - mongo_docker_initdb_root_username - optional username value to initialize the database, example: `admin`;
 - mongo_docker_initdb_root_password - optional password value to initialize the database.
 - mongo_docker_keyFile_value - optional value of the MongoDB keyFile to increase security between node configuration.
+- mongo_limit_pids - thread limit of the container, default `16384`. mongod uses one thread per client connection and, without this limit, the container inherits the systemd `DefaultTasksMax` of the VM (9374 on PROD), which refused new connections on 2026-11-11. Use a positive number, `-1` does not remove the inherited limit. Each thread costs memory, so raise it together with the RAM of the VM.
+
+Check the limit of a running node:
+```bash
+docker inspect mongo --format '{{.HostConfig.PidsLimit}}'
+cat /sys/fs/cgroup/system.slice/docker-$(docker inspect mongo --format '{{.Id}}').scope/pids.{max,current}
+```
+
+Changing `mongo_limit_pids` recreates the container, so deploy it like any other restart: one node at a time, secondaries first and `rs.stepDown()` on the primary before its turn. To apply it to a running node without a restart, run `docker update --pids-limit <value> mongo` on the VM, then deploy the same value to make it permanent.
 
 ## Add Members to a Replica Set
 https://www.mongodb.com/docs/v3.6/tutorial/expand-replica-set/

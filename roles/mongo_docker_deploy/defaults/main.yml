@@ -72,3 +72,10 @@ mongo_docker_deploy_extra_hosts: []
 mongo_limit_no_file_soft: 65535
 mongo_limit_no_file_hard: 65535
 mongo_limit_nproc: 65535
+
+# Thread limit (cgroup pids.max) of the mongod container. mongod uses one thread per client connection.
+# Without an explicit value the container inherits the systemd DefaultTasksMax of the VM (9374 on the
+# PROD VMs, which was reached on 2026-11-11 and refused new connections, see fccn/nau-technical#1132).
+# Always use a positive number: with Docker Compose v5 `pids_limit: -1` left the limit unset, so the
+# inherited value stayed. Each thread also costs memory, so raise it together with the VM RAM.
+mongo_limit_pids: 16384

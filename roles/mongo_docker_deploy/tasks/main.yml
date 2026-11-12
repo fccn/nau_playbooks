@@ -1,4 +1,12 @@
 ---
+- name: Check the container thread limit is a positive number
+  assert:
+    that: mongo_limit_pids | int > 0
+    fail_msg: mongo_limit_pids must be a positive number, -1 does not lift the inherited systemd limit
+    quiet: true
+  tags:
+    - docker_deploy
+
 - name: Install packages
   package:
     name: "{{ item }}"
