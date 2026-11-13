@@ -45,4 +45,4 @@ roles:
 
 # SNMP daemon installation and configuration
 - src: git+https://github.com/fccn/ansible-snmpd.git
-  version: b62f2a4890433ef9e80de8e2fd394687393691d4
+  version: 95aeeb1268eae4728ea95909a91dc564f3c3a5e3
