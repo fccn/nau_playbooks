@@ -73,49 +73,51 @@ healthcheck-xtradb-mysql-port: ## Check XtraDB MySQL port
 	@echo "Check xtradb mysql port: OK"
 .PHONY: healthcheck-xtradb-mysql-port
 
+# The root password is not written in this file: snmpd reads it. Each command takes it from the environment of the
+# xtradb container ($$MYSQL_ROOT_PASSWORD, expanded by bash inside the container, not on the host).
 healthcheck-xtradb-wsrep-cluster-status:
-	@docker exec -i {{ xtradb_docker_container_name }} bash -c 'MYSQL_PWD="{{ xtradb_mysql_root_password }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} --execute="show status like \"wsrep_cluster_status\";"' | grep -q Primary || ( echo "Check xtradb wsrep cluster status: error" ; exit 1 )
+	@docker exec -i {{ xtradb_docker_container_name }} bash -c 'MYSQL_PWD="$$MYSQL_ROOT_PASSWORD" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} --execute="show status like \"wsrep_cluster_status\";"' | grep -q Primary || ( echo "Check xtradb wsrep cluster status: error" ; exit 1 )
 	@echo "Check xtradb wsrep cluster status: OK"
 .PHONY: healthcheck-xtradb-wsrep-cluster-status
 
 healthcheck-xtradb-wsrep-connected:
-	@docker exec -i {{ xtradb_docker_container_name }} bash -c 'MYSQL_PWD="{{ xtradb_mysql_root_password }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} --execute="show status like \"wsrep_connected\";"' | grep -q ON || ( echo "Check xtradb wsrep connected: error" ; exit 1 )
+	@docker exec -i {{ xtradb_docker_container_name }} bash -c 'MYSQL_PWD="$$MYSQL_ROOT_PASSWORD" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} --execute="show status like \"wsrep_connected\";"' | grep -q ON || ( echo "Check xtradb wsrep connected: error" ; exit 1 )
 	@echo "Check xtradb wsrep connected: OK"
 .PHONY: healthcheck-xtradb-wsrep-connected
 
 healthcheck-xtradb-wsrep-ready:
-	@docker exec -i {{ xtradb_docker_container_name }} bash -c 'MYSQL_PWD="{{ xtradb_mysql_root_password }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} --execute="show status like \"wsrep_ready\";"' | grep -q ON || ( echo "Check xtradb wsrep ready: error" ; exit 1 )
+	@docker exec -i {{ xtradb_docker_container_name }} bash -c 'MYSQL_PWD="$$MYSQL_ROOT_PASSWORD" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} --execute="show status like \"wsrep_ready\";"' | grep -q ON || ( echo "Check xtradb wsrep ready: error" ; exit 1 )
 	@echo "Check xtradb wsrep ready: OK"
 .PHONY: healthcheck-xtradb-wsrep-ready
 
 xtradb-showprocess-list: ## show the processes inside xtradb
-	@docker exec -i {{ xtradb_docker_container_name }} bash -c 'MYSQL_PWD="{{ xtradb_mysql_root_password }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} --execute="show processlist;"'
+	@docker exec -i {{ xtradb_docker_container_name }} bash -c 'MYSQL_PWD="$$MYSQL_ROOT_PASSWORD" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} --execute="show processlist;"'
 .PHONY: xtradb-showprocess-list
 
 xtradb-status: ## show mysql status
-	@docker exec -i {{ xtradb_docker_container_name }} bash -c 'MYSQL_PWD="{{ xtradb_mysql_root_password }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} --execute="show status;"'
+	@docker exec -i {{ xtradb_docker_container_name }} bash -c 'MYSQL_PWD="$$MYSQL_ROOT_PASSWORD" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} --execute="show status;"'
 .PHONY: xtradb-status
 
 xtradb-shell: ## open mysl shell to run SQL commands
-	@docker exec -it {{ xtradb_docker_container_name }} bash -c 'MYSQL_PWD="{{ xtradb_mysql_root_password }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }}'
+	@docker exec -it {{ xtradb_docker_container_name }} bash -c 'MYSQL_PWD="$$MYSQL_ROOT_PASSWORD" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }}'
 .PHONY: xtradb-shell
 
 xtradb-connections-count: ## Number of connections
-	@docker exec -i {{ xtradb_docker_container_name }} bash -c 'echo "SELECT COUNT(1) FROM information_schema.PROCESSLIST;" | MYSQL_PWD="{{ xtradb_mysql_root_password }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} --skip-column-names'
+	@docker exec -i {{ xtradb_docker_container_name }} bash -c 'echo "SELECT COUNT(1) FROM information_schema.PROCESSLIST;" | MYSQL_PWD="$$MYSQL_ROOT_PASSWORD" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} --skip-column-names'
 .PHONY: xtradb-connections-count
 
 xtradb-connections-active-count: ## Number of active connections
-	@docker exec -i {{ xtradb_docker_container_name }} bash -c 'echo "SELECT COUNT(1) FROM information_schema.PROCESSLIST WHERE INFO IS NOT NULL;" | MYSQL_PWD="{{ xtradb_mysql_root_password }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} --skip-column-names'
+	@docker exec -i {{ xtradb_docker_container_name }} bash -c 'echo "SELECT COUNT(1) FROM information_schema.PROCESSLIST WHERE INFO IS NOT NULL;" | MYSQL_PWD="$$MYSQL_ROOT_PASSWORD" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} --skip-column-names'
 .PHONY: xtradb-connections-active-count
 
 healthcheck-xtradb-node-ready: ## Check XtraDB node is ready to accept connections
-	@docker exec -i {{ xtradb_docker_container_name }} bash -c 'echo "show status like \"wsrep_ready\";" | MYSQL_PWD="{{ xtradb_mysql_root_password }}" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} --skip-column-names' | awk '{print $$2}' | grep --quiet "ON" || ( echo "Check XtraDB node is ready to accept connections: error" ; exit 1 )
+	@docker exec -i {{ xtradb_docker_container_name }} bash -c 'echo "show status like \"wsrep_ready\";" | MYSQL_PWD="$$MYSQL_ROOT_PASSWORD" /usr/bin/mysql -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} --skip-column-names' | awk '{print $$2}' | grep --quiet "ON" || ( echo "Check XtraDB node is ready to accept connections: error" ; exit 1 )
 	@echo "Check XtraDB node is ready to accept connections: OK"
 .PHONY: xtradb-shell
 
 xtradb-dump: ## Dump the designated databases to a file - `make xtradb-dump DATABASES="database_names" FILE=output_file.sql.gz`
 	@if [ -z "$(FILE)" ]; then echo "Error: FILE parameter is required. Usage: make xtradb-dump DATABASES=\"database_names\" FILE=output_file.sql.gz"; exit 1; fi
 	$(eval DB_OPTION := $(if $(DATABASES),$(DATABASES),--all-databases))
-	@docker exec -it {{ xtradb_docker_container_name }} bash -c 'MYSQL_PWD="{{ xtradb_mysql_root_password }}" /usr/bin/mysqldump -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} $(DB_OPTION) --single-transaction --skip-extended-insert' | nice -n 10 gzip -c | ionice -c2 -n 7 tee $(FILE) > /dev/null
+	@docker exec -it {{ xtradb_docker_container_name }} bash -c 'MYSQL_PWD="$$MYSQL_ROOT_PASSWORD" /usr/bin/mysqldump -u root --host 127.0.0.1 --port {{ xtradb_mysql_port }} $(DB_OPTION) --single-transaction --skip-extended-insert' | nice -n 10 gzip -c | ionice -c2 -n 7 tee $(FILE) > /dev/null
 	@echo "Databases dumped to $(FILE)"
 .PHONY: xtradb-dump

@@ -24,6 +24,24 @@
   tags:
     - docker_deploy
 
+# The compose file holds MYSQL_ROOT_PASSWORD. Readable only by root: snmpd and the healthchecks do not read it.
+# The template keeps the mode of an existing file, so this sticks after the first run.
+- name: Check if the compose file exists
+  stat:
+    path: "{{ xtradb_docker_deploy_base_folder }}/docker-compose.yml"
+  register: xtradb_compose_file
+  check_mode: false # read only
+  tags:
+    - docker_deploy
+
+- name: Make the compose file readable only by root
+  file:
+    path: "{{ xtradb_docker_deploy_base_folder }}/docker-compose.yml"
+    mode: "0600"
+  when: xtradb_compose_file.stat.exists
+  tags:
+    - docker_deploy
+
 - name: Run healthcheck
   shell: make healthcheck
   args:
