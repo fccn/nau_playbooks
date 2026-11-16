@@ -2,7 +2,8 @@
 
 Deploys the Prometheus [`node_exporter`](https://github.com/prometheus/node_exporter) on a VM, so the Prometheus/Grafana
 of the Kubernetes cluster can show its CPU, memory, disk and network. It is used by the "Deploy to XtraDB database" play
-of `deploy.yml`, after the exporter of the XtraDB and with no password to set.
+of `deploy.yml`, after the exporter of the XtraDB and with no password to set, **only in the environments where
+`node_exporter_enabled` is true** (see "Enable it per environment").
 
 ```
 VM
@@ -19,6 +20,24 @@ It uses the host network and processes, and mounts `/` read-only so it can repor
 3. Waits until `http://<node>:9100/metrics` answers.
 
 In check mode on a node that has no exporter yet, only the folder is reported: the container is deployed after the folder exists.
+
+## Enable it per environment
+
+Set it in `secure-nau-data`, `envs/<env>/group_vars/xtradb_servers.yml`:
+
+```yaml
+node_exporter_enabled: true
+```
+
+- Without it (or `false`), a full XtraDB deploy does not deploy the node exporter, and the snmpd step does not add its
+  `extend`. Add it to an environment only when you are ready to deploy there, because a failure of the node exporter
+  stops the rolling XtraDB deploy (see below).
+- `--tags node_exporter` deploys it anyway, on purpose, like `--tags xtradb_exporter` does for the exporter of the XtraDB.
+  Without the flag the snmpd step does not monitor it, so set the flag once it is deployed.
+- Do not set a default for it in this repository's `group_vars`: those win over `secure-nau-data`, so a default there would
+  hide the per-environment value. The playbook reads it as `node_exporter_enabled | default(false)` (`node_exporter_configured`).
+- Setting it back to `false` does not remove the container, it only stops the deploys and, at the next snmpd step, removes
+  the `extend`. To remove it, see the end of this file.
 
 ## Usage
 
@@ -58,13 +77,17 @@ snmpwalk -v 2c -c <community> <node> 'NET-SNMP-EXTEND-MIB::nsExtendOutputFull."n
 - The folder is `0755` so that snmpd, which runs the check as its own user, can enter it.
 - The check is not added to `makefile_healthcheck` on purpose. That list is waited on for up to 25 minutes by the maintenance
   playbooks, so a dead metrics exporter would block the maintenance of the database nodes.
-- `node_exporter_docker_deploy_base_folder` is also defined in `group_vars/xtradb_servers.yml`, because `snmpd_configs` is
-  evaluated before any role is loaded.
+- `node_exporter_docker_deploy_base_folder` is also defined in `group_vars/xtradb_servers.yml`. The XtraDB play imports this role
+  statically, so its default is visible there, but `snmpd_configs` is also evaluated outside that play: in another play,
+  in an ad-hoc `ansible -m debug -a var=snmpd_configs`, or when a later change moves the snmpd step. Without the copy those
+  fail with `'node_exporter_docker_deploy_base_folder' is undefined` (tested).
 
 ## Notes
 
 - It listens only on the VM IP (`node_exporter_listen_ip`, default `ansible_host`), with no auth or TLS. The port has to be
-  reachable from the Prometheus pods.
+  reachable from the Prometheus pods. `xtradb_servers_firewall_ports` is commented out in every environment today, so 9100 is
+  open; if that list is ever enabled, add 9100 next to the 9104 of the XtraDB exporter (the commented example in
+  `secure-nau-data` has both).
 - Only the collectors in `node_exporter_collectors` are enabled (CPU, memory, filesystem, disks, load, network, uname, stat, vmstat).
   The filesystem metrics also include `tmpfs` mounts, filter by `fstype` in the queries.
 - A crash does not restart it forever: `on-failure:5`, then it stays `Exited`, so it never blocks the deploy of the other roles.
@@ -74,3 +97,12 @@ snmpwalk -v 2c -c <community> <node> 'NET-SNMP-EXTEND-MIB::nsExtendOutputFull."n
   `level=ERROR source=diskstats_linux.go:255 msg="Failed to open directory, disabling udev device properties" collector=diskstats path=/run/udev/data`.
   The container has no `/run/udev`, so the disk collector skips the udev properties, and the disk metrics are exposed as usual.
   Mounting `/run/udev` would remove the line but give the container more of the host for no metric the dashboards use.
+
+## Remove it
+
+Set `node_exporter_enabled: false` (or remove it) for the environment in `secure-nau-data`, so the next deploy does not bring
+it back, and run the snmpd step (`--tags snmpd`) so the `extend` goes away. Then, on each node:
+
+```bash
+cd /nau/ops/node-exporter && docker-compose down && cd / && rm -rf /nau/ops/node-exporter
+```
