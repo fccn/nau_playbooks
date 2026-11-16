@@ -43,6 +43,20 @@ ALTER SETTINGS PROFILE {{ clickhouse_partner_access_settings_profile }} {{ clust
     TO {{ partner_roles }};
 
 CREATE QUOTA IF NOT EXISTS {{ clickhouse_partner_access_quota_name }} {{ cluster_clause }};
+-- KEYED BY user_name: buckets usage by the actual connecting ClickHouse
+-- user (org_user_<partner>), so each partner gets an independent
+-- counter instead of silently sharing one -- see
+-- docs/resource_governance_analysis.md's "Multi-partner isolation"
+-- section for the full rationale. Safe to re-apply on every run:
+-- ALTER QUOTA ... KEYED BY ... on an already-correctly-keyed quota is
+-- a no-op (confirmed live).
+--
+-- To unkey this quota: simply omitting KEYED BY from this template is
+-- NOT enough on its own -- confirmed live that a quota stays KEYED BY
+-- user_name once set, even across repeated ALTER QUOTAs that don't
+-- repeat the clause. Unkeying requires an explicit
+-- `ALTER QUOTA {{ clickhouse_partner_access_quota_name }} {{ cluster_clause }}NOT KEYED;`.
+--
 -- Apply the current interval FIRST, then clear any stale one below --
 -- not the other way around. ALTER QUOTA ... FOR INTERVAL <N> ... adds
 -- a second, independent interval alongside an existing one of a
@@ -56,6 +70,7 @@ CREATE QUOTA IF NOT EXISTS {{ clickhouse_partner_access_quota_name }} {{ cluster
 -- and a failure on the cleanup step below leaves the old interval(s)
 -- in place rather than none at all.
 ALTER QUOTA {{ clickhouse_partner_access_quota_name }} {{ cluster_clause }}
+    KEYED BY user_name
     FOR INTERVAL {{ clickhouse_partner_access_quota_interval_hours }} HOUR
         MAX QUERIES {{ clickhouse_partner_access_quota_max_queries }},
             EXECUTION TIME {{ clickhouse_partner_access_quota_max_execution_time }}
