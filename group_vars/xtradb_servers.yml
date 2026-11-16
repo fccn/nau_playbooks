@@ -28,13 +28,15 @@ xtradb_exporter_snmpd_configs: "{{ [ 'extend xtradb_exporter_healthcheck /usr/bi
 # Not in makefile_healthcheck on purpose: the maintenance playbooks wait up to 25 minutes for it,
 # so a dead metrics exporter would block the maintenance of the database nodes.
 
-# Node exporter (CPU, memory, disk of the VM), deployed on every XtraDB node. No password, so it is always monitored.
+# Node exporter (CPU, memory, disk of the VM). Deployed and monitored only where node_exporter_enabled is true in
+# secure-nau-data, per environment. Not defined here on purpose: this file would win over secure-nau-data.
+node_exporter_configured: "{{ node_exporter_enabled | default(false) | bool }}"
+
 # folder of the exporter deployment, also used by the role
 node_exporter_docker_deploy_base_folder: /nau/ops/node-exporter
 
 # SNMPD configuration to monitor the node exporter health
-node_exporter_snmpd_configs:
-  - extend node_exporter_healthcheck /usr/bin/make --jobs 20 --no-print-directory --directory {{ node_exporter_docker_deploy_base_folder }} silent-healthcheck
+node_exporter_snmpd_configs: "{{ [ 'extend node_exporter_healthcheck /usr/bin/make --jobs 20 --no-print-directory --directory ' ~ node_exporter_docker_deploy_base_folder ~ ' silent-healthcheck' ] if ( node_exporter_configured | bool ) else [] }}"
 
 # Not in makefile_healthcheck either, for the same reason.
 
