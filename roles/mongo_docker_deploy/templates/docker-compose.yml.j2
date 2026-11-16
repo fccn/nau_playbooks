@@ -28,6 +28,7 @@ services:
       nofile:
         soft: {{ mongo_limit_no_file_soft }}
         hard: {{ mongo_limit_no_file_hard }}
+    pids_limit: {{ mongo_limit_pids }}
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | {{ mongo_shell_command }} localhost:{{ mongo_docker_port }}/test --quiet
       interval: 60s

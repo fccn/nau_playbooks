@@ -65,6 +65,10 @@ mongo-connections-current: ## View MongoDB connection current count
 	@docker exec {{ mongo_docker_container_name }} {{ mongo_shell_command }} --username {{ mongo_docker_admin_username }} --password {{ mongo_docker_admin_password }} --eval "db.serverStatus().connections.current"
 .PHONY: mongo-connections-current
 
+mongo-connections-percent: ## MongoDB connections in use, as a percentage of the mongod limit (--maxConns)
+	@docker exec {{ mongo_docker_container_name }} {{ mongo_shell_command }} --quiet --username {{ mongo_docker_admin_username }} --password {{ mongo_docker_admin_password }} --eval 'const c = db.serverStatus().connections; print((100 * c.current / (c.current + c.available)).toFixed(1))'
+.PHONY: mongo-connections-percent
+
 healthcheck-replication: ## Check mongo replication
 	@echo -n "Check mongo replication is 600 seconds (<10 minutes) seconds behind primary: "
 	@docker exec {{ mongo_docker_container_name }} {{ mongo_shell_command }} admin --username {{ mongo_docker_admin_username }} --password {{ mongo_docker_admin_password }} --host rs0/localhost --eval 'JSON.stringify(rs.status().members.filter(config => config.name == "{{ ansible_additional_ipv4 | default(ansible_host) }}:{{ mongo_docker_port }}")[0].state)' | egrep -q "(1|2)"
