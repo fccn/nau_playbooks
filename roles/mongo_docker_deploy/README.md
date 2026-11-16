@@ -16,6 +16,85 @@ Variables:
 - mongo_docker_initdb_root_username - optional username value to initialize the database, example: `admin`;
 - mongo_docker_initdb_root_password - optional password value to initialize the database.
 - mongo_docker_keyFile_value - optional value of the MongoDB keyFile to increase security between node configuration.
+- mongo_limit_pids - thread limit of the container (cgroup `pids.max`), default `32768`. mongod uses one thread per client connection and, without this limit, the container inherits the systemd `DefaultTasksMax` of the VM (9374 on PROD), which refused new connections on 2026-11-11. Use a positive number: `-1` and `0` do not remove the inherited limit, neither with Docker Compose v2.32 (PROD) nor v5. Each thread costs memory (about 0.2 MB measured), so raise it together with the RAM of the VM.
+- mongo_docker_max_conns - `--maxConns` of mongod, default `28000`, `0` disables it. With it mongod refuses the connections above the limit cleanly (it logs `Connection refused because there are too many open connections`, a good alert signature) instead of failing to create threads, and it keeps threads for its own replication and election work. The role fails if it is not at least 1000 below `mongo_limit_pids`, because mongod uses about 70 threads beyond the connections, or if it is above 80% of `mongo_limit_no_file_soft`: mongod caps the connections at 80% of its file descriptor limit and uses the lower of the two, so a bigger value would be silently ignored and the `mongo_connections_percent` alarm would be relative to the lower value.
+- mongo_docker_image - pinned in `group_vars/mongo_docker_servers.yml` to the version running on PROD. The role runs `docker-compose pull` before `up -d`, so a moving tag would upgrade mongod on the next deploy.
+
+### Monitoring (SNMP, Cacti and Icinga)
+
+`mongo_snmpd_configs` (`group_vars/mongo_docker_servers.yml`) exposes these `snmpd` extends, defined by the Makefile of each node:
+
+| Extend | Makefile target | Value | Used by |
+|---|---|---|---|
+| `mongo_healthcheck` | `silent-healthcheck` | `OK` | Icinga |
+| `mongo_connections_current` | `mongo-connections-current` | the number of connections in use | Cacti graph, keep it as it is |
+| `mongo_connections_percent` | `mongo-connections-percent` | connections in use as a percentage of the mongod limit, with one decimal (for example `37.4`) | Icinga, thresholds **warning 75** and **critical 90** |
+
+`mongo_connections_percent` is `100 * current / (current + available)` of `db.serverStatus().connections`, so it follows `--maxConns` automatically and the Icinga alarm does not need a change when `mongo_docker_max_conns` changes. Its numeric OID, in the same `nsExtendOutput1Line` column as `mongo_healthcheck`, is `.1.3.6.1.4.1.8072.1.3.2.3.1.1.25.109.111.110.103.111.95.99.111.110.110.101.99.116.105.111.110.115.95.112.101.114.99.101.110.116`. Test it on a node with:
+```bash
+snmpwalk -v 2c -c <community> localhost 'NET-SNMP-EXTEND-MIB::nsExtendOutputFull."mongo_connections_percent"'
+make -C /nau/ops/mongo mongo-connections-percent      # prints one number
+```
+It is only meaningful with `mongo_docker_max_conns` set. With `0` mongod derives the limit from its file descriptor limit (`current + available` was about 52k on PROD, 80% of `nofile` 65535), so the percentage is relative to that and not to a configured limit.
+
+The new extend appears on a node only when the role is deployed, because the Makefile and the compose file are rendered by the same run. Until then the OID returns nothing (UNKNOWN in Icinga), so enable the notifications only after the OID exists on all three nodes.
+
+When the alarm fires at 90% of `mongo_docker_max_conns` (25,200 with the default), the threads are about 77% of `mongo_limit_pids`, so a separate alarm on the PID limit is not needed as long as the role assert (at least 1000 of room) holds.
+
+### Sizing of the connection limits
+
+Measured on 2026-11-12 (nau-technical#1132): each LMS pod (`UWSGI_WORKERS=32`) holds about 1,825 connections to Mongo, about 600 per Mongo node.
+
+| | Per Mongo node |
+|---|---|
+| 20 LMS pods (the HPA cap) | about 12k |
+| plus workers and CMS | a few thousand |
+| the primary carries about | +1.9k |
+| a failover puts on the survivors about | 1.5x |
+| realistic peak | about 20k |
+
+`mongo_docker_max_conns` (28000) and `mongo_limit_pids` (32768) sit above that peak. Memory: about 0.2 MB per connection (upper bound 0.4 MB), so 28k connections cost about 6 GB on top of the WiredTiger cache (about 15.5 GB on a 32 GB node). Recompute both values if the LMS pod cap or `UWSGI_WORKERS` change, and for the load tests of nau-technical#1079.
+
+Check the limits of a running node:
+```bash
+docker inspect mongo --format '{{.HostConfig.PidsLimit}}'
+cat /sys/fs/cgroup/system.slice/docker-$(docker inspect mongo --format '{{.Id}}').scope/pids.{max,current}
+docker exec mongo mongosh admin -u <admin> --eval 'db.serverStatus().connections'   # current / available
+```
+Do not run the `docker inspect ... {{.Id}}` command through an Ansible `-a` string, Ansible reads it as a template.
+
+Apply a new thread limit to a running node without restarting it (the value survives reboots, but is lost when the container is recreated, so deploy the same value afterwards):
+```bash
+docker update --pids-limit 32768 mongo
+```
+
+### Deploying a change of `mongo_limit_pids`, `mongo_docker_max_conns` or the image
+
+Changing them changes `docker-compose.yml`, so the deploy recreates the container (a restart of mongod). The mongo play runs `serial: 1` in inventory order, only with a `ping` healthcheck, so it does not wait for a node to be a caught-up SECONDARY, and it does not step the primary down. Do it by hand, node by node:
+
+1. Try dev or stage first, and deploy off-peak.
+2. Check the set and the lag. All members `health=1` and `lag_vs_primary` about 0:
+   ```js
+   // make mongo-shell
+   var s = rs.status(); var p = s.members.find(m => m.stateStr == 'PRIMARY');
+   s.members.map(m => `${m.name} ${m.stateStr} health=${m.health} lag_vs_primary=${(p.optimeDate - m.optimeDate)/1000}s`)
+   ```
+3. Dry run on one node. The only changes of `docker-compose.yml` must be `pids_limit` and `command` (and `image` if you changed it). `-e mongo_deploy=true` also runs `geerlingguy.docker` and `ansible-snmpd` on the node.
+   ```bash
+   ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit <host> -e mongo_deploy=true --check --diff
+   ```
+4. Secondaries first, one node at a time. For the primary, run `rs.stepDown(180, 15)` first, check with `make mongo-primary-node` that another node is primary, and only then deploy it.
+   ```bash
+   ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit <host> -e mongo_deploy=true
+   ```
+5. After each node is deployed, check that the new settings are in the running container:
+   ```bash
+   cat /sys/fs/cgroup/system.slice/docker-$(docker ps -q --no-trunc --filter name=^mongo$).scope/pids.max     # 32768
+   docker inspect mongo --format '{{.Config.Cmd}}'                                                             # contains --maxConns 28000
+   cd /nau/ops/mongo && make mongo-connections-percent                                                         # a number, for example 31.2
+   ```
+   `current + available` of `db.serverStatus().connections` should be `mongo_docker_max_conns` (28000). mongod also derives a limit from its file descriptor limit and uses the lower of the two, so if it is lower than 28000 the percentage is relative to that lower value: check it on the first node before enabling the Icinga alarm.
+6. Before the next node, run the replica set check of step 2 again, and check that the LMS has no new restarts and no Mongo errors.
 
 ## Add Members to a Replica Set
 https://www.mongodb.com/docs/v3.6/tutorial/expand-replica-set/
