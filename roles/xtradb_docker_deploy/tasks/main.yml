@@ -6,6 +6,29 @@
   tags:
     - docker_deploy
 
+- name: Validate the engine settings
+  assert:
+    that:
+      - xtradb_docker_skip_name_resolve is not defined or (xtradb_docker_skip_name_resolve | string | lower) in ['true', 'false']
+      # Without a unit a size is in bytes: the redo capacity `2` is silently raised to its 8 MiB minimum and the gcache
+      # `2` is a 2 byte cache. With the unit GB, mysqld does not start. The upper limits stop a typo (the redo files are
+      # allocated in full in `/data`, 999999M crashed mysqld while allocating them).
+      - xtradb_docker_innodb_redo_log_capacity is not defined or (xtradb_docker_innodb_redo_log_capacity | string is match('^(([89]|[1-9][0-9]{1,2})M|[1-9][0-9]?G)$'))
+      - xtradb_docker_gcache_size is not defined or (xtradb_docker_gcache_size | string is match('^([1-9][0-9]{0,2}M|[1-9][0-9]?G)$'))
+      # 0 would log every statement.
+      - not (xtradb_docker_slow_query_log | default(false) | bool) or (xtradb_docker_slow_query_log_long_query_time | string is match('^(0\\.[0-9]*[1-9][0-9]*|[1-9][0-9]*(\\.[0-9]+)?)$'))
+      # 0 would turn the rotation off and let the log grow without a limit.
+      - not (xtradb_docker_slow_query_log | default(false) | bool) or (xtradb_docker_slow_query_log_max_size | string is match('^([1-9][0-9]{0,2}M|[1-9]G)$'))
+      - not (xtradb_docker_slow_query_log | default(false) | bool) or (xtradb_docker_slow_query_log_max_files | string is match('^[1-9][0-9]?$'))
+    fail_msg: >-
+      Invalid engine settings.
+      xtradb_docker_skip_name_resolve, when defined, must be true or false;
+      xtradb_docker_innodb_redo_log_capacity and xtradb_docker_gcache_size, when defined, must be a size with an M or G unit, like 2G, up to 99G;
+      with xtradb_docker_slow_query_log, long_query_time must be above 0, max_size a size with an M or G unit up to 9G and max_files a number from 1 to 99.
+    quiet: true
+  tags:
+    - docker_deploy
+
 - name: Deploy
   include_role:
     name: ansible-docker-deploy
