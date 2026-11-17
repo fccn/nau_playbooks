@@ -13,6 +13,13 @@ xtradb_mysql_port: 3306
 xtradb_snmpd_configs:
   - extend xtradb_healthcheck                  /usr/bin/make --jobs 20 --no-print-directory --directory {{ xtradb_docker_deploy_base_folder }} silent-healthcheck
   - extend xtradb_connections_count            /usr/bin/make --jobs 20 --no-print-directory --directory {{ xtradb_docker_deploy_base_folder }} xtradb-connections-count
+  # The database and its binary logs are in `/data`, which snmpd does not monitor by default (only `/`).
+  # net-snmp takes this threshold as the minimum FREE space, so 30% free alerts at 70% used.
+  - disk /data 30%
+  # Bytes of binary logs on disk, and bytes written to them since the server started (a counter, so a graph
+  # shows how fast they grow).
+  - extend xtradb_binlog_bytes                 /usr/bin/make --no-print-directory --directory {{ xtradb_docker_deploy_base_folder }} xtradb-binlog-bytes
+  - extend xtradb_binlog_written_bytes         /usr/bin/make --no-print-directory --directory {{ xtradb_docker_deploy_base_folder }} xtradb-binlog-written-bytes
 
 xtradb_makefile_healthcheck: [ "{{ xtradb_docker_deploy_base_folder }}" ]
 

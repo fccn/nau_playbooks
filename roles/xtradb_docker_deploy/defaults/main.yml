@@ -102,6 +102,24 @@ xtradb_docker_max_connections: 1000
 xtradb_docker_innodb_buffer_pool_size: 5934M
 # xtradb_docker_thread_cache_size: 20
 
+# Binary logs (nau-technical#1097). They are written in the data volume, next to the data, and every node
+# keeps its own full copy, so they have to be bounded or they fill `/data`. Galera does not read them: they
+# are only used for point-in-time recovery between two backups.
+#
+# How long to keep them, in seconds. It should cover at least the interval between two backups, and 2 intervals
+# keep a usable recovery window when one backup fails. PROD is backed up daily, so it overrides this to 2 days
+# in secure-nau-data. DEV and STAGE are backed up weekly: the default of 7 days covers one interval, which is
+# acceptable for non-production environments.
+xtradb_docker_binlog_expire_logs_seconds: 604800
+# Hard cap for the total size of all the binary logs (Percona `binlog_space_limit`). When the total is above
+# it, the oldest binary logs are purged whatever their age. A number without a unit is in BYTES, so always
+# add the unit: at least 1G. Set to an empty string to remove the cap.
+xtradb_docker_binlog_space_limit: 30G
+# Optional, not set by default. `MINIMAL` logs only the changed columns of a row instead of the whole row
+# (-32 % of binlog bytes on a synthetic graded submission in a local test, not measured on production data).
+# Anything that reads the binary logs has to accept partial row images, so test it on STAGE first.
+# xtradb_docker_binlog_row_image: MINIMAL
+
 # Prefer the last node in the cluster to be used for state transfer from the cluster.
 # If the list contains a trailing comma, the remaining nodes in the cluster
 # will also be considered if the nodes from the list are not available.
