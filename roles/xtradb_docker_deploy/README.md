@@ -63,3 +63,22 @@ After that deploy and joining to existing cluster, the existing nodes should kno
 ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit new_node -e xtradb_deploy=true
 ansible-playbook -i nau-data/envs/<env>/hosts.ini deploy.yml --limit 'xtradb_servers' -e xtradb_deploy=true
 ```
+
+## Read-only sampling helpers
+
+The deployed `Makefile` (in `xtradb_docker_deploy_base_folder`, `/nau/ops/xtradb` by default) has three targets that
+only read `performance_schema` and never write. They are meant to answer, per node, how much of the work is reads and
+whether Galera flow control is throttling writes. Run them on each node during a busy period:
+
+```bash
+make -C /nau/ops/xtradb xtradb-read-write-mix INTERVAL=30     # statements/s by type, SELECT share by count and by time
+make -C /nau/ops/xtradb xtradb-flow-control INTERVAL=30       # paused % of the interval, receive queue, applier threads, fc_limit
+make -C /nau/ops/xtradb xtradb-statement-time-share           # time share by statement type and top statements since start
+```
+
+- `INTERVAL` is the number of seconds between the two samples (default 10).
+- `xtradb-flow-control` computes the paused percentage from `wsrep_flow_control_paused_ns`, so it does not need
+  `FLUSH STATUS` (which would reset counters other tools may read).
+- `SCHEMA` filters `xtradb-statement-time-share` by default database (default `edxapp`, `SCHEMA=` for all).
+- The statement-type counters in `performance_schema` are cumulative since the server started (or the last
+  `TRUNCATE`), so use the sampled targets to see a specific busy window.
