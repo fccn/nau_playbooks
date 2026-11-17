@@ -43,6 +43,15 @@ Example to get the first cluster node host name or IP address:
 xtradb_cluster_join: "{{ hostvars[groups['xtradb_servers'][0]].ansible_host }}"
 ```
 
+## Root password on the node
+
+The root password is passed to the container as `MYSQL_ROOT_PASSWORD`, so it is written in `docker-compose.yml`.
+The role makes that file readable only by root (`0600`).
+
+The `Makefile` stays world readable, because snmpd runs some of its targets (`silent-healthcheck`, `xtradb-connections-count`)
+as the `Debian-snmp` user. It does not contain the password: its targets read `MYSQL_ROOT_PASSWORD` from the
+environment of the running container, which gets it from `xtradb_mysql_root_password` like before.
+
 ## References
 
 - https://docs.percona.com/percona-xtradb-cluster/8.0/docker.html
