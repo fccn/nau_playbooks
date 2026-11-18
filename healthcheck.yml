@@ -7,6 +7,12 @@
 #
 # 2. Run check urls for all the web servers
 #
+# 3. Check that each server can connect to the load balancer virtual IPs
+#
+# 4. Check the keepalived virtual IPs (tasks/healthcheck_keepalived_vips.yml): each one is held by a
+#    single host, the ARP entries of the other hosts point to that host, and the clients can connect.
+#    Run only this check with `--tags keepalived_vips`.
+#
 # Ansible playbook extra variables:
 # - target_mysql_server - used to check only a subrange of MySQL databases for its health
 # - target_mongo_server - used to change the default Mongo database instance where to check the health of the cluster
@@ -39,3 +45,13 @@
       # Executing a curl doesn't change anything, so we have better output
       changed_when: False
       when: hostvars[groups['balancer_servers'][0]].balancer_virtual_ipv4_2 is defined
+
+# Not serial, because finding the holder of each VIP connects to every keepalived host,
+# and a serial play would repeat that for each batch.
+- name: Check the keepalived virtual IPs
+  hosts: all
+  become: True
+  gather_facts: False
+  tags: keepalived_vips
+  tasks:
+    - import_tasks: tasks/healthcheck_keepalived_vips.yml
