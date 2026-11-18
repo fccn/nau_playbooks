@@ -20,6 +20,14 @@ Variables:
 - mongo_docker_max_conns - `--maxConns` of mongod, default `28000`, `0` disables it. With it mongod refuses the connections above the limit cleanly (it logs `Connection refused because there are too many open connections`, a good alert signature) instead of failing to create threads, and it keeps threads for its own replication and election work. The role fails if it is not at least 1000 below `mongo_limit_pids`, because mongod uses about 70 threads beyond the connections, or if it is above 80% of `mongo_limit_no_file_soft`: mongod caps the connections at 80% of its file descriptor limit and uses the lower of the two, so a bigger value would be silently ignored and the `mongo_connections_percent` alarm would be relative to the lower value.
 - mongo_docker_image - pinned in `group_vars/mongo_docker_servers.yml` to the version running on PROD. The role runs `docker-compose pull` before `up -d`, so a moving tag would upgrade mongod on the next deploy.
 
+### Overriding the variables per environment
+
+Where a variable is defined decides where it can be overridden (Ansible variable precedence):
+- Variables defined only in the role defaults (`roles/mongo_docker_deploy/defaults/main.yml`), such as `mongo_docker_max_conns`, `mongo_limit_pids` and the `mongo_limit_no_file_*` ulimits, can be overridden per environment in the inventory `group_vars` of `nau-data` (`envs/<env>/group_vars/mongo_docker_servers.yml`). Dev and stage set `mongo_docker_max_conns` there.
+- Variables defined in this repository's `group_vars/mongo_docker_servers.yml`, such as `mongo_docker_image`, `mongo_snmpd_configs` and `mongo_shell_command`, win over the inventory `group_vars`, so setting them in the `nau-data` `group_vars` is **silently ignored**. Override them with `host_vars` (`envs/<env>/host_vars/<host>.yml`) or `-e`, for example `-e mongo_docker_image=docker.io/mongo:7.0.15`.
+
+Check what a host resolves before deploying, for example with `--check --diff` and the rendered `docker-compose.yml`.
+
 ### Monitoring (SNMP, Cacti and Icinga)
 
 `mongo_snmpd_configs` (`group_vars/mongo_docker_servers.yml`) exposes these `snmpd` extends, defined by the Makefile of each node:
