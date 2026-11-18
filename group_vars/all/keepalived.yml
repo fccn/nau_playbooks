@@ -21,3 +21,61 @@ keepalived_health: "{{
   ( clickhouse_keepalived_health | default([]) ) +
   []
 }}"
+
+# VIPs checked by healthcheck.yml (tag keepalived_vips). For each VIP:
+# - the hosts of `group` that hold it: exactly one, else it is down or in split brain;
+# - on every other host of the same network, the ARP entry of the VIP must point to a MAC of that holder;
+# - on the hosts of `client_groups`, a TCP connection to the VIP and port must open.
+# `vip_var` and `port_var` are read from the first host of `group`; `port` is used when `port_var` is not defined there.
+# A VIP whose group is empty or whose `vip_var` is not defined in an environment is skipped.
+keepalived_vip_checks:
+  - name: Redis
+    group: redis_docker_servers
+    vip_var: redis_virtual_ipv4
+    port_var: redis_docker_port
+    port: 6379
+    client_groups: [ kubernetes_worker_node_servers ]
+  - name: XtraDB read-write
+    group: xtradb_servers
+    vip_var: xtradb_virtual_ipv4_rw
+    port_var: xtradb_mysql_port
+    port: 3306
+    client_groups: [ kubernetes_worker_node_servers ]
+  - name: XtraDB read
+    group: xtradb_servers
+    vip_var: xtradb_virtual_ipv4_r
+    port_var: xtradb_mysql_port
+    port: 3306
+    client_groups: [ kubernetes_worker_node_servers ]
+  - name: ClickHouse
+    group: clickhouse_servers
+    vip_var: clickhouse_virtual_ipv4
+    port_var: clickhouse_server_tcp_port
+    port: 9000
+    client_groups: [ kubernetes_worker_node_servers ]
+  - name: ClickHouse read
+    group: clickhouse_servers
+    vip_var: clickhouse_virtual_ipv4_r
+    port_var: clickhouse_server_tcp_port
+    port: 9000
+    client_groups: [ kubernetes_worker_node_servers ]
+  - name: Richie MySQL
+    group: richie_mysql_docker_servers
+    vip_var: richie_mysql_virtual_ipv4
+    port_var: richie_mysql_docker_port
+    port: 3306
+    client_groups: [ kubernetes_worker_node_servers ]
+  # The load balancer VIPs are public, so only their holder is checked; healthcheck.yml already curls them.
+  - name: Load balancer 1
+    group: balancer_servers
+    vip_var: balancer_virtual_ipv4_1
+    port: 443
+    client_groups: []
+  - name: Load balancer 2
+    group: balancer_servers
+    vip_var: balancer_virtual_ipv4_2
+    port: 443
+    client_groups: []
+
+# Seconds to wait for each TCP connection of the VIP check.
+keepalived_vip_connect_timeout: 3
