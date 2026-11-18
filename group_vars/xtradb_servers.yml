@@ -55,7 +55,7 @@ xtradb_keepalived_peer_ipv4_r: "{{ hostvars[ (groups['xtradb_servers'] | differe
 xtradb_keepalived_priority_r: "{{ 200 if xtradb_keepalived_is_primary_r else (100 + (xtradb_indexof_current_host|int) ) }}"
 
 # Keep alive other servers IPs
-xtradb_keepalived_peers_ips: "{{ groups['xtradb_servers'] | difference([inventory_hostname]) | map('extract', hostvars, 'ansible_host') | list }}"
+xtradb_keepalived_peers_ips: "{{ groups['xtradb_servers'] | reject('equalto', inventory_hostname) | map('extract', hostvars, 'ansible_host') | list }}"
 
 xtradb_keepalived_vrrp_instances:
   - name: xtradb_failover_link_ipv4_rw

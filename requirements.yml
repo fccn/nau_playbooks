@@ -36,7 +36,7 @@ roles:
 
 # Keepalived to manage Linux Virtual IP addresses for high availability
 - src: git+https://github.com/fccn/ansible-keepalived.git
-  version: cdc83ee69a53801268b3bd8e6c962d8adbfe3383
+  version: 46dfeb59f9fd5086b6af0ea7a13b4615b66ec2fc
 
 # Rolling deploy role that use iptables to manage load balancer connections
 # to a cluster of nodes applying a rolling update strategy
