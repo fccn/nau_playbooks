@@ -90,11 +90,21 @@ clickhouse_partner_access_problem_attempts_columns:
 # view (see templates/partner_access.sql.j2). meta_json_fields are
 # extracted out of the opaque `meta` JSON blob -- never expose `meta`
 # itself.
+#
+# time_last_dumped: event_sink.user_profile accumulates one row per
+# profile-save event (re-dumped on every registration-form field update),
+# with no deduplication -- a partner querying the view directly sees every
+# historical version, with no way to tell which one is current (confirmed
+# live, fccn/nau-technical#981 follow-up: ARTE reported up to 13 rows for a
+# single user_id). Exposing the row's own dump timestamp lets partners pick
+# the latest version themselves (e.g. ORDER BY time_last_dumped DESC LIMIT 1
+# per user_id/actor_id), without changing the view's row-scoping.
 clickhouse_partner_access_profile_direct_fields:
   - year_of_birth
   - gender
   - level_of_education
   - country
+  - time_last_dumped
 clickhouse_partner_access_profile_meta_json_fields:
   - nif
   - employment_situation
