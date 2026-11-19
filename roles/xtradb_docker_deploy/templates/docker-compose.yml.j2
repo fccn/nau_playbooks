@@ -10,7 +10,8 @@ services:
   xtradb:
     image: {{ xtradb_docker_image }}
     container_name: {{ xtradb_docker_container_name }}
-    restart: always
+    restart: {{ xtradb_docker_restart_policy }}
+    stop_grace_period: {{ xtradb_docker_stop_timeout }}s
     cap_add: [ SYS_NICE ]
     environment:
 {% for env_var_name, env_var_value in xtradb_docker_environment_variables.items() %}
@@ -18,6 +19,7 @@ services:
 {% endfor %}
     volumes:
       - {{ xtradb_mysql_docker_volume_path }}:/var/lib/mysql
+      - {{ xtradb_docker_tmp_path }}:/tmp
     network_mode: host
 {{ helper.service_configs(service='xtradb') }}
 {{ helper.service_secrets(service='xtradb') }}

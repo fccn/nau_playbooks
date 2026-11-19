@@ -86,6 +86,22 @@ xtradb_docker_deploy_folders_additional:
     dir_owner: "{{ xtradb_docker_user_id }}"
     dir_group: "{{ xtradb_docker_group_id }}"
     dir_mode: "755"
+  - dest: "{{ xtradb_docker_tmp_path }}"
+    dir_owner: "{{ xtradb_docker_user_id }}"
+    dir_group: "{{ xtradb_docker_group_id }}"
+    dir_mode: "1777"
+
+# Mounted as the container's /tmp, so SST scratch (pxc_sst_*) lands on /data, not the root disk.
+# The trailing slash is needed: ansible-docker-deploy creates `dest | dirname`.
+xtradb_docker_tmp_path: /data/{{ xtradb_docker_container_name }}-tmp/
+
+# Restarts after a reboot, but not after a manual `docker stop`.
+xtradb_docker_restart_policy: unless-stopped
+
+# Seconds to wait for a clean mysqld stop (Docker's default of 10 s can kill it and force an SST).
+# Used for stop_grace_period, `docker-compose up -d --timeout` and, +60 s, docker.service's TimeoutStopSec.
+xtradb_docker_stop_timeout: 180
+xtradb_docker_systemd_stop_timeout: "{{ xtradb_docker_stop_timeout | int + 60 }}"
 
 xtradb_docker_environment_variables: "{{ xtradb_docker_environment_variables_default | combine(xtradb_docker_environment_variables_default_join if not xtradb_cluster_initialization else {}) | combine(xtradb_docker_environment_variables_overrides, recursive=True) }}"
 xtradb_docker_environment_variables_overrides: {}
@@ -102,7 +118,9 @@ xtradb_docker_max_connections: 1000
 xtradb_docker_innodb_buffer_pool_size: 5934M
 # xtradb_docker_thread_cache_size: 20
 
-# Prefer the last node in the cluster to be used for state transfer from the cluster.
-# If the list contains a trailing comma, the remaining nodes in the cluster
-# will also be considered if the nodes from the list are not available.
-xtradb_docker_wsrep_sst_donor: "{{ xtradb_cluster_hosts[-1] }},"
+# SST donors (wsrep_sst_donor): every other node of the group, the last one first. Applies to SST only; see the README.
+# No trailing comma: a name that matches no node fails the transfer instead of falling back to any node.
+# Names must equal the host names (wsrep_node_name). Override in the inventory; empty means no donor line.
+xtradb_docker_cluster_group: xtradb_servers
+xtradb_docker_wsrep_sst_donor_default: "{{ groups[xtradb_docker_cluster_group] | reject('equalto', inventory_hostname) | reverse | join(',') }}"
+xtradb_docker_wsrep_sst_donor: "{{ xtradb_docker_wsrep_sst_donor_default }}"

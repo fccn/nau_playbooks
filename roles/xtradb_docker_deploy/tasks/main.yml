@@ -6,6 +6,39 @@
   tags:
     - docker_deploy
 
+# systemd's default 90 s stop timeout would kill the database during a reboot.
+- name: Create the drop-in directory of docker.service
+  file:
+    path: /etc/systemd/system/docker.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  tags:
+    - docker_deploy
+
+- name: Let docker.service wait for the XtraDB container to stop
+  copy:
+    dest: /etc/systemd/system/docker.service.d/xtradb-stop-timeout.conf
+    content: |
+      # Managed by Ansible (nau_playbooks, xtradb_docker_deploy)
+      [Service]
+      TimeoutStopSec={{ xtradb_docker_systemd_stop_timeout }}
+    owner: root
+    group: root
+    mode: "0644"
+  register: xtradb_docker_systemd_dropin
+  tags:
+    - docker_deploy
+
+# Reloads the unit files only; Docker is not restarted.
+- name: Reload systemd after the docker.service drop-in changed
+  systemd:
+    daemon_reload: true
+  when: xtradb_docker_systemd_dropin is changed
+  tags:
+    - docker_deploy
+
 - name: Deploy
   include_role:
     name: ansible-docker-deploy
@@ -19,6 +52,8 @@
     docker_deploy_secrets:             "{{ xtradb_docker_deploy_secrets | default([]) }}"
     docker_deploy_services_additional: "{{ xtradb_docker_deploy_services_additional | default([]) }}"
     docker_deploy_shell: true
+    # Without --timeout, a recreate stops the old container with its own (old) timeout.
+    docker_deploy_shell_start_default_additional_parameters: "--timeout {{ xtradb_docker_stop_timeout }}"
     docker_deploy_healthcheck_retries: "{{ xtradb_docker_deploy_healthcheck_retries }}"
     docker_deploy_healthcheck_delay:   "{{ xtradb_docker_deploy_healthcheck_delay }}"
   tags:

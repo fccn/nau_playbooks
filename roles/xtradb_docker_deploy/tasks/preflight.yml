@@ -1,0 +1,16 @@
+---
+# Run first in the XtraDB deploy play, so a node that fails keeps its VIPs.
+- name: Check that the host name of the node matches its inventory name
+  # The donor list uses inventory names; Galera matches them against the host name.
+  assert:
+    that:
+      - ansible_nodename == inventory_hostname
+    fail_msg: >-
+      The host name of {{ inventory_hostname }} is {{ ansible_nodename }}, so it cannot be matched as an SST donor.
+      Set the host name to the inventory name, or set xtradb_docker_wsrep_sst_donor in the inventory group_vars.
+    quiet: true
+  when:
+    - xtradb_docker_wsrep_sst_donor | default('') | length > 0
+    - xtradb_docker_wsrep_sst_donor == xtradb_docker_wsrep_sst_donor_default
+  tags:
+    - docker_deploy
