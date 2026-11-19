@@ -20,7 +20,7 @@
 #
 # Optional: the token of a read-only (Viewer) Grafana service account. Defined, it switches the Grafana tools on.
 # Not defined, the Grafana tools stay as they are on the VM.
-# mcp_grafana_token: <token>
+# sa_read_grafana_token: <token>
 
 # The repository, pulled over SSH. It is private.
 mcp_git_repo: git@github.com:fccn/nau-mcp.git

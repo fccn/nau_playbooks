@@ -155,15 +155,15 @@
         mcp_grafana_init_needed: >-
           {{ mcp_grafana_configured | bool
              and ( not mcp_grafana_token_file.stat.exists
-                   or mcp_grafana_token_file.stat.checksum != ( mcp_grafana_token | hash('sha256') )
+                   or mcp_grafana_token_file.stat.checksum != ( sa_read_grafana_token | hash('sha256') )
                    or not mcp_grafana_shared_file.stat.exists
                    or mcp_grafana_profile.rc != 0 ) }}
       no_log: true
 
-    - name: Skip the Grafana tools, there is no valid mcp_grafana_token
+    - name: Skip the Grafana tools, there is no valid sa_read_grafana_token
       debug:
         msg: >-
-          The Grafana tools were not touched on {{ inventory_hostname }}: define mcp_grafana_token (the token of a Viewer service
+          The Grafana tools were not touched on {{ inventory_hostname }}: define sa_read_grafana_token (the token of a Viewer service
           account of Grafana, 20 to 200 characters) in secure-nau-data to switch them on.
       when: not ( mcp_grafana_configured | bool )
 
@@ -176,7 +176,7 @@
           - -c
           - IFS= read -r GRAFANA_TOKEN && export GRAFANA_TOKEN && make grafana-init
         chdir: "{{ mcp_docker_deploy_folder }}"
-        stdin: "{{ mcp_grafana_token }}"
+        stdin: "{{ sa_read_grafana_token }}"
       register: mcp_grafana_init
       failed_when: false
       changed_when: mcp_grafana_init.rc == 0

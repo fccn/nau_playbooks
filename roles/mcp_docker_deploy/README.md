@@ -30,7 +30,7 @@ MCP VM
 5. `make init ENV=<mcp_environment>`: creates `.env`, `secrets/`, `logs/` and `certs/`. It refuses to change the
    environment of a VM that already has one.
 6. `make image`: builds the image from the pulled code, on the VM.
-7. Where `mcp_grafana_token` is defined: `make grafana-init` when it differs from the one on the VM or the setup is
+7. Where `sa_read_grafana_token` is defined: `make grafana-init` when it differs from the one on the VM or the setup is
    incomplete, then the owner and the modes of the Grafana secret files are enforced.
 8. `make deploy`, only when the pulled code, the image or the Grafana setup changed, or when the server is not healthy.
 9. Waits until `make healthcheck` passes, and shows `make status`.
@@ -59,7 +59,7 @@ mcp_git_ssh_key: |            # read-only deploy key of the repository, OpenSSH 
 ### Optional: the Grafana tools
 
 ```yaml
-mcp_grafana_token: <token>    # token of a Viewer (read-only) service account of the Grafana of this environment
+sa_read_grafana_token: <token>    # token of a Viewer (read-only) service account of the Grafana of this environment
 ```
 
 Defined and valid (20 to 200 characters), it switches the Grafana tools on. Create the service account with the **Viewer**
@@ -157,7 +157,7 @@ recreated once. `.env`, the tokens and the logs are kept. A second run changes n
 | `mcp_environment` | required | `dev`, `stage` or `prod` |
 | `mcp_git_version` | required | tag or full commit |
 | `mcp_git_ssh_key` | required | read-only deploy key, OpenSSH format |
-| `mcp_grafana_token` | not defined | token of a Viewer service account; switches the Grafana tools on |
+| `sa_read_grafana_token` | not defined | token of a Viewer service account; switches the Grafana tools on |
 | `mcp_git_repo` | `git@github.com:fccn/nau-mcp.git` | repository, over SSH |
 | `mcp_docker_deploy_base_folder` | `/nau/ops/nau-mcp` | the clone; `deploy/` inside it is where `make` runs |
 | `mcp_git_host_key` | GitHub's `ssh-ed25519` key | checked on every pull |

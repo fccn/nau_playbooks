@@ -9,8 +9,8 @@
       {{ mcp_git_ssh_key is defined
          and ( mcp_git_ssh_key | string ) is match('(?s)^-----BEGIN OPENSSH PRIVATE KEY-----.+-----END OPENSSH PRIVATE KEY-----\s*$') }}
     mcp_grafana_configured: >-
-      {{ mcp_grafana_token is defined
-         and ( mcp_grafana_token | string ) is match('^[A-Za-z0-9_.~+/=-]{20,200}$') }}
+      {{ sa_read_grafana_token is defined
+         and ( sa_read_grafana_token | string ) is match('^[A-Za-z0-9_.~+/=-]{20,200}$') }}
   no_log: true
 
 - name: Validate the MCP deploy configuration
