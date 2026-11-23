@@ -1,0 +1,39 @@
+---
+# Deploys the NAU MCP server: the official Grafana MCP server, read-only, on the loopback address of the VM, from the
+# compose file and the Makefile of this role (templates/). See the README.
+
+# Required, per environment, in secure-nau-data (envs/<env>/group_vars/mcp_servers.yml). validate.yml checks them before
+# anything changes, and the tokens are never printed.
+#
+# The Grafana of this environment, and the token of a Viewer service account of it.
+# mcp_grafana_url: https://grafana.example.org
+# sa_read_grafana_token: <token>
+#
+# The token that agents must present in the Authorization header, as a Bearer token: 32 characters or more.
+# mcp_agent_token: <token>
+
+# Pinned by digest: the README says how to upgrade it.
+mcp_docker_image: grafana/mcp-grafana:2.2.0@sha256:697336440e34878f8e0b26a69675db8d7e97b4d0daec25ec5441c85ac6c60e81
+mcp_docker_container_name: nau-mcp-grafana
+
+# The port on 127.0.0.1 where the server listens, and where agents point their SSH tunnel.
+mcp_port: 8443
+
+# The folder of the deploy: docker-compose.yml, the Makefile, smoke.py and secrets/.
+mcp_docker_deploy_base_folder: /nau/ops/nau-mcp
+mcp_docker_deploy_compose_template: templates/docker-compose.yml.j2
+
+# The user of the container (the image runs as this uid). It owns secrets/, the only one who can read the tokens.
+mcp_docker_deploy_uid: 10001
+
+# Files that ansible-docker-deploy templates in the folder of the deploy. None holds a secret: the tokens are written by
+# the role itself, without a diff.
+mcp_docker_deploy_templates:
+  - src: templates/Makefile
+    dest: "{{ mcp_docker_deploy_base_folder }}/Makefile"
+  - src: templates/smoke.py
+    dest: "{{ mcp_docker_deploy_base_folder }}/smoke.py"
+
+# The server is healthy about 10 seconds after a start (its health check runs every 30 s, the first one after 10 s).
+mcp_docker_deploy_healthcheck_delay: 5
+mcp_docker_deploy_healthcheck_retries: 24

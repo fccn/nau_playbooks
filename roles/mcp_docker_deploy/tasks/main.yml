@@ -1,0 +1,96 @@
+---
+# Writes the two tokens of the environment in secrets/ and starts the server with ansible-docker-deploy, from the compose
+# file and the Makefile of this role.
+
+# The play of deploy.yml runs validate.yml before it installs Docker; it runs again here, so the role is safe on its own.
+- import_tasks: validate.yml
+
+- name: Install make
+  package:
+    name: make
+    state: present
+
+- name: Check if the folder of the deploy already exists
+  stat:
+    path: "{{ mcp_docker_deploy_base_folder }}"
+  register: mcp_deploy_folder
+  check_mode: false # read only
+
+- name: Create the folder of the deploy
+  file:
+    path: "{{ mcp_docker_deploy_base_folder }}"
+    state: directory
+    mode: "0755"
+
+# The docker deploy role runs shell commands inside the folder, which does not exist yet in check mode.
+- name: Report that the MCP server would be deployed
+  debug:
+    msg: "Check mode: the MCP server would be deployed after the folder {{ mcp_docker_deploy_base_folder }} is created."
+  when: ansible_check_mode and not mcp_deploy_folder.stat.exists
+
+- name: Write the tokens of the environment and start the server
+  when: not ansible_check_mode or mcp_deploy_folder.stat.exists
+  block:
+    # The tokens are files, readable by the container user only: they are not in `docker inspect`, and the template task
+    # of ansible-docker-deploy would show them in a --diff.
+    - name: Create the folder of the tokens (the container user only)
+      file:
+        path: "{{ mcp_docker_deploy_base_folder }}/secrets"
+        state: directory
+        owner: "{{ mcp_docker_deploy_uid }}"
+        group: "{{ mcp_docker_deploy_uid }}"
+        mode: "0700"
+
+    # The server reads it again on every call: a new one needs no restart.
+    - name: Write the Grafana token
+      copy:
+        content: "{{ sa_read_grafana_token | trim }}"
+        dest: "{{ mcp_docker_deploy_base_folder }}/secrets/grafana-token"
+        owner: "{{ mcp_docker_deploy_uid }}"
+        group: "{{ mcp_docker_deploy_uid }}"
+        mode: "0600"
+      no_log: true
+      diff: false
+
+    # The server reads it when it starts: a new one needs a new container (make restart, below). make deploy also
+    # recreates the container while this file is newer than it, so a run that fails after this task is safe to repeat.
+    - name: Write the agent token
+      copy:
+        content: "{{ mcp_agent_token | trim }}"
+        dest: "{{ mcp_docker_deploy_base_folder }}/secrets/agent-token"
+        owner: "{{ mcp_docker_deploy_uid }}"
+        group: "{{ mcp_docker_deploy_uid }}"
+        mode: "0600"
+      register: mcp_agent_token_file
+      no_log: true
+      diff: false
+
+    # Templates docker-compose.yml, the Makefile and smoke.py, pulls the pinned image, starts the server with the Makefile
+    # (`make deploy` recreates the container when its settings changed) and waits for the containers to be healthy.
+    # `apply` carries the tag of the play to the tasks of the included role, so `--tags mcp` runs them.
+    - name: Deploy with ansible-docker-deploy
+      include_role:
+        name: ansible-docker-deploy
+        apply:
+          tags:
+            - mcp
+      vars:
+        docker_deploy_base_folder: "{{ mcp_docker_deploy_base_folder }}"
+        docker_deploy_compose_template: "{{ mcp_docker_deploy_compose_template }}"
+        docker_deploy_templates: "{{ mcp_docker_deploy_templates }}"
+        docker_deploy_shell: true
+        docker_deploy_compose_bin: docker compose
+        docker_deploy_shell_start: "make {{ 'restart' if mcp_agent_token_file is changed else 'deploy' }}"
+        docker_deploy_healthcheck_delay: "{{ mcp_docker_deploy_healthcheck_delay }}"
+        docker_deploy_healthcheck_retries: "{{ mcp_docker_deploy_healthcheck_retries }}"
+
+    - name: Check that the MCP server is healthy
+      command: make healthcheck
+      args:
+        chdir: "{{ mcp_docker_deploy_base_folder }}"
+      register: mcp_healthcheck
+      until: mcp_healthcheck.rc == 0
+      retries: "{{ mcp_docker_deploy_healthcheck_retries }}"
+      delay: "{{ mcp_docker_deploy_healthcheck_delay }}"
+      changed_when: false
+      when: not ansible_check_mode
