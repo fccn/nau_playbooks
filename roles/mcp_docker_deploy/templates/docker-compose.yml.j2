@@ -1,0 +1,85 @@
+# {{ ansible_managed }}
+#
+# The official Grafana MCP server (github.com/grafana/mcp-grafana, Apache-2.0), read-only, on the loopback address of the
+# VM. Agents reach it through an SSH tunnel and present the agent token.
+#
+# The role writes the two secrets next to this file. Only the container's user can read them, so neither is in
+# `docker inspect`:
+#   secrets/grafana-token   the token of a Viewer service account of the Grafana of this environment
+#   secrets/agent-token     the token that agents must present
+#
+# The flags of the command keep the server read-only. Read the README of the role before changing them.
+name: nau-mcp
+
+services:
+  grafana:
+    # Pinned by digest. To upgrade it: the README of the role, "Upgrade the image".
+    image: {{ mcp_docker_image }}
+    container_name: {{ mcp_docker_container_name }}
+    restart: unless-stopped
+    # Host networking: Grafana is reached with the VM's own routes, DNS and firewall. The server listens on 127.0.0.1 only
+    # (--address below).
+    network_mode: host
+    user: "{{ mcp_docker_deploy_uid }}:{{ mcp_docker_deploy_uid }}"
+    environment:
+      GRAFANA_URL: "{{ mcp_grafana_url }}"
+      # Read again on every call, so a new token needs no restart.
+      GRAFANA_SERVICE_ACCOUNT_TOKEN_FILE: /run/secrets/grafana-token
+      MCP_PORT: "{{ mcp_port }}"
+      # Makes Go collect garbage before its heap nears mem_limit, so large answers do not get the container killed.
+      GOMEMLIMIT: 160MiB
+    # The server does not start without an agent token: mcp-grafana alone would only log a warning and answer anybody who
+    # reaches its port. `$$` is Compose's escape for a `$` that the shell expands.
+{%- raw %}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        token="$$(cat /run/secrets/agent-token 2>/dev/null || true)"
+        [ "$${#token}" -ge 32 ] || { echo "nau-mcp: secrets/agent-token is missing, empty or shorter than 32 characters: not starting without caller authentication" >&2; exit 1; }
+        MCP_GRAFANA_SERVER_TOKEN="$$token"; export MCP_GRAFANA_SERVER_TOKEN
+        exec /app/mcp-grafana --transport streamable-http \
+          --address "127.0.0.1:$${MCP_PORT}" --allowed-hosts "127.0.0.1:$${MCP_PORT},localhost:$${MCP_PORT}" \
+          --disable-write --usage-stats disabled \
+          --enabled-tools search,datasource,prometheus,loki,alerting,dashboard \
+          --prometheus-guardrail-mode enforce --prometheus-guardrail-max-range 24h5m \
+          --prometheus-guardrail-max-points 1500 \
+          --loki-guardrail-mode enforce --loki-guardrail-max-range 24h5m --max-loki-log-limit 100
+    volumes:
+      - ./secrets:/run/secrets:ro
+    # The image has no curl: bash opens the connection. Healthy means that /healthz answers (it needs no token) and that a
+    # call without the token gets 401; a server without caller authentication answers 415, so it shows as unhealthy.
+    healthcheck:
+      test:
+        - CMD
+        - /usr/bin/bash
+        - -c
+        - |
+          ask() {
+            exec 3<>"/dev/tcp/127.0.0.1/$${MCP_PORT}" || return 1
+            printf '%s HTTP/1.0\r\nHost: 127.0.0.1:%s\r\nContent-Length: 0\r\n\r\n' "$$1" "$${MCP_PORT}" >&3
+            head -n1 <&3
+            exec 3>&-
+          }
+          ask 'GET /healthz' | grep -q ' 200 ' && ask 'POST /mcp' | grep -q ' 401 '
+{% endraw %}
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    # Hardening: a read-only filesystem, no capabilities and no way to gain any, and limits on what it can use.
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    mem_limit: 256m
+    cpus: 0.5
+    # Rotated local logs, instead of the fluentd default of the NAU Docker settings.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
