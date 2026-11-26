@@ -22,6 +22,8 @@ node_exporter_collectors:
   - vmstat
   # Pressure stall information (/proc/pressure): time tasks waited for CPU, memory or I/O. Needs kernel 4.20+.
   - pressure
+  # Clock of the VM (node_time_seconds): the uptime of generic node dashboards is now minus the boot time.
+  - time
 
 # Docker restarts after a crash, never reset (see the compose template).
 node_exporter_restart_max_retries: 5
