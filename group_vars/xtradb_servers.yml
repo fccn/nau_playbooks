@@ -45,17 +45,15 @@ xtradb_indexof_current_host: "{{ groups['xtradb_servers'].index(inventory_hostna
 # Keep alive Virtual IP for read-write XtraDB connections
 xtradb_keepalived_is_primary_rw: "{{ groups['xtradb_servers'][0] == inventory_hostname }}"
 xtradb_keepalived_state_rw: "{{ 'MASTER' if xtradb_keepalived_is_primary_rw else 'BACKUP' }}"
-xtradb_keepalived_peer_ipv4_rw: "{{ hostvars[ (groups['xtradb_servers'] | difference([inventory_hostname]))[0] ].ansible_host }}"
 xtradb_keepalived_priority_rw: "{{ 200 if xtradb_keepalived_is_primary_rw else (100 - (xtradb_indexof_current_host|int) ) }}"
 
 # Keep alive Virtual IP for read-only XtraDB connections
 xtradb_keepalived_is_primary_r: "{{ groups['xtradb_servers'][1] == inventory_hostname }}"
 xtradb_keepalived_state_r: "{{ 'MASTER' if xtradb_keepalived_is_primary_r else 'BACKUP' }}"
-xtradb_keepalived_peer_ipv4_r: "{{ hostvars[ (groups['xtradb_servers'] | difference([inventory_hostname]))[0] ].ansible_host }}"
 xtradb_keepalived_priority_r: "{{ 200 if xtradb_keepalived_is_primary_r else (100 + (xtradb_indexof_current_host|int) ) }}"
 
 # Keep alive other servers IPs
-xtradb_keepalived_peers_ips: "{{ groups['xtradb_servers'] | difference([inventory_hostname]) | map('extract', hostvars, 'ansible_host') | list }}"
+xtradb_keepalived_peers_ips: "{{ groups['xtradb_servers'] | reject('equalto', inventory_hostname) | map('extract', hostvars, 'ansible_host') | list }}"
 
 xtradb_keepalived_vrrp_instances:
   - name: xtradb_failover_link_ipv4_rw
