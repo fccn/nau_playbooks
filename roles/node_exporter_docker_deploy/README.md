@@ -88,7 +88,9 @@ snmpwalk -v 2c -c <community> <node> 'NET-SNMP-EXTEND-MIB::nsExtendOutputFull."n
   reachable from the Prometheus pods. `xtradb_servers_firewall_ports` is commented out in every environment today, so 9100 is
   open; if that list is ever enabled, add 9100 next to the 9104 of the XtraDB exporter (the commented example in
   `secure-nau-data` has both).
-- Only the collectors in `node_exporter_collectors` are enabled (CPU, memory, filesystem, disks, load, network, uname, stat, vmstat).
+- Only the collectors in `node_exporter_collectors` are enabled (CPU, memory, filesystem, disks, load, network, uname, stat, vmstat, pressure, time).
+  `pressure` reads `/proc/pressure` (kernel 4.20+; the XtraDB VMs run 5.15) and shows how long tasks waited for CPU, memory or I/O.
+  `time` exposes the clock of the VM (`node_time_seconds`), which generic node dashboards use for the uptime.
   The filesystem metrics also include `tmpfs` mounts, filter by `fstype` in the queries.
 - A crash does not restart it forever: `on-failure:5`, then it stays `Exited`, so it never blocks the deploy of the other roles.
   `stop_signal: SIGKILL` makes a normal stop exit with 137, so Docker brings it back after a reboot.
