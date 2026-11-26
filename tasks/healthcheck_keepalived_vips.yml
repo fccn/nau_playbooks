@@ -1,0 +1,177 @@
+---
+# Checks the keepalived VIPs listed in keepalived_vip_checks (group_vars/all/keepalived.yml).
+#
+# 0. Lists the VIPs it checks in this environment, and the ones it skips and why: a group without
+#    hosts, or a VIP variable that is not defined, for example because of a typo.
+# 1. Finds which host of the VIP's group holds it, and the MAC addresses it can answer ARP with.
+#    A VIP held by no host, or by more than one (split brain), fails the check on the hosts of
+#    its group and on its clients. When one host holds it but another host of the group could not
+#    be checked (unreachable, or the command failed), a second holder cannot be ruled out: warning.
+# 2. On this host, when the VIP is on the same network, every ARP entry of the VIP must point to a
+#    MAC of that holder. A wrong entry fails the check. A wrong STALE entry is only a warning: the
+#    kernel checks a STALE entry again before it uses it. While it checks it (about 8 s with the
+#    default delay_first_probe_time and ucast_solicit), new connections time out, so the TCP check
+#    tries again once after 10 s. A FAILED or INCOMPLETE entry means this host could not resolve the
+#    VIP when it last tried: warning, with its age, since a FAILED entry can stay for hours on a
+#    host with few neighbours.
+# 3. On the hosts of the VIP's client_groups, a TCP connection to the VIP and port must open.
+#
+# Several checks can share a VIP: each host and each ARP entry is counted once per VIP.
+#
+# Read only: it reads addresses, routes and ARP entries and opens TCP connections, it changes no
+# configuration. A TCP connection makes the kernel check a STALE ARP entry, like any client would.
+# Run it alone with:
+#   ansible-playbook -i nau-data/envs/<env>/hosts.ini healthcheck.yml --tags keepalived_vips
+
+- name: Start the list of VIPs to check
+  set_fact:
+    keepalived_vips: []
+
+- name: Resolve the VIPs to check in this environment
+  set_fact:
+    keepalived_vips: "{{ keepalived_vips + [ item | combine({
+        'vip': hostvars[groups[item.group][0]][item.vip_var],
+        'port': hostvars[groups[item.group][0]][item.port_var | default('')] | default(item.port),
+        'hosts': groups[item.group] }) ] }}"
+  loop: "{{ keepalived_vip_checks }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - groups[item.group] | default([]) | length > 0
+    - hostvars[groups[item.group][0]][item.vip_var] is defined
+
+- name: List the VIPs checked and skipped in this environment
+  debug:
+    msg: "{{ keepalived_vip_summary.splitlines() | map('trim') | select | list }}"
+  run_once: true
+  vars:
+    keepalived_vip_summary: |
+      {% for c in keepalived_vip_checks %}
+      {% set v = keepalived_vips | selectattr('name', 'equalto', c.name) | first | default(none, true) %}
+      {% if v %}
+      checked {{ c.name }}: {{ v.vip }}:{{ v.port }}, held by one of {{ v.hosts | join(', ') }}
+      {% elif groups[c.group] | default([]) | length == 0 %}
+      skipped {{ c.name }}: no hosts in {{ c.group }}
+      {% else %}
+      skipped {{ c.name }}: {{ c.vip_var }} is not defined for {{ groups[c.group][0] }}
+      {% endif %}
+      {% endfor %}
+
+# Prints the MAC of the interface with the VIP, then those of the host's other physical interfaces
+# (the ones with a device): with the default arp_ignore=0, a host with more than one interface on the
+# network can answer ARP for the VIP with any of them, which still reaches the right host. Docker's
+# bridges and veths are left out, so the MAC of a virtual interface cannot match another host's.
+- name: Find which host holds each VIP, and the MAC addresses it can answer ARP with
+  shell: |
+    # A failing ip must fail the item, not read as "not the holder", so the check reports it.
+    addr=$(ip -o -4 addr show to {{ item.0.vip }}/32) || exit 1
+    dev=$(echo "$addr" | awk '{ print $2; exit }')
+    if [ -n "$dev" ]; then
+      mac=$(cat /sys/class/net/$dev/address)
+      echo $mac $(for i in /sys/class/net/*; do [ -e "$i/device" ] && cat "$i/address"; done | grep -vx "$mac" | sort -u)
+    fi
+  delegate_to: "{{ item.1 }}"
+  run_once: true
+  loop: "{{ keepalived_vips | subelements('hosts') }}"
+  loop_control:
+    label: "{{ item.0.name }} on {{ item.1 }}"
+  register: keepalived_vip_holder_check
+  changed_when: false
+  failed_when: false
+  # With run_once, a loop that has an unreachable item is unreachable as a whole, which ends the
+  # play for every host even with ignore_unreachable; ignore_errors keeps it going. The item
+  # keeps its unreachable flag, which the comparison below reports.
+  ignore_unreachable: true
+  ignore_errors: true
+  check_mode: false
+
+# One line per ARP entry of each VIP: "<VIP> <interface> <MAC or -> <state> <seconds since updated>",
+# or "<VIP> off-link" when the VIP is reached through a gateway.
+- name: Read the route and the ARP entries of each VIP on this host
+  shell: |
+    {% set seen = namespace(vips=[]) %}
+    {% for v in keepalived_vips %}
+    {% if inventory_hostname not in v.hosts and v.vip not in seen.vips %}
+    {% set seen.vips = seen.vips + [v.vip] %}
+    case "$(ip -o route get {{ v.vip }})" in
+      *" via "*|local*) echo "{{ v.vip }} off-link" ;;
+      *) ip -s neigh show {{ v.vip }} | awk '{ dev = "-"; mac = "-"; age = "-"; for (i = 1; i < NF; i++) { if ($i == "dev") dev = $(i + 1); if ($i == "lladdr") mac = $(i + 1); if ($i == "used") { split($(i + 1), t, "/"); age = t[3] } } print "{{ v.vip }}", dev, mac, $NF, age }' ;;
+    esac
+    {% endif %}
+    {% endfor %}
+    true
+  register: keepalived_vip_arp
+  changed_when: false
+  check_mode: false
+
+- name: Open a TCP connection to each VIP this host is a client of
+  wait_for:
+    host: "{{ item.vip }}"
+    port: "{{ item.port }}"
+    timeout: "{{ keepalived_vip_connect_timeout }}"
+  loop: "{{ keepalived_vips }}"
+  loop_control:
+    label: "{{ item.name }} {{ item.vip }}:{{ item.port }}"
+  when:
+    - inventory_hostname not in item.hosts
+    - item.client_groups | default([]) | intersect(group_names) | length > 0
+  register: keepalived_vip_connect
+  # One retry after the kernel has checked a STALE ARP entry again, see 2. above.
+  until: keepalived_vip_connect is succeeded
+  retries: 1
+  delay: 10
+  ignore_errors: true
+  check_mode: false
+
+- name: Compare the VIP holders, the ARP entries and the connections
+  set_fact:
+    keepalived_vip_problems: "{{ (keepalived_vip_report | default('', true)).splitlines() | map('trim') | select | list }}"
+  vars:
+    keepalived_vip_report: |
+      {% set seen = namespace(vips=[]) %}
+      {% for v in keepalived_vips %}
+      {% if v.vip not in seen.vips and ( inventory_hostname in v.hosts or v.client_groups | default([]) | intersect(group_names) | length > 0 ) %}
+      {% set seen.vips = seen.vips + [v.vip] %}
+      {% set names = keepalived_vips | selectattr('vip', 'equalto', v.vip) | map(attribute='name') | unique | join('/') %}
+      {% set results = keepalived_vip_holder_check.results | selectattr('item.0.vip', 'equalto', v.vip) | list %}
+      {% set holders = results | selectattr('stdout', 'defined') | rejectattr('stdout', 'equalto', '') | map(attribute='item.1') | unique | list %}
+      {% set unchecked = namespace(hosts=[]) %}
+      {% for r in results %}
+      {% if r.unreachable | default(false) or r.rc | default(0) != 0 %}
+      {% set unchecked.hosts = unchecked.hosts + [r.item.1] %}
+      {% endif %}
+      {% endfor %}
+      {% if holders | length != 1 %}
+      ERROR {{ names }} VIP {{ v.vip }} is held by {{ holders | length }} hosts: {{ holders | join(', ') if holders else 'none' }}{{ ' (not checked: ' ~ unchecked.hosts | unique | join(', ') ~ ')' if unchecked.hosts else '' }}
+      {% elif unchecked.hosts %}
+      WARNING {{ names }} VIP {{ v.vip }} is held by {{ holders[0] }}, but {{ unchecked.hosts | unique | join(', ') }} could not be checked, so a second holder cannot be ruled out
+      {% endif %}
+      {% endif %}
+      {% endfor %}
+      {% for line in keepalived_vip_arp.stdout_lines %}
+      {% set f = line.split() %}
+      {% if f | length == 5 %}
+      {% set names = keepalived_vips | selectattr('vip', 'equalto', f[0]) | map(attribute='name') | unique | join('/') %}
+      {% set holders = keepalived_vip_holder_check.results | selectattr('item.0.vip', 'equalto', f[0]) | selectattr('stdout', 'defined') | rejectattr('stdout', 'equalto', '') | unique(attribute='item.1') | list %}
+      {% if f[2] == '-' %}
+      {% if f[3] in ['FAILED', 'INCOMPLETE'] %}
+      WARNING {{ names }} VIP {{ f[0] }}: the ARP entry on {{ f[1] }} is {{ f[3] }}, updated {{ f[4] }} s ago: this host could not resolve the VIP when it last tried
+      {% endif %}
+      {% elif holders | length == 1 and f[2] not in holders[0].stdout.split() %}
+      {{ 'WARNING' if f[3] == 'STALE' else 'ERROR' }} {{ names }} VIP {{ f[0] }}: the ARP entry on {{ f[1] }} points to {{ f[2] }} ({{ f[3] }}), but the VIP is on {{ holders[0].item.1 }} ({{ holders[0].stdout.split() | first }})
+      {% endif %}
+      {% endif %}
+      {% endfor %}
+      {% for r in keepalived_vip_connect.results | default([]) if r.failed | default(false) %}
+      ERROR {{ r.item.name }} VIP {{ r.item.vip }}: cannot connect to port {{ r.item.port }}: {{ r.msg | default('') }}
+      {% endfor %}
+
+- name: Show the VIP problems of this host
+  debug:
+    msg: "{{ keepalived_vip_problems }}"
+  when: keepalived_vip_problems | length > 0
+
+- name: Fail when a VIP has no holder or more than one, or this host does not reach its holder
+  fail:
+    msg: "{{ keepalived_vip_problems | select('match', '^ERROR') | list }}"
+  when: keepalived_vip_problems | select('match', '^ERROR') | list | length > 0
