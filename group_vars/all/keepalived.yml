@@ -11,6 +11,20 @@ keepalived_vrrp_instances: "{{
   []
 }}"
 
+# Make the MASTER announce its VIPs again with gratuitous ARP when a BACKUP that took a VIP gives it
+# back, and every minute. Without it, after the adverts were lost in both directions and a BACKUP
+# held a VIP for a few seconds, the clients that learned the BACKUP's MAC kept it
+# (fccn/nau-technical#1142). See the README of ansible-keepalived for what each option covers.
+keepalived_global_defs:
+  vrrp_higher_prio_send_advert: true
+  vrrp_garp_master_refresh: 60
+  vrrp_garp_master_refresh_repeat: 2
+
+# Drop the traffic that reaches a node for a VIP held by another node, so a client that kept the
+# old MAC gets no answer from the old node (Docker's NAT kept answering the connections it had
+# open) and finds the holder. See the README of ansible-keepalived.
+keepalived_vip_guard: true
+
 keepalived_health: "{{
   ( balancer_keepalived_health | default([]) ) +
   ( redis_keepalived_health | default([]) ) +
