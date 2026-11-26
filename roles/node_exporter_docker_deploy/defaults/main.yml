@@ -20,6 +20,8 @@ node_exporter_collectors:
   - uname
   - stat
   - vmstat
+  # Pressure stall information (/proc/pressure): time tasks waited for CPU, memory or I/O. Needs kernel 4.20+.
+  - pressure
 
 # Docker restarts after a crash, never reset (see the compose template).
 node_exporter_restart_max_retries: 5
